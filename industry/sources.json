@@ -1,193 +1,208 @@
 {
-  "$comment": "Fontes de exemplo: importadas na primeira inicialização (scripts/seed.ts); as que já existem não são sobrescritas. Depois, crie, edite e pause fontes em \"Fontes\" no Painel. Campos descritos em docs/customize.md.",
+  "$comment": "Fontes iniciais do Carina: importadas na primeira inicialização (scripts/seed.ts); as que já existem não são sobrescritas. Depois, crie, edite e pause fontes em \"Fontes\" no Painel. Os artigos científicos vêm do módulo literatura (buscas no PubMed em industry/literatura.json), pelas duas fontes external no topo. Campos descritos em docs/customize.md e guia em docs/fontes.md.",
   "sources": [
     {
-      "id": "rss-npj-digital-medicine",
-      "name": "npj Digital Medicine",
+      "id": "literatura-materia",
+      "name": "PubMed · matérias do Carina",
+      "kind": "external",
+      "config": {},
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "artigo",
+        "PubMed"
+      ],
+      "site_fulltext": true,
+      "syndicate_fulltext": true
+    },
+    {
+      "id": "literatura-integral",
+      "name": "PubMed · texto integral em acesso aberto",
+      "kind": "external",
+      "config": {},
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "artigo",
+        "PubMed",
+        "acesso aberto"
+      ],
+      "site_fulltext": true,
+      "syndicate_fulltext": true
+    },
+    {
+      "id": "rss-sbp-pneumologia",
+      "name": "SBP · pneumologia",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.nature.com/npjdigitalmed.rss",
+        "feedUrl": "https://www.sbp.com.br/feed/?s=pneumologia",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
       "tier": "T1",
-      "owner_entity_id": null,
+      "owner_entity_id": "sbp",
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "periódico"
+        "sociedade"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-nature-medicine-ml",
-      "name": "Nature Medicine · Machine learning",
+      "id": "rss-sbp-traqueostomia",
+      "name": "SBP · traqueostomia",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.nature.com/subjects/machine-learning/nm.rss",
+        "feedUrl": "https://www.sbp.com.br/feed/?s=traqueostomia",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
       "tier": "T1",
-      "owner_entity_id": null,
+      "owner_entity_id": "sbp",
       "participation_mode": "editorial",
-      "interval_minutes": 240,
+      "interval_minutes": 720,
       "tags": [
-        "periódico"
+        "sociedade"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-jmir-ai",
-      "name": "JMIR AI",
+      "id": "rss-aborl",
+      "name": "ABORL-CCF",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://ai.jmir.org/feed/atom",
+        "feedUrl": "https://www.aborlccf.org.br/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
       "tier": "T1",
-      "owner_entity_id": null,
+      "owner_entity_id": "aborl",
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "periódico"
+        "sociedade"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-jmir",
-      "name": "Journal of Medical Internet Research",
+      "id": "rss-ers-paediatric",
+      "name": "ERS · pediatria",
       "kind": "rss",
       "config": {
-        "feedUrl": "http://feeds.feedburner.com/JMedInternetRes",
+        "feedUrl": "https://www.ersnet.org/feed/?s=paediatric",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
       "tier": "T1",
-      "owner_entity_id": null,
+      "owner_entity_id": "ers",
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "periódico"
+        "sociedade"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-jmir-medical-informatics",
-      "name": "JMIR Medical Informatics",
+      "id": "rss-ers-airway",
+      "name": "ERS · via aérea",
       "kind": "rss",
       "config": {
-        "feedUrl": "http://feeds.feedburner.com/JMIRMedInform",
+        "feedUrl": "https://www.ersnet.org/feed/?s=airway",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
       "tier": "T1",
-      "owner_entity_id": null,
+      "owner_entity_id": "ers",
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "periódico"
+        "sociedade"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-plos-digital-health",
-      "name": "PLOS Digital Health",
+      "id": "rss-sbct",
+      "name": "SBCT",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://journals.plos.org/digitalhealth/feed/atom",
+        "feedUrl": "https://sbct.org.br/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
       "tier": "T1",
-      "owner_entity_id": null,
+      "owner_entity_id": "sbct",
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "periódico"
+        "sociedade"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
-      "id": "rss-bmj-health-care-informatics",
-      "name": "BMJ Health & Care Informatics",
+      "id": "rss-sbpt",
+      "name": "SBPT",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://informatics.bmj.com/rss/current.xml",
+        "feedUrl": "https://sbpt.org.br/portal/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
       "tier": "T1",
-      "owner_entity_id": null,
+      "owner_entity_id": "sbpt",
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "periódico"
+        "sociedade"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
-      "id": "rss-medrxiv-health-informatics",
-      "name": "medRxiv · Health Informatics",
+      "id": "rss-cipe",
+      "name": "CIPE",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://connect.medrxiv.org/medrxiv_xml.php?subject=health_informatics",
+        "feedUrl": "https://cipe.org.br/novo/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
         }
       },
-      "tier": "T2",
-      "owner_entity_id": null,
+      "tier": "T1",
+      "owner_entity_id": "cipe",
       "participation_mode": "editorial",
-      "interval_minutes": 180,
+      "interval_minutes": 240,
       "tags": [
-        "preprint"
+        "sociedade"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
-      "id": "rss-medrxiv-radiology",
-      "name": "medRxiv · Radiology and Imaging",
+      "id": "rss-fda-medwatch",
+      "name": "FDA · MedWatch (alertas de segurança)",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://connect.medrxiv.org/medrxiv_xml.php?subject=radiology_and_imaging",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 180,
-      "tags": [
-        "preprint",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-fda-press",
-      "name": "FDA · Press Releases",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/press-releases/rss.xml",
+        "feedUrl": "https://www.fda.gov/about-fda/contact-fda/stay-informed/rss-feeds/medwatch/rss.xml",
         "_aihot": {
           "initialBackfillLimit": 8
         }
@@ -195,149 +210,159 @@
       "tier": "T1",
       "owner_entity_id": "fda",
       "participation_mode": "editorial",
-      "interval_minutes": 120,
+      "interval_minutes": 360,
       "tags": [
-        "oficial",
-        "regulação"
+        "regulador"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-ema-news",
-      "name": "EMA · News",
+      "id": "rss-ctgov-subglottic-stenosis",
+      "name": "ClinicalTrials.gov · estenose subglótica",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.ema.europa.eu/en/news.xml",
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=subglottic+stenosis&dateField=StudyFirstPostDate",
         "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "ema",
-      "participation_mode": "editorial",
-      "interval_minutes": 180,
-      "tags": [
-        "oficial",
-        "regulação"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-onc-blog",
-      "name": "ASTP/ONC · Health IT Buzz",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://feeds.feedburner.com/healthitbuzzblog",
-        "_aihot": {
-          "initialBackfillLimit": 8
+          "initialBackfillLimit": 3
         }
       },
       "tier": "T1",
       "owner_entity_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 240,
+      "interval_minutes": 1440,
       "tags": [
-        "oficial",
-        "regulação"
+        "ensaio registrado"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-google-health",
-      "name": "Google · Health",
+      "id": "rss-ctgov-tracheal-stenosis",
+      "name": "ClinicalTrials.gov · estenose traqueal",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://blog.google/technology/health/rss/",
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=tracheal+stenosis&dateField=StudyFirstPostDate",
         "_aihot": {
-          "initialBackfillLimit": 8
+          "initialBackfillLimit": 3
         }
       },
       "tier": "T1",
-      "owner_entity_id": "google",
+      "owner_entity_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 120,
+      "interval_minutes": 1440,
       "tags": [
-        "oficial",
-        "empresa"
+        "ensaio registrado"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-google-research-health",
-      "name": "Google Research · Health & Bioscience",
+      "id": "rss-ctgov-pectus",
+      "name": "ClinicalTrials.gov · pectus",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://research.google/blog/rss/",
-        "allowCategories": [
-          "Health & Bioscience"
-        ],
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=pectus+excavatum&dateField=StudyFirstPostDate",
         "_aihot": {
-          "initialBackfillLimit": 8
+          "initialBackfillLimit": 3
         }
       },
       "tier": "T1",
-      "owner_entity_id": "google",
+      "owner_entity_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 180,
+      "interval_minutes": 1440,
       "tags": [
-        "oficial",
-        "pesquisa"
+        "ensaio registrado"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-nvidia-healthcare",
-      "name": "NVIDIA Blog · Healthcare",
+      "id": "rss-ctgov-cpam",
+      "name": "ClinicalTrials.gov · malformações pulmonares",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://blogs.nvidia.com/blog/tag/healthcare-life-sciences/feed/",
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=congenital+pulmonary+airway+malformation&dateField=StudyFirstPostDate",
         "_aihot": {
-          "initialBackfillLimit": 8
+          "initialBackfillLimit": 3
         }
       },
       "tier": "T1",
-      "owner_entity_id": "nvidia",
+      "owner_entity_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 180,
+      "interval_minutes": 1440,
       "tags": [
-        "oficial",
-        "empresa"
+        "ensaio registrado"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-openai-news",
-      "name": "OpenAI News",
+      "id": "rss-ctgov-cdh",
+      "name": "ClinicalTrials.gov · hérnia diafragmática",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://openai.com/news/rss.xml",
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=congenital+diaphragmatic+hernia&dateField=StudyFirstPostDate",
         "_aihot": {
-          "initialBackfillLimit": 8
+          "initialBackfillLimit": 3
         }
       },
       "tier": "T1",
-      "owner_entity_id": "openai",
+      "owner_entity_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 120,
+      "interval_minutes": 1440,
       "tags": [
-        "oficial",
-        "empresa"
+        "ensaio registrado"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-stat-health-tech",
-      "name": "STAT · Health Tech",
+      "id": "rss-ctgov-tracheomalacia",
+      "name": "ClinicalTrials.gov · traqueomalácia",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.statnews.com/category/health-tech/feed/",
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=tracheomalacia&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-tracheostomy-children",
+      "name": "ClinicalTrials.gov · traqueostomia pediátrica",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?term=tracheostomy&aggFilters=ages:child&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-unidos-pela-vida",
+      "name": "Unidos pela Vida (fibrose cística)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://unidospelavida.org.br/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
         }
@@ -345,7 +370,27 @@
       "tier": "T2",
       "owner_entity_id": null,
       "participation_mode": "editorial",
-      "interval_minutes": 60,
+      "interval_minutes": 240,
+      "tags": [
+        "associação de pacientes"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-respiratory-therapy",
+      "name": "Respiratory Therapy",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://respiratory-therapy.com/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
       "tags": [
         "imprensa"
       ],
@@ -353,276 +398,11 @@
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-mobihealthnews",
-      "name": "MobiHealthNews",
+      "id": "rss-boston-childrens-answers",
+      "name": "Boston Children's · Answers",
       "kind": "rss",
       "config": {
-        "feedUrl": "https://www.mobihealthnews.com/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-healthcare-it-news",
-      "name": "Healthcare IT News",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.healthcareitnews.com/content-feed/all",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-medcity-news",
-      "name": "MedCity News",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://medcitynews.com/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-healthcare-dive-health-it",
-      "name": "Healthcare Dive · Health IT",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.healthcaredive.com/feeds/topic/health-it/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-medtech-dive",
-      "name": "MedTech Dive",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.medtechdive.com/feeds/news/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-hit-consultant",
-      "name": "HIT Consultant",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://hitconsultant.net/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-healthcare-it-today",
-      "name": "Healthcare IT Today",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.healthcareittoday.com/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-auntminnie",
-      "name": "AuntMinnie",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.auntminnie.com/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "imprensa",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-radiology-business",
-      "name": "Radiology Business",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://radiologybusiness.com/rss.xml",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "imprensa",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-medical-futurist",
-      "name": "The Medical Futurist",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://medicalfuturist.com/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 180,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-futuro-da-saude-ia",
-      "name": "Futuro da Saúde · Inteligência artificial",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://futurodasaude.com.br/tag/inteligencia-artificial/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "imprensa",
-        "Brasil"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-medicina-sa",
-      "name": "Medicina S/A",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://medicinasa.com.br/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "imprensa",
-        "Brasil"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-saude-business",
-      "name": "Saúde Business",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.saudebusiness.com/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "imprensa",
-        "Brasil"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-ground-truths",
-      "name": "Ground Truths (Eric Topol)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://erictopol.substack.com/feed",
+        "feedUrl": "https://answers.childrenshospital.org/feed/",
         "_aihot": {
           "initialBackfillLimit": 8
         }
@@ -632,2128 +412,10 @@
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "newsletter"
+        "hospital"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-doctor-penguin",
-      "name": "Doctor Penguin Weekly",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://doctorpenguin.substack.com/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-kevinmd-tech",
-      "name": "KevinMD · Health Technology",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.kevinmd.com/blog/category/tech/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 180,
-      "tags": [
-        "opinião"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "x-nejm-ai",
-      "name": "NEJM AI · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:NEJM_AI -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-lancetdigitalh",
-      "name": "The Lancet Digital Health · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:LancetDigitalH -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-npjdigitalmed",
-      "name": "npj Digital Medicine · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:npjDigitalMed -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-radiology-ai",
-      "name": "Radiology: Artificial Intelligence · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:Radiology_AI -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-jmirpub",
-      "name": "JMIR Publications · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:jmirpub -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico",
-        "saúde digital"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-amiainformatics",
-      "name": "AMIA · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:AMIAinformatics -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "sociedade",
-        "informática em saúde"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-stanfordaimi",
-      "name": "Stanford AIMI · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:StanfordAIMI -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "academia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-naturemedicine",
-      "name": "Nature Medicine · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:NatureMedicine -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-nejm",
-      "name": "NEJM · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:NEJM -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-thelancet",
-      "name": "The Lancet · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:TheLancet -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-jama-current",
-      "name": "JAMA · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:JAMA_current -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-jamanetworkopen",
-      "name": "JAMA Network Open · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:JAMANetworkOpen -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-bmj-latest",
-      "name": "The BMJ · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:bmj_latest -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "periódico"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-rsna",
-      "name": "RSNA · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:RSNA -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "sociedade",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-radiologyacr",
-      "name": "American College of Radiology · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:RadiologyACR -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "sociedade",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-fda",
-      "name": "FDA · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:FDA -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "fda",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "regulação"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-who",
-      "name": "OMS (WHO) · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:WHO -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "who",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "regulação",
-        "saúde pública"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-nhsengland",
-      "name": "NHS England · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:NHSEngland -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "nhs",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "sistema de saúde"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-medicina-cfm",
-      "name": "CFM · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:medicina_cfm -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "cfm",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "regulação",
-        "brasil"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-googleforhealth",
-      "name": "Google for Health · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:GoogleForHealth -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "google",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-googledeepmind",
-      "name": "Google DeepMind · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:GoogleDeepMind -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "google",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-googleresearch",
-      "name": "Google Research · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:GoogleResearch -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "google",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-msftresearch",
-      "name": "Microsoft Research · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:MSFTResearch -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "microsoft",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-openai",
-      "name": "OpenAI · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:OpenAI -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "openai",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-anthropicai",
-      "name": "Anthropic · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:AnthropicAI -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "anthropic",
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-nvidiahealth",
-      "name": "NVIDIA Healthcare · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:NVIDIAHealth -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "nvidia",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-heyepic",
-      "name": "Epic · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:HeyEpic -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "epic",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "prontuário"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-abridgehq",
-      "name": "Abridge · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:AbridgeHQ -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "abridge",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "documentação clínica"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-aidocmed",
-      "name": "Aidoc · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:aidocmed -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "aidoc",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-viz-ai",
-      "name": "Viz.ai · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:viz_ai -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "viz-ai",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-tempusai",
-      "name": "Tempus · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:TempusAI -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "tempus",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "oncologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-path-ai",
-      "name": "PathAI · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:Path_AI -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "pathai",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "patologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-isomorphiclabs",
-      "name": "Isomorphic Labs · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:IsomorphicLabs -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "isomorphic-labs",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "fármacos"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-openevidence",
-      "name": "OpenEvidence · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:OpenEvidence -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "apoio à decisão"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-nabla-ai",
-      "name": "Nabla · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:nabla_ai -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "organization"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "empresa",
-        "documentação clínica"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-vivnat",
-      "name": "Vivek Natarajan · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:vivnat -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "person"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "google",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-alan-karthi",
-      "name": "Alan Karthikesalingam · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:alan_karthi -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "person"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "google",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-thekaransinghal",
-      "name": "Karan Singhal · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:thekaransinghal -filter:replies",
-        "searchType": "Latest",
-        "publisherRole": "person"
-      },
-      "tier": "T1_5",
-      "owner_entity_id": "openai",
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-erictopol",
-      "name": "Eric Topol · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:EricTopol -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-pranavrajpurkar",
-      "name": "Pranav Rajpurkar · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:pranavrajpurkar -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-zakkohane",
-      "name": "Isaac Kohane · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:zakkohane -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-adamrodmanmd",
-      "name": "Adam Rodman · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:AdamRodmanMD -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-arjunmanrai",
-      "name": "Arjun Manrai · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:arjunmanrai -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-oziadias",
-      "name": "Ziad Obermeyer · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:oziadias -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-jonc101x",
-      "name": "Jonathan H. Chen · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:jonc101x -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-euanashley",
-      "name": "Euan Ashley · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:euanashley -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa",
-        "genômica"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-berci",
-      "name": "Bertalan Meskó · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:Berci -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-david-ouyang",
-      "name": "David Ouyang · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:David_Ouyang -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa",
-        "cardiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-suchisaria",
-      "name": "Suchi Saria · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:suchisaria -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 60,
-      "tags": [
-        "pessoa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-statnews",
-      "name": "STAT · X",
-      "kind": "x_search",
-      "config": {
-        "query": "from:statnews -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-busca-viral-en",
-      "name": "Repercussão: IA em medicina (inglês) · X",
-      "kind": "x_search",
-      "config": {
-        "query": "(\"AI\" OR \"LLM\" OR \"GPT\" OR \"ChatGPT\" OR \"Claude\" OR \"Gemini\") (radiology OR clinicians OR physicians OR \"clinical trial\" OR FDA OR diagnosis OR hospital OR patients) min_faves:300 -filter:replies lang:en",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "repercussão"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-busca-viral-pt",
-      "name": "Repercussão: IA em medicina (português) · X",
-      "kind": "x_search",
-      "config": {
-        "query": "(\"inteligência artificial\" OR \"IA\" OR \"ChatGPT\") (médico OR médicos OR medicina OR saúde OR SUS OR hospital) min_faves:100 -filter:replies lang:pt",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "repercussão",
-        "brasil"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-busca-estudos-periodicos",
-      "name": "Repercussão: estudos de IA em periódicos · X",
-      "kind": "x_search",
-      "config": {
-        "query": "(url:nejm.org OR url:thelancet.com OR url:nature.com OR url:jamanetwork.com OR url:bmj.com) (\"AI\" OR \"artificial intelligence\" OR \"machine learning\" OR \"deep learning\" OR LLM) min_faves:50 -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "repercussão",
-        "estudo"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-busca-preprints",
-      "name": "Repercussão: preprints de IA clínica · X",
-      "kind": "x_search",
-      "config": {
-        "query": "(url:medrxiv.org OR url:arxiv.org) (clinical OR medical OR patients OR radiology OR medicine) (\"AI\" OR LLM OR \"language model\" OR \"foundation model\") min_faves:100 -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "repercussão",
-        "preprint"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "x-busca-fda-ia",
-      "name": "Repercussão: FDA e dispositivos com IA · X",
-      "kind": "x_search",
-      "config": {
-        "query": "(\"FDA clearance\" OR \"FDA cleared\" OR \"FDA clears\" OR \"FDA authorization\" OR \"FDA approves\" OR \"FDA guidance\" OR \"510(k)\" OR \"De Novo\") (\"AI\" OR \"artificial intelligence\" OR algorithm OR LLM OR \"machine learning\") min_faves:50 -filter:replies",
-        "searchType": "Latest"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "repercussão",
-        "regulação"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "rss-reddit-medicine",
-      "name": "Reddit · r/medicine (IA)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.reddit.com/r/medicine/search.rss?q=AI%20OR%20LLM%20OR%20%22artificial%20intelligence%22%20OR%20ChatGPT&restrict_sr=on&sort=new",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "Reddit"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "rss-reddit-radiology",
-      "name": "Reddit · r/Radiology (IA)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.reddit.com/r/Radiology/search.rss?q=AI%20OR%20LLM%20OR%20%22artificial%20intelligence%22%20OR%20ChatGPT&restrict_sr=on&sort=new",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "Reddit"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "rss-reddit-healthit",
-      "name": "Reddit · r/HealthIT",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.reddit.com/r/HealthIT/new/.rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "Reddit"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "rss-reddit-residency",
-      "name": "Reddit · r/Residency (IA)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.reddit.com/r/Residency/search.rss?q=AI%20OR%20LLM%20OR%20%22artificial%20intelligence%22%20OR%20ChatGPT&restrict_sr=on&sort=new",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "Reddit"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "rss-reddit-machinelearning-medical",
-      "name": "Reddit · r/MachineLearning (medicina)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.reddit.com/r/MachineLearning/search.rss?q=medical%20OR%20clinical%20OR%20healthcare%20OR%20radiology&restrict_sr=on&sort=new",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "Reddit"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "rss-hn-medical",
-      "name": "Hacker News · saúde e medicina (25+ pontos)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://hnrss.org/newest?q=medical%20OR%20clinical%20OR%20healthcare%20OR%20radiology&points=25",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 60,
-      "tags": [
-        "Hacker News"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-out-of-pocket",
-      "name": "Out-of-Pocket (Nikhil Krishnan)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.outofpocket.health/p/rss.xml",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-second-opinion",
-      "name": "Second Opinion (Christina Farr)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://secondopinion.media/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-hospitalogy",
-      "name": "Hospitalogy",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://hospitalogy.com/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-health-api-guy",
-      "name": "Health API Guy (Brendan Keeler)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://healthapiguy.substack.com/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-pattern-recognition",
-      "name": "Pattern Recognition (Bob Wachter)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://robertwachter.substack.com/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-digital-health-wire",
-      "name": "Digital Health Wire",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.digitalhealthwire.com/feed",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-imaging-wire",
-      "name": "The Imaging Wire",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://theimagingwire.com/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter",
-        "radiologia"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-the-health-care-blog",
-      "name": "The Health Care Blog",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://thehealthcareblog.com/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-substack-health-populi",
-      "name": "Health Populi (Jane Sarasohn-Kahn)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.healthpopuli.com/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "newsletter"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-podcast-nejm-ai-grand-rounds",
-      "name": "NEJM AI Grand Rounds",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://ai-podcast.nejm.org/feed.xml",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 720,
-      "tags": [
-        "podcast"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-podcast-jama-ai-conversations",
-      "name": "JAMA+ AI Conversations",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://rss.libsyn.com/shows/527733/destinations/4538173.xml",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 720,
-      "tags": [
-        "podcast"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-podcast-faces-of-digital-health",
-      "name": "Faces of Digital Health",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://feeds.megaphone.fm/faces-of-digital-health",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 720,
-      "tags": [
-        "podcast"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-bsky-erictopol",
-      "name": "Bluesky · Eric Topol (@erictopol.bsky.social)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://bsky.app/profile/erictopol.bsky.social/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "Bluesky"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-bsky-ai-nejm-org",
-      "name": "Bluesky · NEJM AI (@ai.nejm.org)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://bsky.app/profile/ai.nejm.org/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "Bluesky"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-bsky-drgrahamwalker-com",
-      "name": "Bluesky · Graham Walker, MD (@drgrahamwalker.com)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://bsky.app/profile/drgrahamwalker.com/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "Bluesky"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-bsky-bobwachter",
-      "name": "Bluesky · Bob Wachter (@bobwachter.bsky.social)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://bsky.app/profile/bobwachter.bsky.social/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "Bluesky"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-bsky-dukeaihealth",
-      "name": "Bluesky · Duke AI Health (@dukeaihealth.bsky.social)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://bsky.app/profile/dukeaihealth.bsky.social/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "Bluesky"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-bsky-adamrodmanmd",
-      "name": "Bluesky · Adam Rodman (@adamrodmanmd.bsky.social)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://bsky.app/profile/adamrodmanmd.bsky.social/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "Bluesky"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-bsky-roxanadaneshjou",
-      "name": "Bluesky · Roxana Daneshjou (@roxanadaneshjou.bsky.social)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://bsky.app/profile/roxanadaneshjou.bsky.social/rss",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "hot_signal",
-      "interval_minutes": 120,
-      "tags": [
-        "Bluesky"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-ministerio-saude",
-      "name": "Ministério da Saúde · Notícias",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.gov.br/saude/pt-br/search_rss?portal_type=collective.nitf.content&sort_on=effective&sort_order=reverse",
-        "allowUrlPrefixes": [
-          "https://www.gov.br/saude/pt-br/assuntos/noticias-ms/"
-        ],
-        "publisherUrlPrefixes": [
-          "https://www.gov.br/saude/pt-br/assuntos/noticias-ms/"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "ministerio-saude",
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "oficial",
-        "governo"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-anvisa",
-      "name": "ANVISA · Notícias",
-      "kind": "json_list",
-      "config": {
-        "url": "https://www.gov.br/anvisa/++api++/pt-br/assuntos/noticias-anvisa/@search?portal_type=News%20Item&sort_on=effective&sort_order=descending&b_size=20&metadata_fields=effective",
-        "mode": "json_api",
-        "itemsPath": "items",
-        "titlePaths": [
-          "title"
-        ],
-        "summaryPaths": [
-          "description"
-        ],
-        "urlTemplate": "{raw:@id}",
-        "publishedAtPath": "effective",
-        "publishedAtUtcOffset": "-03:00",
-        "externalIdPath": "@id",
-        "allowUrlPrefixes": [
-          "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/"
-        ],
-        "publisherUrlPrefixes": [
-          "https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "anvisa",
-      "participation_mode": "editorial",
-      "interval_minutes": 120,
-      "tags": [
-        "oficial",
-        "regulação"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-cfm",
-      "name": "CFM · Notícias",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://portal.cfm.org.br/noticias/feed/",
-        "allowUrlPrefixes": [
-          "https://portal.cfm.org.br/noticias/"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "cfm",
-      "participation_mode": "editorial",
-      "interval_minutes": 180,
-      "tags": [
-        "oficial",
-        "regulação"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-ans",
-      "name": "ANS · Notícias",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.gov.br/ans/pt-br/search_rss?portal_type=collective.nitf.content&sort_on=effective&sort_order=reverse",
-        "allowUrlPrefixes": [
-          "https://www.gov.br/ans/pt-br/assuntos/noticias"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "oficial",
-        "regulação"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-sbis",
-      "name": "SBIS · Notícias",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://sbis.org.br/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "oficial"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-microsoft-healthcare",
-      "name": "Microsoft Cloud Blog · Healthcare",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.microsoft.com/en-us/microsoft-cloud/blog/industry/healthcare/feed/",
-        "allowUrlPrefixes": [
-          "https://www.microsoft.com/en-us/microsoft-cloud/blog/healthcare/"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "microsoft",
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-epic-newsroom",
-      "name": "Epic · Newsroom",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.epic.com/epic/newsroom",
-        "parseMode": "html",
-        "allowUrlPrefixes": [
-          "https://www.epic.com/epic/post/"
-        ],
-        "publishedAtUtcOffset": "-03:00",
-        "detail": {
-          "maxFetches": 10,
-          "titleSelector": "h1",
-          "titleAuthoritative": true,
-          "publishedAtRegex": "((?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2},\\s+\\d{4})",
-          "publishedAtUtcOffset": "-05:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "epic",
-      "participation_mode": "editorial",
-      "interval_minutes": 180,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-abridge-blog",
-      "name": "Abridge · Blog",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.abridge.com/blog",
-        "parseMode": "html",
-        "allowUrlPrefixes": [
-          "https://www.abridge.com/blog/"
-        ],
-        "detail": {
-          "maxFetches": 10,
-          "titleSelector": "h1",
-          "titleAuthoritative": true,
-          "publishedAtRegex": "((?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2},\\s+\\d{4})",
-          "publishedAtUtcOffset": "-05:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "abridge",
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-abridge-press",
-      "name": "Abridge · Press releases",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.abridge.com/press",
-        "parseMode": "html",
-        "allowUrlPrefixes": [
-          "https://www.abridge.com/press-release/"
-        ],
-        "detail": {
-          "maxFetches": 10,
-          "titleSelector": "h1",
-          "titleAuthoritative": true,
-          "publishedAtRegex": "((?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2},\\s+\\d{4})",
-          "publishedAtUtcOffset": "-05:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "abridge",
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-epic-newsroom-jina",
-      "name": "Epic · Newsroom (Jina)",
-      "kind": "web_list",
-      "config": {
-        "url": "https://r.jina.ai/https://www.epic.com/epic/newsroom",
-        "parseMode": "markdown",
-        "linksStartLine": true,
-        "allowUrlPrefixes": [
-          "https://www.epic.com/epic/post/"
-        ],
-        "detail": {
-          "maxFetches": 10,
-          "publishedAtRegex": "((?:January|February|March|April|May|June|July|August|September|October|November|December)\\s+\\d{1,2},\\s+\\d{4})",
-          "publishedAtUtcOffset": "-05:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "epic",
-      "participation_mode": "editorial",
-      "interval_minutes": 180,
-      "tags": [
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
-    },
-    {
-      "id": "cn-nmpa-en-medical-devices",
-      "name": "NMPA · Medical Devices（英文站）",
-      "kind": "web_list",
-      "config": {
-        "url": "https://english.nmpa.gov.cn/medicaldevices.html",
-        "parseMode": "html",
-        "itemSelector": "li:has(h3 a)",
-        "linkSelector": "h3 a",
-        "titleSelector": "h3 a",
-        "publishedAtRegex": "(\\d{4}-\\d{2}-\\d{2})",
-        "publishedAtUtcOffset": "+08:00",
-        "allowUrlPrefixes": [
-          "https://english.nmpa.gov.cn/20"
-        ],
-        "detail": {
-          "publishedAtUtcOffset": "+08:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 6
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "nmpa",
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "China",
-        "oficial",
-        "regulação"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "cn-leiphone-healthai",
-      "name": "雷峰网 Leiphone · 医疗AI",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.leiphone.com/feed/categoryRss/name/healthai",
-        "detail": {
-          "publishedAtUtcOffset": "+08:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 5
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "China",
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "cn-qbitai-medical",
-      "name": "量子位 QbitAI · 医疗",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.qbitai.com/tag/%E5%8C%BB%E7%96%97/feed",
-        "detail": {
-          "publishedAtUtcOffset": "+08:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 5
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "China",
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "cn-qbitai-ai-medical",
-      "name": "量子位 QbitAI · AI医疗",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.qbitai.com/tag/ai%E5%8C%BB%E7%96%97/feed",
-        "detail": {
-          "publishedAtUtcOffset": "+08:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 5
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "China",
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "cn-qbitai-medical-llm",
-      "name": "量子位 QbitAI · 医疗大模型",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://www.qbitai.com/tag/%E5%8C%BB%E7%96%97%E5%A4%A7%E6%A8%A1%E5%9E%8B/feed",
-        "detail": {
-          "publishedAtUtcOffset": "+08:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 5
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "China",
-        "imprensa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "cn-yidutech-news",
-      "name": "医渡科技 Yidu Tech · 公司新闻",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.yidutech.com/news-list-company.html",
-        "parseMode": "html",
-        "itemSelector": "a[href*='news-detail.html?id=']",
-        "publishedAtRegex": "(\\d{4}\\.\\d{2}\\.\\d{2})",
-        "publishedAtUtcOffset": "+08:00",
-        "allowUrlPrefixes": [
-          "https://www.yidutech.com/news-detail.html?id="
-        ],
-        "detail": {
-          "maxFetches": 10,
-          "titleSelector": "h1",
-          "titleAuthoritative": true,
-          "publishedAtUtcOffset": "+08:00"
-        },
-        "_aihot": {
-          "initialBackfillLimit": 6
-        }
-      },
-      "tier": "T1",
-      "owner_entity_id": "yidu-tech",
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "China",
-        "empresa"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "mp-vcbeat",
-      "name": "动脉网 VCBeat（公众号）",
-      "kind": "mp_account",
-      "config": {
-        "wxid": "vcbeat",
-        "nickname": "动脉网"
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "China",
-        "imprensa",
-        "WeChat"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
     }
   ]
 }

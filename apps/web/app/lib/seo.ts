@@ -151,7 +151,7 @@ export function siteLd() {
       "@type": "Dataset",
       "@id": `${base}/#dataset`,
       name: `${SITE.name} — ${withSubject("Conjunto de dados de notícias")}`,
-      description: `Notícias de ${SITE.subject} atualizadas continuamente, cada uma com resumo em português, nota e fonte original, além da seleção e do briefing diários; disponível por RSS e API pública.`,
+      description: `Notícias de ${SITE.subject} atualizadas continuamente, cada uma com resumo em português, nota e fonte original, além da seleção e da edição semanal; disponível por RSS e API pública.`,
       url: base,
       inLanguage: SITE.locale,
       isAccessibleForFree: true,
@@ -162,9 +162,9 @@ export function siteLd() {
       distribution: [
         { "@type": "DataDownload", name: "RSS da seleção", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed.xml` },
         { "@type": "DataDownload", name: "RSS de todas as notícias", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed/all.xml` },
-        { "@type": "DataDownload", name: "RSS do briefing diário", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed/daily.xml` },
-        { "@type": "DataDownload", name: "RSS do briefing semanal", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed/weekly.xml` },
-        { "@type": "DataDownload", name: "RSS do briefing mensal", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed/monthly.xml` },
+        { "@type": "DataDownload", name: "RSS das notas diárias", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed/daily.xml` },
+        { "@type": "DataDownload", name: "RSS da edição semanal", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed/weekly.xml` },
+        { "@type": "DataDownload", name: "RSS do balanço mensal", encodingFormat: "application/rss+xml", contentUrl: `${base}/feed/monthly.xml` },
         { "@type": "DataDownload", name: "API pública v1", encodingFormat: "application/json", contentUrl: `${base}/api/v1/items` },
         { "@type": "DataDownload", name: "OpenAPI", encodingFormat: "application/json", contentUrl: `${base}/openapi-v1.json` },
       ],
@@ -226,7 +226,7 @@ export function archiveLd(path: string, name: string, entries: Array<{ path: str
   };
 }
 
-const REPORT_NAME = { daily: "Briefing diário", weekly: "Briefing semanal", monthly: "Briefing mensal" } as const;
+const REPORT_NAME = { daily: "Notas diárias", weekly: "Edição semanal", monthly: "Balanço mensal" } as const;
 
 /** One report issue: an editorial round-up by the site (no personal byline), sections as its sections. */
 export function reportLd(r: ReportDetail, path: string, description: string) {

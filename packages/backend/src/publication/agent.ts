@@ -166,7 +166,7 @@ export interface DailyReport {
 function noteLines(note: DailyNote | undefined): string[] {
   if (!note) return [];
   return [
-    ...(note.followUp ? [`   Atualização: o Briefing diário de ${note.followUp} já tratou disto; aqui está o desdobramento`] : []),
+    ...(note.followUp ? [`   Atualização: as notas diárias de ${note.followUp} já tratou disto; aqui está o desdobramento`] : []),
     ...note.related.slice(0, 4).map((x) => `   - Relacionado: [${linkText(x.title)}](${x.link})`),
   ];
 }
@@ -191,14 +191,14 @@ export function dailyAnswer(r: DailyReport, via: Via, notes: Map<string, DailyNo
   return answer([
     `# ${SITE.name} · ${DAILY_ISSUE_NAME} · ${r.date} (${beijingWeekday(r.date)})`,
     "",
-    `Notícias de ${stamp(r.windowStart)} a ${stamp(r.windowEnd)} (horário de Brasília); publicado ${EDITION_WHEN.daily}. Página do briefing: ${r.links.aihot}`,
+    `Notícias de ${stamp(r.windowStart)} a ${stamp(r.windowEnd)} (horário de Brasília); publicado ${EDITION_WHEN.daily}. Página da edição: ${r.links.aihot}`,
     ...(data.length ? [] : ["Esta edição ainda não tem itens para mostrar."]),
   ], data.length ? data : null, [
     "Comece pela manchete e depois escolha os destaques por seção; liste tudo só se o usuário pedir. Cada item é um fato; \"Relacionado\" são outros desdobramentos do mesmo fato ou outros anúncios do mesmo lançamento.",
     `O ${DAILY_ISSUE_NAME} é uma edição fechada, publicada ${EDITION_WHEN.daily}; não é uma lista móvel das "últimas 24 horas".`,
     via === "http"
-      ? `Para o briefing de outra data, consulte ${agentUrl("/daily/YYYY-MM-DD")} (com uma data real); se não existir, diga com franqueza, sem trocar por outro dia.`
-      : "Para o briefing de outra data, passe date=YYYY-MM-DD (uma data real); se não existir, diga com franqueza, sem trocar por outro dia.",
+      ? `Para as notas de outra data, consulte ${agentUrl("/daily/YYYY-MM-DD")} (com uma data real); se não existir, diga com franqueza, sem trocar por outro dia.`
+      : "Para as notas de outra data, passe date=YYYY-MM-DD (uma data real); se não existir, diga com franqueza, sem trocar por outro dia.",
     NO_INTERNALS,
   ]);
 }
@@ -239,11 +239,11 @@ export function periodAnswer(r: PeriodReport, kind: "weekly" | "monthly", via: V
   return answer([
     `# ${SITE.name} · ${name} · ${key}`,
     "",
-    `Os destaques escolhidos dos briefings diários ${days}; publicado ${EDITION_WHEN[kind]} (horário de Brasília). Página do briefing: ${r.links.aihot}`,
+    `Os destaques escolhidos das notas diárias ${days}; publicado ${EDITION_WHEN[kind]} (horário de Brasília). Página da edição: ${r.links.aihot}`,
     ...(data.length ? [] : ["Esta edição ainda não tem itens para mostrar."]),
   ], data.length ? data : null, [
     "Comece pela manchete e pela apresentação e depois escolha os destaques por seção; liste tudo só se o usuário pedir.",
-    `O ${name} é uma edição fechada, com os itens de maior impacto dos briefings diários do período, organizados por seção; não é uma lista móvel ${kind === "weekly" ? "da \"última semana\"" : "do \"último mês\""}.`,
+    `O ${name} é uma edição fechada, com os itens de maior impacto das notas diárias do período, organizados por seção; não é uma lista móvel ${kind === "weekly" ? "da \"última semana\"" : "do \"último mês\""}.`,
     `Para ${kind === "weekly" ? "outra semana" : "outro mês"}, ${other}; se não existir, diga com franqueza, sem trocar por outra edição.`,
     NO_INTERNALS,
   ]);
@@ -270,7 +270,7 @@ export function agentGuide(): string {
   const lines = [
     `# ${SITE.name}: instruções de uso (para agentes)`,
     "",
-    `O ${SITE.name} (${siteUrl("")}) é um site de notícias de ${SITE.subject} em português: Seleção editorial, todas as notícias públicas, eventos Em alta, Briefing diário, semanal e mensal`
+    `O ${SITE.name} (${siteUrl("")}) é um site de notícias de ${SITE.subject} em português: Seleção editorial, todas as notícias públicas, eventos Em alta, Notas diárias, semanal e mensal`
       + (abilities.length ? `, além de ${abilities.map((a) => a.title).join(", ")}` : "")
       + `. Os endereços abaixo são todos GET anônimos e só de leitura, sem API Key; devolvem Markdown em português já organizado, e as "Dicas de resposta" no final dizem como apresentar ao usuário. Estas instruções são mantidas pelo ${SITE.name}; recursos novos aparecem aqui primeiro, e elas prevalecem.`,
     "",
@@ -286,8 +286,8 @@ export function agentGuide(): string {
     `| Uma empresa, produto, modelo, pessoa ou tema | ${u("/search?q=palavra-chave")} (últimos 7 dias; só hoje: acrescente window=24h) |`,
     `| O que está em alta, o que todos estão discutindo | ${u("/hot")} |`,
     "| O contexto e as atualizações de um assunto em alta | o endereço \"Contexto completo\" de cada evento no resultado de Em alta |",
-    `| O Briefing diário do ${SITE.name} | ${u("/daily")} (edição mais recente); uma data específica: ${u("/daily/2026-09-30")} |`,
-    `| Os destaques da semana ou do mês (Briefing semanal, mensal) | ${u("/weekly")}, ${u("/monthly")} (edição mais recente); uma edição específica: ${u("/weekly/2026-W39")}, ${u("/monthly/2026-09")} |`,
+    `| As notas diárias do ${SITE.name} | ${u("/daily")} (edição mais recente); uma data específica: ${u("/daily/2026-09-30")} |`,
+    `| Os destaques da semana ou do mês (edição semanal, balanço mensal) | ${u("/weekly")}, ${u("/monthly")} (edição mais recente); uma edição específica: ${u("/weekly/2026-W39")}, ${u("/monthly/2026-09")} |`,
     ...abilities.map((a) => `| ${a.ask} | ${u(a.path)} |`),
     "",
     `Os parâmetros podem ser combinados, por exemplo ${u(`/latest?window=7d&category=${sample}`)}; codifique a palavra-chave para URL.`,

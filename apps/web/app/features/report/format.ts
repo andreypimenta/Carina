@@ -7,7 +7,7 @@ import { monthDay, monthName, weekdayShort } from "../../lib/format.ts";
 
 export const KINDS: ReportKind[] = ["daily", "weekly", "monthly"];
 export const KIND_PATH: Record<ReportKind, string> = { daily: "/daily", weekly: "/weekly", monthly: "/monthly" };
-export const KIND_LABEL: Record<ReportKind, string> = { daily: "Briefing diário", weekly: "Briefing semanal", monthly: "Briefing mensal" };
+export const KIND_LABEL: Record<ReportKind, string> = { daily: "Notas diárias", weekly: "Edição semanal", monthly: "Balanço mensal" };
 /** The kind alone, for the diário / semanal / mensal switch. */
 export const KIND_SHORT: Record<ReportKind, string> = { daily: "Diário", weekly: "Semanal", monthly: "Mensal" };
 

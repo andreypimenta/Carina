@@ -67,9 +67,9 @@ export function McpPanel(props: AgentPanelProps) {
             [<Mono>{T.search}</Mono>, AGENT.search.scope, AGENT.search.ask],
             [<Mono>{T.hot}</Mono>, "Top 10 de Em alta agora", "O que está em alta agora?"],
             [<Mono>{T.story}</Mono>, "Linha do tempo e panorama sempre atualizado de um evento em alta", "Qual é a história completa deste caso?"],
-            [<Mono>{T.daily}</Mono>, "Briefing diário mais recente ou de uma data", "Me mostre o briefing de hoje."],
-            [<Mono>{T.weekly}</Mono>, "Briefing semanal mais recente ou de uma semana", `Quais foram os destaques de ${SITE.subject} nesta semana?`],
-            [<Mono>{T.monthly}</Mono>, "Briefing mensal mais recente ou de um mês", `O que aconteceu em ${SITE.subject} no mês passado?`],
+            [<Mono>{T.daily}</Mono>, "Notas diárias mais recentes ou de uma data", "O que entrou no radar ontem?"],
+            [<Mono>{T.weekly}</Mono>, "Edição semanal mais recente ou de uma semana", `Quais foram os destaques de ${SITE.subject} nesta semana?`],
+            [<Mono>{T.monthly}</Mono>, "Balanço mensal mais recente ou de um mês", `O que aconteceu em ${SITE.subject} no mês passado?`],
             ...AGENT_PARTS.flatMap((a) => a.tools ?? []).map((t) => [<Mono>{t.name}</Mono>, t.does, t.ask]),
           ]}
         />
@@ -109,9 +109,9 @@ const FEEDS = [
   { name: "Seleção (resumos)", badge: "Recomendado", path: "/feed.xml", desc: "Os 50 itens mais recentes da seleção, com título, resumo, link de leitura no site e link do original." },
   { name: "Seleção (texto completo)", path: "/feed/full.xml", desc: "Os mesmos 50 itens; quando a fonte permite republicar, vem o texto completo, senão o resumo." },
   { name: "Todas as notícias", path: "/feed/all.xml", desc: "Notícias públicas dos últimos 7 dias, da publicação mais recente para a mais antiga." },
-  { name: "Briefing diário", path: "/feed/daily.xml", desc: `Uma edição ${EDITION_WHEN.daily} (horário de Brasília): abertura da manchete e o sumário completo; guarda as últimas 30 edições.` },
-  { name: "Briefing semanal", path: "/feed/weekly.xml", desc: `Uma edição ${EDITION_WHEN.weekly} (horário de Brasília): panorama e os ${REPORTS.entry.noun} organizados por seção; guarda as últimas 12 edições.` },
-  { name: "Briefing mensal", path: "/feed/monthly.xml", desc: `Uma edição ${EDITION_WHEN.monthly} (horário de Brasília): panorama e os ${REPORTS.entry.noun} organizados por seção; guarda as últimas 12 edições.` },
+  { name: "Notas diárias", path: "/feed/daily.xml", desc: `Uma edição ${EDITION_WHEN.daily} (horário de Brasília): abertura da manchete e o sumário completo; guarda as últimas 30 edições.` },
+  { name: "Edição semanal", path: "/feed/weekly.xml", desc: `Uma edição ${EDITION_WHEN.weekly} (horário de Brasília): panorama e os ${REPORTS.entry.noun} organizados por seção; guarda as últimas 12 edições.` },
+  { name: "Balanço mensal", path: "/feed/monthly.xml", desc: `Uma edição ${EDITION_WHEN.monthly} (horário de Brasília): panorama e os ${REPORTS.entry.noun} organizados por seção; guarda as últimas 12 edições.` },
 ];
 
 /** The category feeds, under the names the feeds themselves use. */
@@ -171,7 +171,7 @@ export function ApiPanel(props: AgentPanelProps) {
   const { base, tag } = props;
   const userAgent = [ACCESS.userAgent, TAG && tag ? TAG.userAgent(tag) : null].filter(Boolean).join(" ");
   const curl = `curl --compressed${userAgent ? ` -A '${userAgent}'` : ""}`;
-  let pace = `Com que frequência o conteúdo muda: notícias novas chegam ao longo do dia, a seleção muda de algumas a dezenas de vezes por dia, e há uma edição do briefing diário ${EDITION_WHEN.daily}, do semanal ${EDITION_WHEN.weekly} e do mensal ${EDITION_WHEN.monthly} (horário de Brasília).`;
+  let pace = `Com que frequência o conteúdo muda: notícias novas chegam ao longo do dia, a seleção muda de algumas a dezenas de vezes por dia, e há notas diárias ${EDITION_WHEN.daily}, a edição semanal ${EDITION_WHEN.weekly} e o balanço mensal ${EDITION_WHEN.monthly} (horário de Brasília).`;
   if (ACCESS.ratePerMinute) pace += ` Acima de cerca de ${ACCESS.ratePerMinute} requisições por minuto do mesmo IP, a resposta é 429: aguarde o Retry-After e não repita em paralelo.`;
   const [recipe, setRecipe] = useState<string>("latest");
   const recipes = AGENT_PARTS.flatMap((a) => a.recipes ?? []);
@@ -188,7 +188,7 @@ export function ApiPanel(props: AgentPanelProps) {
           items={[
             { title: "Ative a compressão", text: <>No curl use <Mono>--compressed</Mono>; em outros clientes, ative gzip ou br. Comprimido, o JSON fica com 1/4 a 1/8 do tamanho.</> },
             { title: "Envie o ETag", text: <>Guarde o ETag da resposta e envie-o depois em <Mono>If-None-Match</Mono>; se nada mudou, a resposta é 304, sem corpo.</> },
-            { title: "Respeite o ritmo", text: `Notícias e Em alta: no máximo uma vez por minuto; o briefing diário, uma vez depois das ${EDITION_WHEN.daily.replace("todos os dias às ", "")}; semanal e mensal, uma vez depois que saem. Ao voltar páginas, pare quando chegar a um item que você já tem.` },
+            { title: "Respeite o ritmo", text: `Notícias e Em alta: no máximo uma vez por minuto; as notas diárias, uma vez depois das ${EDITION_WHEN.daily.replace("todos os dias às ", "")}; semanal e mensal, uma vez depois que saem. Ao voltar páginas, pare quando chegar a um item que você já tem.` },
           ]}
         />
         <p className="mt-3 text-[13px] leading-[1.75] text-ink-3">{pace}</p>
@@ -204,17 +204,17 @@ export function ApiPanel(props: AgentPanelProps) {
             { group: "Em alta e eventos" },
             [<Mono>/api/v1/hot-topics</Mono>, "Top 10 de Em alta agora", "No máximo 1 vez por minuto"],
             [<Mono>{"/api/v1/stories/{publicId}"}</Mono>, "Linha do tempo das notícias de um evento, panorama gerado por IA e eventos relacionados", "Quando precisar"],
-            { group: "Briefing diário" },
-            [<Mono>/api/v1/dailies/latest</Mono>, "Edição mais recente do briefing diário", `Uma vez, depois da publicação (${EDITION_WHEN.daily})`],
-            [<Mono>{"/api/v1/dailies/{date}"}</Mono>, "Briefing diário de uma data; itens retirados saem das citações", "Revalide o ETag quando o cache expirar"],
-            [<Mono>/api/v1/dailies</Mono>, "Índice de datas do briefing diário", "Uma vez por dia"],
-            { group: "Briefings semanal e mensal" },
+            { group: "Notas diárias" },
+            [<Mono>/api/v1/dailies/latest</Mono>, "Edição mais recente das notas diárias", `Uma vez, depois da publicação (${EDITION_WHEN.daily})`],
+            [<Mono>{"/api/v1/dailies/{date}"}</Mono>, "Notas diárias de uma data; itens retirados saem das citações", "Revalide o ETag quando o cache expirar"],
+            [<Mono>/api/v1/dailies</Mono>, "Índice de datas das notas diárias", "Uma vez por dia"],
+            { group: "Edições semanal e mensal" },
             [<Mono>/api/v1/weeklies/latest</Mono>, "Edição mais recente do semanal: manchete, panorama e destaques da semana por seção", `Uma vez, depois da publicação (${EDITION_WHEN.weekly})`],
             [<Mono>{"/api/v1/weeklies/{week}"}</Mono>, "Uma semana, em semana ISO como 2026-W39; itens retirados saem das citações", "Revalide o ETag quando o cache expirar"],
-            [<Mono>/api/v1/weeklies</Mono>, "Índice do briefing semanal", "Uma vez por semana"],
+            [<Mono>/api/v1/weeklies</Mono>, "Índice da edição semanal", "Uma vez por semana"],
             [<Mono>/api/v1/monthlies/latest</Mono>, "Edição mais recente do mensal", `Uma vez, depois da publicação (${EDITION_WHEN.monthly})`],
             [<Mono>{"/api/v1/monthlies/{month}"}</Mono>, "Um mês, como 2026-09", "Revalide o ETag quando o cache expirar"],
-            [<Mono>/api/v1/monthlies</Mono>, "Índice do briefing mensal", "Uma vez por mês"],
+            [<Mono>/api/v1/monthlies</Mono>, "Índice do balanço mensal", "Uma vez por mês"],
             ...AGENT_PARTS.flatMap((a) => (a.api ? [{ group: a.api.group }, ...a.api.rows.map(([path, does, often]) => [<Mono>{path}</Mono>, does, often])] : [])),
             { group: "Para assistentes de IA" },
             [<Mono>/api/v1/agent</Mono>, `Guia de uso para agentes; os endereços listados devolvem Markdown em português pronto para uso${GUIDE_CLIENTS ? `; é o que ${GUIDE_CLIENTS} usam` : ""}`, "Quando precisar"],

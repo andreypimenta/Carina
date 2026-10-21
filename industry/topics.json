@@ -2,440 +2,351 @@
   "groups": [
     {
       "key": "company",
-      "name": "Empresas e instituições",
-      "blurb": "Acompanhe reguladores, big techs e empresas de IA em saúde"
+      "name": "Sociedades e órgãos",
+      "blurb": "Diretrizes, posicionamentos e notícias das sociedades e reguladores da área"
     },
     {
       "key": "field",
-      "name": "Especialidades e áreas",
-      "blurb": "Por especialidade e aplicação: radiologia, oncologia, documentação clínica…"
+      "name": "Doenças e procedimentos",
+      "blurb": "Por tema: estenose subglótica, traqueostomia, malformações pulmonares, pectus…"
     },
     {
       "key": "genre",
-      "name": "Tipo de conteúdo",
-      "blurb": "Por tipo: ensaios clínicos, aprovações, produtos, opinião…"
+      "name": "Tipo de publicação",
+      "blurb": "Por formato: ensaios, diretrizes, técnica, casos, revisões, opinião…"
     }
   ],
   "topics": [
+    {
+      "slug": "sbct",
+      "name": "SBCT",
+      "group": "company",
+      "entityId": "sbct",
+      "definition": "Notícias, posicionamentos e eventos da Sociedade Brasileira de Cirurgia Torácica."
+    },
+    {
+      "slug": "sbpt",
+      "name": "SBPT",
+      "group": "company",
+      "entityId": "sbpt",
+      "definition": "Diretrizes, consensos e notícias da Sociedade Brasileira de Pneumologia e Tisiologia."
+    },
+    {
+      "slug": "sbp",
+      "name": "SBP",
+      "group": "company",
+      "entityId": "sbp",
+      "definition": "Documentos científicos e notícias da Sociedade Brasileira de Pediatria ligados a tórax e via aérea."
+    },
+    {
+      "slug": "aborl-ccf",
+      "name": "ABORL-CCF",
+      "group": "company",
+      "entityId": "aborl",
+      "definition": "Posicionamentos e notícias da ABORL-CCF sobre via aérea e laringologia."
+    },
+    {
+      "slug": "apsa",
+      "name": "APSA",
+      "group": "company",
+      "entityId": "apsa",
+      "definition": "Diretrizes, revisões sistemáticas e notícias da American Pediatric Surgical Association."
+    },
+    {
+      "slug": "ests",
+      "name": "ESTS",
+      "group": "company",
+      "entityId": "ests",
+      "definition": "Consensos e notícias da European Society of Thoracic Surgeons."
+    },
+    {
+      "slug": "ats",
+      "name": "ATS",
+      "group": "company",
+      "entityId": "ats",
+      "definition": "Diretrizes e notícias da American Thoracic Society em pneumologia pediátrica e via aérea."
+    },
+    {
+      "slug": "ers",
+      "name": "ERS",
+      "group": "company",
+      "entityId": "ers",
+      "definition": "Diretrizes e notícias da European Respiratory Society."
+    },
     {
       "slug": "fda",
       "name": "FDA",
       "group": "company",
       "entityId": "fda",
-      "definition": "Aprovações, liberações, guias e alertas da FDA sobre IA e software como dispositivo médico."
+      "definition": "Alertas, recalls e aprovações da FDA sobre dispositivos de via aérea, traqueostomia e ventilação."
     },
     {
       "slug": "anvisa",
       "name": "ANVISA",
       "group": "company",
       "entityId": "anvisa",
-      "definition": "Registros, normas e consultas da ANVISA envolvendo IA e software em saúde no Brasil."
+      "definition": "Alertas de tecnovigilância e normas da ANVISA sobre dispositivos de via aérea e ventilação."
     },
     {
-      "slug": "oms",
-      "name": "OMS",
-      "group": "company",
-      "entityId": "who",
-      "definition": "Orientações, relatórios e posicionamentos da Organização Mundial da Saúde sobre IA em saúde."
-    },
-    {
-      "slug": "ministerio-saude",
-      "name": "Ministério da Saúde / SUS",
-      "group": "company",
-      "entityId": "ministerio-saude",
-      "definition": "Iniciativas de IA e saúde digital do Ministério da Saúde e do SUS."
-    },
-    {
-      "slug": "cfm",
-      "name": "CFM",
-      "group": "company",
-      "entityId": "cfm",
-      "definition": "Resoluções e posicionamentos do Conselho Federal de Medicina sobre IA na prática médica."
-    },
-    {
-      "slug": "google",
-      "name": "Google / DeepMind",
-      "group": "company",
-      "entityId": "google",
-      "definition": "Pesquisa e produtos de saúde do Google e da DeepMind: Med-Gemini, AMIE, AlphaFold e parcerias clínicas."
-    },
-    {
-      "slug": "microsoft",
-      "name": "Microsoft / Nuance",
-      "group": "company",
-      "entityId": "microsoft",
-      "definition": "Microsoft em saúde: Dragon Copilot, documentação clínica, pesquisa e parcerias com sistemas de saúde."
-    },
-    {
-      "slug": "openai",
-      "name": "OpenAI / ChatGPT",
-      "group": "company",
-      "entityId": "openai",
-      "definition": "OpenAI em saúde: uso clínico do ChatGPT, HealthBench, parcerias e recursos de saúde."
-    },
-    {
-      "slug": "anthropic",
-      "name": "Anthropic / Claude",
-      "group": "company",
-      "entityId": "anthropic",
-      "definition": "Anthropic em saúde e ciências da vida: Claude em hospitais, pesquisa e parcerias."
-    },
-    {
-      "slug": "nvidia",
-      "name": "NVIDIA",
-      "group": "company",
-      "entityId": "nvidia",
-      "definition": "NVIDIA em saúde: plataformas de imagem médica, descoberta de fármacos e parcerias."
-    },
-    {
-      "slug": "epic",
-      "name": "Epic",
-      "group": "company",
-      "entityId": "epic",
-      "definition": "IA no prontuário Epic: recursos generativos, escribas e modelos preditivos."
-    },
-    {
-      "slug": "abridge",
-      "name": "Abridge",
-      "group": "company",
-      "entityId": "abridge",
-      "definition": "Abridge e o mercado de escribas de IA para documentação clínica."
-    },
-    {
-      "slug": "aidoc",
-      "name": "Aidoc",
-      "group": "company",
-      "entityId": "aidoc",
-      "definition": "Aidoc: triagem por IA em radiologia e modelos fundacionais de imagem."
-    },
-    {
-      "slug": "tempus",
-      "name": "Tempus",
-      "group": "company",
-      "entityId": "tempus",
-      "definition": "Tempus: oncologia de precisão, dados clínico-genômicos e diagnósticos com IA."
-    },
-    {
-      "slug": "nmpa",
-      "name": "NMPA (China)",
-      "group": "company",
-      "entityId": "nmpa",
-      "definition": "Aprovações e normas do regulador chinês (NMPA/CMDE) para dispositivos médicos com IA."
-    },
-    {
-      "slug": "radiologia",
-      "name": "Radiologia",
+      "slug": "estenose-subglotica",
+      "name": "Estenose subglótica",
       "group": "field",
       "tags": [
-        "Radiologia"
+        "Estenose subglótica"
       ],
-      "definition": "Notícias, estudos e produtos de IA em radiologia."
+      "definition": "Diagnóstico, classificação de Cotton-Myer, dilatação endoscópica e tratamento cirúrgico da estenose subglótica congênita e adquirida."
     },
     {
-      "slug": "patologia",
-      "name": "Patologia",
+      "slug": "laringotraqueoplastia",
+      "name": "Laringotraqueoplastia e ressecção cricotraqueal",
       "group": "field",
       "tags": [
-        "Patologia"
+        "Laringotraqueoplastia",
+        "Ressecção cricotraqueal"
       ],
-      "definition": "Notícias, estudos e produtos de IA em patologia."
+      "definition": "Reconstrução laringotraqueal com enxertos, em um ou dois tempos, e ressecção cricotraqueal parcial: técnica, indicação e resultados."
     },
     {
-      "slug": "cardiologia",
-      "name": "Cardiologia",
+      "slug": "estenose-traqueal",
+      "name": "Estenose traqueal",
       "group": "field",
       "tags": [
-        "Cardiologia"
+        "Estenose traqueal"
       ],
-      "definition": "Notícias, estudos e produtos de IA em cardiologia."
+      "definition": "Estenose traqueal congênita e adquirida, em crianças e adultos: ressecção com anastomose, traqueoplastia por deslizamento e tratamento endoscópico."
     },
     {
-      "slug": "oncologia",
-      "name": "Oncologia",
+      "slug": "traqueostomia",
+      "name": "Traqueostomia e decanulação",
       "group": "field",
       "tags": [
-        "Oncologia"
+        "Traqueostomia",
+        "Decanulação"
       ],
-      "definition": "Notícias, estudos e produtos de IA em oncologia."
+      "definition": "Indicação e momento da traqueostomia, cuidados em casa, emergências, protocolos de decanulação."
     },
     {
-      "slug": "pneumologia",
-      "name": "Pneumologia",
+      "slug": "malacias",
+      "name": "Laringomalácia e traqueobroncomalácia",
       "group": "field",
       "tags": [
-        "Pneumologia"
+        "Laringomalácia",
+        "Traqueobroncomalácia"
       ],
-      "definition": "Notícias, estudos e produtos de IA em pneumologia."
+      "definition": "Supraglotoplastia, aortopexia, traqueopexia posterior e manejo das malácias da via aérea."
     },
     {
-      "slug": "cirurgia",
-      "name": "Cirurgia",
+      "slug": "laringe",
+      "name": "Pregas vocais, fenda laríngea e papilomatose",
       "group": "field",
       "tags": [
-        "Cirurgia"
+        "Paralisia de pregas vocais",
+        "Fenda laríngea",
+        "Papilomatose respiratória"
       ],
-      "definition": "Notícias, estudos e produtos de IA em cirurgia."
+      "definition": "Paralisia de pregas vocais, fenda laríngea e papilomatose respiratória recorrente em crianças e adultos."
     },
     {
-      "slug": "dermatologia",
-      "name": "Dermatologia",
+      "slug": "corpo-estranho",
+      "name": "Corpo estranho",
       "group": "field",
       "tags": [
-        "Dermatologia"
+        "Corpo estranho"
       ],
-      "definition": "Notícias, estudos e produtos de IA em dermatologia."
+      "definition": "Aspiração de corpo estranho: diagnóstico, broncoscopia de retirada e prevenção."
     },
     {
-      "slug": "oftalmologia",
-      "name": "Oftalmologia",
+      "slug": "atresia-esofago",
+      "name": "Atresia de esôfago e fístula traqueoesofágica",
       "group": "field",
       "tags": [
-        "Oftalmologia"
+        "Atresia de esôfago",
+        "Fístula traqueoesofágica"
       ],
-      "definition": "Notícias, estudos e produtos de IA em oftalmologia."
+      "definition": "Atresia de esôfago, fístula traqueoesofágica e suas repercussões na via aérea."
     },
     {
-      "slug": "neurologia",
-      "name": "Neurologia",
+      "slug": "broncoscopia",
+      "name": "Broncoscopia e via aérea intervencionista",
       "group": "field",
       "tags": [
-        "Neurologia"
+        "Broncoscopia",
+        "Stents de via aérea"
       ],
-      "definition": "Notícias, estudos e produtos de IA em neurologia."
+      "definition": "Broncoscopia rígida e flexível, diagnóstica e intervencionista, stents e dilatação."
     },
     {
-      "slug": "medicina-intensiva",
-      "name": "Medicina intensiva",
+      "slug": "via-aerea-adulto",
+      "name": "Via aérea do adulto",
       "group": "field",
       "tags": [
-        "Medicina intensiva"
+        "Via aérea adulto",
+        "Via aérea difícil"
       ],
-      "definition": "Notícias, estudos e produtos de IA em medicina intensiva."
+      "definition": "Estenose traqueal pós-intubação, ressecção traqueal, via aérea difícil e intubação em adultos."
     },
     {
-      "slug": "emergencia",
-      "name": "Emergência",
+      "slug": "malformacoes-pulmonares",
+      "name": "Malformações pulmonares congênitas",
       "group": "field",
       "tags": [
-        "Emergência"
+        "Malformações pulmonares"
       ],
-      "definition": "Notícias, estudos e produtos de IA em emergência."
+      "definition": "CPAM, sequestro pulmonar, enfisema lobar congênito e cisto broncogênico: diagnóstico pré-natal, observação ou ressecção."
     },
     {
-      "slug": "atencao-primaria",
-      "name": "Atenção primária",
+      "slug": "hernia-diafragmatica",
+      "name": "Hérnia diafragmática congênita",
       "group": "field",
       "tags": [
-        "Atenção primária"
+        "Hérnia diafragmática"
       ],
-      "definition": "Notícias, estudos e produtos de IA em atenção primária."
+      "definition": "Diagnóstico pré-natal, FETO, ECMO, momento e técnica do reparo da hérnia diafragmática congênita."
     },
     {
-      "slug": "saude-mental",
-      "name": "Saúde mental",
+      "slug": "pectus",
+      "name": "Deformidades da parede torácica",
       "group": "field",
       "tags": [
-        "Saúde mental"
+        "Pectus"
       ],
-      "definition": "Notícias, estudos e produtos de IA em saúde mental."
+      "definition": "Pectus excavatum e carinatum: cirurgia de Nuss, crioablação, órteses e técnicas abertas."
     },
     {
-      "slug": "pediatria",
-      "name": "Pediatria",
+      "slug": "empiema",
+      "name": "Empiema e pneumotórax",
       "group": "field",
       "tags": [
-        "Pediatria"
+        "Empiema",
+        "Pneumotórax"
       ],
-      "definition": "Notícias, estudos e produtos de IA em pediatria."
+      "definition": "Derrame parapneumônico, empiema, pneumonia necrotizante e pneumotórax em crianças: drenagem, fibrinolíticos e toracoscopia."
     },
     {
-      "slug": "genomica",
-      "name": "Genômica",
+      "slug": "tumores-toracicos",
+      "name": "Tumores de tórax e mediastino",
       "group": "field",
       "tags": [
-        "Genômica"
+        "Tumores torácicos",
+        "Mediastino"
       ],
-      "definition": "IA aplicada a genômica, medicina de precisão e biologia molecular."
+      "definition": "Tumores pulmonares, de parede torácica e de mediastino em crianças."
     },
     {
-      "slug": "farmacos",
-      "name": "Descoberta de fármacos",
+      "slug": "minimamente-invasiva",
+      "name": "Toracoscopia e cirurgia robótica",
       "group": "field",
       "tags": [
-        "Descoberta de fármacos"
+        "Cirurgia minimamente invasiva"
       ],
-      "definition": "IA na descoberta e no desenvolvimento de medicamentos."
+      "definition": "Videotoracoscopia e cirurgia robótica em crianças."
     },
     {
-      "slug": "documentacao-clinica",
-      "name": "Documentação clínica e escribas",
+      "slug": "fibrose-cistica",
+      "name": "Fibrose cística e bronquiectasias",
       "group": "field",
       "tags": [
-        "Documentação clínica"
+        "Fibrose cística",
+        "Bronquiectasias",
+        "Discinesia ciliar"
       ],
-      "definition": "Escribas ambientais, sumários de alta e automação da documentação clínica."
+      "definition": "Fibrose cística, bronquiectasias e discinesia ciliar primária, com foco em broncoscopia, complicações e cirurgia."
     },
     {
-      "slug": "ia-generativa",
-      "name": "IA generativa e LLMs",
+      "slug": "neonatal",
+      "name": "Neonatologia, displasia e ventilação",
       "group": "field",
       "tags": [
-        "IA generativa"
+        "Neonatologia",
+        "Displasia broncopulmonar",
+        "Ventilação mecânica"
       ],
-      "definition": "LLMs e IA generativa aplicados à medicina: assistentes clínicos, raciocínio diagnóstico e riscos."
+      "definition": "Lesão de via aérea por intubação neonatal, displasia broncopulmonar e ventilação prolongada."
     },
     {
-      "slug": "agentes",
-      "name": "Agentes",
+      "slug": "ecmo-transplante",
+      "name": "ECMO e transplante pulmonar",
       "group": "field",
       "tags": [
-        "Agentes"
+        "ECMO",
+        "Transplante pulmonar"
       ],
-      "definition": "Agentes de IA que executam tarefas clínicas e administrativas com autonomia."
+      "definition": "ECMO em doenças respiratórias e transplante pulmonar pediátrico."
     },
     {
-      "slug": "wearables",
-      "name": "Wearables e monitoramento",
-      "group": "field",
-      "tags": [
-        "Wearables/monitoramento"
-      ],
-      "definition": "Dispositivos vestíveis, monitoramento remoto e sinais fisiológicos analisados por IA."
-    },
-    {
-      "slug": "saude-digital",
-      "name": "Saúde digital",
-      "group": "field",
-      "tags": [
-        "Saúde digital"
-      ],
-      "definition": "Telessaúde, prontuário eletrônico e saúde digital com IA."
-    },
-    {
-      "slug": "ensino-medico",
-      "name": "Ensino médico",
-      "group": "field",
-      "tags": [
-        "Ensino médico"
-      ],
-      "definition": "IA na formação médica, provas, residência e educação continuada."
-    },
-    {
-      "slug": "seguranca-vies",
-      "name": "Segurança, viés e equidade",
-      "group": "field",
-      "tags": [
-        "Segurança/viés"
-      ],
-      "definition": "Segurança do paciente, vieses, equidade, privacidade e incidentes com IA em saúde."
-    },
-    {
-      "slug": "ensaios-clinicos",
-      "name": "Ensaios clínicos",
+      "slug": "ensaios",
+      "name": "Ensaios e coortes",
       "group": "genre",
       "tags": [
-        "Ensaio clínico"
+        "Ensaio clínico",
+        "Estudo observacional"
       ],
-      "definition": "Ensaios clínicos que testam IA com pacientes, com desfechos medidos."
+      "definition": "Estudos com pacientes e desfechos medidos."
     },
     {
-      "slug": "validacao",
-      "name": "Estudos de validação",
+      "slug": "revisoes-sistematicas",
+      "name": "Revisões sistemáticas",
       "group": "genre",
       "tags": [
-        "Estudo de validação"
+        "Revisão sistemática"
       ],
-      "definition": "Validações prospectivas e retrospectivas de desempenho de IA em dados clínicos reais."
+      "definition": "Revisões sistemáticas e metanálises."
+    },
+    {
+      "slug": "diretrizes",
+      "name": "Diretrizes e consensos",
+      "group": "genre",
+      "tags": [
+        "Diretriz/consenso",
+        "Regulação"
+      ],
+      "definition": "Diretrizes, consensos, posicionamentos de sociedades e alertas regulatórios."
+    },
+    {
+      "slug": "tecnica",
+      "name": "Técnica e dispositivos",
+      "group": "genre",
+      "tags": [
+        "Técnica cirúrgica",
+        "Dispositivo"
+      ],
+      "definition": "Técnicas cirúrgicas e endoscópicas, vídeos, novos dispositivos e materiais."
+    },
+    {
+      "slug": "casos",
+      "name": "Relatos de caso",
+      "group": "genre",
+      "tags": [
+        "Relato de caso"
+      ],
+      "definition": "Casos instrutivos, doenças raras e complicações inesperadas."
     },
     {
       "slug": "revisoes",
-      "name": "Revisões e metanálises",
+      "name": "Revisões e ensino",
       "group": "genre",
       "tags": [
-        "Revisão/metanálise"
+        "Revisão narrativa"
       ],
-      "definition": "Revisões sistemáticas e metanálises sobre IA em medicina."
-    },
-    {
-      "slug": "aprovacoes",
-      "name": "Aprovações regulatórias",
-      "group": "genre",
-      "tags": [
-        "Aprovação regulatória"
-      ],
-      "definition": "Liberações e registros de dispositivos e softwares de IA (FDA, ANVISA, CE)."
-    },
-    {
-      "slug": "politicas",
-      "name": "Regulação e políticas",
-      "group": "genre",
-      "tags": [
-        "Política/regulação"
-      ],
-      "definition": "Leis, normas, reembolso e diretrizes oficiais sobre IA em saúde."
-    },
-    {
-      "slug": "produtos",
-      "name": "Produtos e lançamentos",
-      "group": "genre",
-      "tags": [
-        "Produto/lançamento"
-      ],
-      "definition": "Lançamentos e atualizações de ferramentas de IA para saúde."
-    },
-    {
-      "slug": "pesquisa",
-      "name": "Pesquisa e modelos",
-      "group": "genre",
-      "tags": [
-        "Modelo/pesquisa"
-      ],
-      "definition": "Novos modelos, métodos e artigos técnicos de IA médica."
-    },
-    {
-      "slug": "benchmarks",
-      "name": "Benchmarks e avaliação",
-      "group": "genre",
-      "tags": [
-        "Benchmark/avaliação"
-      ],
-      "definition": "Como os modelos são avaliados em tarefas médicas."
-    },
-    {
-      "slug": "mercado",
-      "name": "Mercado e negócios",
-      "group": "genre",
-      "tags": [
-        "Mercado/negócios"
-      ],
-      "definition": "Investimentos, aquisições e parcerias em IA para saúde."
-    },
-    {
-      "slug": "implementacao",
-      "name": "Implementação e adoção",
-      "group": "genre",
-      "tags": [
-        "Implementação/adoção"
-      ],
-      "definition": "Como hospitais e sistemas de saúde estão adotando IA, e o que aprenderam."
-    },
-    {
-      "slug": "guias",
-      "name": "Guias e prática",
-      "group": "genre",
-      "tags": [
-        "Guia/prática"
-      ],
-      "definition": "Guias, boas práticas e explicações para usar IA na clínica."
+      "definition": "Revisões narrativas e textos de atualização."
     },
     {
       "slug": "opiniao",
-      "name": "Opinião",
+      "name": "Opinião e debate",
       "group": "genre",
       "tags": [
         "Opinião"
       ],
-      "definition": "Editoriais, análises e entrevistas sobre IA em medicina."
+      "definition": "Editoriais, comentários e debates."
+    },
+    {
+      "slug": "ensaios-em-andamento",
+      "name": "Ensaios em andamento",
+      "group": "genre",
+      "tags": [
+        "Ensaio registrado"
+      ],
+      "definition": "Ensaios clínicos registrados ou iniciados, ainda sem resultados."
     }
   ]
 }

@@ -1,5 +1,5 @@
 
-【Regra de resumo com resposta primeiro — para que a primeira frase possa ser citada sozinha por buscadores e por IA】
+【Regra de resumo com resposta primeiro — para que a primeira frase possa ser citada sozinha por buscadores e assistentes】
 
 1. A primeira posição tem de ser uma resposta compreensível sozinha, que diga diretamente "quem fez o quê e qual foi o resultado ou a mudança principal"; não comece com contexto, processo, motivação ou impressões do autor.
    A primeira frase tem de responder ao evento central do título original; não deixe que um trecho de demonstração, um caso de contexto ou um recurso secundário do corpo vire a conclusão principal.

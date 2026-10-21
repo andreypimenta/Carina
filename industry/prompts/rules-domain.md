@@ -1,42 +1,35 @@
+【Regras de terminologia — todo o conteúdo desta plataforma é cirurgia torácica pediátrica, via aérea e pneumologia pediátrica; siga à risca】
 
-【Regras de terminologia de IA em medicina — 100% do conteúdo desta plataforma é IA aplicada à saúde; siga à risca】
+1. Escreva em português do Brasil, claro, com a terminologia médica usada no Brasil. Exemplos de equivalência:
+   - Subglottic stenosis = estenose subglótica; tracheal stenosis = estenose traqueal; laryngotracheal stenosis = estenose laringotraqueal
+   - Laryngotracheal reconstruction (LTR) / laryngotracheoplasty = laringotraqueoplastia (reconstrução laringotraqueal); single-stage / double-stage = em um tempo / em dois tempos
+   - Anterior / posterior cricoid split = divisão anterior / posterior da cricoide; costal cartilage graft = enxerto de cartilagem costal; thyroid ala graft = enxerto de asa da tireoide
+   - Cricotracheal resection (CTR) = ressecção cricotraqueal; tracheal resection and anastomosis = ressecção traqueal com anastomose término-terminal; slide tracheoplasty = traqueoplastia por deslizamento
+   - Tracheostomy = traqueostomia; tracheostomy tube = cânula de traqueostomia; decannulation = decanulação; accidental decannulation = decanulação acidental; tube occlusion = obstrução da cânula
+   - Laryngomalacia = laringomalácia; supraglottoplasty = supraglotoplastia; tracheobronchomalacia = traqueobroncomalácia; aortopexy / posterior tracheopexy = aortopexia / traqueopexia posterior
+   - Vocal fold paralysis / immobility = paralisia / imobilidade de pregas vocais (não "cordas vocais"); laryngeal cleft = fenda laríngea; recurrent respiratory papillomatosis = papilomatose respiratória recorrente
+   - Foreign body aspiration = aspiração de corpo estranho; tracheoesophageal fistula = fístula traqueoesofágica; esophageal atresia = atresia de esôfago
+   - Rigid / flexible bronchoscopy = broncoscopia rígida / flexível; airway stent = stent (endoprótese) de via aérea; balloon dilation = dilatação com balão
+   - Congenital pulmonary airway malformation (CPAM, antes CCAM) = malformação congênita das vias aéreas pulmonares (CPAM); pulmonary sequestration = sequestro pulmonar; congenital lobar emphysema = enfisema lobar congênito; bronchogenic cyst = cisto broncogênico
+   - Congenital diaphragmatic hernia (CDH) = hérnia diafragmática congênita (HDC); FETO = oclusão traqueal fetal endoscópica (FETO)
+   - Pectus excavatum / carinatum = pectus excavatum / carinatum; Nuss procedure = cirurgia de Nuss; Ravitch = técnica de Ravitch; cryoablation = crioablação de nervos intercostais
+   - Empyema = empiema; parapneumonic effusion = derrame parapneumônico; VATS = videotoracoscopia (VATS); fibrinolytics = fibrinolíticos
+   - Cystic fibrosis = fibrose cística; primary ciliary dyskinesia = discinesia ciliar primária; bronchopulmonary dysplasia = displasia broncopulmonar
+   - Randomized controlled trial (RCT) = ensaio clínico randomizado; cohort = coorte; case series = série de casos; outcome / endpoint = desfecho; follow-up = seguimento
+   - Odds ratio = razão de chances (OR); hazard ratio = razão de riscos (HR); confidence interval = intervalo de confiança (IC)
+   - NICU / PICU = UTI neonatal / UTI pediátrica (UTIN / UTIP); ENT = otorrinolaringologia (ORL)
 
-1. Escreva em português do Brasil, claro e sem jargão desnecessário, com os termos técnicos médicos corretos. Em caso de ambiguidade, **sempre use o sentido de IA/medicina**:
-   - LLM = modelo de linguagem de grande escala (LLM) na primeira menção; depois só LLM (nunca "mestrado em Direito")
-   - Large language model = modelo de linguagem de grande escala (LLM); foundation model = modelo fundacional
-   - Token / tokens = token (mantenha em inglês; nunca "ficha" ou "moeda")
-   - Agent / Agentic = agente de IA / agêntico (não "representante" ou "corretor")
-   - Inference = inferência (geração pelo modelo); Reasoning = raciocínio; reasoning model = modelo de raciocínio
-   - Fine-tuning = ajuste fino; Pretraining = pré-treinamento; Embedding = embedding (ou vetor de representação)
-   - Hallucination = alucinação (do modelo); Prompt = prompt; Context window = janela de contexto
-   - Machine learning = aprendizado de máquina; deep learning = aprendizado profundo; computer vision = visão computacional
-   - Sensitivity / specificity = sensibilidade / especificidade; PPV / NPV = valor preditivo positivo / negativo (VPP / VPN)
-   - Accuracy = acurácia; recall = sensibilidade (em contexto clínico); precision = precisão (ou VPP em contexto clínico)
-   - Randomized controlled trial (RCT) = ensaio clínico randomizado; prospective / retrospective study = estudo prospectivo / retrospectivo
-   - External validation = validação externa; cohort = coorte; endpoint / outcome = desfecho; primary endpoint = desfecho primário
-   - Systematic review / meta-analysis = revisão sistemática / metanálise; preprint = preprint; peer-reviewed = revisado por pares
-   - Confidence interval = intervalo de confiança (IC); odds ratio = razão de chances (OR); hazard ratio = razão de riscos (HR)
-   - FDA clearance / 510(k) clearance = liberação da FDA / liberação 510(k); De Novo authorization = autorização De Novo; approval / PMA = aprovação / PMA; Breakthrough Device designation = designação de dispositivo inovador (Breakthrough)
-   - Software as a Medical Device (SaMD) = software como dispositivo médico (SaMD); CE marking = marcação CE
-   - Clinical decision support = apoio à decisão clínica; ambient scribe / AI scribe = escriba ambiental / escriba com IA
-   - EHR / EMR = prontuário eletrônico (PEP; mantenha EHR se o original citar o termo como nome de sistema)
-   - Health system = sistema de saúde / rede hospitalar; payer = operadora / pagador; reimbursement = reembolso
-   - Primary care = atenção primária; emergency department = pronto-socorro / departamento de emergência; ICU = UTI
-   - Use o nome brasileiro consagrado de doenças, exames e especialidades (stroke = AVC; chest X-ray = radiografia de tórax; CT = tomografia computadorizada (TC); MRI = ressonância magnética (RM); sepsis = sepse)
+2. **Mantenha no original**, sem traduzir:
+   - Classificações e escalas: Cotton-Myer (ou Myer-Cotton), McCaffrey, Clavien-Dindo, Haller index (índice de Haller), CVR (CPAM volume ratio), LHR / O/E LHR, Apgar
+   - Siglas consagradas: FDA / ANVISA / SUS / CFM / ANS / SBCT / SBPT / SBP / ABORL-CCF / APSA / ESTS / STS / AATS / ATS / ERS / CHEST / AAO-HNS / ASPO / ESPO / ECMO / VATS / CPAP / BiPAP / PEEP / IC / OR / HR
+   - Nomes de revistas: Journal of Pediatric Surgery / Pediatric Pulmonology / The Laryngoscope / International Journal of Pediatric Otorhinolaryngology / JAMA Otolaryngology–Head & Neck Surgery / Annals of Thoracic Surgery / JTCVS / European Journal of Cardio-Thoracic Surgery / Chest / European Respiratory Journal / Jornal Brasileiro de Pneumologia
+   - Nomes de dispositivos, marcas e acrônimos de estudos ficam como estão; nomes de pessoas em epônimos também (técnica de Nuss, manobra de Heimlich)
 
-2. **Mantenha no original**, sem traduzir nem acrescentar explicação entre parênteses:
-   - Siglas consagradas: FDA / ANVISA / EMA / OMS (WHO → OMS) / CFM / SUS / NHS / CMS / AUC / ROC / IC / LLM / RAG / API / SDK / GPU / HIPAA / LGPD / DICOM / FHIR / HL7
-     **Regra**: siglas de órgãos, normas e métricas consagradas ficam como estão; na primeira menção de uma sigla pouco conhecida, pode-se dar o nome por extenso em português
-   - Nomes de empresas, instituições, produtos e modelos **nunca se traduzem**: OpenAI / Anthropic / Google DeepMind / Microsoft / Nuance / NVIDIA / Epic / Abridge / Aidoc / Viz.ai / Tempus / Paige / PathAI / Philips / Siemens Healthineers / GE HealthCare; ChatGPT / Claude / Gemini / Med-Gemini / AMIE / MedLM / Llama / DAX Copilot / Dragon Copilot
-   - Versões de modelo e produto ficam idênticas (GPT-5 / Claude Sonnet 4.6 / Gemini 3 / 405B / V4); não reescreva "405B" como "405 bilhões" nem "V4" como "quarta geração"
-   - Nomes de benchmarks e conjuntos de dados: MedQA / MedMCQA / PubMedQA / USMLE / HealthBench / MIMIC-IV / CheXpert / Revalida
-   - Nomes de revistas: NEJM / NEJM AI / The Lancet / Lancet Digital Health / JAMA / JAMA Network Open / Nature Medicine / npj Digital Medicine / Radiology / BMJ
-   - Nomes de estudos e ensaios (por exemplo, o acrônimo de um ensaio) ficam como estão
+3. Instituições brasileiras usam o nome oficial em português; instituições estrangeiras ficam no nome original, podendo indicar o país na primeira menção quando ajudar.
 
-3. Instituições brasileiras usam o nome oficial em português (Ministério da Saúde, Agência Nacional de Vigilância Sanitária (ANVISA), Conselho Federal de Medicina (CFM), Agência Nacional de Saúde Suplementar (ANS)); instituições estrangeiras ficam no nome original, podendo indicar o país na primeira menção quando ajudar (por exemplo, "a FDA, agência reguladora dos EUA").
+4. Números e unidades:
+   - Números no padrão brasileiro: vírgula decimal e ponto de milhar (taxa de decanulação de 87,5%; 1.240 crianças; IC 95%: 0,61–0,88); não altere o valor
+   - Tamanhos de amostra, idades (em meses ou anos, como no original), graus, proporções, intervalos e valores de p mantêm os números do original
+   - Unidades no padrão SI (mm, cm, mL, kg, mmHg, cmH2O)
 
-4. Código, comandos, URLs, números e unidades:
-   - Código entre crases `code`, comandos e URLs ficam idênticos
-   - Números no padrão brasileiro: vírgula decimal e ponto de milhar (AUC de 0,92; sensibilidade de 94,3%; 12.500 pacientes; IC 95%: 0,88–0,95); não altere o valor
-   - Valores, tamanhos de amostra, proporções, intervalos e valores de p mantêm os algarismos e as unidades do original; não troque "$10B" por "dezenas de bilhões de dólares": escreva "US$ 10 bilhões"
-   - Moedas: US$ / € / R$ antes do número; unidades médicas no padrão SI (mg, mL, mmHg)
+5. Fale de pacientes com respeito: "crianças com estenose subglótica", não "estenóticos"; "paciente traqueostomizado" é aceito.

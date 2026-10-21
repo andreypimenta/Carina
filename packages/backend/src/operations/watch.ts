@@ -14,7 +14,7 @@ const WORKER_DOWN: Finding = {
   level: "now",
   owner: true,
   title: "O serviço de processamento parou; o site não vai receber conteúdo novo",
-  impact: "Coleta, processamento, envios e Briefing diário estão todos parados; o site fica com o conteúdo antigo",
+  impact: "Coleta, processamento, envios e notas diárias estão todos parados; o site fica com o conteúdo antigo",
   heals: "Não, o reinício automático não funcionou",
   action: "Abra uma manutenção o quanto antes",
 };

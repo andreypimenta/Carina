@@ -15,8 +15,8 @@ const provider = await stub((_hit, request) => {
   steps.push(step);
   const output = step === "prefilter" ? { label, reason: "fixture" }
     : step === "score" ? { attentionScore: SELECTING_SCORE }
-    : step === "structure" ? { scope: "unknown", category: "research", tags: [], subjects: [], fact: null }
-    : { itemType: "regulatory_action", authorRole: "principal", titleZh: "FDA libera software de IA", summaryZh: "A fonte confirma a liberação do software.", bodyZh: "A fonte confirma a liberação do software.", tags: [], editorialJudgment: "fixture" };
+    : step === "structure" ? { scope: "unknown", category: "reviews", tags: [], subjects: [], fact: null }
+    : { itemType: "guideline", authorRole: "principal", titleZh: "FDA libera software de IA", summaryZh: "A fonte confirma a liberação do software.", bodyZh: "A fonte confirma a liberação do software.", tags: [], editorialJudgment: "fixture" };
   return { choices: [{ message: { content: JSON.stringify(output) } }] };
 });
 pointModels(provider.url);

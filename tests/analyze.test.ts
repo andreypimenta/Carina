@@ -43,9 +43,9 @@ const provider = await stub((_hit, req) => {
   if (step === "score") return answer({ attentionScore: scoreAnswers[marker]!.shift() });
   if (step === "understand") {
     if (marker === "SENSITIVE") return new Reply(400, { contentFilter: [{ level: 1, role: "user" }], error: { code: "1301", message: "O sistema detectou que a entrada ou o conteúdo gerado pode conter material inseguro ou sensível" } });
-    return answer({ itemType: "model_or_research", authorRole: "principal", tags: ["Produto/lançamento", "Agentes", "Cardiologia", "Tag inexistente"], editorialJudgment: `Por que ler ${marker}`, titleZh: `Título entendido ${marker}`, summaryZh: `Resumo entendido ${marker}. A segunda frase traz um número-chave.` });
+    return answer({ itemType: "narrative_review", authorRole: "principal", tags: ["Técnica cirúrgica", "Pectus", "Malformações pulmonares", "Tag inexistente"], editorialJudgment: `Por que ler ${marker}`, titleZh: `Título entendido ${marker}`, summaryZh: `Resumo entendido ${marker}. A segunda frase traz um número-chave.` });
   }
-  if (step === "structure") return answer({ category: "research", tags: ["Modelo/pesquisa", "Radiologia"], subjects: ["anthropic", "unknown-co"], scope: "single", fact: { title: `Fato ${marker}`, subject: "Uma empresa", action: "lança", object: "modelo", occurredAt: null, evidence: "a lab released a model", conditions: [] } });
+  if (step === "structure") return answer({ category: "reviews", tags: ["Revisão narrativa", "Estenose subglótica"], subjects: ["sbpt", "unknown-co"], scope: "single", fact: { title: `Fato ${marker}`, subject: "Uma empresa", action: "lança", object: "modelo", occurredAt: null, evidence: "a lab released a model", conditions: [] } });
   return answer(`title_zh: Título traduzido ${marker}\nsummary_zh: Resumo traduzido ${marker}. A segunda frase traz o impacto.`);
 });
 pointModels(provider.url);
@@ -80,11 +80,11 @@ test("a selected item: prefilter, two scores, the content understanding and the 
   assert.deepEqual([res!.output!.selected, res!.output!.score], [true, T1 + 1], `${T1 + 3} + ${T1 - 1} >= 2 × ${T1}; the mean is shown`);
   assert.deepEqual(calls("CLEAR").sort(), ["prefilter", "score", "score", "structure", "understand"]);
   const r = await row(id);
-  assert.deepEqual([r.title_zh, r.reason_zh, r.category, r.receipt_ids.length], ["Título entendido CLEAR", "Por que ler CLEAR", "research", 5]);
+  assert.deepEqual([r.title_zh, r.reason_zh, r.category, r.receipt_ids.length], ["Título entendido CLEAR", "Por que ler CLEAR", "reviews", 5]);
   // Failure case: the writer's independent labels contradict the structural category.
-  assert.deepEqual(r.tags, ["Modelo/pesquisa", "Radiologia", "Anthropic"], "category and tags come from the same structural judgement, plus the verified subject tag");
-  assert.deepEqual(r.subjects, ["anthropic"]);
-  assert.deepEqual([r.output.writer, r.output.itemType, r.output.prefilter.label, r.output.fact.title], ["understand", "model_or_research", "PASS", "Fato CLEAR"]);
+  assert.deepEqual(r.tags, ["Revisão narrativa", "Estenose subglótica", "SBPT"], "category and tags come from the same structural judgement, plus the verified subject tag");
+  assert.deepEqual(r.subjects, ["sbpt"]);
+  assert.deepEqual([r.output.writer, r.output.itemType, r.output.prefilter.label, r.output.fact.title], ["understand", "narrative_review", "PASS", "Fato CLEAR"]);
   assert.equal(r.output.scope, "single");
   assert.equal(r.output.fact.evidence, "a lab released a model");
   const score = requests.find((q) => q.marker === "CLEAR" && q.step === "score")!;
@@ -102,7 +102,7 @@ test("structure retains grounded conditions, rejects invented or unseen quotes, 
     { text: "Grátis sem limite", quote: "Unlimited free access for everyone." },
     { text: "Frase fora da entrada do modelo", quote: "This late detail was not sent." },
   ] };
-  const base = { category: "research", tags: [], subjects: [], fact: frame };
+  const base = { category: "reviews", tags: [], subjects: [], fact: frame };
   const out = normalizeStructure(StructureSchema.parse(base), input);
   assert.ok(buildMaterial(input).includes("Only available in the US."), "a condition after the old 7000-character cutoff reaches the model");
   assert.ok(buildMaterial(input).includes("o restante não foi fornecido"));
@@ -132,7 +132,7 @@ test("a near-selected item is written like a selected one; below the floor it is
   const low = await analyzeArticle(lowId);
   assert.deepEqual([low!.output!.selected, low!.output!.titleZh, low!.output!.reasonZh], [false, "Título traduzido LOW", null]);
   assert.deepEqual(calls("LOW").sort(), ["prefilter", "score", "score", "structure", "summarize"]);
-  assert.deepEqual((await row(lowId)).tags, ["Modelo/pesquisa", "Radiologia", "Anthropic"], "structure tags");
+  assert.deepEqual((await row(lowId)).tags, ["Revisão narrativa", "Estenose subglótica", "SBPT"], "structure tags");
 });
 
 test("the prefilter's BLOCK stops everything; UNKNOWN with material goes on like PASS", async () => {
@@ -183,15 +183,15 @@ test("a short post in Portuguese, the site's language, is its own copy; a conten
 });
 
 test("guards: a company the input does not name is not written in; long summaries are cut at sentences", () => {
-  const input = { title: "Laboratório lança novo modelo de IA para radiologia", text: "Um laboratório lançou um novo modelo de IA para laudos de tórax, com detalhes de desempenho e preço.", sourceKind: "rss" };
-  const guarded = enforceIdentity(input, { titleZh: "OpenAI lança novo modelo de IA para radiologia", summaryZh: "Um laboratório lançou um novo modelo." });
-  assert.deepEqual([guarded.titleZh, guarded.summaryZh, guarded.identityGuard.outcome], ["Laboratório lança novo modelo de IA para radiologia", "Um laboratório lançou um novo modelo.", "fallback"],
+  const input = { title: "Grupo publica consenso sobre estenose subglótica", text: "Um grupo de especialistas publicou um consenso sobre o manejo da estenose subglótica, com recomendações graduadas.", sourceKind: "rss" };
+  const guarded = enforceIdentity(input, { titleZh: "SBCT publica consenso sobre estenose subglótica", summaryZh: "Um grupo publicou um consenso." });
+  assert.deepEqual([guarded.titleZh, guarded.summaryZh, guarded.identityGuard.outcome], ["Grupo publica consenso sobre estenose subglótica", "Um grupo publicou um consenso.", "fallback"],
     "the original title is already in the site's language, so it stands in for the guarded one");
-  const english = { ...input, title: "A lab ships a new radiology model" };
-  assert.equal(enforceIdentity(english, { titleZh: "OpenAI lança novo modelo", summaryZh: "" }).titleZh, "", "a foreign original title is no reader copy");
-  // The identity lexicon: the parent company of a product the input names is no invention.
-  const nuance = { title: "Nuance ships a new DAX Copilot release", text: "Nuance released DAX Copilot with ambient documentation for nurses.", sourceKind: "rss" };
-  assert.equal(enforceIdentity(nuance, { titleZh: "Microsoft lança nova versão do DAX Copilot", summaryZh: "A Microsoft lançou o DAX Copilot com documentação ambiental para enfermagem." }).identityGuard.outcome, "pass");
+  const english = { ...input, title: "A panel issues a subglottic stenosis consensus" };
+  assert.equal(enforceIdentity(english, { titleZh: "SBCT publica consenso", summaryZh: "" }).titleZh, "", "a foreign original title is no reader copy");
+  // The identity lexicon: another name of an organization the input names is no invention.
+  const fullName = { title: "Food and Drug Administration warns about a tracheostomy tube", text: "The Food and Drug Administration issued a safety communication about a pediatric tracheostomy tube.", sourceKind: "rss" };
+  assert.equal(enforceIdentity(fullName, { titleZh: "FDA emite alerta sobre cânula de traqueostomia", summaryZh: "A FDA emitiu um comunicado de segurança sobre uma cânula de traqueostomia pediátrica." }).identityGuard.outcome, "pass");
   const long = "A primeira frase diz quem fez o quê e o resultado principal: o modelo 3.5 atingiu AUC de 0,92 na detecção de nódulos pulmonares em 12 mil tomografias de tórax de três hospitais. ".repeat(3) + "A segunda frase acrescenta números. ".repeat(20);
   const compact = compactAnswerFirstSummary(long);
   assert.ok(compact.length <= 475 && compact.length >= 120, compact);

@@ -34,8 +34,8 @@ const provider = await stub(async (_hit, request) => {
   if (step === "understand" && active.writingAnswer) { active.writingAsked!.open(); await active.writingAnswer.promise; }
   const content = step === "prefilter" ? { label: "PASS", reason: "AI model release" }
     : step === "score" ? { attentionScore: SELECTING_SCORE }
-      : step === "structure" ? { category: "research", tags: ["Modelo/pesquisa"], subjects: [], fact: { title: "Novo modelo lançado" } }
-        : { itemType: "model_or_research", authorRole: "principal", tags: ["Modelo/pesquisa"], editorialJudgment: "O modelo tem ganho claro de desempenho", titleZh: `Novo modelo lançado ${T}`, summaryZh: "O modelo foi lançado com avaliação e preço." };
+      : step === "structure" ? { category: "reviews", tags: ["Revisão narrativa"], subjects: [], fact: { title: "Novo modelo lançado" } }
+        : { itemType: "narrative_review", authorRole: "principal", tags: ["Revisão narrativa"], editorialJudgment: "O modelo tem ganho claro de desempenho", titleZh: `Novo modelo lançado ${T}`, summaryZh: "O modelo foi lançado com avaliação e preço." };
   return { id: `stub-${active.calls.length}`, choices: [{ message: { content: JSON.stringify(content) } }], usage: { prompt_tokens: 10, completion_tokens: 10, total_tokens: 20 } };
 });
 const children = new Set<ReturnType<typeof spawn>>();

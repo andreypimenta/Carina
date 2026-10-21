@@ -11,7 +11,7 @@ import { ReportPaper, reportOutline } from "../features/report/ReportPaper";
 import { KIND_LABEL, feedLink, kindFromPath } from "../features/report/format";
 import type { Screen } from "../components/shell/screens";
 
-export const handle: Screen = { tab: "daily", name: "Briefing" };
+export const handle: Screen = { tab: "daily", name: "Edição" };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
@@ -33,7 +33,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
-  if (!loaderData) return [{ title: titled("Briefing não encontrado") }, { name: "robots", content: "noindex" }];
+  if (!loaderData) return [{ title: titled("Edição não encontrada") }, { name: "robots", content: "noindex" }];
   const r = loaderData.report;
   const description = r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? `${KIND_LABEL[r.kind]} do ${SITE.name}: ${r.key}.`;
   const path = `/${r.kind}/${r.key}`;

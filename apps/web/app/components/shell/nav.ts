@@ -23,7 +23,7 @@ const SECTIONS: Array<{ title: string; items: NavItem[] }> = [
       { to: "/", label: "Seleção", icon: IconBolt, end: true },
       { to: "/all", label: "Todas as notícias", icon: IconList },
       { to: "/hot", label: "Em alta", icon: IconFlame },
-      { to: "/daily", label: "Briefing diário", icon: IconDoc },
+      { to: "/weekly", label: "Edição semanal", icon: IconDoc },
       { to: "/topics", label: "Tópicos", icon: IconGrid },
       { to: "/starred", label: "Salvos", icon: IconBookmark },
     ],
@@ -56,10 +56,10 @@ export function sidebar(): Array<{ title: string; items: NavItem[] }> {
   return [...sections, more];
 }
 
-/** A sidebar entry is lit on its pages; 日报 also covers weekly and monthly reports. */
+/** A sidebar entry is lit on its pages; the weekly edition also covers the daily notes and the monthly review. */
 export function sidebarIsActive(item: NavItem, pathname: string): boolean {
   if (item.end) return pathname === item.to;
-  if (item.to === "/daily") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
+  if (item.to === "/weekly") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
@@ -87,7 +87,7 @@ export interface Tab {
 const ENGINE_TABS: Tab[] = [
   { key: "featured", to: "/", label: "Seleção", icon: IconBolt },
   { key: "hot", to: "/hot", label: "Em alta", icon: IconFlame },
-  { key: "daily", to: "/daily", label: "Briefing", icon: IconDoc },
+  { key: "daily", to: "/weekly", label: "Edição", icon: IconDoc },
   { key: "me", to: "/more", label: "Meu", icon: IconUser, changelog: true },
 ];
 

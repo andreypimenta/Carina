@@ -481,7 +481,7 @@ export function SignalRiver({
       const p = L.paper;
       if (x >= p.x - 8 && x <= p.x + p.w + 8 && y >= p.y - 8 && y <= p.y + p.h + 8) {
         hover = { s: null, bundle: null, paper: true };
-        place(x, y, "Briefing diário", EDITION.daily);
+        place(x, y, "Notas diárias", EDITION.daily);
         redraw();
         return;
       }

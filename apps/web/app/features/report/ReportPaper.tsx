@@ -134,7 +134,7 @@ function Coverage({ c }: { c: ReportCitation }) {
   return (
     <>
       {!!c.otherSources && <span className="shrink-0 text-ink-4">Mais {c.otherSources} {c.otherSources === 1 ? "fonte noticiou" : "fontes noticiaram"}</span>}
-      {c.followUp && <Badge title={`O briefing de ${monthDay(c.followUp)} já tratou deste fato; aqui está a novidade`}>Atualização</Badge>}
+      {c.followUp && <Badge title={`A edição de ${monthDay(c.followUp)} já tratou deste fato; aqui está a novidade`}>Atualização</Badge>}
     </>
   );
 }
@@ -407,7 +407,7 @@ function Neighbours({ report, index }: { report: ReportDetail; index: ReportNavi
   const cell = "group flex min-w-0 flex-col py-6";
   const title = "mt-2.5 line-clamp-2 text-[16px] font-bold leading-[1.5] text-ink transition-colors group-hover:text-accent @[880px]:text-[18px]";
   return (
-    <nav aria-label={report.kind === "daily" ? "Briefings anterior e seguinte" : "Edições anterior e seguinte"} className="mt-16 grid grid-cols-2 border-y border-line-strong">
+    <nav aria-label={report.kind === "daily" ? "Edições anterior e seguinte" : "Edições anterior e seguinte"} className="mt-16 grid grid-cols-2 border-y border-line-strong">
       {report.prev ? (
         <Link to={reportPath(report.kind, report.prev)} className={`${cell} pr-5 @[880px]:pr-10`}>
           <span className="inline-flex items-center gap-1 text-[12px] text-ink-4">
@@ -515,7 +515,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
                     <span className="text-ink">{f.title}</span>
                   )}
                   {f.available && <span className="ml-2 text-[12px] text-ink-4">{f.sourceName}</span>}
-                  {f.available && f.followUp && <Badge className="ml-2 align-[1px]" title={`O briefing de ${monthDay(f.followUp)} já tratou deste fato; aqui está a novidade`}>Atualização</Badge>}
+                  {f.available && f.followUp && <Badge className="ml-2 align-[1px]" title={`A edição de ${monthDay(f.followUp)} já tratou deste fato; aqui está a novidade`}>Atualização</Badge>}
                 </span>
               </li>
             ))}
@@ -530,7 +530,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
         <p className="mt-3 text-[12px] text-ink-4">
           {`${KIND_LABEL[report.kind]} do ${SITE.name}, ${daily ? "editado" : "compilado"} automaticamente pelo sistema editorial a partir de fontes públicas; cada item traz o link para o original · `}
           <Link to={daily ? "/daily/archive" : "#report-history"} viewTransition={daily} className="font-medium text-ink-3 transition-colors hover:text-accent">
-            {daily ? "Arquivo do briefing diário" : `Edições anteriores · ${KIND_LABEL[report.kind]}`}
+            {daily ? "Arquivo das notas diárias" : `Edições anteriores · ${KIND_LABEL[report.kind]}`}
           </Link>
         </p>
       </footer>
