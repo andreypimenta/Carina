@@ -35,8 +35,30 @@ Cada matéria é uma chamada ao modelo, com algo entre 3 mil e 15 mil tokens de 
 | Sociedades a conferir | SBCT, SBPT, CIPE | Começam **desligadas**: os feeds não puderam ser verificados. No Painel → Fontes, use "Pré-visualizar" e ligue as que funcionarem. |
 | Reguladores | FDA MedWatch | Alertas de segurança e recalls; a pré-triagem deixa passar só os de via aérea, traqueostomia e ventilação. |
 | Ensaios registrados | ClinicalTrials.gov: estenose subglótica, estenose traqueal, pectus, malformações pulmonares, hérnia diafragmática, traqueomalácia, traqueostomia pediátrica | Só estudos novos (`dateField=StudyFirstPostDate`). Entram como "Ensaio registrado". |
-| Pacientes, imprensa e hospitais | Unidos pela Vida (fibrose cística), Respiratory Therapy, Boston Children's Answers | Nível T2: só entram com nota alta. |
+| Centros de referência | Cincinnati Children's (Research Horizons), Nationwide Children's (Pediatrics Nationwide), Boston Children's (Answers), Mayo Clinic News Network | Nenhum desses centros tem feed só de via aérea ou cirurgia torácica: são feeds gerais, e a pré-triagem descarta o que é de outras áreas. |
+| Pacientes e imprensa | Unidos pela Vida (fibrose cística), Respiratory Therapy | Nível T2: só entram com nota alta. |
 
 Fontes avaliadas e deixadas de fora por estarem paradas ou sem feed: Healio (pneumologia e pediatria), AARC, APSA, AABIP, ESPO. ATS, CHEST, STS e ESTS têm página de notícias mas não têm RSS; podem entrar como `web_list` (veja `docs/sources.md`). A ANVISA não tem feed de alertas de tecnovigilância.
+
+### Candidatas a página de lista (`web_list`)
+
+Estes centros não têm RSS, mas têm páginas de notícias com lista de links. Para incluí-los, crie a fonte no Painel → Fontes com o tipo "página de lista", ajuste os seletores olhando a página (`docs/sources.md`) e confira com "Pré-visualizar":
+
+| Centro | Página | Padrão dos links |
+|---|---|---|
+| CHOP | https://www.chop.edu/newsroom/search | `/news/<slug>` |
+| Nationwide Children's (comunicados) | https://www.nationwidechildrens.org/newsroom/news-releases | `/newsroom/news-releases/AAAA/MM/<slug>` |
+| Cincinnati Children's (comunicados) | https://www.cincinnatichildrens.org/news/release | `/news/release/AAAA/<slug>` |
+| Great Ormond Street | https://www.gosh.nhs.uk/news/ | `/news/<slug>/` |
+| SickKids | https://www.sickkids.ca/en/news/newsroom/ | `/en/news/archive/AAAA/<slug>/` |
+| Sant Joan de Déu | https://www.sjdhospitalbarcelona.org/es/noticias | `/es/noticias/<slug>`; fuso `+01:00` |
+| Hospital Pequeno Príncipe | https://pequenoprincipe.org.br/novidades/noticias/ | `/noticia/<slug>/`; fuso `-03:00` |
+| Beijing Children's Hospital (北京儿童医院) | https://www.bch.com.cn/Html/News/Columns/1/Index.html | `/Html/News/Articles/<id>.html`; data só na matéria (use `detail`); fuso `+08:00` |
+
+Não foi possível verificar Royal Children's Melbourne, Necker, Stanford, Lurie (lista sem datas), Mass General, Sabará, ICr-HCFMUSP, Calvo Mackenna, Shanghai Children's Medical Center, Fudan, Chongqing e as revistas chinesas (中华小儿外科杂志, 中华耳鼻咽喉头颈外科杂志), que não têm RSS encontrado. Vale testá-los do próprio servidor.
+
+### China
+
+A produção chinesa relevante chega principalmente pelo PubMed: as buscas aceitam artigos em chinês (`chi` em `languages`), e a matéria é escrita a partir do resumo em inglês que o PubMed traz. Os portais de notícias médicas chineses (dxy.cn, medlive.cn) publicam sobretudo por WeChat e não têm seção de cirurgia torácica pediátrica.
 
 As fontes desta lista são importadas na primeira vez que o site sobe. Depois disso, mexa nelas no Painel → Fontes.

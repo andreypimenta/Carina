@@ -412,7 +412,67 @@
       "participation_mode": "editorial",
       "interval_minutes": 240,
       "tags": [
-        "hospital"
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-cincinnati-research-horizons",
+      "name": "Cincinnati Children's · Research Horizons",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://scienceblog.cincinnatichildrens.org/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-pediatrics-nationwide",
+      "name": "Nationwide Children's · Pediatrics Nationwide",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://pediatricsnationwide.org/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-mayo-news-network",
+      "name": "Mayo Clinic News Network",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://newsnetwork.mayoclinic.org/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
