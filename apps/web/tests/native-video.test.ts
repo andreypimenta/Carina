@@ -34,7 +34,7 @@ const api = createServer((req, res) => {
   if (url.pathname === "/api/site/items/video-fixture") {
     const detail: SiteItemDetail = {
       id: "video-fixture", title: "Teste de vídeo nativo", summary: "Resumo fixo", reason: "Por que ler fixo", source: { name: "Fixture" },
-      publishedAt: at, timelineAt: at, discoveredAt: at, category: "research", tags: [], score: 80, selected: true,
+      publishedAt: at, timelineAt: at, discoveredAt: at, category: "reviews", tags: [], score: 80, selected: true,
       channel: "news", x: null, originalTitle: "Video fixture", links: { original: "https://example.org/article" },
       story: null, readingMode: "full", author: null, outline: [], relatedStories: [], topics: [], indexable: true,
       markdownAvailable: true, group: null, hasTranslation: true, bodyLanguage: "zh",

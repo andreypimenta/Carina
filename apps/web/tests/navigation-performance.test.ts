@@ -17,7 +17,7 @@ import type { FeedItemSummary, SiteItemDetail, ReportDetail } from "@aihot/contr
 import { startWebServer, type WebServer } from "./web-server.ts";
 
 const at = '2026-10-04T08:00:00.000Z';
-const item: FeedItemSummary = {id:'navigation-fixture',title:'Artigo de teste de desempenho',summary:'Resumo fixo',reason:'Por que ler fixo',source:{name:'Fixture'},publishedAt:at,timelineAt:at,category:'research',tags:[],score:80,selected:true,channel:'news',x:null};
+const item: FeedItemSummary = {id:'navigation-fixture',title:'Artigo de teste de desempenho',summary:'Resumo fixo',reason:'Por que ler fixo',source:{name:'Fixture'},publishedAt:at,timelineAt:at,category:'reviews',tags:[],score:80,selected:true,channel:'news',x:null};
 const detail: SiteItemDetail = {...item,x:null,originalTitle:'Fixture article',links:{original:'https://example.org/article'},discoveredAt:at,story:null,readingMode:'full',author:null,body:{zh:'<p>Texto fixo</p>',original:null,zhKind:'translation',complete:true},outline:[],relatedStories:[],topics:[],indexable:true,markdownAvailable:true,group:null,hasTranslation:true,bodyLanguage:'zh'};
 const codeSource='import json\n\nwith open("data.json") as file:\n    data = json.load(file)\n\nfor record in data:\n    print(record["title"])\n';
 const readerBody=Array.from({length:30},(_,i)=>`<p>Parágrafo de leitura ${i}: primeiro leia o texto, depois veja o código e as imagens. O texto continua legível; imagens e código são melhorados quando necessário.</p>`).join('')
@@ -98,15 +98,15 @@ test('SSR list and visited query variants return offline without another read',a
     await expect(page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true})).toBeVisible({timeout:1500});
     await context.setOffline(false);
     await page.getByRole('button',{name:/^Filtrar/}).click();
-    await page.getByRole('link',{name:'Pesquisa',exact:true}).click();
-    await expect(page.getByRole('link',{name:'Categoria research',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Revisões',exact:true}).click();
+    await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible();
     await page.getByRole('button',{name:/^Filtrar/}).click();
-    await page.getByRole('link',{name:'Produtos',exact:true}).click();
-    await expect(page.getByRole('link',{name:'Categoria products',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Técnica',exact:true}).click();
+    await expect(page.getByRole('link',{name:'Categoria technique',exact:true})).toBeVisible();
     await context.setOffline(true);
     await page.goBack();
-    await expect(page.getByRole('link',{name:'Categoria research',exact:true})).toBeVisible({timeout:1500});
-    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/?category=research');
+    await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible({timeout:1500});
+    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/?category=reviews');
   }finally{await context.close();}
 });
 
@@ -159,17 +159,17 @@ test('intent on a selected link preserves visited data and the next revisit star
   page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
   try{
     await page.goto(origin+'/');
-    await page.getByRole('link',{name:'Pesquisa',exact:true}).click();
-    await expect(page.getByRole('link',{name:'Categoria research',exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'Pesquisa',exact:true}).focus();
+    await page.getByRole('link',{name:'Revisões',exact:true}).click();
+    await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Revisões',exact:true}).focus();
     await page.waitForTimeout(150);
-    await page.getByRole('link',{name:'Produtos',exact:true}).click();
-    await expect(page.getByRole('link',{name:'Categoria products',exact:true})).toBeVisible();
-    await page.getByRole('link',{name:'Produtos',exact:true}).focus();
+    await page.getByRole('link',{name:'Técnica',exact:true}).click();
+    await expect(page.getByRole('link',{name:'Categoria technique',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Técnica',exact:true}).focus();
     await page.waitForTimeout(150);
     const before=requests.length;
-    await page.getByRole('link',{name:'Pesquisa',exact:true}).click();
-    await expect(page.getByRole('link',{name:'Categoria research',exact:true})).toBeVisible();
+    await page.getByRole('link',{name:'Revisões',exact:true}).click();
+    await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible();
     assert.deepEqual(requests.slice(before),[],'neither prefetch nor navigation may evict and reload a still-valid visited page');
   }finally{await context.close();}
 });

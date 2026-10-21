@@ -17,14 +17,14 @@ test("llms and sitemap build from current topic scope rather than a cached direc
   for (let i = 0; i < 20; i++) {
     const id = `${source}-${i}`;
     await sql`INSERT INTO articles (id,source_id,identity_key,url,title,timeline_at,discovered_at)
-      VALUES (${id},${source},${id},${`https://example.org/${id}`},'Abridge',now(),now())`;
+      VALUES (${id},${source},${id},${`https://example.org/${id}`},'ABORL-CCF',now(),now())`;
     await sql`INSERT INTO publications (article_id,source_id,title,summary,url,timeline_at,discovered_at,sort_at,selected,eligible,visible_after,tags,channel,category)
-      VALUES (${id},${source},'Abridge lança escriba clínico','Summary',${`https://example.org/${id}`},now(),now(),now(),true,true,now() - interval '1 minute',ARRAY['entity:abridge'],'news','products')`;
+      VALUES (${id},${source},'ABORL-CCF publica posicionamento','Summary',${`https://example.org/${id}`},now(),now(),now(),true,true,now() - interval '1 minute',ARRAY['entity:aborl'],'news','guidelines')`;
   }
-  assert.equal((await topicPageCounts()).find((topic) => topic.slug === "abridge")!.indexable, true);
+  assert.equal((await topicPageCounts()).find((topic) => topic.slug === "aborl-ccf")!.indexable, true);
   await sql`UPDATE publications SET visibility = 'withdrawn' WHERE source_id = ${source}`;
-  assert.ok(!(await loadLlmsAvailability()).topics.some((topic) => topic.slug === "abridge"));
+  assert.ok(!(await loadLlmsAvailability()).topics.some((topic) => topic.slug === "aborl-ccf"));
   const sitemap = await app.inject("/sitemap.xml");
   assert.equal(sitemap.statusCode, 200);
-  assert.ok(!sitemap.body.includes("/topics/abridge</loc>"));
+  assert.ok(!sitemap.body.includes("/topics/aborl-ccf</loc>"));
 });

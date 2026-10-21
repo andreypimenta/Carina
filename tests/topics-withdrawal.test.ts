@@ -23,56 +23,56 @@ before(async () => {
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, next_fetch_at) VALUES (${SOURCE}, 'Media', 'rss', 'T2', 'editorial', '2100-01-01')`;
   older = await report(1, 3);
   newer = await report(2, 1);
-  corrected = await report(3, 2, "aidoc");
+  corrected = await report(3, 2, "apsa");
   // All scenarios share this one cold index, then exercise the cache without waiting a minute.
-  await loadTopicPage("tempus", 1);
+  await loadTopicPage("ests", 1);
 });
 after(async () => {
   await stopBoss();
   await closeDb();
 });
 
-async function report(n: number, hoursAgo: number, subject = "tempus"): Promise<string> {
+async function report(n: number, hoursAgo: number, subject = "ests"): Promise<string> {
   const at = new Date(Date.now() - hoursAgo * 3600_000);
   const { articleId } = await upsertMaterial({
-    sourceId: SOURCE, url: `https://example.com/withdrawal-${T}-${n}`, title: `Tempus report ${n}`, bodyText: "body", bodyHtml: "<p>body</p>", bodyStatus: "ok", via: "fetch", publishedAt: at,
+    sourceId: SOURCE, url: `https://example.com/withdrawal-${T}-${n}`, title: `ESTS report ${n}`, bodyText: "body", bodyHtml: "<p>body</p>", bodyStatus: "ok", via: "fetch", publishedAt: at,
   });
   await sql`UPDATE articles SET discovered_at = ${at}, timeline_at = ${at}, grouped_at = now() WHERE id = ${articleId}`;
   await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, category, title_zh, summary_zh, score, selected, subjects, tags)
-            VALUES (${articleId}, 1, 'rule', 'pass', 'research', ${`${subject} notícia ${n}`}, 'Resumo', 80, true, ${[subject]}, ${['Modelo/pesquisa']})`;
+            VALUES (${articleId}, 1, 'rule', 'pass', 'reviews', ${`${subject} notícia ${n}`}, 'Resumo', 80, true, ${[subject]}, ${['Revisão narrativa']})`;
   await publishArticle(articleId, { releasedAt: new Date(at.getTime() + 60_000) });
   return articleId;
 }
 
 test("a withdrawn report leaves the topic page and the index while the topic index is still cached", async () => {
   // Both are read into the cached index.
-  const before = await loadTopicPage("tempus", 1);
+  const before = await loadTopicPage("ests", 1);
   assert.ok(before?.items.some((i) => i.id === newer));
-  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "tempus")?.latest?.title, `tempus notícia 2`);
+  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "ests")?.latest?.title, `ests notícia 2`);
 
   await sql`UPDATE publications SET visibility = 'withdrawn' WHERE article_id = ${newer}`;
-  const page = await loadTopicPage("tempus", 1);
-  assert.equal(page?.topic.latest?.title, `tempus notícia 1`, "the page's last update");
-  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "tempus")?.latest?.title, `tempus notícia 1`, "the index page's headline");
+  const page = await loadTopicPage("ests", 1);
+  assert.equal(page?.topic.latest?.title, `ests notícia 1`, "the page's last update");
+  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "ests")?.latest?.title, `ests notícia 1`, "the index page's headline");
   assert.deepEqual(page?.items.map((i) => i.id), [older], "the list (rows were always checked again)");
 });
 
 test("a correction refreshes named content and its topic membership before the index expires", async () => {
-  const title = `Aidoc: notícia corrigida ${T}`;
+  const title = `APSA: notícia corrigida ${T}`;
   await overrideFields(corrected, { fields: { title }, version: 0, reason: "corrigir título" }, "test-topics");
-  const retitled = await loadTopicPage("aidoc", 1);
+  const retitled = await loadTopicPage("apsa", 1);
   assert.equal(retitled?.items[0]?.title, title, "the list");
   assert.equal(retitled?.topic.latest?.title, title, "the page headline");
-  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "aidoc")?.latest?.title, title, "the directory headline");
+  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "apsa")?.latest?.title, title, "the directory headline");
 
-  await overrideFields(corrected, { fields: { category: "practice" }, version: 1, reason: "na verdade é um guia" }, "test-topics");
-  const reclassified = await loadTopicPage("aidoc", 1);
+  await overrideFields(corrected, { fields: { category: "cases" }, version: 1, reason: "na verdade é um relato de caso" }, "test-topics");
+  const reclassified = await loadTopicPage("apsa", 1);
   assert.equal(reclassified?.items[0]?.id, corrected, "it remains a selected report");
 
-  await overrideFields(corrected, { fields: { tags: ["Guia/prática", "entity:abridge"] }, version: 2, reason: "corrigir a empresa principal" }, "test-topics");
-  const moved = await loadTopicPage("aidoc", 1);
+  await overrideFields(corrected, { fields: { tags: ["Relato de caso", "entity:aborl"] }, version: 2, reason: "corrigir a empresa principal" }, "test-topics");
+  const moved = await loadTopicPage("apsa", 1);
   assert.deepEqual(moved?.items, [], "the old topic list drops it");
   assert.equal(moved?.topic.latest, null, "the old topic headline drops it");
-  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "aidoc")?.latest, null, "the directory drops the old membership");
-  assert.equal((await loadTopicPage("abridge", 1, new Date()))?.items[0]?.id, corrected, "the corrected membership is retained");
+  assert.equal((await listTopicSummaries()).topics.find((t) => t.slug === "apsa")?.latest, null, "the directory drops the old membership");
+  assert.equal((await loadTopicPage("aborl-ccf", 1, new Date()))?.items[0]?.id, corrected, "the corrected membership is retained");
 });

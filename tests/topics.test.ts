@@ -3,7 +3,7 @@
 // - a company topic takes an article about another company that only mentions it (several subjects,
 //   its name nowhere in the title), or drops one about it whose title names it in English, in another
 //   case, right next to punctuation, or only by a product (it is the article's only subject);
-// - a Latin name matches inside another word ("Epicentro" is not Epic); a headline naming a company
+// - a Latin name matches inside another word ("Atsugi" is not ATS); a headline naming a company
 //   that is not a subject of the article gets in;
 // - a technical-direction topic stops taking its tags;
 // - withdrawn or not yet released articles appear in a list or a count;
@@ -58,7 +58,7 @@ async function report(r: Report): Promise<string> {
   });
   await sql`UPDATE articles SET discovered_at = ${r.at}, timeline_at = ${r.at}, grouped_at = now() WHERE id = ${articleId}`;
   await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, category, title_zh, summary_zh, score, selected, subjects, tags)
-            VALUES (${articleId}, 1, 'rule', 'pass', ${r.category ?? "research"}, ${r.title}, ${`Resumo ${n}`}, ${r.score ?? 80}, ${r.selected ?? true}, ${r.subjects ?? []}, ${[r.category === "products" ? "Produto/lançamento" : r.category === "clinical-evidence" ? "Ensaio clínico" : r.category === "regulatory" ? "Aprovação regulatória" : r.category === "practice" ? "Guia/prática" : r.category === "industry" ? "Mercado/negócios" : r.category === "opinion" ? "Opinião" : "Modelo/pesquisa", ...(r.tags ?? [])]})`;
+            VALUES (${articleId}, 1, 'rule', 'pass', ${r.category ?? "reviews"}, ${r.title}, ${`Resumo ${n}`}, ${r.score ?? 80}, ${r.selected ?? true}, ${r.subjects ?? []}, ${[r.category === "technique" ? "Técnica cirúrgica" : r.category === "evidence" ? "Ensaio clínico" : r.category === "guidelines" ? "Diretriz/consenso" : r.category === "cases" ? "Relato de caso" : r.category === "industry" ? "Sociedades/eventos" : r.category === "opinion" ? "Opinião" : "Revisão narrativa", ...(r.tags ?? [])]})`;
   if (r.fact) await sql`INSERT INTO fact_articles (fact_id, article_id, role) VALUES (${r.fact}, ${articleId}, 'report')`;
   await publishArticle(articleId, { releasedAt: new Date(r.at.getTime() + 60_000) });
   return articleId;
@@ -91,63 +91,63 @@ async function members(slug: string): Promise<string[]> {
 }
 
 test("a company topic takes the articles about it, not the ones that only mention it", async () => {
-  const about = await report({ at: hoursAgo(30), title: `Claude Code ganha plugins ${T}`, subjects: ["anthropic"] });
-  const product = await report({ at: hoursAgo(31), title: `Nova versão do Sonnet disponível ${T}`, subjects: ["anthropic"] });
-  const english = await report({ at: hoursAgo(32), title: `Novo modelo lançado ${T}`, originalTitle: `Anthropic launches a model ${T}`, subjects: ["anthropic", "openai"] });
-  const subpoena = await report({ at: hoursAgo(33), title: `Procurador-geral da Califórnia intima a OpenAI ${T}`, subjects: ["openai", "anthropic", "microsoft"] });
-  const lowerCase = await report({ at: hoursAgo(34), title: `openai divulga novo marco de segurança ${T}`, subjects: ["openai", "anthropic"] });
-  const pact = await report({ at: hoursAgo(35), title: `Mais de vinte empresas assinam acordo de segurança ${T}`, subjects: ["openai", "anthropic", "google"] });
-  const metadata = await report({ at: hoursAgo(36), title: `Epicentro da adoção: padrão com a OpenAI ${T}`, subjects: ["epic", "openai"] });
-  const adjacent = await report({ at: hoursAgo(37), title: `Novo recurso no «Epic» ${T}`, subjects: ["epic", "openai"] });
-  const headline = await report({ at: hoursAgo(38), title: `Anthropic citada em uma retrospectiva ${T}`, subjects: ["google"] });
-  const agent = await report({ at: hoursAgo(39), title: `Framework de agentes lançado ${T}`, tags: ["Agentes"] });
+  const about = await report({ at: hoursAgo(30), title: `SBPT lança curso de broncoscopia ${T}`, subjects: ["sbpt"] });
+  const product = await report({ at: hoursAgo(31), title: `Jornal Brasileiro de Pneumologia publica novo consenso ${T}`, subjects: ["sbpt"] });
+  const english = await report({ at: hoursAgo(32), title: `Nova diretriz publicada ${T}`, originalTitle: `SBPT releases a guideline ${T}`, subjects: ["sbpt", "sbct"] });
+  const subpoena = await report({ at: hoursAgo(33), title: `Conselho regional questiona a SBCT ${T}`, subjects: ["sbct", "sbpt", "ests"] });
+  const lowerCase = await report({ at: hoursAgo(34), title: `sbct divulga novo marco de segurança ${T}`, subjects: ["sbct", "sbpt"] });
+  const pact = await report({ at: hoursAgo(35), title: `Mais de vinte sociedades assinam acordo de segurança ${T}`, subjects: ["sbct", "sbpt", "apsa"] });
+  const metadata = await report({ at: hoursAgo(36), title: `Atsugi sedia encontro: padrão com a SBCT ${T}`, subjects: ["ats", "sbct"] });
+  const adjacent = await report({ at: hoursAgo(37), title: `Novo documento da «ATS» ${T}`, subjects: ["ats", "sbct"] });
+  const headline = await report({ at: hoursAgo(38), title: `SBPT citada em uma retrospectiva ${T}`, subjects: ["apsa"] });
+  const agent = await report({ at: hoursAgo(39), title: `Técnica de Nuss modificada ${T}`, tags: ["Pectus"] });
 
-  const anthropic = await members("anthropic");
-  for (const id of [about, product, english]) assert.ok(anthropic.includes(id), "about Anthropic");
-  for (const id of [subpoena, lowerCase, pact, headline]) assert.ok(!anthropic.includes(id), "only mentions Anthropic");
-  const openai = await members("openai");
-  for (const id of [subpoena, lowerCase, metadata]) assert.ok(openai.includes(id), "about OpenAI");
-  for (const id of [english, pact]) assert.ok(!openai.includes(id), "only mentions OpenAI");
-  const epic = await members("epic");
-  assert.ok(epic.includes(adjacent), "Epic right next to punctuation");
-  assert.ok(!epic.includes(metadata), "Epicentro is not Epic");
-  assert.ok((await members("agentes")).includes(agent), "a technical direction takes its tag");
+  const sbpt = await members("sbpt");
+  for (const id of [about, product, english]) assert.ok(sbpt.includes(id), "about SBPT");
+  for (const id of [subpoena, lowerCase, pact, headline]) assert.ok(!sbpt.includes(id), "only mentions SBPT");
+  const sbct = await members("sbct");
+  for (const id of [subpoena, lowerCase, metadata]) assert.ok(sbct.includes(id), "about SBCT");
+  for (const id of [english, pact]) assert.ok(!sbct.includes(id), "only mentions SBCT");
+  const ats = await members("ats");
+  assert.ok(ats.includes(adjacent), "ATS right next to punctuation");
+  assert.ok(!ats.includes(metadata), "Atsugi is not ATS");
+  assert.ok((await members("pectus")).includes(agent), "a technical direction takes its tag");
 
   // The article page names the topics it belongs to.
   const topicsOf = async (id: string) => {
     const res = await app.inject({ method: "GET", url: `/api/site/items/${id}` });
     return (JSON.parse(res.body) as { topics: Array<{ slug: string }> }).topics.map((t) => t.slug);
   };
-  assert.deepEqual(await topicsOf(about), ["anthropic", "pesquisa"]);
-  assert.deepEqual(await topicsOf(subpoena), ["openai", "pesquisa"]);
-  assert.deepEqual(await topicsOf(pact), ["pesquisa"]);
-  assert.deepEqual(await topicsOf(agent), ["agentes", "pesquisa"]);
+  assert.deepEqual(await topicsOf(about), ["sbpt", "revisoes"]);
+  assert.deepEqual(await topicsOf(subpoena), ["sbct", "revisoes"]);
+  assert.deepEqual(await topicsOf(pact), ["revisoes"]);
+  assert.deepEqual(await topicsOf(agent), ["pectus", "revisoes"]);
 });
 
 test("a story page names the topics of its reports", async () => {
-  const launch = await story(`Framework de agentes V2 lançado ${T}`);
-  await report({ source: OFFICIAL, at: hoursAgo(26), title: `Framework de agentes V2 lançado ${T}`, tags: ["Agentes"], fact: await fact(launch.id, "Lançamento da V2") });
-  assert.deepEqual(await topicsOfStory(launch.id), [{ slug: "agentes", name: "Agentes" }, { slug: "pesquisa", name: "Pesquisa e modelos" }]);
+  const launch = await story(`Nova barra para correção de pectus ${T}`);
+  await report({ source: OFFICIAL, at: hoursAgo(26), title: `Nova barra para correção de pectus ${T}`, tags: ["Pectus"], fact: await fact(launch.id, "Lançamento da barra") });
+  assert.deepEqual(await topicsOfStory(launch.id), [{ slug: "pectus", name: "Deformidades da parede torácica" }, { slug: "revisoes", name: "Revisões e ensino" }]);
 });
 
 test("withdrawn articles stay out of lists and counts", async () => {
-  const kept = await report({ at: hoursAgo(5), title: `Abridge lança novo escriba ${T}`, subjects: ["abridge"] });
-  const withdrawn = await report({ at: hoursAgo(4), title: `Abridge: notícia retirada ${T}`, subjects: ["abridge"] });
+  const kept = await report({ at: hoursAgo(5), title: `ABORL-CCF lança novo posicionamento ${T}`, subjects: ["aborl"] });
+  const withdrawn = await report({ at: hoursAgo(4), title: `ABORL-CCF: notícia retirada ${T}`, subjects: ["aborl"] });
   await sql`UPDATE publications SET visibility = 'withdrawn' WHERE article_id = ${withdrawn}`;
 
-  const data = await page("abridge");
+  const data = await page("aborl-ccf");
   assert.deepEqual(ids(data.items), [kept]);
   assert.equal(data.topic.total, 1);
-  const summary = (await listTopicSummaries()).topics.find((t) => t.slug === "abridge")!;
-  assert.equal(summary.latest?.title, `Abridge lança novo escriba ${T}`, "the index shows the newest public article");
+  const summary = (await listTopicSummaries()).topics.find((t) => t.slug === "aborl-ccf")!;
+  assert.equal(summary.latest?.title, `ABORL-CCF lança novo posicionamento ${T}`, "the index shows the newest public article");
 });
 
 test("every topic has a page; unknown topics and pages past the end have none", async () => {
-  const empty = await page("cfm");
+  const empty = await page("sbp");
   assert.equal(empty.topic.indexable, false, "a topic without content is not indexed");
   assert.deepEqual(empty.items, []);
   assert.equal(await loadTopicPage("not-a-topic", 1, new Date()), null);
-  assert.equal(await loadTopicPage("cfm", 2, new Date()), null);
+  assert.equal(await loadTopicPage("sbp", 2, new Date()), null);
   const index = await app.inject({ method: "GET", url: "/api/site/topics" });
   const body = JSON.parse(index.body) as { groups: Array<{ key: string }>; topics: Array<{ slug: string }> };
   assert.deepEqual(body.groups.map((g) => g.key), ["company", "field", "genre"]);
