@@ -21,7 +21,9 @@ Depois disso, os artigos seguem o mesmo caminho de qualquer material: pré-triag
 - `MATERIA_MODEL` (opcional): modelo da etapa que escreve as matérias; por padrão, o mesmo `LLM_MODEL`. Também pode ser trocado no Painel → Modelos.
 - `industry/literatura.json`: as buscas (`queries`, na sintaxe do PubMed), quantos dias para trás (`days`), quantos artigos novos por execução (`perRun`) e os idiomas aceitos (`languages`). Para testar uma busca, cole o `term` em pubmed.ncbi.nlm.nih.gov.
 
-Cada artigo tratado fica registrado na tabela `literatura_papers` (PMID, destino e artigo criado), e por isso não é escrito duas vezes.
+Cada artigo tratado fica registrado na tabela `literatura_papers` (PMID, destino e artigo criado), e por isso não é escrito duas vezes. Se um serviço falha (PubMed, Unpaywall, Europe PMC ou o modelo), o artigo não é escrito com menos informação: ele é tentado de novo nas execuções seguintes, até 3 vezes, e depois fica marcado como `falhou`.
+
+A republicação vale pela URL de licença que o próprio artigo declara no PMC, nunca só pela frase de licença. Figuras cuja legenda indica material de terceiros ("reprinted with permission", "©") são omitidas, e o crédito avisa. Quando o Unpaywall diz que o artigo é aberto com licença que permite republicar mas o PMC ainda não tem o texto (o PMC costuma chegar dias depois do PubMed), o artigo espera até 36 horas; passado isso, vira matéria. O limite existe porque o motor arquiva, sem levar à edição, o que é encontrado mais de 48 horas depois da data do material.
 
 ### Custo
 

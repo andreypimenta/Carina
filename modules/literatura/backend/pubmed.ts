@@ -24,6 +24,15 @@ export interface Paper {
 
 const BASE = () => (process.env.PUBMED_BASE_URL ?? "https://eutils.ncbi.nlm.nih.gov/entrez/eutils").replace(/\/$/, "");
 
+/** NCBI allows 3 requests a second, 10 with an API key: every call waits its turn. */
+let nextCall = 0;
+async function turn() {
+  const gap = process.env.NCBI_API_KEY ? 110 : 350;
+  const wait = nextCall - Date.now();
+  nextCall = Math.max(Date.now(), nextCall) + gap;
+  if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));
+}
+
 function common(): string {
   const params = new URLSearchParams({ tool: "carina" });
   if (process.env.LITERATURA_EMAIL) params.set("email", process.env.LITERATURA_EMAIL);
@@ -34,6 +43,7 @@ function common(): string {
 /** PMIDs a search found among the records that entered PubMed in the last `days` days. */
 export async function searchPmids(term: string, days: number, max = 500): Promise<string[]> {
   const params = new URLSearchParams({ db: "pubmed", term, datetype: "edat", reldate: String(days), retmax: String(max), retmode: "json", sort: "pub_date" });
+  await turn();
   const res = await guardedFetch(`${BASE()}/esearch.fcgi?${params}&${common()}`, { timeoutMs: 30_000 });
   if (res.status !== 200) throw new Error(`PubMed esearch HTTP ${res.status}`);
   const data = JSON.parse(res.text()) as { esearchresult?: { idlist?: string[]; ERROR?: string } };
@@ -45,14 +55,21 @@ export async function searchPmids(term: string, days: number, max = 500): Promis
 export async function fetchPapers(pmids: string[]): Promise<Paper[]> {
   if (!pmids.length) return [];
   const params = new URLSearchParams({ db: "pubmed", id: pmids.join(","), retmode: "xml" });
+  await turn();
   const res = await guardedFetch(`${BASE()}/efetch.fcgi?${params}&${common()}`, { timeoutMs: 60_000, maxBytes: 32 * 1024 * 1024 });
   if (res.status !== 200) throw new Error(`PubMed efetch HTTP ${res.status}`);
   return parsePubmedXml(res.text());
 }
 
-/** Text of an element with its inline markup (italics, sub- and superscripts) flattened, whitespace collapsed. */
+/**
+ * Text of an element with its inline markup flattened and whitespace collapsed. Superscripts keep a caret
+ * (10^9/L, p<10^-3) so exponents never merge into the number before them; formulas keep one rendering.
+ */
 function plain($: cheerio.CheerioAPI, el: cheerio.Cheerio<AnyNode>): string {
-  return $(el).text().replace(/\s+/g, " ").trim();
+  const copy = $(el).clone();
+  copy.find("sup").each((_i, sup) => { $(sup).replaceWith(`^${$(sup).text()}`); });
+  copy.find("mml\\:math, math").each((_i, m) => { $(m).replaceWith(` ${$(m).text()} `); });
+  return copy.text().replace(/\s+/g, " ").trim();
 }
 
 const pad = (n: string | undefined) => (n ? n.padStart(2, "0") : "");

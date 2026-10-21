@@ -12,7 +12,7 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
 import server from "../server.ts";
-import { collectLiterature, INTEGRAL_SOURCE, MATERIA_SOURCE, takePaper } from "../backend/collect.ts";
+import { collectLiterature, INTEGRAL_SOURCE, MATERIA_SOURCE, MAX_ATTEMPTS, recordFailure, takePaper } from "../backend/collect.ts";
 import { parsePubmedXml } from "../backend/pubmed.ts";
 
 const T = tag();
@@ -31,10 +31,13 @@ const stubServer = http.createServer((req, res) => {
     const url = req.url ?? "/";
     hits.push(url.split("?")[0]!);
     const send = (status: number, type: string, body: string) => { res.writeHead(status, { "content-type": type }); res.end(body); };
+    if (url.startsWith("/unpaywall/10.5555%2Fdown")) return send(503, "text/plain", "busy");
+    if (url.startsWith("/unpaywall/10.5555%2Fopen")) return send(200, "application/json", fixture("unpaywall-oa.json"));
     if (url.startsWith("/eutils/esearch.fcgi")) return send(200, "application/json", JSON.stringify({ esearchresult: { idlist: ["41000001", "41000002", "41000003"] } }));
     if (url.startsWith("/eutils/efetch.fcgi")) return send(200, "text/xml", fixture("pubmed.xml"));
     if (url.startsWith("/unpaywall/10.1186")) return send(200, "application/json", fixture("unpaywall-oa.json"));
     if (url.startsWith("/unpaywall/")) return send(200, "application/json", fixture("unpaywall-closed.json"));
+    if (url.startsWith("/epmc/search")) return send(200, "application/json", JSON.stringify({ resultList: { result: [] } }));
     if (url === "/epmc/PMC12345678/fullTextXML") return send(200, "text/xml", long(fixture("jats.xml")));
     if (url === "/epmc/PMC99/fullTextXML") return send(200, "text/xml", ndJats);
     if (url.startsWith("/epmc/")) return send(404, "text/plain", "not found");
@@ -62,7 +65,7 @@ before(async () => {
     await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at)
       VALUES (${id}, ${id}, 'external', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
   }
-  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004')`;
+  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004', '41000005', '41000006')`;
 });
 
 after(async () => {
@@ -95,10 +98,11 @@ test("a run republishes the open-licence paper, writes the closed one from its a
 
   assert.equal(open!.source_id, INTEGRAL_SOURCE);
   assert.equal(open!.language, "en");
-  assert.match(open!.body_html!, /Tradução integral do artigo de Lee J, publicado em BMC pulmonary medicine \(2026\) sob a licença <a href="http:\/\/creativecommons.org\/licenses\/by\/4.0\/">CC BY<\/a>/);
+  assert.match(open!.body_html!, /Tradução do artigo de Lee J, publicado em BMC pulmonary medicine \(2026\) sob a licença <a href="http:\/\/creativecommons.org\/licenses\/by\/4.0\/">CC BY<\/a>/);
   assert.match(open!.body_html!, /Tracheomalacia was the most frequent finding/);
   assert.match(open!.body_html!, /Texto completo gratuito/);
   assert.doesNotMatch(open!.body_html!, /thank the families/);
+  assert.doesNotMatch(open!.body_html!, /Matéria escrita pelo Carina/, "a republished text is not the site's article");
 
   assert.equal(erratum!.status, "erratum");
   assert.equal(erratum!.source_id, null);
@@ -120,4 +124,30 @@ test("a full text whose licence forbids translation is read to write the site's 
   assert.equal(row!.source_id, MATERIA_SOURCE);
   assert.match(row!.body_html, /a partir do texto completo em acesso aberto/);
   assert.doesNotMatch(row!.body_html, /Children with persistent wheeze were assessed/);
+});
+
+test("a service that fails is tried again on later runs, never written up from less; a paper that keeps failing is given up", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const down = { ...paper!, pmid: "41000005", doi: "10.5555/down" };
+  const calls = modelInputs.length;
+  await assert.rejects(() => takePaper(down), /Unpaywall HTTP 503/);
+  assert.equal(modelInputs.length, calls, "no article is written from the abstract because a service was down");
+  // The run records each failure; the last allowed one gives the paper up.
+  const statuses: string[] = [];
+  for (let i = 0; i < MAX_ATTEMPTS; i++) statuses.push((await recordFailure("41000005")).status);
+  assert.deepEqual(statuses, [...Array(MAX_ATTEMPTS - 1).fill("erro"), "falhou"]);
+  const [row] = await sql<{ attempts: number; status: string }[]>`SELECT attempts, status FROM literatura_papers WHERE pmid = '41000005'`;
+  assert.equal(row!.status, "falhou");
+  assert.equal(row!.attempts, MAX_ATTEMPTS);
+});
+
+test("an open paper under a republishable licence waits for PMC for a while, then is written up", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const fresh = { ...paper!, pmid: "41000006", doi: "10.5555/open", pmcid: null };
+  const entered = new Date("2026-10-19T03:00:00Z");
+  assert.equal((await takePaper(fresh, new Date(entered.getTime() + 12 * 3600_000))).status, "aguardando-pmc");
+  const later = await takePaper(fresh, new Date(entered.getTime() + 40 * 3600_000));
+  assert.equal(later.status, "materia-abstract");
+  const [row] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE id = ${later.articleId!}`;
+  assert.match(row!.body_html, /Texto completo gratuito:<\/strong> <a href="https:\/\/bmcpulmmed.biomedcentral.com/);
 });

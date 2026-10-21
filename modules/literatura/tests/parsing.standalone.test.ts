@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { authorLine, parsePubmedXml, skippable } from "../backend/pubmed.ts";
-import { jatsToHtml, normalizeLicense, parseUnpaywall, republishable } from "../backend/access.ts";
+import { blockText, jatsToHtml, licenseFromCode, licenseFromStatement, parseUnpaywall, republishable } from "../backend/access.ts";
 import { entryTime } from "../backend/collect.ts";
 import { materiaInput, referenceBlock, renderMateria } from "../backend/materia.ts";
 
@@ -43,14 +43,16 @@ test("an entry day is the start of that day in Brasília, never later than now",
   assert.equal(entryTime(null), null);
 });
 
-test("licences: only those that allow a translation are republished; NC only when the site says it is non-commercial", () => {
-  assert.equal(normalizeLicense("cc-by"), "cc-by");
-  assert.equal(normalizeLicense("http://creativecommons.org/licenses/by-nc-nd/4.0/"), "cc-by-nc-nd");
-  assert.equal(normalizeLicense("CC BY-NC 4.0"), "cc-by-nc");
-  assert.equal(normalizeLicense("https://creativecommons.org/publicdomain/zero/1.0/"), "cc0");
-  assert.equal(normalizeLicense("This is an open access article under the Creative Commons Attribution-NonCommercial-NoDerivs License"), "cc-by-nc-nd");
-  assert.equal(normalizeLicense("implied-oa"), null);
-  assert.equal(normalizeLicense("elsevier-specific: oa user license"), null);
+test("licences: republication goes by the licence URL or code; sentences are read for display only", () => {
+  assert.equal(licenseFromCode("cc-by"), "cc-by");
+  assert.equal(licenseFromCode("http://creativecommons.org/licenses/by-nc-nd/4.0/"), "cc-by-nc-nd");
+  assert.equal(licenseFromCode("CC BY\u2013NC\u2013ND 4.0"), "cc-by-nc-nd");
+  assert.equal(licenseFromCode("https://creativecommons.org/publicdomain/zero/1.0/"), "cc0");
+  assert.equal(licenseFromCode("implied-oa"), null);
+  assert.equal(licenseFromCode("This article is licensed under a Creative Commons Attribution 4.0 International License"), null, "a sentence is not a code");
+  assert.equal(licenseFromStatement("This is an open access article under the Creative Commons Attribution-NonCommercial-No Derivatives License"), "cc-by-nc-nd");
+  assert.equal(licenseFromStatement("Creative Commons Attribution\u2013NonCommercial\u2013NoDerivs licence"), "cc-by-nc-nd");
+  assert.equal(licenseFromStatement("Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 License. The Creative Commons Public Domain Dedication waiver (http://creativecommons.org/publicdomain/zero/1.0/) applies to the data made available in this article."), "cc-by-nc-nd");
   for (const l of ["cc-by", "cc-by-sa", "cc0", "pd"] as const) assert.equal(republishable(l, false), true, l);
   for (const l of ["cc-by-nd", "cc-by-nc-nd"] as const) assert.equal(republishable(l, true), false, l);
   assert.equal(republishable("cc-by-nc", false), false);
@@ -58,11 +60,17 @@ test("licences: only those that allow a translation are republished; NC only whe
   assert.equal(republishable(null, true), false);
 });
 
-test("Unpaywall: the best open copy with its licence, none for a closed paper", () => {
-  assert.deepEqual(parseUnpaywall(fixture("unpaywall-oa.json")), {
+test("Unpaywall: an open copy with its licence, \"closed\" when it says there is none", () => {
+  assert.deepEqual(parseUnpaywall(fixture("unpaywall-oa.json")), { kind: "open", copy: {
     url: "https://bmcpulmmed.biomedcentral.com/articles/10.1186/s12890-026-01234-5", license: "cc-by", host: "publisher", version: "publishedVersion",
-  });
-  assert.equal(parseUnpaywall(fixture("unpaywall-closed.json")), null);
+  } });
+  assert.deepEqual(parseUnpaywall(fixture("unpaywall-closed.json")), { kind: "closed" });
+});
+
+test("text of HTML keeps blocks and table cells apart; superscripts keep their caret", () => {
+  assert.equal(blockText("<h2>Results</h2><p>Of 45 children</p><table><tr><td>12</td><td>45</td></tr></table>"), "Results Of 45 children 12 45");
+  const [paper] = parsePubmedXml(`<PubmedArticleSet><PubmedArticle><MedlineCitation><PMID>1</PMID><Article><Journal><Title>J</Title></Journal><ArticleTitle>T</ArticleTitle><Abstract><AbstractText>Platelets 1.5 x 10<sup>9</sup>/L, p&lt;10<sup>-3</sup>, CO<sub>2</sub>.</AbstractText></Abstract></Article></MedlineCitation></PubmedArticle></PubmedArticleSet>`);
+  assert.equal(paper!.abstract[0]!.text, "Platelets 1.5 x 10^9/L, p<10^-3, CO2.");
 });
 
 test("JATS: abstract, sections, lists, figures and tables; citations as text; no reference list or acknowledgements", () => {
@@ -81,19 +89,38 @@ test("JATS: abstract, sections, lists, figures and tables; citations as text; no
   assert.doesNotMatch(full.html, /Smith J|thank the families/);
 });
 
+test("JATS: blocks nested in paragraphs, floats-group, formulas, escaped labels; third-party figures left out", () => {
+  const xml = `<article xmlns:xlink="http://www.w3.org/1999/xlink"><front><article-meta><permissions><license><license-p>Creative Commons Attribution-NoDerivatives</license-p></license></permissions></article-meta></front>
+  <body><sec><title>Results</title><p>Two groups:<list><list-item><p>one</p></list-item><list-item><p>two</p></list-item></list>after the list, with <inline-formula><alternatives><tex-math>x^2</tex-math><mml:math><mml:mi>x</mml:mi></mml:math></alternatives></inline-formula>.</p>
+  <fig><label>Fig &lt;1&gt;</label><caption><p>Own figure</p></caption><graphic xlink:href="f1"/></fig>
+  <fig><label>Fig 2</label><caption><p>Reprinted with permission from Smith et al.</p></caption><graphic xlink:href="f2"/></fig></sec></body>
+  <floats-group><table-wrap><label>Table 1</label><table><tr><td>a</td><td>b</td></tr></table></table-wrap></floats-group></article>`;
+  const full = jatsToHtml(xml, "PMC1");
+  assert.match(full.html, /<p>Two groups:<\/p><ul><li>one<\/li><li>two<\/li><\/ul><p>after the list, with x\^2.<\/p>/);
+  assert.match(full.html, /<figcaption>Fig &lt;1&gt; Own figure<\/figcaption>/);
+  assert.doesNotMatch(full.html, /f2\.jpg|Smith/);
+  assert.equal(full.omittedFigures, 1);
+  assert.match(full.html, /<table><caption>Table 1<\/caption><tr><td>a<\/td><td>b<\/td><\/tr><\/table>$/);
+  assert.equal(full.license, null, "no licence URL: never republished, whatever the sentence says");
+  assert.equal(licenseFromStatement(full.statement), "cc-by-nd");
+});
+
 test("the article: sections in order, text escaped, the reference and the access note at the foot", () => {
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const html = renderMateria({
     titulo: "Reconstrução em um tempo teve decanulação semelhante", linhaFina: "Coorte de 84 crianças <grau III>", lide: "Primeiro parágrafo.\n\nSegundo parágrafo.",
     contexto: "", metodos: "Coorte retrospectiva.", resultados: "88% e 91%.", limitacoes: "Retrospectivo.", paraOPediatra: "", paraOEspecialista: "Ajuda a escolher.",
-  }, paper!, null, "abstract");
+  }, paper!, { kind: "closed" }, null, "abstract");
   assert.match(html, /^<p><strong>Coorte de 84 crianças &lt;grau III&gt;<\/strong><\/p><p>Primeiro parágrafo.<\/p><p>Segundo parágrafo.<\/p><h2>Como foi feito<\/h2>/);
   assert.doesNotMatch(html, /Contexto|Para o pediatra/);
   assert.match(html, /<h2>O que encontraram<\/h2><p>88% e 91%.<\/p><h2>Limitações<\/h2>.*<h2>Para o especialista<\/h2>/);
   assert.match(html, /DOI: <a href="https:\/\/doi.org\/10.1016\/j.jpedsurg.2026.161999">/);
   assert.match(html, /o artigo completo é pago na editora/);
   assert.match(html, /a partir do resumo publicado/);
-  const open = referenceBlock(paper!, { url: "https://europepmc.org/article/MED/41000001", license: "cc-by-nc-nd", host: "repository", version: "acceptedVersion" }, "full");
+  const unknown = referenceBlock(paper!, { kind: "unknown" }, null, "abstract");
+  assert.doesNotMatch(unknown, /pago|gratuito/, "nothing is said about access that is not known");
+  assert.match(referenceBlock(paper!, { kind: "unknown" }, "PMC42", "full"), /<a href="https:\/\/europepmc.org\/article\/PMC\/PMC42">europepmc.org<\/a>/);
+  const open = referenceBlock(paper!, { kind: "open", copy: { url: "https://europepmc.org/article/MED/41000001", license: "cc-by-nc-nd", host: "repository", version: "acceptedVersion" } }, null, "full");
   assert.match(open, /Texto completo gratuito:<\/strong> <a href="https:\/\/europepmc.org\/article\/MED\/41000001">europepmc.org<\/a> \(manuscrito aceito pelos autores\), licença CC BY-NC-ND/);
   assert.match(materiaInput(paper!, null), /Texto disponível: somente o resumo\n\nBACKGROUND: The best strategy/);
 });
