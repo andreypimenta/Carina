@@ -1,9 +1,9 @@
 {
-  "$comment": "Fontes iniciais do Carina: importadas na primeira inicialização (scripts/seed.ts); as que já existem não são sobrescritas. Depois, crie, edite e pause fontes em \"Fontes\" no Painel. Os artigos científicos vêm do módulo literatura (buscas no PubMed em industry/literatura.json), pelas duas fontes external no topo. Campos descritos em docs/customize.md e guia em docs/fontes.md.",
+  "$comment": "Fontes iniciais do Fôlego: importadas na primeira inicialização (scripts/seed.ts); as que já existem não são sobrescritas. Depois, crie, edite e pause fontes em \"Fontes\" no Painel. Os artigos científicos vêm do módulo literatura (buscas no PubMed em industry/literatura.json), pelas duas fontes external no topo. Campos descritos em docs/customize.md e guia em docs/fontes.md.",
   "sources": [
     {
       "id": "literatura-materia",
-      "name": "PubMed · matérias do Carina",
+      "name": "PubMed · matérias do Fôlego",
       "kind": "external",
       "config": {},
       "tier": "T1",

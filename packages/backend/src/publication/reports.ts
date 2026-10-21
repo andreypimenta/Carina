@@ -160,7 +160,7 @@ async function dailyLeads(rows: Array<{ key: string; content: Record<string, any
   return leads;
 }
 
-/** The names the issues go by in their default titles ("Notas diárias · 2026-10-04", "Carina · Edição semanal · 2026-W38"). */
+/** The names the issues go by in their default titles ("Notas diárias · 2026-10-04", "Fôlego · Edição semanal · 2026-W38"). */
 export const DAILY_ISSUE_NAME = "Notas diárias";
 export const PERIOD_ISSUE_NAMES = { weekly: "Edição semanal", monthly: "Balanço mensal" } as const;
 

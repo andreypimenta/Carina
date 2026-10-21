@@ -1,6 +1,6 @@
-# Fontes do Carina
+# Fontes do Fôlego
 
-O Carina tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS de sociedades, reguladores, registros de ensaios e imprensa (`industry/sources.json`).
+O Fôlego tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS de sociedades, reguladores, registros de ensaios e imprensa (`industry/sources.json`).
 
 ## Artigos científicos (módulo literatura)
 
@@ -8,7 +8,7 @@ A cada 6 horas, o módulo roda as buscas de `industry/literatura.json` no PubMed
 
 1. **Procura uma cópia gratuita e legal**: o Unpaywall diz onde o artigo pode ser lido de graça (editora, PubMed Central, repositório) e com que licença; o Europe PMC entrega o texto completo quando o artigo está no PubMed Central.
 2. **Se a licença permite republicar uma tradução** (CC BY, CC BY-SA, CC0, domínio público; CC BY-NC só com `LITERATURA_ALLOW_NC=true`), o artigo entra pela fonte **PubMed · texto integral em acesso aberto** com o texto completo, figuras e tabelas, e o crédito aos autores e à licença. Quando é selecionado, o motor traduz o texto inteiro para o português.
-3. **Nos outros casos**, o modelo escreve uma **matéria própria** do Carina (contexto, como foi feito, o que encontraram, limitações, uma parte para o pediatra e outra para o especialista) e o artigo entra pela fonte **PubMed · matérias do Carina**. A matéria é escrita a partir do texto completo quando há uma cópia aberta legível, ou a partir do resumo; o rodapé diz qual foi a base, traz a referência, o DOI, o link para o texto gratuito quando existe e, quando o artigo é pago, sugere pedir a cópia ao autor.
+3. **Nos outros casos**, o modelo escreve uma **matéria própria** do Fôlego (contexto, como foi feito, o que encontraram, limitações, uma parte para o pediatra e outra para o especialista) e o artigo entra pela fonte **PubMed · matérias do Fôlego**. A matéria é escrita a partir do texto completo quando há uma cópia aberta legível, ou a partir do resumo; o rodapé diz qual foi a base, traz a referência, o DOI, o link para o texto gratuito quando existe e, quando o artigo é pago, sugere pedir a cópia ao autor.
 
 Licenças CC BY-ND e CC BY-NC-ND nunca são republicadas, porque uma tradução é obra derivada. Sites como Sci-Hub e Anna's Archive não são usados.
 

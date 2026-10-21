@@ -102,7 +102,7 @@ test("a run republishes the open-licence paper, writes the closed one from its a
   assert.match(open!.body_html!, /Tracheomalacia was the most frequent finding/);
   assert.match(open!.body_html!, /Texto completo gratuito/);
   assert.doesNotMatch(open!.body_html!, /thank the families/);
-  assert.doesNotMatch(open!.body_html!, /Matéria escrita pelo Carina/, "a republished text is not the site's article");
+  assert.doesNotMatch(open!.body_html!, /Matéria escrita pelo Fôlego/, "a republished text is not the site's article");
 
   assert.equal(erratum!.status, "erratum");
   assert.equal(erratum!.source_id, null);

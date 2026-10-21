@@ -34,7 +34,7 @@ async function turn() {
 }
 
 function common(): string {
-  const params = new URLSearchParams({ tool: "carina" });
+  const params = new URLSearchParams({ tool: "folego" });
   if (process.env.LITERATURA_EMAIL) params.set("email", process.env.LITERATURA_EMAIL);
   if (process.env.NCBI_API_KEY) params.set("api_key", process.env.NCBI_API_KEY);
   return params.toString();

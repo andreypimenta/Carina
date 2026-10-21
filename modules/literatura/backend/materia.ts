@@ -2,6 +2,7 @@
 // or from a full text that may be read but not republished, and rendered here as the item's body. The
 // fields come back as plain text and are escaped here, so the model never writes HTML.
 import { z } from "zod";
+import { SITE } from "@aihot/site";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { modelFor } from "@aihot/backend/editorial/models";
 import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
@@ -90,8 +91,8 @@ export function referenceBlock(paper: Paper, access: Access, pmcid: string | nul
       ? "<p><strong>Acesso:</strong> o artigo completo é pago na editora. Autores costumam enviar uma cópia a quem pede pelo e-mail de correspondência indicado no artigo.</p>"
       : "";
   const note = basis === "integral" ? ""
-    : basis === "full" ? "<p><em>Matéria escrita pelo Carina a partir do texto completo em acesso aberto.</em></p>"
-    : "<p><em>Matéria escrita pelo Carina a partir do resumo publicado.</em></p>";
+    : basis === "full" ? `<p><em>Matéria escrita pelo ${esc(SITE.name)} a partir do texto completo em acesso aberto.</em></p>`
+    : `<p><em>Matéria escrita pelo ${esc(SITE.name)} a partir do resumo publicado.</em></p>`;
   return `<h2>Referência</h2><p>${cite}</p><p>${links}</p>${accessLine}${note}`;
 }
 
