@@ -1,0 +1,2 @@
+【Contexto de identidade verificado】{{facts}}
+Estes fatos servem só para evitar que a identidade de empresas ou modelos seja trocada; não significam que o publicador seja necessariamente o único assunto do texto. Título e resumo só podem usar sujeitos que o título original, o corpo ou a fonte sustentam explicitamente.

@@ -1,0 +1,1 @@
+ALTER TABLE translations ALTER COLUMN lang SET DEFAULT 'pt';

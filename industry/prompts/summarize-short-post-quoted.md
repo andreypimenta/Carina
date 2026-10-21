@@ -1,0 +1,3 @@
+Exceção de teaser com citação: se o post principal quase não tem informação (pura exclamação / repost / chamada, como "Go build!" ou "Que dia!") e a notícia de verdade está no post citado abaixo, então body_zh passa a resumir em uma ou duas frases os pontos centrais do 【post citado】, para que corpo e título combinem (não devolva só a frase vazia do post principal); pode terminar com uma breve frase com a reação do post principal. Nos demais casos, traduza só o post principal.
+{{quotedLabel}} (só para entender o contexto; use a "exceção de teaser com citação" acima para decidir se deve resumi-lo):
+{{quotedText}}

@@ -1,0 +1,14 @@
+{
+  "latestVersion": "2026-10-13T08:00",
+  "releases": [
+    {
+      "date": "2026-10-13",
+      "time": "08:00",
+      "kind": "公告",
+      "title": "Site no ar",
+      "body": [
+        "O MedIA Briefing entrou no ar, feito com o framework open source AIHOT: acompanha as fontes de IA em medicina, seleciona o que importa, agrupa as notícias sobre o mesmo fato e publica um briefing todos os dias às 08:00 (horário de Brasília)."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,441 @@
+{
+  "groups": [
+    {
+      "key": "company",
+      "name": "Empresas e instituições",
+      "blurb": "Acompanhe reguladores, big techs e empresas de IA em saúde"
+    },
+    {
+      "key": "field",
+      "name": "Especialidades e áreas",
+      "blurb": "Por especialidade e aplicação: radiologia, oncologia, documentação clínica…"
+    },
+    {
+      "key": "genre",
+      "name": "Tipo de conteúdo",
+      "blurb": "Por tipo: ensaios clínicos, aprovações, produtos, opinião…"
+    }
+  ],
+  "topics": [
+    {
+      "slug": "fda",
+      "name": "FDA",
+      "group": "company",
+      "entityId": "fda",
+      "definition": "Aprovações, liberações, guias e alertas da FDA sobre IA e software como dispositivo médico."
+    },
+    {
+      "slug": "anvisa",
+      "name": "ANVISA",
+      "group": "company",
+      "entityId": "anvisa",
+      "definition": "Registros, normas e consultas da ANVISA envolvendo IA e software em saúde no Brasil."
+    },
+    {
+      "slug": "oms",
+      "name": "OMS",
+      "group": "company",
+      "entityId": "who",
+      "definition": "Orientações, relatórios e posicionamentos da Organização Mundial da Saúde sobre IA em saúde."
+    },
+    {
+      "slug": "ministerio-saude",
+      "name": "Ministério da Saúde / SUS",
+      "group": "company",
+      "entityId": "ministerio-saude",
+      "definition": "Iniciativas de IA e saúde digital do Ministério da Saúde e do SUS."
+    },
+    {
+      "slug": "cfm",
+      "name": "CFM",
+      "group": "company",
+      "entityId": "cfm",
+      "definition": "Resoluções e posicionamentos do Conselho Federal de Medicina sobre IA na prática médica."
+    },
+    {
+      "slug": "google",
+      "name": "Google / DeepMind",
+      "group": "company",
+      "entityId": "google",
+      "definition": "Pesquisa e produtos de saúde do Google e da DeepMind: Med-Gemini, AMIE, AlphaFold e parcerias clínicas."
+    },
+    {
+      "slug": "microsoft",
+      "name": "Microsoft / Nuance",
+      "group": "company",
+      "entityId": "microsoft",
+      "definition": "Microsoft em saúde: Dragon Copilot, documentação clínica, pesquisa e parcerias com sistemas de saúde."
+    },
+    {
+      "slug": "openai",
+      "name": "OpenAI / ChatGPT",
+      "group": "company",
+      "entityId": "openai",
+      "definition": "OpenAI em saúde: uso clínico do ChatGPT, HealthBench, parcerias e recursos de saúde."
+    },
+    {
+      "slug": "anthropic",
+      "name": "Anthropic / Claude",
+      "group": "company",
+      "entityId": "anthropic",
+      "definition": "Anthropic em saúde e ciências da vida: Claude em hospitais, pesquisa e parcerias."
+    },
+    {
+      "slug": "nvidia",
+      "name": "NVIDIA",
+      "group": "company",
+      "entityId": "nvidia",
+      "definition": "NVIDIA em saúde: plataformas de imagem médica, descoberta de fármacos e parcerias."
+    },
+    {
+      "slug": "epic",
+      "name": "Epic",
+      "group": "company",
+      "entityId": "epic",
+      "definition": "IA no prontuário Epic: recursos generativos, escribas e modelos preditivos."
+    },
+    {
+      "slug": "abridge",
+      "name": "Abridge",
+      "group": "company",
+      "entityId": "abridge",
+      "definition": "Abridge e o mercado de escribas de IA para documentação clínica."
+    },
+    {
+      "slug": "aidoc",
+      "name": "Aidoc",
+      "group": "company",
+      "entityId": "aidoc",
+      "definition": "Aidoc: triagem por IA em radiologia e modelos fundacionais de imagem."
+    },
+    {
+      "slug": "tempus",
+      "name": "Tempus",
+      "group": "company",
+      "entityId": "tempus",
+      "definition": "Tempus: oncologia de precisão, dados clínico-genômicos e diagnósticos com IA."
+    },
+    {
+      "slug": "nmpa",
+      "name": "NMPA (China)",
+      "group": "company",
+      "entityId": "nmpa",
+      "definition": "Aprovações e normas do regulador chinês (NMPA/CMDE) para dispositivos médicos com IA."
+    },
+    {
+      "slug": "radiologia",
+      "name": "Radiologia",
+      "group": "field",
+      "tags": [
+        "Radiologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em radiologia."
+    },
+    {
+      "slug": "patologia",
+      "name": "Patologia",
+      "group": "field",
+      "tags": [
+        "Patologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em patologia."
+    },
+    {
+      "slug": "cardiologia",
+      "name": "Cardiologia",
+      "group": "field",
+      "tags": [
+        "Cardiologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em cardiologia."
+    },
+    {
+      "slug": "oncologia",
+      "name": "Oncologia",
+      "group": "field",
+      "tags": [
+        "Oncologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em oncologia."
+    },
+    {
+      "slug": "pneumologia",
+      "name": "Pneumologia",
+      "group": "field",
+      "tags": [
+        "Pneumologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em pneumologia."
+    },
+    {
+      "slug": "cirurgia",
+      "name": "Cirurgia",
+      "group": "field",
+      "tags": [
+        "Cirurgia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em cirurgia."
+    },
+    {
+      "slug": "dermatologia",
+      "name": "Dermatologia",
+      "group": "field",
+      "tags": [
+        "Dermatologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em dermatologia."
+    },
+    {
+      "slug": "oftalmologia",
+      "name": "Oftalmologia",
+      "group": "field",
+      "tags": [
+        "Oftalmologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em oftalmologia."
+    },
+    {
+      "slug": "neurologia",
+      "name": "Neurologia",
+      "group": "field",
+      "tags": [
+        "Neurologia"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em neurologia."
+    },
+    {
+      "slug": "medicina-intensiva",
+      "name": "Medicina intensiva",
+      "group": "field",
+      "tags": [
+        "Medicina intensiva"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em medicina intensiva."
+    },
+    {
+      "slug": "emergencia",
+      "name": "Emergência",
+      "group": "field",
+      "tags": [
+        "Emergência"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em emergência."
+    },
+    {
+      "slug": "atencao-primaria",
+      "name": "Atenção primária",
+      "group": "field",
+      "tags": [
+        "Atenção primária"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em atenção primária."
+    },
+    {
+      "slug": "saude-mental",
+      "name": "Saúde mental",
+      "group": "field",
+      "tags": [
+        "Saúde mental"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em saúde mental."
+    },
+    {
+      "slug": "pediatria",
+      "name": "Pediatria",
+      "group": "field",
+      "tags": [
+        "Pediatria"
+      ],
+      "definition": "Notícias, estudos e produtos de IA em pediatria."
+    },
+    {
+      "slug": "genomica",
+      "name": "Genômica",
+      "group": "field",
+      "tags": [
+        "Genômica"
+      ],
+      "definition": "IA aplicada a genômica, medicina de precisão e biologia molecular."
+    },
+    {
+      "slug": "farmacos",
+      "name": "Descoberta de fármacos",
+      "group": "field",
+      "tags": [
+        "Descoberta de fármacos"
+      ],
+      "definition": "IA na descoberta e no desenvolvimento de medicamentos."
+    },
+    {
+      "slug": "documentacao-clinica",
+      "name": "Documentação clínica e escribas",
+      "group": "field",
+      "tags": [
+        "Documentação clínica"
+      ],
+      "definition": "Escribas ambientais, sumários de alta e automação da documentação clínica."
+    },
+    {
+      "slug": "ia-generativa",
+      "name": "IA generativa e LLMs",
+      "group": "field",
+      "tags": [
+        "IA generativa"
+      ],
+      "definition": "LLMs e IA generativa aplicados à medicina: assistentes clínicos, raciocínio diagnóstico e riscos."
+    },
+    {
+      "slug": "agentes",
+      "name": "Agentes",
+      "group": "field",
+      "tags": [
+        "Agentes"
+      ],
+      "definition": "Agentes de IA que executam tarefas clínicas e administrativas com autonomia."
+    },
+    {
+      "slug": "wearables",
+      "name": "Wearables e monitoramento",
+      "group": "field",
+      "tags": [
+        "Wearables/monitoramento"
+      ],
+      "definition": "Dispositivos vestíveis, monitoramento remoto e sinais fisiológicos analisados por IA."
+    },
+    {
+      "slug": "saude-digital",
+      "name": "Saúde digital",
+      "group": "field",
+      "tags": [
+        "Saúde digital"
+      ],
+      "definition": "Telessaúde, prontuário eletrônico e saúde digital com IA."
+    },
+    {
+      "slug": "ensino-medico",
+      "name": "Ensino médico",
+      "group": "field",
+      "tags": [
+        "Ensino médico"
+      ],
+      "definition": "IA na formação médica, provas, residência e educação continuada."
+    },
+    {
+      "slug": "seguranca-vies",
+      "name": "Segurança, viés e equidade",
+      "group": "field",
+      "tags": [
+        "Segurança/viés"
+      ],
+      "definition": "Segurança do paciente, vieses, equidade, privacidade e incidentes com IA em saúde."
+    },
+    {
+      "slug": "ensaios-clinicos",
+      "name": "Ensaios clínicos",
+      "group": "genre",
+      "tags": [
+        "Ensaio clínico"
+      ],
+      "definition": "Ensaios clínicos que testam IA com pacientes, com desfechos medidos."
+    },
+    {
+      "slug": "validacao",
+      "name": "Estudos de validação",
+      "group": "genre",
+      "tags": [
+        "Estudo de validação"
+      ],
+      "definition": "Validações prospectivas e retrospectivas de desempenho de IA em dados clínicos reais."
+    },
+    {
+      "slug": "revisoes",
+      "name": "Revisões e metanálises",
+      "group": "genre",
+      "tags": [
+        "Revisão/metanálise"
+      ],
+      "definition": "Revisões sistemáticas e metanálises sobre IA em medicina."
+    },
+    {
+      "slug": "aprovacoes",
+      "name": "Aprovações regulatórias",
+      "group": "genre",
+      "tags": [
+        "Aprovação regulatória"
+      ],
+      "definition": "Liberações e registros de dispositivos e softwares de IA (FDA, ANVISA, CE)."
+    },
+    {
+      "slug": "politicas",
+      "name": "Regulação e políticas",
+      "group": "genre",
+      "tags": [
+        "Política/regulação"
+      ],
+      "definition": "Leis, normas, reembolso e diretrizes oficiais sobre IA em saúde."
+    },
+    {
+      "slug": "produtos",
+      "name": "Produtos e lançamentos",
+      "group": "genre",
+      "tags": [
+        "Produto/lançamento"
+      ],
+      "definition": "Lançamentos e atualizações de ferramentas de IA para saúde."
+    },
+    {
+      "slug": "pesquisa",
+      "name": "Pesquisa e modelos",
+      "group": "genre",
+      "tags": [
+        "Modelo/pesquisa"
+      ],
+      "definition": "Novos modelos, métodos e artigos técnicos de IA médica."
+    },
+    {
+      "slug": "benchmarks",
+      "name": "Benchmarks e avaliação",
+      "group": "genre",
+      "tags": [
+        "Benchmark/avaliação"
+      ],
+      "definition": "Como os modelos são avaliados em tarefas médicas."
+    },
+    {
+      "slug": "mercado",
+      "name": "Mercado e negócios",
+      "group": "genre",
+      "tags": [
+        "Mercado/negócios"
+      ],
+      "definition": "Investimentos, aquisições e parcerias em IA para saúde."
+    },
+    {
+      "slug": "implementacao",
+      "name": "Implementação e adoção",
+      "group": "genre",
+      "tags": [
+        "Implementação/adoção"
+      ],
+      "definition": "Como hospitais e sistemas de saúde estão adotando IA, e o que aprenderam."
+    },
+    {
+      "slug": "guias",
+      "name": "Guias e prática",
+      "group": "genre",
+      "tags": [
+        "Guia/prática"
+      ],
+      "definition": "Guias, boas práticas e explicações para usar IA na clínica."
+    },
+    {
+      "slug": "opiniao",
+      "name": "Opinião",
+      "group": "genre",
+      "tags": [
+        "Opinião"
+      ],
+      "definition": "Editoriais, análises e entrevistas sobre IA em medicina."
+    }
+  ]
+}

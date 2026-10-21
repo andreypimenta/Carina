@@ -1,0 +1,1 @@
+sections são as apresentações de seção; escreva só para {{columns}}, com o nome da seção como chave: uma frase cada, com no máximo 140 caracteres, apontando a tendência comum da seção ou o fato importante que o overview não citou; não repita eventos e números do overview nem reproduza títulos dos itens.
