@@ -88,6 +88,46 @@
       "id": "transplante-pulmonar-pediatrico",
       "name": "Transplante pulmonar pediátrico",
       "term": "((\"Lung Transplantation\"[Mesh] OR \"lung transplant\"[tiab] OR \"lung transplantation\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "traqueostomia-adulto",
+      "name": "Traqueostomia no adulto e na UTI",
+      "term": "((tracheostom*[ti] OR tracheotom*[ti] OR decannulation[tiab] OR \"Tracheostomy\"[majr]) AND (adult*[tiab] OR \"Adult\"[Mesh] OR \"Critical Care\"[Mesh] OR \"Intensive Care Units\"[Mesh] OR \"intensive care\"[tiab] OR ICU[tiab] OR \"mechanical ventilation\"[tiab])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "via-aerea-dificil-adulto",
+      "name": "Via aérea difícil e acesso cirúrgico de emergência",
+      "term": "(\"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR \"difficult laryngoscopy\"[tiab] OR \"awake intubation\"[tiab] OR \"awake tracheal intubation\"[tiab] OR \"front of neck access\"[tiab] OR \"front-of-neck access\"[tiab] OR cricothyroidotomy[tiab] OR cricothyrotomy[tiab] OR \"emergency surgical airway\"[tiab] OR \"failed intubation\"[tiab] OR \"cannot intubate\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "trauma-laringotraqueal",
+      "name": "Trauma e lesão laringotraqueal",
+      "term": "(\"Larynx/injuries\"[Mesh] OR \"Trachea/injuries\"[Mesh] OR \"laryngeal trauma\"[tiab] OR \"laryngotracheal trauma\"[tiab] OR \"laryngotracheal injury\"[tiab] OR \"laryngeal injury\"[tiab] OR \"laryngeal fracture\"[tiab] OR \"tracheal rupture\"[tiab] OR \"tracheal laceration\"[tiab] OR \"tracheal tear\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "via-aerea-anestesia-pediatrica",
+      "name": "Via aérea na anestesia e na terapia intensiva pediátrica e neonatal",
+      "term": "((intubation[ti] OR extubation[ti] OR laryngoscop*[ti] OR videolaryngoscop*[ti] OR \"supraglottic airway\"[ti] OR \"laryngeal mask\"[ti] OR airway*[ti] OR laryngospasm[ti] OR \"perioperative respiratory adverse\"[tiab] OR \"Airway Management\"[majr] OR \"Intubation, Intratracheal\"[majr]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh]) AND (\"Anesthesia\"[Mesh] OR anesth*[tiab] OR anaesth*[tiab] OR \"Intensive Care Units, Pediatric\"[Mesh] OR \"Intensive Care Units, Neonatal\"[Mesh] OR PICU[tiab] OR NICU[tiab] OR \"intensive care\"[tiab] OR \"delivery room\"[tiab] OR \"emergency department\"[tiab])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "pneumologia-intervencionista-adulto",
+      "name": "Pneumologia intervencionista do adulto: colapso dinâmico, tumores e fístulas de via aérea",
+      "term": "(\"interventional pulmonology\"[tiab] OR \"excessive dynamic airway collapse\"[tiab] OR tracheobronchoplasty[tiab] OR \"malignant airway obstruction\"[tiab] OR \"malignant central airway obstruction\"[tiab] OR \"tracheobronchial tumor\"[tiab] OR \"tracheobronchial tumors\"[tiab] OR \"endobronchial cryotherapy\"[tiab] OR \"endobronchial cryoablation\"[tiab] OR \"endobronchial laser\"[tiab] OR \"airway ablation\"[tiab] OR \"silicone stent\"[tiab] OR \"silicone stents\"[tiab] OR \"Y-stent\"[tiab] OR \"airway fistula\"[tiab] OR \"bronchopleural fistula\"[tiab] OR \"tracheobronchial fistula\"[tiab] OR \"airway-esophageal fistula\"[tiab]) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
+    },
+    {
+      "id": "cirurgia-traqueia-adulto",
+      "name": "Cirurgia de traqueia e brônquio no adulto",
+      "term": "(\"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"tracheal replacement\"[tiab] OR \"tracheal transplantation\"[tiab] OR \"carinal resection\"[tiab] OR \"tracheal surgery\"[tiab] OR bronchoplasty[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"tracheal neoplasm\"[tiab] OR \"Tracheal Neoplasms\"[Mesh]) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
+    },
+    {
+      "id": "transplante-pulmonar-via-aerea",
+      "name": "Transplante pulmonar: complicações da via aérea e da anastomose",
+      "term": "((\"Lung Transplantation\"[Mesh] OR \"lung transplant\"[tiab] OR \"lung transplantation\"[tiab] OR \"lung transplants\"[tiab]) AND (\"airway complication\"[tiab] OR \"airway complications\"[tiab] OR anastomotic[tiab] OR \"bronchial anastomosis\"[tiab] OR \"bronchial stenosis\"[tiab] OR \"airway stenosis\"[tiab] OR dehiscence[tiab] OR bronchomalacia[tiab] OR \"vanishing bronchus\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab])) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
+    },
+    {
+      "id": "ecmo-via-aerea",
+      "name": "ECMO na cirurgia e na obstrução crítica da via aérea",
+      "term": "((\"Extracorporeal Membrane Oxygenation\"[Mesh] OR ECMO[tiab] OR \"extracorporeal membrane oxygenation\"[tiab] OR \"extracorporeal life support\"[tiab]) AND (trachea*[tiab] OR \"airway obstruction\"[tiab] OR \"airway surgery\"[tiab] OR \"central airway\"[tiab] OR \"airway stenosis\"[tiab] OR \"airway management\"[tiab] OR \"mediastinal mass\"[tiab] OR \"anterior mediastinal\"[tiab] OR bronchoscop*[tiab] OR \"airway stent\"[tiab])) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
     }
   ]
 }
