@@ -135,11 +135,18 @@
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-sbct",
+      "id": "web-sbct",
       "name": "SBCT",
-      "kind": "rss",
+      "kind": "web_list",
       "config": {
-        "feedUrl": "https://sbct.org.br/feed/",
+        "url": "https://www.sbct.com.br/noticias/",
+        "parseMode": "html",
+        "itemSelector": "article.elementor-post",
+        "linkSelector": "h2.elementor-post__title a",
+        "titleSelector": "h2.elementor-post__title a",
+        "allowUrlPrefixes": [
+          "https://www.sbct.com.br/"
+        ],
         "_aihot": {
           "initialBackfillLimit": 8
         }
@@ -173,8 +180,7 @@
         "sociedade"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
+      "syndicate_fulltext": false
     },
     {
       "id": "rss-cipe",
@@ -194,8 +200,126 @@
         "sociedade"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false,
-      "enabled": false
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-ats-press",
+      "name": "ATS · comunicados",
+      "kind": "web_list",
+      "config": {
+        "url": "https://site.thoracic.org/press-releases",
+        "parseMode": "html",
+        "itemSelector": "li.resource-list__item",
+        "linkSelector": "a.resource-list__link",
+        "titleSelector": "h3",
+        "publishedAtSelector": ".resource-list__category-item",
+        "publishedAtUtcOffset": "-05:00",
+        "allowUrlPrefixes": [
+          "https://site.thoracic.org/press-releases/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "ats",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-chest-press",
+      "name": "CHEST · comunicados",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.chestnet.org/newsroom/press-releases",
+        "parseMode": "html",
+        "itemSelector": "section.news-list dt",
+        "linkSelector": "a",
+        "titleSelector": "a",
+        "allowUrlPrefixes": [
+          "https://www.chestnet.org/newsroom/press-releases/20"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "publishedAtSelector": "p.dateline",
+          "publishedAtUtcOffset": "-06:00"
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "chest",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-sts-press",
+      "name": "STS · comunicados",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.sts.org/press-releases",
+        "parseMode": "html",
+        "itemSelector": ".views-row",
+        "linkSelector": "h2 a",
+        "titleSelector": "h2 a",
+        "publishedAtSelector": ".icon-with-label",
+        "publishedAtUtcOffset": "-06:00",
+        "allowUrlPrefixes": [
+          "https://www.sts.org/press-releases/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "sts",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-ests-news",
+      "name": "ESTS · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.ests.org/news",
+        "parseMode": "html",
+        "itemSelector": ".module_listing",
+        "linkSelector": "h2 a",
+        "titleSelector": "h2 a",
+        "publishedAtSelector": ".module_listing_metadata",
+        "publishedAtUtcOffset": "+01:00",
+        "allowUrlPrefixes": [
+          "https://www.ests.org/news/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "ests",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
     },
     {
       "id": "rss-fda-medwatch",
@@ -448,6 +572,230 @@
         }
       },
       "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-chop-news",
+      "name": "CHOP · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.chop.edu/newsroom/search",
+        "parseMode": "html",
+        "itemSelector": ".views-row article",
+        "linkSelector": "h3 a",
+        "titleSelector": "h3 a",
+        "publishedAtSelector": "time",
+        "allowUrlPrefixes": [
+          "https://www.chop.edu/news/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-nationwide-releases",
+      "name": "Nationwide Children's · comunicados",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.nationwidechildrens.org/newsroom/news-releases",
+        "parseMode": "html",
+        "itemSelector": "div.rtf:has(h4 a)",
+        "linkSelector": "h4 a",
+        "titleSelector": "h4 a",
+        "publishedAtSelector": "h5",
+        "publishedAtUtcOffset": "-05:00",
+        "allowUrlPrefixes": [
+          "https://www.nationwidechildrens.org/newsroom/news-releases/20"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-cincinnati-releases",
+      "name": "Cincinnati Children's · comunicados",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.cincinnatichildrens.org/news/release",
+        "parseMode": "html",
+        "itemSelector": "h4.Newsroom",
+        "linkSelector": "a",
+        "titleSelector": "a",
+        "publishedAtSelector": ".NewsDate",
+        "publishedAtUtcOffset": "-05:00",
+        "allowUrlPrefixes": [
+          "https://www.cincinnatichildrens.org/news/release/20"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-gosh-news",
+      "name": "Great Ormond Street · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.gosh.nhs.uk/news/",
+        "parseMode": "html",
+        "itemSelector": ".listing-teaser",
+        "linkSelector": "a.listing-teaser__link",
+        "titleSelector": "a.listing-teaser__link",
+        "publishedAtRegex": "listing-teaser__meta\">\\s*(\\d{1,2} [A-Z][a-z]{2} \\d{4})",
+        "publishedAtUtcOffset": "+00:00",
+        "allowUrlPrefixes": [
+          "https://www.gosh.nhs.uk/news/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-sickkids-news",
+      "name": "SickKids · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.sickkids.ca/en/news/newsroom/",
+        "parseMode": "html",
+        "itemSelector": ".card-body",
+        "linkSelector": ".card-title a",
+        "titleSelector": ".card-title a",
+        "publishedAtSelector": ".card-lead",
+        "publishedAtUtcOffset": "-05:00",
+        "allowUrlPrefixes": [
+          "https://www.sickkids.ca/en/news/archive/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-sjd-noticias",
+      "name": "Sant Joan de Déu · notícias",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.sjdhospitalbarcelona.org/es/rss.xml",
+        "allowUrlPrefixes": [
+          "https://www.sjdhospitalbarcelona.org/es/noticias/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-pequeno-principe",
+      "name": "Hospital Pequeno Príncipe · notícias",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://pequenoprincipe.org.br/noticia/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-bch-news",
+      "name": "Beijing Children's Hospital · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.bch.com.cn/Html/News/Columns/5/Index.html",
+        "parseMode": "html",
+        "itemSelector": "ul.column_list li:has(a.dy_title)",
+        "linkSelector": "a.dy_title",
+        "titleSelector": "a.dy_title",
+        "publishedAtSelector": ".dy_date",
+        "publishedAtUtcOffset": "+08:00",
+        "allowUrlPrefixes": [
+          "https://www.bch.com.cn/Html/News/Articles/"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "titleSelector": ".article_blue_block h1 > span",
+          "titleAuthoritative": true,
+          "publishedAtSelector": ".article_blue_block .sub_tit > span",
+          "upgradeDatePrecision": true,
+          "publishedAtUtcOffset": "+08:00"
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
       "owner_entity_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 360,

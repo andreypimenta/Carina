@@ -1,6 +1,6 @@
 # Fontes do Fôlego
 
-O Fôlego tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS de sociedades, reguladores, registros de ensaios e imprensa (`industry/sources.json`).
+O Fôlego tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS e páginas de lista de sociedades, reguladores, registros de ensaios, centros de referência e imprensa (`industry/sources.json`).
 
 ## Artigos científicos (módulo literatura)
 
@@ -29,37 +29,44 @@ A republicação vale pela URL de licença que o próprio artigo declara no PMC,
 
 Cada matéria é uma chamada ao modelo, com algo entre 3 mil e 15 mil tokens de entrada e até 4 mil de saída. Com as 24 buscas atuais (via aérea da criança ao adulto, cirurgia torácica pediátrica e, na interface com a via aérea, transplante pulmonar e ECMO), são cerca de 90 artigos novos por semana. As buscas de traqueostomia no adulto e de via aérea na anestesia pediátrica exigem o termo no título ou como assunto principal (MeSH `[majr]`), porque com o termo em qualquer ponto do resumo traziam muito artigo de UTI, ventilação e anestesia que só cita a via aérea de passagem. Os textos integrais não passam por essa etapa; a tradução deles só acontece quando são selecionados.
 
-## Notícias (feeds)
+## Notícias (feeds e páginas de lista)
 
 | Grupo | Fontes | Observação |
 |---|---|---|
 | Sociedades | SBP (buscas "pneumologia" e "traqueostomia"), ABORL-CCF, ERS (buscas "paediatric" e "airway") | Os feeds de busca do WordPress (`/feed/?s=termo`) dão um feed temático. |
-| Sociedades a conferir | SBCT, SBPT, CIPE | Começam **desligadas**: os feeds não puderam ser verificados. No Painel → Fontes, use "Pré-visualizar" e ligue as que funcionarem. |
+| Sociedades (outras) | SBPT e CIPE (feeds), SBCT (página de notícias, desligada), ATS, CHEST e STS (comunicados), ESTS (notícias) | A SBCT está cadastrada como página de lista (`web_list` em `https://www.sbct.com.br/noticias/`), mas desligada; o motivo está logo abaixo da tabela. ATS, CHEST, STS e ESTS são páginas de lista (`web_list`); a CHEST não traz data na lista, e cada comunicado é aberto (`detail`) para lê-la. Não há filtro por tema: a pré-triagem descarta o que é de adultos e não trata da via aérea. |
 | Reguladores | FDA MedWatch | Alertas de segurança e recalls; a pré-triagem deixa passar só os de via aérea, traqueostomia e ventilação. |
 | Ensaios registrados | ClinicalTrials.gov: estenose subglótica, estenose traqueal, pectus, malformações pulmonares, hérnia diafragmática, traqueomalácia, traqueostomia pediátrica | Só estudos novos (`dateField=StudyFirstPostDate`). Entram como "Ensaio registrado". |
 | Centros de referência | Cincinnati Children's (Research Horizons), Nationwide Children's (Pediatrics Nationwide), Boston Children's (Answers), Mayo Clinic News Network | Nenhum desses centros tem feed só de via aérea ou cirurgia torácica: são feeds gerais, e a pré-triagem descarta o que é de outras áreas. |
+| Centros de referência (notícias) | CHOP, Nationwide Children's (comunicados), Cincinnati Children's (comunicados), Great Ormond Street, SickKids, Beijing Children's Hospital (páginas de lista); Sant Joan de Déu e Hospital Pequeno Príncipe (feeds) | Notícias gerais dos hospitais (prêmios, eventos, campanhas), por isso nível T2. Veja "Páginas de lista" abaixo. |
 | Pacientes e imprensa | Unidos pela Vida (fibrose cística), Respiratory Therapy | Nível T2: só entram com nota alta. |
 | Imprensa | ENTtoday | Nível T2. |
 | Google News | buscas "traqueostomia", "cirurgia torácica" criança, "hérnia diafragmática", "fibrose cística" (pt-BR) e "pediatric airway" OR "subglottic stenosis" OR "tracheal stenosis" (en) | Nível T2. O link do item é o redirecionamento do Google, então em geral só entram título e resumo. |
 
-Fontes avaliadas e deixadas de fora por estarem paradas ou sem feed: Healio (pneumologia e pediatria), AARC, APSA, AABIP, ESPO. ATS, CHEST, STS e ESTS têm página de notícias mas não têm RSS; podem entrar como `web_list` (veja `docs/sources.md`). A ANVISA não tem feed de alertas de tecnovigilância.
+Fontes avaliadas e deixadas de fora por estarem paradas ou sem feed: Healio (pneumologia e pediatria), AARC, APSA, AABIP, ESPO. A ANVISA não tem feed de alertas de tecnovigilância.
 
 Também foram testados e deixados de fora: STAT News, porque o feed devolve HTTP 403 ao servidor; OMS (notícias), porque o feed está quase parado (1 item em 28 dias); e FDA (comunicados), Jornal da USP (ciências da saúde), Agência Brasil (saúde) e Medicina S/A, porque nenhum dos itens amostrados passou na pré-triagem (0 de 8 em cada) e juntos somavam cerca de 85 itens por semana sem nada do tema. Para pegar o item raro desses veículos, uma busca do Google News com termo específico rende mais.
 
-### Candidatas a página de lista (`web_list`)
+### Páginas de lista
 
-Estes centros não têm RSS, mas têm páginas de notícias com lista de links. Para incluí-los, crie a fonte no Painel → Fontes com o tipo "página de lista", ajuste os seletores olhando a página (`docs/sources.md`) e confira com "Pré-visualizar":
+Testadas em 22/10/2026 com a pré-visualização e uma coleta completa (`scripts/collect.ts`), com título, link e data conferidos com a página:
 
-| Centro | Página | Padrão dos links |
+| Fonte | Página | Como é lida |
 |---|---|---|
-| CHOP | https://www.chop.edu/newsroom/search | `/news/<slug>` |
-| Nationwide Children's (comunicados) | https://www.nationwidechildrens.org/newsroom/news-releases | `/newsroom/news-releases/AAAA/MM/<slug>` |
-| Cincinnati Children's (comunicados) | https://www.cincinnatichildrens.org/news/release | `/news/release/AAAA/<slug>` |
-| Great Ormond Street | https://www.gosh.nhs.uk/news/ | `/news/<slug>/` |
-| SickKids | https://www.sickkids.ca/en/news/newsroom/ | `/en/news/archive/AAAA/<slug>/` |
-| Sant Joan de Déu | https://www.sjdhospitalbarcelona.org/es/noticias | `/es/noticias/<slug>`; fuso `+01:00` |
-| Hospital Pequeno Príncipe | https://pequenoprincipe.org.br/novidades/noticias/ | `/noticia/<slug>/`; fuso `-03:00` |
-| Beijing Children's Hospital (北京儿童医院) | https://www.bch.com.cn/Html/News/Columns/1/Index.html | `/Html/News/Articles/<id>.html`; data só na matéria (use `detail`); fuso `+08:00` |
+| ATS | https://site.thoracic.org/press-releases | Data na lista, fuso `-05:00` |
+| CHEST | https://www.chestnet.org/newsroom/press-releases | A lista não tem data: ela vem da linha de data do comunicado (`detail`), fuso `-06:00` |
+| STS | https://www.sts.org/press-releases | Data na lista, fuso `-06:00` |
+| ESTS | https://www.ests.org/news | Data na lista, fuso `+01:00` |
+| CHOP | https://www.chop.edu/newsroom/search | Data e hora na lista |
+| Nationwide Children's (comunicados) | https://www.nationwidechildrens.org/newsroom/news-releases | Data na lista, fuso `-05:00` |
+| Cincinnati Children's (comunicados) | https://www.cincinnatichildrens.org/news/release | Data na lista, fuso `-05:00`; só os 5 mais recentes aparecem |
+| Great Ormond Street | https://www.gosh.nhs.uk/news/ | Dia lido por expressão regular ("21 Oct 2026, 3:58 p.m." não é lido inteiro), fuso `+00:00` |
+| SickKids | https://www.sickkids.ca/en/news/newsroom/ | Data na lista, fuso `-05:00` |
+| Beijing Children's Hospital (北京儿童医院) | https://www.bch.com.cn/Html/News/Columns/5/Index.html | Na lista, o dia e um título cortado ("…"); o título inteiro e a hora vêm da matéria (`detail`), fuso `+08:00` |
+
+Sant Joan de Déu e Pequeno Príncipe têm feed, mais simples que a página de lista: `https://www.sjdhospitalbarcelona.org/es/rss.xml` (só os links em `/es/noticias/`, sem as versões em catalão) e `https://pequenoprincipe.org.br/noticia/feed/`. O endereço antigo do Beijing Children's (`Columns/1`) é a página da direção do hospital, e não a de notícias (`Columns/5`). A CDN do Beijing Children's às vezes responde com uma página de erro curta; quando isso acontece na lista, a coleta falha e é repetida na rodada seguinte, e quando acontece na matéria, a notícia fica com o título cortado da lista.
+
+O endereço antigo da SBCT (`sbct.org.br`) tem certificado autoassinado e responde 403, por isso a fonte `rss-sbct` saiu desta lista. No site novo, sbct.com.br, o feed foi desligado. A API do WordPress (`/wp-json/wp/v2/posts`) entrega os títulos com entidades HTML (`&#8211;`) que o `json_list` não decodifica. A página de notícias dá títulos e links limpos, mas não tem data nem na lista nem nas matérias (sem `article:published_time`, sem JSON-LD, sem `<time>`), e o coletor segura itens sem data. Por isso a fonte `web-sbct` fica desligada até a SBCT publicar a data. Em um site que já está no ar, a importação só acrescenta fontes novas: as fontes de ATS, CHEST, STS, ESTS e dos centros entram na próxima atualização, mas SBPT e CIPE continuam desligadas até alguém ligá-las no Painel → Fontes (ou com `node --env-file=.env scripts/enable-sources.ts rss --ids=rss-sbpt,rss-cipe`); a antiga `rss-sbct` continua cadastrada e desligada.
 
 Não foi possível verificar Royal Children's Melbourne, Necker, Stanford, Lurie (lista sem datas), Mass General, Sabará, ICr-HCFMUSP, Calvo Mackenna, Shanghai Children's Medical Center, Fudan, Chongqing e as revistas chinesas (中华小儿外科杂志, 中华耳鼻咽喉头颈外科杂志), que não têm RSS encontrado. Vale testá-los do próprio servidor.
 

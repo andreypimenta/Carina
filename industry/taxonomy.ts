@@ -144,7 +144,7 @@ export const IDENTITY_LEXICON: ReadonlyArray<{ id: string; name: string; pattern
 
 /** Artigos nestes domínios têm como publicador a organização correspondente. */
 export const PUBLISHER_DOMAINS: ReadonlyArray<{ entityId: string; domains: readonly string[] }> = [
-  { entityId: "sbct", domains: ["sbct.org.br"] },
+  { entityId: "sbct", domains: ["sbct.com.br"] },
   { entityId: "sbpt", domains: ["sbpt.org.br", "jornaldepneumologia.com.br"] },
   { entityId: "sbp", domains: ["sbp.com.br"] },
   { entityId: "aborl", domains: ["aborlccf.org.br"] },
