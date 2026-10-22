@@ -15,7 +15,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   return adminGet<AdminContentChain>(request, `/api/admin/content/${encodeURIComponent(params.id)}`);
 }
 
-export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: `${loaderData?.publication?.title ?? loaderData?.article.title ?? "Conteúdo"} · Painel do ${SITE.name}` }];
+export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: `${loaderData?.publication?.title ?? loaderData?.article.title ?? "Conteúdo"} · Painel do ${SITE.bareName}` }];
 
 function Step({ title, meta, children, tone = "accent", last }: { title: ReactNode; meta?: ReactNode; children: ReactNode; tone?: "accent" | "muted" | "bad"; last?: boolean }) {
   const dot = tone === "bad" ? "bg-hot" : tone === "muted" ? "bg-ink-4" : "bg-accent";

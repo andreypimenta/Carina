@@ -39,7 +39,7 @@ docker compose up -d --build
 
 ### 配域名和 HTTPS
 
-先把域名解析到服务器，然后在 `.env` 里设置：
+先把域名和它的 `www.` 子域名都解析到服务器（`www.` 会永久跳转到不带 `www` 的地址），然后在 `.env` 里设置：
 
 ```bash
 SITE_URL=https://example.com

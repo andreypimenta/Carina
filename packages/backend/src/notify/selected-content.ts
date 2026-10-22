@@ -39,7 +39,7 @@ function card(r: Row) {
       {
         tag: "action",
         actions: [
-          { tag: "button", text: { tag: "plain_text", content: `Ler no ${SITE.name}` }, url: itemUrl(r.article_id), type: "primary" },
+          { tag: "button", text: { tag: "plain_text", content: `Ler no ${SITE.bareName}` }, url: itemUrl(r.article_id), type: "primary" },
           { tag: "button", text: { tag: "plain_text", content: "Original" }, url: r.url, type: "default" },
         ],
       },

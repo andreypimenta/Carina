@@ -155,7 +155,7 @@ export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endD
 
 const COMPANY_NAMES = Object.values(ENTITIES).map((e) => [e.name, ...e.aliases, ...(e.otherNames ?? [])].map((n) => n.toLowerCase()));
 /** Words a writer may use that name nothing in particular: the pack's plain terms and the site's name. */
-const PLAIN = new Set([...PLAIN_TERMS, SITE.name.toLowerCase()]);
+const PLAIN = new Set([...PLAIN_TERMS, SITE.name.toLowerCase(), SITE.bareName.toLowerCase()]);
 
 /** A vocabulary name as a whole word, in the case the vocabulary writes it ("Clara" the product, not "clara"). */
 const COMPANY_PATTERNS = Object.values(ENTITIES).map((e) => [e.name, ...e.aliases, ...(e.otherNames ?? [])]

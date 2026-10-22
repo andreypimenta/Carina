@@ -91,7 +91,7 @@ export default function MorePage() {
           ))}
         </Group>
         <Group title="Sobre">
-          <RowLink row={{ to: "/about", label: `Sobre o ${SITE.name}`, icon: <IconHeart size={20} /> }} />
+          <RowLink row={{ to: "/about", label: `Sobre ${SITE.name}`, icon: <IconHeart size={20} /> }} />
           <RowLink row={{ to: "/changelog", label: "Novidades", icon: <IconSparkles size={20} /> }} dot={changelogDot} />
           <RowLink row={{ to: "/feedback", label: "Feedback", icon: <IconMessage size={20} /> }} />
         </Group>

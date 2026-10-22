@@ -23,8 +23,8 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export function meta({ loaderData }: { loaderData?: { index: ReportIndexEntry[] } }) {
-  const entries = (loaderData?.index ?? []).map((e: ReportIndexEntry) => ({ path: `/daily/${e.key}`, name: e.title ? `${e.key} · ${e.title}` : `Notas diárias do ${SITE.name} · ${e.key}` }));
-  return pageMeta({ title: "Notas diárias · arquivo", description: `Todas as edições das notas diárias do ${SITE.name}, por data.`, path: "/daily/archive", image: "/og/pages/daily.png", jsonLd: archiveLd("/daily/archive", `Notas diárias do ${SITE.name} · arquivo`, entries) });
+  const entries = (loaderData?.index ?? []).map((e: ReportIndexEntry) => ({ path: `/daily/${e.key}`, name: e.title ? `${e.key} · ${e.title}` : `Notas diárias do ${SITE.bareName} · ${e.key}` }));
+  return pageMeta({ title: "Notas diárias · arquivo", description: `Todas as edições das notas diárias do ${SITE.bareName}, por data.`, path: "/daily/archive", image: "/og/pages/daily.png", jsonLd: archiveLd("/daily/archive", `Notas diárias do ${SITE.bareName} · arquivo`, entries) });
 }
 
 export default function DailyArchive() {

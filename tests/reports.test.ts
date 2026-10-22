@@ -9,7 +9,7 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { loadReport } from "@aihot/backend/publication/reports";
-import { composeDaily, dueDaily, dueMonthly, dueWeekly } from "@aihot/backend/reports/compose";
+import { composeDaily, dueDaily, dueMonthly, dueWeekly, grounded } from "@aihot/backend/reports/compose";
 import { SITE } from "@aihot/site";
 
 const T = tag();
@@ -54,4 +54,8 @@ test("a weekly that froze no summaries shows the articles' public summaries", as
   await sql`UPDATE sources SET tier = 'T1_5', first_party = true WHERE id = ${SOURCE}`;
   await publishArticle(articleId);
   assert.equal((await loadReport("weekly", WEEK))?.sections[0]?.items[0]?.firstParty, false);
+});
+
+test("an overview may name the site by its bare name mid-sentence", () => {
+  assert.equal(grounded(`Nesta semana, o ${SITE.bareName} destaca três estudos.`, "três estudos"), true);
 });

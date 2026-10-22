@@ -35,7 +35,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 export function meta({ loaderData }: Route.MetaArgs) {
   if (!loaderData) return [{ title: titled("Edição não encontrada") }, { name: "robots", content: "noindex" }];
   const r = loaderData.report;
-  const description = r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? `${KIND_LABEL[r.kind]} do ${SITE.name}: ${r.key}.`;
+  const description = r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? `${KIND_LABEL[r.kind]} do ${SITE.bareName}: ${r.key}.`;
   const path = `/${r.kind}/${r.key}`;
   return [...pageMeta({
     title: r.kind === "daily" ? `${KIND_LABEL.daily} ${r.key}` : r.title.replace(`${SITE.name} ${KIND_LABEL[r.kind]}`, KIND_LABEL[r.kind]),

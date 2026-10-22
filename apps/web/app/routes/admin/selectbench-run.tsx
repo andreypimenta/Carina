@@ -13,7 +13,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   return adminGet<AdminSelectBenchCases>(request, `/api/admin/selectbench/${encodeURIComponent(params.runId)}${new URL(request.url).search}`);
 }
 
-export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: `${loaderData?.run.label ?? "SelectBench"} · Painel do ${SITE.name}` }];
+export const meta: Route.MetaFunction = ({ loaderData }) => [{ title: `${loaderData?.run.label ?? "SelectBench"} · Painel do ${SITE.bareName}` }];
 
 const GOLD: Record<string, [string, "accent" | "muted" | "info"]> = { select: ["Deve entrar", "accent"], reject: ["Não deve entrar", "muted"], either: ["Ambíguo", "info"] };
 

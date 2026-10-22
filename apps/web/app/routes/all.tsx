@@ -46,7 +46,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const path = listPath("/all", { ...(f && filterParams(f)), q, tab: f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null });
   return pageMeta({
     title: q ? `Busca: ${q}` : ALL_TITLE,
-    description: `Todas as notícias de ${SITE.subject} coletadas pelo ${SITE.name}, com filtros por canal, categoria e tag e busca em português e inglês.`,
+    description: `Todas as notícias de ${SITE.subject} coletadas pelo ${SITE.bareName}, com filtros por canal, categoria e tag e busca em português e inglês.`,
     path,
     noindex: !!q,
     jsonLd: q ? undefined : itemListLd(path, ALL_TITLE, loaderData?.data.items.map((i) => i.title) ?? []),

@@ -1,6 +1,6 @@
 // Every editorial prompt lives in the industry pack as a Markdown file (industry/prompts/*.md), so a new
 // industry changes its taste by editing text, not code. Two template forms, nothing else:
-//   {{name}}     a value the calling step passes (plus siteName, from site/site.ts)
+//   {{name}}     a value the calling step passes (plus siteName and siteBareName, from site/site.ts)
 //   {{> file}}   another prompt file, inserted as it is (shared rules)
 // A missing value or file is an error, never a silent blank. Versions are content hashes, so a receipt
 // and the admin's model page always say which wording produced a result. A wording that is not a file
@@ -45,7 +45,7 @@ function expand(name: string, seen: string[] = []): { text: string; used: string
 }
 
 function fill(name: string, text: string, values: Record<string, string>): string {
-  const all: Record<string, string> = { siteName: SITE.name, ...values };
+  const all: Record<string, string> = { siteName: SITE.name, siteBareName: SITE.bareName, ...values };
   return text.replace(TOKEN, (_token, _include, key: string) => {
     const value = all[key];
     if (value === undefined) throw new Error(`prompt ${name}: no value for {{${key}}}`);

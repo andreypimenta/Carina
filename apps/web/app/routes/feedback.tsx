@@ -19,7 +19,7 @@ export function headers() {
 }
 
 export function meta() {
-  return pageMeta({ title: "Feedback", description: `Diga ao ${SITE.name} o que pode melhorar: conteúdo, recursos, integração ou pedidos de correção e retirada de fontes.`, path: "/feedback", image: "/og/pages/feedback.png", noindex: true });
+  return pageMeta({ title: "Feedback", description: `Diga ao ${SITE.bareName} o que pode melhorar: conteúdo, recursos, integração ou pedidos de correção e retirada de fontes.`, path: "/feedback", image: "/og/pages/feedback.png", noindex: true });
 }
 
 interface Draft {

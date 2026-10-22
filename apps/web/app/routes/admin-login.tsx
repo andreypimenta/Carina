@@ -20,7 +20,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { returnTo: returnTo.startsWith("/admin") ? returnTo : "/admin", error: url.searchParams.get("error"), ...options };
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `Entrar · Painel do ${SITE.name}` }, { name: "robots", content: "noindex, nofollow" }];
+export const meta: Route.MetaFunction = () => [{ title: `Entrar · Painel do ${SITE.bareName}` }, { name: "robots", content: "noindex, nofollow" }];
 
 export const headers: Route.HeadersFunction = () => ({ "Cache-Control": "no-store", "X-Robots-Tag": "noindex, nofollow" });
 
@@ -64,7 +64,7 @@ export default function AdminLogin() {
         </form>
         <p className="mt-6 text-center text-[12px] text-ink-4">
           <a href="/" className="hover:text-ink-2">
-            Voltar ao {SITE.name}
+            Voltar ao {SITE.bareName}
           </a>
         </p>
       </div>

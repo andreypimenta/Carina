@@ -11,7 +11,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return adminGet<AdminAudit>(request, `/api/admin/audit${new URL(request.url).search}`);
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `Registro de auditoria · Painel do ${SITE.name}` }];
+export const meta: Route.MetaFunction = () => [{ title: `Registro de auditoria · Painel do ${SITE.bareName}` }];
 
 function subjectLink(subject: string | null) {
   if (!subject) return null;

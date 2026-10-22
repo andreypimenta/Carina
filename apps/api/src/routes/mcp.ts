@@ -66,7 +66,7 @@ function safe<A>(tool: string, run: (args: A) => Promise<ReturnType<typeof ok> |
       const log = requestLog.getStore();
       if (log) log.error({ err: error, tool }, "mcp tool failed");
       else console.error(JSON.stringify({ level: "error", msg: "mcp tool failed", tool, err: logError(error) }));
-      return fail("internal_error", `O ${SITE.name} não conseguiu concluir esta requisição agora; tente de novo daqui a pouco.`);
+      return fail("internal_error", `${SITE.name} não conseguiu concluir esta requisição agora; tente de novo daqui a pouco.`);
     }
   };
 }

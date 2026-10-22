@@ -25,7 +25,7 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export function meta() {
-  return pageMeta({ title: "Novidades", description: `Novos recursos, melhorias, avisos e o que saiu do ar no ${SITE.name}.`, path: "/changelog", image: "/og/pages/changelog.png" });
+  return pageMeta({ title: "Novidades", description: `Novos recursos, melhorias, avisos e o que saiu do ar no ${SITE.bareName}.`, path: "/changelog", image: "/og/pages/changelog.png" });
 }
 
 const KIND_DOT: Record<Release["kind"], string> = {

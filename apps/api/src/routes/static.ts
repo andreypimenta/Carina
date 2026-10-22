@@ -38,6 +38,7 @@ const TYPES: Record<string, string> = {
 function fillPlaceholders(text: string, json: boolean): string {
   const values: Record<string, string> = {
     siteName: SITE.name,
+    siteBareName: SITE.bareName,
     siteUrl: config.siteUrl,
     description: SITE.description,
     tagline: SITE.tagline,

@@ -32,12 +32,12 @@ const CACHE = { edgeCacheSeconds: 300 };
 const LEFT_OUT = [...FEED_COPY.allLeavesOut, "conteúdo ainda não avaliado", "itens de baixa relevância", "duplicatas já mescladas"];
 
 const FEEDS: FeedMeta[] = [
-  { id: "selected", path: "/feed.xml", title: `${SITE.name} — Seleção`, description: `Os 50 itens mais recentes da Seleção do ${SITE.name}, em resumo, com título, link para leitura no site e para o original; para ler o texto completo no leitor de RSS, assine /feed/full.xml.`, homePath: "/", pollHintMinutes: 30, ...CACHE },
+  { id: "selected", path: "/feed.xml", title: `${SITE.name} — Seleção`, description: `Os 50 itens mais recentes da Seleção do ${SITE.bareName}, em resumo, com título, link para leitura no site e para o original; para ler o texto completo no leitor de RSS, assine /feed/full.xml.`, homePath: "/", pollHintMinutes: 30, ...CACHE },
   { id: "selected-full", path: "/feed/full.xml", title: `${SITE.name} — Seleção (texto completo)`, description: "Os mesmos 50 itens mais recentes da Seleção; o texto completo vem embutido só para fontes que autorizam explicitamente a redistribuição, as demais trazem resumo e link para leitura.", homePath: "/", pollHintMinutes: 30, ...CACHE },
   { id: "all", path: "/feed/all.xml", title: `${SITE.name} — Todas as notícias`, description: `Todas as notícias públicas dos últimos 7 dias, das mais recentes para as mais antigas pela data real de publicação; não inclui ${LEFT_OUT.slice(0, -1).join(", ")} nem ${LEFT_OUT.at(-1)}.`, homePath: "/all", pollHintMinutes: 30, ...CACHE },
-  { id: "daily", path: "/feed/daily.xml", title: `${SITE.name} — Notas diárias`, description: `As notas diárias do ${SITE.name}, publicadas ${EDITION_WHEN.daily} (horário de Brasília); mantém as 30 edições mais recentes.`, homePath: "/daily", pollHintMinutes: 30, ...CACHE },
-  { id: "weekly", path: "/feed/weekly.xml", title: `${SITE.name} — Edição semanal`, description: `A edição semanal do ${SITE.name}, publicada ${EDITION_WHEN.weekly} (horário de Brasília): os ${REPORTS.entry.noun} escolhidos das notas diárias da semana anterior, divididos por seção, com uma apresentação; mantém as 12 edições mais recentes.`, homePath: "/weekly", pollHintMinutes: 180, ...CACHE },
-  { id: "monthly", path: "/feed/monthly.xml", title: `${SITE.name} — Balanço mensal`, description: `O balanço mensal do ${SITE.name}, publicado ${EDITION_WHEN.monthly} (horário de Brasília): os ${REPORTS.entry.noun} escolhidos das notas diárias do mês anterior, divididos por seção, com uma apresentação; mantém as 12 edições mais recentes.`, homePath: "/monthly", pollHintMinutes: 360, ...CACHE },
+  { id: "daily", path: "/feed/daily.xml", title: `${SITE.name} — Notas diárias`, description: `As notas diárias do ${SITE.bareName}, publicadas ${EDITION_WHEN.daily} (horário de Brasília); mantém as 30 edições mais recentes.`, homePath: "/daily", pollHintMinutes: 30, ...CACHE },
+  { id: "weekly", path: "/feed/weekly.xml", title: `${SITE.name} — Edição semanal`, description: `A edição semanal do ${SITE.bareName}, publicada ${EDITION_WHEN.weekly} (horário de Brasília): os ${REPORTS.entry.noun} escolhidos das notas diárias da semana anterior, divididos por seção, com uma apresentação; mantém as 12 edições mais recentes.`, homePath: "/weekly", pollHintMinutes: 180, ...CACHE },
+  { id: "monthly", path: "/feed/monthly.xml", title: `${SITE.name} — Balanço mensal`, description: `O balanço mensal do ${SITE.bareName}, publicado ${EDITION_WHEN.monthly} (horário de Brasília): os ${REPORTS.entry.noun} escolhidos das notas diárias do mês anterior, divididos por seção, com uma apresentação; mantém as 12 edições mais recentes.`, homePath: "/monthly", pollHintMinutes: 360, ...CACHE },
 ];
 
 /** A feed by its id; a category feed shares the poll hint and caching of the feed it narrows. */
@@ -122,7 +122,7 @@ function fullContent(r: FeedRow, aihot: string): string | null {
     html = exportTranslation(r) ?? r.body_html;
   }
   if (!html) return null;
-  return `${proxyBodyImages(html, true, FEED_IMAGE_SECONDS)}<p>— Reunido e organizado pelo ${escapeXml(SITE.name)}; a versão completa e ${escapeXml(subjectAfter("mais", "notícias"))} em <a href="${aihot}">${aihot}</a></p>`;
+  return `${proxyBodyImages(html, true, FEED_IMAGE_SECONDS)}<p>— Reunido e organizado pelo ${escapeXml(SITE.bareName)}; a versão completa e ${escapeXml(subjectAfter("mais", "notícias"))} em <a href="${aihot}">${aihot}</a></p>`;
 }
 
 function itemXml(r: FeedRow, includeContent: boolean): string {
@@ -182,8 +182,8 @@ export async function itemFeed(kind: ItemFeedKind, category: PublicApiCategoryKe
     meta = {
       title: includeContent ? `${SITE.name} — ${label} (texto completo)` : `${SITE.name} — ${label}`,
       description: includeContent
-        ? `Feed com texto completo da categoria "${label}" da Seleção diária do ${SITE.name}. O texto vem embutido só para fontes que autorizam explicitamente a redistribuição.`
-        : `Resumos da categoria "${label}" da Seleção diária do ${SITE.name}: assine por categoria, sem receber a Seleção inteira.`,
+        ? `Feed com texto completo da categoria "${label}" da Seleção diária do ${SITE.bareName}. O texto vem embutido só para fontes que autorizam explicitamente a redistribuição.`
+        : `Resumos da categoria "${label}" da Seleção diária do ${SITE.bareName}: assine por categoria, sem receber a Seleção inteira.`,
       homePath: "/",
       selfPath: includeContent ? `/feed/full/category/${category}.xml` : `/feed/category/${category}.xml`,
       ttl: m.pollHintMinutes,

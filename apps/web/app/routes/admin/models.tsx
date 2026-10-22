@@ -16,7 +16,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return adminGet<AdminModels>(request, `/api/admin/models?days=${encodeURIComponent(days)}`);
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `Modelos e avaliação · Painel do ${SITE.name}` }];
+export const meta: Route.MetaFunction = () => [{ title: `Modelos e avaliação · Painel do ${SITE.bareName}` }];
 
 const SOURCE_LABEL = { admin: "troca no painel", env: "variável de ambiente", default: "padrão do código" } as const;
 

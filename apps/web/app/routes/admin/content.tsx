@@ -14,7 +14,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { q, rows };
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `Diagnóstico de conteúdo · Painel do ${SITE.name}` }];
+export const meta: Route.MetaFunction = () => [{ title: `Diagnóstico de conteúdo · Painel do ${SITE.bareName}` }];
 
 export default function Content({ loaderData }: Route.ComponentProps) {
   const { q, rows } = loaderData;
