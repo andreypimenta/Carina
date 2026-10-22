@@ -1,6 +1,6 @@
 # Fontes do Fôlego
 
-O Fôlego tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS de sociedades, reguladores, registros de ensaios e imprensa (`industry/sources.json`).
+O Fôlego tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS e páginas de lista de sociedades, reguladores, registros de ensaios, centros de referência e imprensa (`industry/sources.json`).
 
 ## Artigos científicos (módulo literatura)
 
@@ -29,7 +29,7 @@ A republicação vale pela URL de licença que o próprio artigo declara no PMC,
 
 Cada matéria é uma chamada ao modelo, com algo entre 3 mil e 15 mil tokens de entrada e até 4 mil de saída. Com as 24 buscas atuais (via aérea da criança ao adulto, cirurgia torácica pediátrica e, na interface com a via aérea, transplante pulmonar e ECMO), são cerca de 90 artigos novos por semana. As buscas de traqueostomia no adulto e de via aérea na anestesia pediátrica exigem o termo no título ou como assunto principal (MeSH `[majr]`), porque com o termo em qualquer ponto do resumo traziam muito artigo de UTI, ventilação e anestesia que só cita a via aérea de passagem. Os textos integrais não passam por essa etapa; a tradução deles só acontece quando são selecionados.
 
-## Notícias (feeds)
+## Notícias (feeds e páginas de lista)
 
 | Grupo | Fontes | Observação |
 |---|---|---|
