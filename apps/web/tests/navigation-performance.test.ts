@@ -144,9 +144,9 @@ test('SSR all-pages and report kinds return offline with their own content',asyn
     await expect(page.getByRole('link',{name:'Todas, página 1',exact:true})).toBeVisible({timeout:1500});
     await context.setOffline(false);await page.goto(origin+'/daily');
     await page.getByRole('link',{name:'Semanal',exact:true}).click();
-    await expect(page.locator('#report-start')).toContainText('Briefing semanal');
+    await expect(page.locator('#report-start')).toContainText('Edição semanal');
     await context.setOffline(true);await page.getByRole('link',{name:'Diário',exact:true}).click();
-    await expect(page.locator('#report-start')).toContainText('Briefing diário',{timeout:1500});
+    await expect(page.locator('#report-start')).toContainText('Notas diárias',{timeout:1500});
   }finally{await context.close();}
 });
 
