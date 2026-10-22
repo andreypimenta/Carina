@@ -467,7 +467,11 @@ export function reportOutline(report: ReportDetail): OutlineEntry[] {
   ];
 }
 
-export function ReportPaper({ report, index }: { report: ReportDetail; index: ReportNavigationEntry[] }) {
+/**
+ * `standalone`: the issue alone, on a page outside the site's reports (a module's own page), with no way to
+ * the neighbouring or earlier issues.
+ */
+export function ReportPaper({ report, index, standalone = false }: { report: ReportDetail; index: ReportNavigationEntry[]; standalone?: boolean }) {
   const daily = report.kind === "daily";
   const leadStory = leadStoryOf(report);
   const pages = pagesOf(report, leadStory);
@@ -528,15 +532,20 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
         </SectionPage>
       )}
 
-      <Neighbours report={report} index={index} />
-      {!daily && <History report={report} index={index} />}
-      <footer className="py-10 text-center">
+      {!standalone && <Neighbours report={report} index={index} />}
+      {!daily && !standalone && <History report={report} index={index} />}
+      <footer className={`py-10 text-center ${standalone ? "mt-16 border-t border-line-strong" : ""}`}>
         <div className="text-[13px] font-semibold tracking-[0.15em] text-ink-4">(Fim desta edição)</div>
         <p className="mt-3 text-[12px] text-ink-4">
-          {`${KIND_LABEL[report.kind]} do ${SITE.bareName}, ${daily ? "editado" : "compilado"} automaticamente pelo sistema editorial a partir de fontes públicas; cada item traz o link para o original · `}
-          <Link to={daily ? "/daily/archive" : "#report-history"} viewTransition={daily} className="font-medium text-ink-3 transition-colors hover:text-accent">
-            {daily ? "Arquivo das notas diárias" : `Edições anteriores · ${KIND_LABEL[report.kind]}`}
-          </Link>
+          {`${KIND_LABEL[report.kind]} do ${SITE.bareName}, ${daily ? "editado" : "compilado"} automaticamente pelo sistema editorial a partir de fontes públicas; cada item traz o link para o original`}
+          {!standalone && (
+            <>
+              {" · "}
+              <Link to={daily ? "/daily/archive" : "#report-history"} viewTransition={daily} className="font-medium text-ink-3 transition-colors hover:text-accent">
+                {daily ? "Arquivo das notas diárias" : `Edições anteriores · ${KIND_LABEL[report.kind]}`}
+              </Link>
+            </>
+          )}
         </p>
       </footer>
     </article>

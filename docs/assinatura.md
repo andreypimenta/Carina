@@ -1,0 +1,69 @@
+# Assinatura da edição semanal
+
+O módulo `modules/assinatura` deixa o leitor receber a edição semanal por **e-mail** (API do Resend) ou por **WhatsApp** (uma instância da Evolution API), ou pelos dois.
+
+## A página `/assine`
+
+É o link para mandar em grupos de WhatsApp. Mostra só a edição semanal mais recente, com os mesmos componentes da página `/weekly`, sem o menu lateral, a barra inferior e o resto do site, e o formulário de inscrição no topo e no fim. Quando ainda não há edição, mostra uma apresentação curta do jornal e o formulário. A prévia do link (Open Graph) usa a imagem `/og/pages/assine.png` (texto em `CARDS.assine`, `site/site.ts`) e cita a manchete da edição.
+
+`/assine/2026-W43` mostra uma edição em particular: é o link que cada envio leva, para que uma mensagem encaminhada abra a mesma edição.
+
+O formulário só mostra os canais que estão ligados (abaixo). Com os dois desligados, a página diz que as inscrições abrem em breve.
+
+## Inscrição, confirmação e saída
+
+- **Inscrição**: e-mail, WhatsApp (DDD brasileiro, guardado em E.164: `+5511987654321`) ou os dois, e a caixa de consentimento (texto em `modules/assinatura/copy.ts`, guardado com cada endereço). A resposta é a mesma para um endereço novo, pendente ou já confirmado, para ninguém descobrir quem está na lista.
+- **Confirmação dupla**: cada endereço recebe um link de confirmação (e-mail na hora; WhatsApp pelo worker, no ritmo do número) e não recebe nenhuma edição antes de confirmar. No WhatsApp, responder **SIM** também confirma. Um pedido repetido reenvia a confirmação no máximo a cada 10 minutos.
+- **Saída com um clique**: todo envio leva o link `/assine/sair?t=…`. O e-mail traz também os cabeçalhos `List-Unsubscribe` e `List-Unsubscribe-Post` (RFC 8058), que os clientes de e-mail mostram como botão. No WhatsApp, responder **SAIR** ou **PARAR** tira o número da lista. Depois de sair pelo link, a página oferece “Voltar a receber” (para um clique por engano ou um antivírus de e-mail que abriu o link).
+- **Abuso**: campo-armadilha invisível, no máximo 5 inscrições por aparelho a cada 10 minutos (identificador irreversível de IP e navegador, como no feedback).
+- **Prazo dos dados**: endereços não confirmados em 30 dias e endereços que saíram há 30 dias são apagados pela limpeza diária.
+
+## Envio da edição
+
+O worker roda `assinatura.send` a cada minuto (só existe com algum canal ligado). Quando sai uma edição semanal nova, ela é planejada uma vez por canal para os endereços confirmados naquele momento; quem confirmar depois recebe a próxima. Uma edição só é planejada até 3 dias depois do domingo que fecha a semana, para que ligar um canal no meio do mês não mande edições velhas.
+
+- Cada envio é uma linha de `assinatura_sends` (um por endereço e edição), e por isso nada é mandado duas vezes.
+- Falha que pode passar (Resend fora do ar ou limitando, Evolution com a chave ou instância erradas) é tentada de novo até 3 vezes, com 10 e 20 minutos de espera. O e-mail leva uma chave de idempotência, então uma nova tentativa nunca gera segunda cópia.
+- No WhatsApp, um tempo esgotado ou um erro 5xx da Evolution pode ter entregado a mensagem: o envio fica como **sem confirmação de entrega** e não é repetido sozinho. No Painel → **Inscritos**, “Enviar de novo” devolve esses envios (e os que falharam) para a fila, depois de você conferir na instância.
+- Ritmo no WhatsApp: uma mensagem a cada 12 a 18 segundos (cerca de 4 por minuto), confirmações primeiro. Antes de cada rodada o worker confere se a instância está conectada; se não estiver, não manda nada e tenta no minuto seguinte.
+- O e-mail é a edição em HTML próprio para e-mail (manchete, destaques, seções, link de cada matéria para o site e para o original), com o link da página e o de saída. A mensagem de WhatsApp traz a manchete, os destaques, o link da edição e como sair.
+
+O Painel → **Inscritos** mostra a contagem por canal e status, as edições enviadas com o resultado de cada uma, a lista (os 500 mais recentes) e o botão **Exportar CSV** com a lista inteira.
+
+## Configuração
+
+No `.env` (todos os interruptores só ligam com `true`):
+
+```bash
+# E-mail
+NEWSLETTER_EMAIL_ENABLED=true
+RESEND_API_KEY=re_...
+NEWSLETTER_FROM=O Fôlego <edicao@ofolego.com>   # domínio verificado no Resend
+
+# WhatsApp
+NEWSLETTER_WHATSAPP_ENABLED=true
+EVOLUTION_API_URL=https://evolution.seudominio.com
+EVOLUTION_API_KEY=...            # a chave global ou a da instância
+EVOLUTION_INSTANCE=folego        # nome da instância conectada ao número
+EVOLUTION_WEBHOOK_SECRET=...     # uma sequência aleatória (openssl rand -hex 24)
+```
+
+Depois de mudar, reinicie a api e o worker (`docker compose up -d`). O Painel → Inscritos mostra se cada canal está ligado.
+
+### Apontar a Evolution para o webhook
+
+O webhook recebe as mensagens que chegam ao número: `SAIR` e `PARAR` descadastram, `SIM` e `CONFIRMAR` confirmam uma inscrição pendente, e o resto é registrado no log da api e ignorado (fica para quem mais atende o número). Mensagens de grupos e as enviadas pela própria instância são ignoradas. Ele só aceita chamadas com o segredo `EVOLUTION_WEBHOOK_SECRET`, na URL (`?token=`) ou no cabeçalho `Authorization: Bearer`.
+
+Na Evolution API v2, configure o webhook da instância com o evento `MESSAGES_UPSERT`:
+
+```bash
+curl -X POST "$EVOLUTION_API_URL/webhook/set/$EVOLUTION_INSTANCE" \
+  -H "apikey: $EVOLUTION_API_KEY" -H "content-type: application/json" \
+  -d '{"webhook":{"enabled":true,"url":"https://ofolego.com/api/assinatura/evolution?token=SEU_SEGREDO","byEvents":false,"base64":false,"events":["MESSAGES_UPSERT"]}}'
+```
+
+(No Evolution Manager, o mesmo fica em Instância → Eventos → Webhook.) Um agente conectado ao número por uma integração da própria Evolution (EvolutionBot, Typebot, OpenAI, Dify, n8n) funciona ao lado do webhook; se o agente também precisar do webhook, a instância tem um só, e então ele deve repassar as mensagens a este endereço.
+
+## Tabelas
+
+`assinatura_subscribers` (um endereço por canal, com status, consentimento e token), `assinatura_editions` (cada edição planejada por canal) e `assinatura_sends` (cada envio). Nenhum teste nem o desenvolvimento local manda e-mail ou WhatsApp de verdade: os testes usam servidores locais no lugar do Resend e da Evolution.

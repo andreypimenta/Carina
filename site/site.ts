@@ -246,6 +246,7 @@ export const CARDS: Record<string, { kicker: string; title: string; subtitle: st
   privacy: { kicker: "Privacidade", title: `Privacidade no ${SITE.bareName}`, subtitle: "Como tratamos registros de acesso, dados locais do navegador e feedback enviado." },
   changelog: { kicker: "Novidades", title: `Novidades do ${SITE.bareName}`, subtitle: "Novos recursos, melhorias, avisos e o que saiu do ar." },
   feedback: { kicker: "Feedback", title: "Diga o que podemos melhorar", subtitle: "Conteúdo, recursos, integração ou pedidos de correção e retirada de fontes." },
+  assine: { kicker: "Assine grátis", title: `${SITE.name}: a edição semanal no seu e-mail ou WhatsApp`, subtitle: `Toda segunda às ${spokenTime(EDITION_TIMES.weekly)}: os estudos que mudam a conduta em ${SITE.subject}, em português.` },
   agent: { kicker: "Integração com agentes", title: `Conecte ${SITE.name} ao seu agente`, subtitle: "MCP, RSS ou API: acesso anônimo, só leitura, sem API Key." },
 };
 

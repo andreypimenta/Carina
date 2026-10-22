@@ -45,6 +45,12 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 export const shouldRevalidate: ShouldRevalidateFunction = () => false;
 
+/** The admin, and the modules' pages that draw their own chrome (WebModule.ownChrome). */
+function ownChrome(pathname: string): boolean {
+  const prefixes = ["/admin", ...webModules().flatMap((m) => m.ownChrome ?? [])];
+  return prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   const site = useRouteLoaderData<typeof loader>("root");
   const [documentRelease] = useState(site?.release ?? null);
@@ -120,8 +126,8 @@ export default function App() {
     document.addEventListener("touchstart", noop, { passive: true });
     return () => document.removeEventListener("touchstart", noop);
   }, []);
-  // The admin has its own chrome.
-  if (pathname === "/admin" || pathname.startsWith("/admin/")) return <Outlet />;
+  // The admin has its own chrome, as do the modules' pages that ask for it.
+  if (ownChrome(pathname)) return <Outlet />;
   return (
     <>
       <SiteShell changelogVersion={meta.changelogVersion}>
