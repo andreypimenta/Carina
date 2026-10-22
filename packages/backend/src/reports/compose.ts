@@ -15,7 +15,7 @@ import { logError } from "../lib/log-error.ts";
 import { chatJson } from "../providers/llm.ts";
 import { completeReceipt } from "../providers/receipts.ts";
 import { shutdownSignal } from "../jobs/queue.ts";
-import { emit } from "../modules.ts";
+import { emit, serverModules } from "../modules.ts";
 import { PERIOD_ISSUE_NAMES } from "../publication/reports.ts";
 import { arrangeDaily, candidates, dailyEdition, periodEntries, sectionOf, SECTION_ORDER, type Candidate, type EditionEntry } from "./edition.ts";
 
@@ -68,8 +68,17 @@ async function saveReport(kind: ReportKind, key: string, start: Date, end: Date,
         written = true;
       } else written = await insert();
     }
-    // A new issue changes the latest page, the archive, its neighbours' navigation and the report feeds.
-    if (written) await emit("reportsChanged", { reason: `${kind} ${key} published` }, tx);
+    if (written) {
+      // The modules' parts are taken only by an issue that is written, so nothing is spent on one that is not.
+      const parts: Record<string, unknown> = {};
+      for (const m of serverModules()) {
+        const part = await m.reports?.compose?.({ kind, key }, tx);
+        if (part !== undefined && part !== null) parts[m.name] = part;
+      }
+      if (Object.keys(parts).length) await tx`UPDATE reports SET content = content || ${tx.json({ modules: parts } as never)} WHERE kind = ${kind} AND key = ${key}`;
+      // A new issue changes the latest page, the archive, its neighbours' navigation and the report feeds.
+      await emit("reportsChanged", { reason: `${kind} ${key} published` }, tx);
+    }
     for (const id of receiptIds) await completeReceipt(tx, id);
     return written;
   });
@@ -162,13 +171,13 @@ const COMPANY_PATTERNS = Object.values(ENTITIES).map((e) => [e.name, ...e.aliase
   .map((n) => new RegExp(`(?<![\\p{L}\\p{N}])${n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\p{L}\\p{N}])`, "u")));
 
 /**
- * Whether written text names only what the listed items name: every name-like token (a capitalised word
- * inside a sentence, or any word with a digit or a second capital: Acme, Nova-2.5, X1, FDA), every figure
- * of three or more digits or with a decimal separator or percent (845, 129,3, 1.200, 40%) and every
- * company of the vocabulary appears in the items' own words. A plain capitalised word opening a sentence
+ * What written text names that the listed items do not: every name-like token (a capitalised word inside
+ * a sentence, or any word with a digit or a second capital: Acme, Nova-2.5, X1, FDA), every figure of
+ * three or more digits or with a decimal separator or percent (845, 129,3, 1.200, 40%) and every company
+ * of the vocabulary must appear in the items' own words. A plain capitalised word opening a sentence
  * ("Na semana…") is an ordinary word; a company there is still caught by the vocabulary.
  */
-export function grounded(text: string, corpus: string): boolean {
+export function ungrounded(text: string, corpus: string): string[] {
   const known = corpus.toLowerCase();
   const companies = COMPANY_NAMES.filter((names) => names.some((n) => known.includes(n)));
   const named = (word: string) => PLAIN.has(word) || known.includes(word) || companies.some((names) => names.includes(word));
@@ -177,8 +186,17 @@ export function grounded(text: string, corpus: string): boolean {
     .filter(({ word, opens }) => /\p{N}/u.test(word) || /^.+\p{Lu}/u.test(word) || (!opens && /^\p{Lu}/u.test(word)))
     .map(({ word }) => word);
   const figures = (text.match(/\d+(?:[.,]\d+)*%?/g) ?? []).filter((f) => f.length >= 3 || /[.,%]/.test(f));
-  const mentioned = COMPANY_NAMES.filter((_names, i) => COMPANY_PATTERNS[i]!.some((re) => re.test(text)));
-  return words.every((w) => named(w.toLowerCase())) && figures.every((f) => known.includes(f)) && mentioned.every((names) => companies.includes(names));
+  const mentioned = COMPANY_NAMES.flatMap((names, i) => (COMPANY_PATTERNS[i]!.some((re) => re.test(text)) ? [names] : []));
+  return [...new Set([
+    ...words.filter((w) => !named(w.toLowerCase())),
+    ...figures.filter((f) => !known.includes(f)),
+    ...mentioned.filter((names) => !companies.includes(names)).map((names) => names[0]!),
+  ])];
+}
+
+/** Whether written text names only what the listed items name (ungrounded). */
+export function grounded(text: string, corpus: string): boolean {
+  return ungrounded(text, corpus).length === 0;
 }
 
 /** The leading whole sentences of a text that fit in `max` characters; null when not even the first does. */

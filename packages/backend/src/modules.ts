@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { WorkOptions } from "pg-boss";
 import type { z } from "zod";
-import type { Brand } from "@aihot/contracts/site";
+import type { Brand, ReportKind } from "@aihot/contracts/site";
 import type { Db } from "./db.ts";
 import type { QueueOptions } from "./jobs/queue.ts";
 import type { Finding } from "./notify/feishu.ts";
@@ -156,6 +156,12 @@ export interface TopicPageAsk {
   now: Date;
 }
 
+/** An issue a module has a part of (ServerModule.reports). */
+export interface ReportIssue {
+  kind: ReportKind;
+  key: string;
+}
+
 /** A reminder in a JSON answer, as its top-level `notice`. */
 export interface JsonNotice {
   notice: object;
@@ -254,6 +260,19 @@ export interface ServerModule {
     };
     /** Company marks by topic slug, drawn over the engine's monograms. */
     marks?: () => Promise<Record<string, Brand>>;
+  };
+  /** Its part of the issues (daily, weekly, monthly); its web module draws it on the issue's page. */
+  reports?: {
+    /**
+     * What an issue carries of it, saved with the issue under its name (reports/compose.ts); null for nothing.
+     * Runs in the transaction that writes the issue, once it is written, also when it is written again.
+     */
+    compose?: (issue: ReportIssue, tx: Db) => Promise<unknown>;
+    /**
+     * Its part of the issue's page as it is now (publication/reports.ts), from what `compose` saved (null
+     * when nothing): what is no longer public is left out. Null shows nothing.
+     */
+    read?: (saved: unknown, issue: ReportIssue) => Promise<unknown>;
   };
   /**
    * Source kinds it collects in its own way (admin/sources.ts), by kind: `resumed` runs in the transaction

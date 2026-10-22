@@ -1,0 +1,25 @@
+# Especiais
+
+Os especiais são textos do próprio Fôlego escritos a partir de estudos reais do PubMed. Ficam como rascunho no painel e só vão ao ar depois que o editor aprova e publica. O primeiro formato é a **Linha do tempo** (no espírito dos Seminars do Lancet e do State of the Art do BMJ): pega um tema e conta, época por época, os estudos que marcaram o que se sabe sobre ele, da primeira descrição à melhor evidência de hoje, terminando com os pontos em aberto.
+
+O código fica no módulo `modules/literatura` (que já fala com o PubMed): `backend/especiais.ts` (estados e regras), `backend/linha-do-tempo.ts` (o formato), `backend/citacoes.ts` (a checagem de citações), `api/especiais.ts` (rotas), `web/` (painel e páginas). O texto do modelo segue `industry/prompts/linha-do-tempo.md`.
+
+## Do rascunho ao site
+
+1. **Painel → Especiais → Novo especial**: o editor escolhe o formato, escreve o tema (em português, como o leitor vai reconhecer o assunto) e a busca no PubMed, na sintaxe do PubMed. Pode partir de uma das buscas salvas do módulo de literatura e ajustá-la. O especial nasce como **rascunho**.
+2. **O sistema escreve o rascunho** no worker (nunca ao abrir uma página): sobre a busca do editor, reúne os estudos-marco no PubMed (os registros mais antigos, classificações, diretrizes e consensos, revisões sistemáticas, ensaios clínicos, séries e coortes, e os mais relevantes; até 40, em ordem cronológica e numerados) e o modelo escreve a linha do tempo citando cada estudo pelo número, como [3]. O passo usa o modelo `LINHA_DO_TEMPO_MODEL` (padrão: o mesmo `LLM_MODEL`; pode ser trocado em Painel → Modelos) e passa pelo recibo e pelo limite de gastos como as outras chamadas pagas. Se a busca traz menos de 3 estudos, ou o PubMed ou o modelo falham, o rascunho fica marcado com o erro, e o editor ajusta o tema ou a busca e pede **Escrever de novo**.
+3. **A checagem de citações** tira do texto do modelo, antes de o editor ler, todo trecho (parágrafo, marco da linha do tempo, item de lista) que não cita nenhum estudo da lista, que cita um número fora da lista, ou que traz nome, número ou ano que não aparece nos estudos que ele cita. É a mesma ideia da checagem das edições (`grounded` em `packages/backend/src/reports/compose.ts`), aplicada trecho a trecho; números são comparados como números (87,5% no texto e 87.5% no resumo em inglês contam como o mesmo). O painel lista o que foi tirado e por quê. Ela também é rigorosa com o que é certo: um nome em português que o resumo escreve em inglês ("Estados Unidos" e "United States") é tirado; se o trecho estiver certo, o editor confere no estudo e o escreve de novo.
+4. **O editor revisa**: vê o texto (para editar ou em prévia) com as referências ao lado, incluindo os resumos, e a checagem do texto salvo, que agora só avisa. O texto é simples: blocos separados por linha em branco; `## ` abre um intertítulo, `- ` um item de lista, `1965 — ` (ano e travessão) um marco da linha do tempo; estudos citados pelo número entre colchetes, `[3]`, `[3, 5]`.
+5. **Aprovar** fixa o texto. Para mudar algo depois, **Voltar ao rascunho**, editar e aprovar de novo.
+6. **Publicar** (só a partir de aprovado) põe o especial no ar em `/especiais/<endereço>` e na lista `/especiais`. A página mostra só os estudos que o texto cita, numerados de novo de 1 em diante; o texto aprovado guarda a numeração da lista completa. O resumo dos estudos não é republicado, só a referência com links para o PubMed e o DOI.
+7. **Descartar** guarda o especial como descartado. Num especial publicado, o botão é **Retirar do ar**: a página sai do site e da edição semanal que o trouxe.
+
+Cada passo (criar, escrever de novo, editar, aprovar, voltar ao rascunho, publicar, descartar) fica no registro de auditoria, com quem fez e quando; descartar exige um motivo.
+
+## Na edição semanal
+
+A primeira edição semanal que sai depois da publicação traz o especial num bloco próprio, logo depois da primeira página. No máximo um por edição: se dois forem publicados na mesma semana, o segundo vai para a edição seguinte. Uma edição atrasada, escrita depois, não pega um especial publicado depois da data em que ela deveria ter saído. Edições sem especial ficam como antes. O especial também entra no sitemap.
+
+## Próximos formatos
+
+O fluxo (estados, painel, página, bloco na edição, checagem de citações) vale para qualquer formato; cada formato só define como é escrito (`FORMAT_WRITERS` em `backend/especiais.ts` e `FORMATS` em `especiais.ts`). Os próximos previstos são **Cabeças pensantes** (onde cirurgião torácico, cirurgião pediátrico, otorrino e pneumopediatra divergem, com votação do leitor, que vai precisar de uma tabela própria para os votos) e **Imagem da semana**.
