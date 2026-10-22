@@ -52,10 +52,10 @@ interface Row {
   updated_at: Date;
 }
 
-/** A writing whose every attempt was cut short (a stopped worker, the expiry): the draft is marked failed. */
 /** A writing asked of a draft as it was then (its version): one asked earlier leaves a later request alone. */
 type Writing = { id: number; version: string };
 
+/** A writing whose every attempt was cut short (a stopped worker, the expiry): the draft is marked failed. */
 export const ESPECIAL_FAILED_QUEUE = defineQueue<Writing>({
   name: "literatura.especial-falhou",
   options: { policy: "standard", retryLimit: 3, retryDelay: 60, expireInSeconds: 60 },
