@@ -1,7 +1,7 @@
 // The specials against local stand-ins for PubMed and the model. Failure cases: a special reaches the site
 // without the editor approving and then publishing it; an approved text changes without a new approval; a
 // change made against an older view overwrites a newer one; the model's unsupported passages reach the draft;
-// a failed writing leaves the draft stuck; the weekly carries no special, two, the same one twice, one
+// a failed or never-finished writing leaves the draft stuck; PubMed is asked with collection off; the weekly carries no special, two, the same one twice, one
 // published after it was due, or one that has left the site; an issue without one breaks.
 import { editionAt, tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
@@ -10,20 +10,21 @@ import { after, before, test } from "node:test";
 import { Conflict } from "@aihot/backend/audit";
 import { config } from "@aihot/backend/config";
 import { closeDb, sql } from "@aihot/backend/db";
-import { stopBoss } from "@aihot/backend/jobs/queue";
+import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
 import { loadReport } from "@aihot/backend/publication/reports";
 import { composeDaily, composeWeekly } from "@aihot/backend/reports/compose";
 import server from "../server.ts";
 import {
-  approveEspecial, createEspecial, discardEspecial, editEspecial, especialDetail, publishedEspecial, publishedEspeciais, publishEspecial,
-  reopenEspecial, rewriteEspecial, writeEspecial,
+  approveEspecial, createEspecial, discardEspecial, editEspecial, ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE, especialDetail, publishedEspecial,
+  publishedEspeciais, publishEspecial, reopenEspecial, rewriteEspecial, writeEspecial,
 } from "../backend/especiais.ts";
 
 const T = tag();
 const SOURCE = `especiais-${T}`;
 const EDITOR = "editor@test";
 let pubmedEmpty = false;
+let pubmedRequests = 0;
 const modelInputs: string[] = [];
 
 const article = (pmid: string, year: string, title: string, authors: string[], abstract: string, type: string) => `
@@ -56,6 +57,7 @@ const stub = http.createServer((req, res) => {
   req.on("data", (c: Buffer) => chunks.push(c));
   req.on("end", () => {
     const url = req.url ?? "/";
+    if (url.startsWith("/eutils/")) pubmedRequests++;
     const send = (type: string, body: string) => { res.writeHead(200, { "content-type": type }); res.end(body); };
     if (url.startsWith("/eutils/esearch.fcgi")) {
       const ids = pubmedEmpty ? [] : ["5000001", "7000002", "9000003"];
@@ -175,8 +177,64 @@ test("a writing that fails is recorded on the draft, which can then be written a
   assert.match(failed.error!, /nenhum estudo/);
   await rewriteEspecial(id, { version: failed.version, theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
   assert.equal((await row(id)).writing, "pendente");
-  await assert.rejects(rewriteEspecial(id, { version: await version(id), theme: "outra vez", query: "outra busca" }, EDITOR), Conflict, "not while it is being written");
   assert.equal((await writeEspecial(id)).result, "escrito");
+});
+
+const liveJobs = async (id: number) =>
+  (await sql`SELECT id FROM pgboss.job WHERE name = ${ESPECIAL_QUEUE.name} AND data->>'id' = ${String(id)} AND state IN ('created', 'retry')`).map((j) => j.id as string);
+
+test("a draft still being written can be asked again, with one waiting job", async () => {
+  const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Tema que não termina", query: "subglottic stenosis" }, EDITOR);
+  await rewriteEspecial(id, { version: await version(id), theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
+  const r = await row(id);
+  assert.equal(r.writing, "pendente");
+  assert.equal(r.theme, "Estenose subglótica pediátrica");
+  assert.equal((await liveJobs(id)).length, 1);
+  assert.equal((await writeEspecial(id)).result, "escrito");
+});
+
+test("a writing whose every attempt is cut short marks the draft failed, which can then be written again", async () => {
+  const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Tema interrompido", query: "subglottic stenosis" }, EDITOR);
+  const boss = await getBoss();
+  // Each attempt taken and cut short (a stopped worker, the expiry): the job fails without the draft being touched.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const [waiting] = await liveJobs(id);
+    assert.ok(waiting, `attempt ${attempt + 1} is waiting`);
+    await sql`UPDATE pgboss.job SET start_after = now() WHERE id = ${waiting}`;
+    const taken = await boss.fetch<{ id: number }>(ESPECIAL_QUEUE.name, { batchSize: 100 });
+    const others = taken.filter((j) => j.data.id !== id).map((j) => j.id);
+    if (others.length) await boss.complete(ESPECIAL_QUEUE.name, others);
+    assert.ok(taken.some((j) => j.id === waiting));
+    await boss.fail(ESPECIAL_QUEUE.name, waiting!);
+    assert.equal((await row(id)).writing, "pendente");
+  }
+  assert.deepEqual(await liveJobs(id), [], "no attempt is left");
+  const dead = (await boss.fetch<{ id: number }>(ESPECIAL_FAILED_QUEUE.name, { batchSize: 50 })).find((j) => j.data.id === id);
+  assert.ok(dead, "the exhausted writing reaches the dead letter queue");
+  await ESPECIAL_FAILED_QUEUE.run([dead.data]);
+  const failed = (await especialDetail(id))!;
+  assert.equal(failed.writing, "falhou");
+  assert.match(failed.error!, /interrompida/);
+  await rewriteEspecial(id, { version: failed.version, theme: failed.theme, query: failed.query }, EDITOR);
+  assert.equal((await writeEspecial(id)).result, "escrito");
+  await ESPECIAL_FAILED_QUEUE.run([{ id }]);
+  assert.equal((await row(id)).writing, "pronto", "a written draft is not marked failed");
+});
+
+test("with collection off, the writing fails before asking PubMed", async () => {
+  const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
+  const asked = pubmedRequests;
+  const collect = process.env.COLLECT_ENABLED;
+  process.env.COLLECT_ENABLED = "false";
+  try {
+    assert.equal((await writeEspecial(id)).result, "falhou");
+  } finally {
+    process.env.COLLECT_ENABLED = collect;
+  }
+  assert.equal(pubmedRequests, asked);
+  const failed = (await especialDetail(id))!;
+  assert.equal(failed.writing, "falhou");
+  assert.match(failed.error!, /COLLECT_ENABLED/);
 });
 
 /** A selected item in the window of the daily dated `date`, and that daily. */

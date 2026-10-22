@@ -52,10 +52,18 @@ interface Row {
   updated_at: Date;
 }
 
+/** A writing whose every attempt was cut short (a stopped worker, the expiry): the draft is marked failed. */
+export const ESPECIAL_FAILED_QUEUE = defineQueue<{ id: number }>({
+  name: "literatura.especial-falhou",
+  options: { policy: "standard", retryLimit: 3, retryDelay: 60, expireInSeconds: 60 },
+  worker: { batchSize: 1 },
+  run: async ([job]) => (job ? markUnfinished(job.id) : null),
+});
+
 export const ESPECIAL_QUEUE = defineQueue<{ id: number }>({
   name: "literatura.especial",
   // One retry: a writing cut short by a stopped worker is taken again (the receipt keeps what was paid for).
-  options: { policy: "short", retryLimit: 1, retryDelay: 60, expireInSeconds: 900 },
+  options: { policy: "short", retryLimit: 1, retryDelay: 60, expireInSeconds: 900, deadLetter: ESPECIAL_FAILED_QUEUE.name },
   worker: { batchSize: 1 },
   run: async ([job]) => (job ? writeEspecial(job.id) : null),
 });
@@ -96,13 +104,16 @@ export async function createEspecial(input: unknown, actor: string): Promise<{ i
   });
 }
 
-/** A draft written again from its theme and search, which the editor may have changed; the text it has is replaced. */
+/**
+ * A draft written again from its theme and search, which the editor may have changed; the text it has is
+ * replaced. A draft still being written can be asked again too (one whose writing never finished); the
+ * queue keeps a single waiting job per special.
+ */
 export async function rewriteEspecial(id: number, input: unknown, actor: string): Promise<{ id: number } | null> {
   const b = Request.extend({ version: z.string() }).parse(input);
   return sql.begin(async (tx) => {
     const row = await lockFor(tx, id, b.version, ["rascunho"], "escrito de novo");
     if (!row) return null;
-    if (row.writing === "pendente") throw new Conflict("Este especial ainda está sendo escrito");
     await save(tx, row, { theme: b.theme, query: b.query, writing: "pendente", error: null }, actor, "rewrite");
     await enqueueOn(ESPECIAL_QUEUE, { id }, { singletonKey: subject(id) }, tx);
     return { id };
@@ -177,6 +188,7 @@ export async function writeEspecial(id: number): Promise<{ id: number; result: s
   const [row] = await sql<Row[]>`SELECT * FROM literatura_especiais WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente'`;
   if (!row) return { id, result: "nada a escrever" };
   try {
+    if (process.env.COLLECT_ENABLED !== "true") throw new Error("A coleta está desligada (COLLECT_ENABLED não é true) e o especial não consulta o PubMed sem ela; ligue a coleta e peça de novo");
     const draft = await FORMAT_WRITERS[row.format](id, row.theme, row.query);
     const written = await sql.begin(async (tx) => {
       const [done] = await tx`UPDATE literatura_especiais
@@ -194,6 +206,13 @@ export async function writeEspecial(id: number): Promise<{ id: number; result: s
       WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente'`;
     return { id, result: "falhou" };
   }
+}
+
+async function markUnfinished(id: number): Promise<{ id: number; result: string }> {
+  const [done] = await sql`UPDATE literatura_especiais
+    SET writing = 'falhou', error = 'A escrita foi interrompida e não terminou depois de tentar de novo (o worker parou ou passou do tempo); peça para escrever de novo', updated_at = now()
+    WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente' RETURNING id`;
+  return { id, result: done ? "falhou" : "nada a marcar" };
 }
 
 const adminRow = (r: Row): AdminEspecialRow => ({

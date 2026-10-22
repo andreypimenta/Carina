@@ -5,7 +5,7 @@
 import type { ServerModule } from "@aihot/backend/modules";
 import { registerEspeciais } from "./api/especiais.ts";
 import { collectLiterature } from "./backend/collect.ts";
-import { draftsToReview, ESPECIAL_QUEUE, especiaisSitemap, weeklyCard, weeklyPart } from "./backend/especiais.ts";
+import { draftsToReview, ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE, especiaisSitemap, weeklyCard, weeklyPart } from "./backend/especiais.ts";
 import { LINHA_PURPOSE, LINHA_STEP } from "./backend/linha-do-tempo.ts";
 import { MATERIA_PURPOSE, MATERIA_STEP } from "./backend/materia.ts";
 
@@ -33,7 +33,7 @@ const server: ServerModule = {
       when: () => process.env.COLLECT_ENABLED === "true",
     },
   ],
-  queues: [ESPECIAL_QUEUE],
+  queues: [ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE],
   admin: { counts: { especiais: draftsToReview } },
   sitemap: { pages: [{ loc: "/especiais", changefreq: "weekly", priority: 0.7 }], entries: especiaisSitemap },
   reports: { compose: weeklyPart, read: weeklyCard },

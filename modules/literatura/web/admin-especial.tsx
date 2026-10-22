@@ -127,7 +127,7 @@ export default function EspecialAdmin() {
     >
       {writing && (
         <div className="mb-5 rounded-panel bg-accent-soft px-4 py-3 text-[13.5px] text-accent ring-1 ring-accent/20">
-          O sistema está buscando os estudos no PubMed e escrevendo o rascunho. Esta página se atualiza sozinha.
+          O sistema está buscando os estudos no PubMed e escrevendo o rascunho. Esta página se atualiza sozinha. Se a escrita não terminar, peça para escrever de novo abaixo.
         </div>
       )}
       {e.status === "rascunho" && e.writing === "falhou" && (
@@ -190,9 +190,9 @@ export default function EspecialAdmin() {
 
           <Card title="Tema e busca">
             <div className="space-y-3">
-              <Field label="Tema"><Input value={theme} onChange={(ev) => setTheme(ev.target.value)} disabled={!editable} maxLength={200} /></Field>
-              <Field label="Busca no PubMed"><Textarea value={query} onChange={(ev) => setQuery(ev.target.value)} disabled={!editable} rows={4} className="font-mono !text-[12.5px]" /></Field>
-              {editable && (
+              <Field label="Tema"><Input value={theme} onChange={(ev) => setTheme(ev.target.value)} disabled={e.status !== "rascunho"} maxLength={200} /></Field>
+              <Field label="Busca no PubMed"><Textarea value={query} onChange={(ev) => setQuery(ev.target.value)} disabled={e.status !== "rascunho"} rows={4} className="font-mono !text-[12.5px]" /></Field>
+              {e.status === "rascunho" && (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[12.5px] text-ink-4">Escrever de novo busca os estudos outra vez e substitui o título, a linha fina e o texto.</p>
                   <Button busy={pending === "rewrite"} onClick={() => command("rewrite", { theme, query }, "O sistema começou a escrever de novo")}>Escrever de novo</Button>
