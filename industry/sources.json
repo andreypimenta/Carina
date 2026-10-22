@@ -137,20 +137,13 @@
     {
       "id": "web-sbct",
       "name": "SBCT",
-      "kind": "json_list",
+      "kind": "web_list",
       "config": {
-        "url": "https://www.sbct.com.br/wp-json/wp/v2/posts?categories=7&per_page=10&_fields=id,date_gmt,link,title,excerpt",
-        "mode": "json_api",
-        "titlePaths": [
-          "title.rendered"
-        ],
-        "summaryPaths": [
-          "excerpt.rendered"
-        ],
-        "urlTemplate": "{raw:link}",
-        "publishedAtPath": "date_gmt",
-        "publishedAtUtcOffset": "+00:00",
-        "externalIdPath": "id",
+        "url": "https://www.sbct.com.br/noticias/",
+        "parseMode": "html",
+        "itemSelector": "article.elementor-post",
+        "linkSelector": "h2.elementor-post__title a",
+        "titleSelector": "h2.elementor-post__title a",
         "allowUrlPrefixes": [
           "https://www.sbct.com.br/"
         ],
@@ -166,7 +159,8 @@
         "sociedade"
       ],
       "site_fulltext": false,
-      "syndicate_fulltext": false
+      "syndicate_fulltext": false,
+      "enabled": false
     },
     {
       "id": "rss-sbpt",
