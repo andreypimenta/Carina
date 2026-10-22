@@ -1,5 +1,6 @@
 // The report nameplates (site/brand/nameplates/, made by scripts/nameplates.ts from the pack's
-// subject word). Each logotype is cached on its own; the two paths take the theme's ink and accent.
+// subject word). Each logotype is cached on its own; the two paths take the theme's ink and accent. Sized by
+// width and capped in height, a logotype keeps to the left of its box and shrinks to fit a narrow one.
 import daily from "@aihot/site/brand/nameplates/daily.svg?url&no-inline";
 import weekly from "@aihot/site/brand/nameplates/weekly.svg?url&no-inline";
 import monthly from "@aihot/site/brand/nameplates/monthly.svg?url&no-inline";
@@ -16,7 +17,7 @@ const NAMEPLATES = {
 export function Nameplate({ which, className = "" }: { which: keyof typeof NAMEPLATES; className?: string }) {
   const n = NAMEPLATES[which];
   return (
-    <svg viewBox={n.viewBox} className={className} aria-hidden="true" focusable="false">
+    <svg viewBox={n.viewBox} preserveAspectRatio="xMinYMid meet" className={className} aria-hidden="true" focusable="false">
       <use href={`${n.url}#accent`} className="fill-accent" />
       <use href={`${n.url}#ink`} className="fill-ink" />
     </svg>

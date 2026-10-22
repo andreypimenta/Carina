@@ -38,9 +38,9 @@ export function headline(kind: ReportKind, key: string, count: number): string {
   return `${what} de ${monthName(Number(key.slice(5, 7)))}`;
 }
 
-/** "09.16" for a story inside a week or month. */
+/** "16/09" for a story inside a week or month. */
 export function shortDay(iso: string): string {
-  return beijingDate(iso).slice(5).replace("-", ".");
+  return dm(beijingDate(iso));
 }
 
 export interface ArchiveGroup {
@@ -80,12 +80,12 @@ export function archiveGroups(kind: ReportKind, index: ReportNavigationEntry[]):
   return groups;
 }
 
-/** An issue's mark in the archive column: a large number over a small word (a month's number stands alone). */
+/** An issue's mark in the archive column: a large number over a small word, a week's Monday (a month's number stands alone). */
 export function archiveMark(kind: ReportKind, key: string): { big: string; small: string | null } {
   if (kind === "daily") return { big: key.slice(8, 10), small: weekdayShort(key) };
   if (kind === "weekly") {
     const { start } = isoWeekRange(key)!;
-    return { big: key.slice(6), small: `a partir de ${start.slice(8, 10)}/${start.slice(5, 7)}` };
+    return { big: key.slice(6), small: dm(start) };
   }
   return { big: key.slice(5, 7), small: null };
 }
