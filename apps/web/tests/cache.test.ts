@@ -88,10 +88,11 @@ test("HTML and navigation share freshness; cookies do not personalize public res
   assert.equal(html.status, 200);
   assert.equal(html.headers.get("X-Accel-Expires"), `@${deadline}`);
   assert.match(await html.text(), /Seleção/);
-  const plain = await fetch(`${origin}/about.data`);
-  const signedIn = await fetch(`${origin}/about.data?_routes=root`, { headers: { cookie: "admin_session=private; reader=returning" } });
+  // A page whose deadline the api pins, so two reads a second apart still carry the same expiry.
+  const plain = await fetch(`${origin}/_.data`);
+  const signedIn = await fetch(`${origin}/_.data?_routes=root`, { headers: { cookie: "admin_session=private; reader=returning" } });
   assert.match(plain.headers.get("Cache-Control")!, /^public,/);
-  assert.match(plain.headers.get("X-Accel-Expires")!, /^@\d+$/);
+  assert.equal(plain.headers.get("X-Accel-Expires"), `@${deadline}`);
   assert.equal(signedIn.headers.get("Set-Cookie"), null);
   assert.equal(await signedIn.text(), await plain.text());
   assert.ok(apiCookies.every((cookie) => !cookie));
