@@ -16,11 +16,19 @@ export const CATEGORIES = [
   { key: "evidence", label: "Estudos", feedLabel: "Estudos clínicos", section: "Estudos clínicos", guide: "Estudos com pacientes que medem desfecho: ensaios clínicos, coortes prospectivas ou retrospectivas, séries de casos com mais de cinco pacientes, estudos comparativos, registros multicêntricos, estudos diagnósticos, revisões sistemáticas e metanálises. Uma série de até cinco pacientes ou um relato de caso vai para cases; a descrição de como fazer um procedimento, sem resultados comparados, vai para technique." },
   { key: "guidelines", label: "Diretrizes", feedLabel: "Diretrizes, consensos e regulação", section: "Diretrizes e regulação", guide: "Diretrizes clínicas, consensos de especialistas, posicionamentos oficiais de sociedades (SBCT, SBPT, SBP, ABORL-CCF, APSA, ESTS, ATS, ERS, AAO-HNS), atos de reguladores sobre dispositivos e medicamentos da área (aprovação, recall, alerta de segurança de stents, cânulas de traqueostomia, ventiladores, válvulas endobrônquicas), normas do Ministério da Saúde, do SUS, da ANS e do CFM. A revisão narrativa de um grupo de autores sem processo formal de consenso vai para reviews." },
   { key: "technique", label: "Técnica", feedLabel: "Técnica e inovação", section: "Técnica e inovação", guide: "Como fazer: descrição ou modificação de técnica cirúrgica ou endoscópica, notas técnicas, vídeos cirúrgicos, novos dispositivos e materiais (stents, enxertos, impressão 3D, bioengenharia de via aérea), modelos de simulação e treinamento. Se o texto compara resultados de grupos de pacientes de forma estruturada, vai para evidence." },
-  { key: "cases", label: "Casos", feedLabel: "Relatos de caso", section: "Casos e revisões", guide: "Relatos de caso e séries de até cinco pacientes, imagens clínicas, cartas sobre um caso. Doenças raras e complicações inesperadas costumam aparecer aqui." },
-  { key: "reviews", label: "Revisões", feedLabel: "Revisões e ensino", section: "Casos e revisões", guide: "Revisões narrativas, estado da arte, capítulos e textos de ensino, artigos de atualização. Uma revisão com busca sistemática e critérios explícitos vai para evidence." },
+  { key: "cases", label: "Casos", feedLabel: "Casos curiosos", section: "Casos curiosos", guide: "Relatos de caso e séries de até cinco pacientes, imagens clínicas, achados inesperados, cartas sobre um caso. Doenças raras e complicações inesperadas costumam aparecer aqui." },
+  { key: "reviews", label: "Revisões", feedLabel: "Fundamentos", section: "Fundamentos", guide: "Revisões narrativas e conceituais que nivelam o conhecimento (inclusive do pediatra geral): estado da arte, capítulos e textos de ensino, artigos de atualização. Uma revisão com busca sistemática e critérios explícitos vai para evidence." },
   { key: "opinion", label: "Opinião", feedLabel: "Opinião e debate", section: "Opinião e debate", guide: "Editoriais, comentários de especialistas sobre um artigo, debates pró e contra, cartas ao editor que discutem condutas, entrevistas. O foco é a interpretação ou a posição do autor.", commentary: true },
   { key: "industry", label: "Notícias", feedLabel: "Sociedades, eventos e ensaios em andamento", section: "Sociedades e eventos", guide: "Notícias de sociedades e instituições, congressos, cursos e programas de formação, prêmios, ensaios clínicos registrados ou iniciados, financiamento de pesquisa, notícias de imprensa sobre a área. O registro de um ensaio ainda sem resultados fica aqui, não em evidence." },
 ] as const satisfies ReadonlyArray<{ key: string; label: string; feedLabel?: string; section: string; guide: string; commentary?: true }>;
+
+/**
+ * Seções por tag: um item com a tag vai para esta seção em vez da seção da sua categoria, e assim aparece uma vez só
+ * na edição. Vêm antes das seções por categoria, na ordem desta lista. A tag tem de estar no vocabulário abaixo.
+ */
+export const TAG_SECTIONS: ReadonlyArray<{ tag: string; section: string }> = [
+  { tag: "Brasil", section: "Do Brasil" },
+];
 
 /**
  * O tipo de publicação mais acompanhado neste setor (aqui, diretrizes e consensos): o número no cabeçalho das edições.
@@ -45,7 +53,7 @@ export const CATEGORY_TAGS = [
   "Relato de caso", "Revisão narrativa", "Opinião", "Sociedades/eventos", "Ensaio registrado", "Fora do tema", "Outros",
 ] as const;
 
-/** Tags de tema opcionais: doenças, procedimentos e áreas. */
+/** Tags de tema opcionais: doenças, procedimentos, áreas e a origem brasileira (TAG_SECTIONS). */
 export const TOPIC_TAGS = [
   // Via aérea
   "Estenose subglótica", "Estenose traqueal", "Laringotraqueoplastia", "Ressecção cricotraqueal", "Traqueostomia", "Decanulação",
@@ -57,6 +65,8 @@ export const TOPIC_TAGS = [
   // Pneumologia pediátrica e cuidados intensivos
   "Fibrose cística", "Bronquiectasias", "Discinesia ciliar", "Displasia broncopulmonar", "Transplante pulmonar", "ECMO",
   "Ventilação mecânica", "Neonatologia",
+  // Origem
+  "Brasil",
 ] as const;
 
 /** Tags opcionais de entidade (sociedades e órgãos). */
@@ -95,6 +105,7 @@ export const TAG_SYNONYMS: Readonly<Record<string, string>> = {
   vats: "Cirurgia minimamente invasiva", toracoscopia: "Cirurgia minimamente invasiva", robótica: "Cirurgia minimamente invasiva", "cirurgia robótica": "Cirurgia minimamente invasiva",
   fc: "Fibrose cística", mucoviscidose: "Fibrose cística", "discinesia ciliar primária": "Discinesia ciliar",
   dbp: "Displasia broncopulmonar", ventilação: "Ventilação mecânica", "ventilação domiciliar": "Ventilação mecânica", uti: "Ventilação mecânica",
+  brasil: "Brasil", brasileiro: "Brasil", "do brasil": "Brasil",
   "recém-nascido": "Neonatologia", neonatal: "Neonatologia", prematuridade: "Neonatologia",
 };
 

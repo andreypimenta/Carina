@@ -5,9 +5,9 @@
 // with a new fact; an event with an official post and three or more independent participants is
 // carried even when none of its reports was selected; entries rank by importance (score, the day's
 // independent participants, first-hand), and the first one leads. Sections are the industry pack's
-// (industry/taxonomy.ts CATEGORIES).
+// (industry/taxonomy.ts TAG_SECTIONS, then CATEGORIES).
 import { addDays } from "@aihot/contracts/time";
-import { CATEGORIES } from "@aihot/industry/taxonomy";
+import { CATEGORIES, TAG_SECTIONS } from "@aihot/industry/taxonomy";
 import { sql } from "../db.ts";
 import { currentSignals } from "../events/hot.ts";
 import { pickRepresentative, representativePriority, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "../publication/representative.ts";
@@ -16,10 +16,13 @@ import { evidenceCondition, listedCondition, ownFactEvidenceCondition } from "..
 
 /** Each category's section; several categories may share one, in the order the pack lists them. */
 export const SECTION_OF: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.section]));
-export const SECTION_ORDER: readonly string[] = [...new Set(CATEGORIES.map((c) => c.section))];
+/** The tag sections first, then the categories'. */
+export const SECTION_ORDER: readonly string[] = [...new Set([...TAG_SECTIONS.map((t) => t.section), ...CATEGORIES.map((c) => c.section)])];
 /** An item without a category goes into the section of the industry category, else into the last one. */
-const DEFAULT_SECTION = SECTION_OF.industry ?? SECTION_ORDER.at(-1)!;
-export const sectionOf = (category: string | null) => SECTION_OF[category ?? ""] ?? DEFAULT_SECTION;
+const DEFAULT_SECTION = SECTION_OF.industry ?? CATEGORIES.at(-1)!.section;
+/** An item's one section: the first tag section among its tags, else its category's. */
+export const sectionOf = (category: string | null, tags: readonly string[]) =>
+  TAG_SECTIONS.find((t) => tags.includes(t.tag))?.section ?? SECTION_OF[category ?? ""] ?? DEFAULT_SECTION;
 
 /** A daily's size: the entries readers get in full, and the one-line flashes after them. */
 export const MAIN_ENTRIES = 12;
@@ -50,6 +53,7 @@ export interface ReportEntry {
 
 export interface Candidate extends ReportEntry {
   category: string | null;
+  tags: string[];
   factKey: string;
 }
 
@@ -157,7 +161,7 @@ export async function candidates(start: Date, end: Date): Promise<Candidate[]> {
   return [...groupBy(rows, factKeyOf)]
     .map(([factKey, members]): Candidate => {
       const r = pickRepresentative(members);
-      return { ...reportEntry(r), category: r.category, factKey };
+      return { ...reportEntry(r), category: r.category, tags: r.tags, factKey };
     })
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 }
@@ -195,7 +199,7 @@ export async function periodEntries(startDate: string, endDate: string): Promise
     const main = byId.get([...cs].sort((a, b) => b.sources - a.sources || a.key.localeCompare(b.key) || authority(a) - authority(b))[0]!.id)!;
     const rank = Math.max(...cs.map((c) => byId.get(c.id)!.score ?? 0)) + 5 * Math.log2(1 + Math.max(...cs.map((c) => c.sources)))
       + (cs.some((c) => c.lead) ? 6 : 0) + (cs.some((c) => c.highlight) ? 3 : 0) + 4 * (new Set(cs.map((c) => c.key)).size - 1);
-    return { candidate: { ...reportEntry(main), category: main.category, factKey: factKeyOf(main) }, rank };
+    return { candidate: { ...reportEntry(main), category: main.category, tags: main.tags, factKey: factKeyOf(main) }, rank };
   });
   ranked.sort((a, b) => b.rank - a.rank || a.candidate.itemId.localeCompare(b.candidate.itemId));
   return { entries: ranked.map((r) => r.candidate), issues: issues.length };

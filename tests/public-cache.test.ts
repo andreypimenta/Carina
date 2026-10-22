@@ -22,8 +22,8 @@ before(async () => {
   await publishArticle(id,{releasedAt:new Date(Date.now()-60000)});
   for (const [kind,key] of [['daily','2099-10-04'],['weekly','2099-W40'],['monthly','2099-10']]) {
     const entry = {itemId:id,title:'Exemplo de cache público',summary:'Resumo do cache público'};
-    const content = kind==='daily' ? {sections:[{label:'Casos e revisões',items:[entry]}],flashes:[]}
-      : {headline:'Exemplo de cache público',themes:[{heading:'Casos e revisões',storyRefs:[entry]}]};
+    const content = kind==='daily' ? {sections:[{label:'Fundamentos',items:[entry]}],flashes:[]}
+      : {headline:'Exemplo de cache público',themes:[{heading:'Fundamentos',storyRefs:[entry]}]};
     await sql`INSERT INTO reports(kind,key,window_start,window_end,content,origin,generated_at)
       VALUES(${kind!},${key!},now()-interval '1 day',now(),${sql.json(content)},'manual',now())`;
   }

@@ -78,4 +78,7 @@ test("category corrections revise every standard report atomically without selec
   const [restored] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2097-01-02'`;
   assert.equal(restored!.content.sections[0].label, "Diretrizes e regulação");
   assert.equal(restored!.content.metrics.modelsReleased, 1);
+  await overrideFields(articleId, { fields: { tags: ["Diretriz/consenso", "Brasil"] }, version: 2, reason: "a diretriz é brasileira" }, "test-category");
+  const [brazilian] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2097-01-02'`;
+  assert.deepEqual(brazilian!.content.sections, [{ label: "Do Brasil", items: [entry] }]);
 });
