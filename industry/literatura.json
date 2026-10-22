@@ -12,7 +12,7 @@
     {
       "id": "estenose-via-aerea",
       "name": "Estenose subglótica e traqueal; reconstrução",
-      "term": "(\"Laryngostenosis\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"laryngotracheal stenosis\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR laryngotracheoplasty[tiab] OR \"cricotracheal resection\"[tiab] OR \"slide tracheoplasty\"[tiab] OR \"tracheal resection\"[tiab] OR \"idiopathic subglottic stenosis\"[tiab]) NOT \"Published Erratum\"[pt]"
+      "term": "(\"Laryngostenosis\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"laryngotracheal stenosis\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR laryngotracheoplasty[tiab] OR \"cricotracheal resection\"[tiab] OR \"slide tracheoplasty\"[tiab] OR \"tracheal resection\"[tiab] OR \"idiopathic subglottic stenosis\"[tiab] OR \"airway stenosis\"[tiab] OR \"laryngeal stenosis\"[tiab] OR \"glottic stenosis\"[tiab]) NOT \"Published Erratum\"[pt]"
     },
     {
       "id": "traqueostomia-pediatrica",
@@ -21,8 +21,13 @@
     },
     {
       "id": "malacias-laringe",
-      "name": "Malácias, pregas vocais, fenda laríngea e papilomatose",
-      "term": "(\"Laryngomalacia\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheobronchomalacia\"[Mesh] OR laryngomalacia[tiab] OR tracheomalacia[tiab] OR tracheobronchomalacia[tiab] OR aortopexy[tiab] OR tracheopexy[tiab] OR supraglottoplasty[tiab] OR \"laryngeal cleft\"[tiab] OR \"recurrent respiratory papillomatosis\"[tiab] OR ((\"Vocal Cord Paralysis\"[Mesh] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"vocal fold immobility\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh]))) NOT \"Published Erratum\"[pt]"
+      "name": "Malácias, anomalias congênitas da laringe e da traqueia, pregas vocais e papilomatose",
+      "term": "(\"Laryngomalacia\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheobronchomalacia\"[Mesh] OR laryngomalacia[tiab] OR tracheomalacia[tiab] OR tracheobronchomalacia[tiab] OR aortopexy[tiab] OR tracheopexy[tiab] OR supraglottoplasty[tiab] OR \"laryngeal cleft\"[tiab] OR \"recurrent respiratory papillomatosis\"[tiab] OR \"subglottic hemangioma\"[tiab] OR \"subglottic hemangiomas\"[tiab] OR \"subglottic haemangioma\"[tiab] OR \"airway hemangioma\"[tiab] OR \"airway hemangiomas\"[tiab] OR \"airway haemangioma\"[tiab] OR ((hemangioma*[tiab] OR haemangioma*[tiab]) AND (subglottic[tiab] OR airway*[tiab])) OR \"laryngeal web\"[tiab] OR \"laryngeal webs\"[tiab] OR \"glottic web\"[tiab] OR \"glottic webs\"[tiab] OR \"laryngeal atresia\"[tiab] OR \"laryngotracheal agenesis\"[tiab] OR \"tracheal agenesis\"[tiab] OR \"congenital high airway obstruction\"[tiab] OR \"laryngotracheoesophageal cleft\"[tiab] OR \"complete tracheal rings\"[tiab] OR \"complete tracheal ring\"[tiab] OR \"complete tracheal cartilage rings\"[tiab] OR \"posterior cricoid split\"[tiab] OR ((\"Vocal Cord Paralysis\"[Mesh] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"vocal fold immobility\"[tiab] OR \"vocal fold motion impairment\"[tiab] OR \"vocal fold movement impairment\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh]))) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "aneis-vasculares",
+      "name": "Anéis vasculares e compressão vascular da traqueia",
+      "term": "((\"vascular ring\"[tiab] OR \"vascular rings\"[tiab] OR \"double aortic arch\"[tiab] OR \"innominate artery compression\"[tiab] OR \"pulmonary artery sling\"[tiab] OR \"pulmonary sling\"[tiab] OR \"dysphagia lusoria\"[tiab]) AND (trache*[tiab] OR airway*[tiab] OR stridor[tiab] OR wheez*[tiab] OR tracheomalacia[tiab] OR aortopexy[tiab])) NOT \"Published Erratum\"[pt]"
     },
     {
       "id": "corpo-estranho",

@@ -482,6 +482,66 @@
       "syndicate_fulltext": false
     },
     {
+      "id": "rss-ctgov-laryngomalacia",
+      "name": "ClinicalTrials.gov · laringomalácia",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=laryngomalacia&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-laryngeal-cleft",
+      "name": "ClinicalTrials.gov · fenda laríngea",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=%22laryngeal+cleft%22&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-vocal-cord-paralysis-children",
+      "name": "ClinicalTrials.gov · paralisia de pregas vocais em crianças",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=vocal+cord+paralysis&aggFilters=ages:child&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
       "id": "rss-unidos-pela-vida",
       "name": "Unidos pela Vida (fibrose cística)",
       "kind": "rss",
@@ -726,6 +786,38 @@
       "syndicate_fulltext": false
     },
     {
+      "id": "web-lurie-news",
+      "name": "Lurie Children's · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.luriechildrens.org/en/news-stories/",
+        "parseMode": "html",
+        "itemSelector": ".card-new",
+        "linkSelector": "h3 a",
+        "titleSelector": "h3 a",
+        "allowUrlPrefixes": [
+          "https://www.luriechildrens.org/en/news-stories/"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "publishedAtSelector": ".news-page__date",
+          "publishedAtUtcOffset": "-06:00"
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
       "id": "rss-sjd-noticias",
       "name": "Sant Joan de Déu · notícias",
       "kind": "rss",
@@ -754,6 +846,26 @@
       "kind": "rss",
       "config": {
         "feedUrl": "https://pequenoprincipe.org.br/noticia/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-hcpa",
+      "name": "Hospital de Clínicas de Porto Alegre · notícias",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.hcpa.edu.br/?format=feed&type=rss",
         "_aihot": {
           "initialBackfillLimit": 8
         }
