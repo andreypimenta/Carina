@@ -27,7 +27,7 @@ A republicação vale pela URL de licença que o próprio artigo declara no PMC,
 
 ### Custo
 
-Cada matéria é uma chamada ao modelo, com algo entre 3 mil e 15 mil tokens de entrada e até 4 mil de saída. Com as 24 buscas atuais (via aérea da criança ao adulto, cirurgia torácica pediátrica e, na interface com a via aérea, transplante pulmonar e ECMO), são cerca de 120 artigos novos por semana. Os textos integrais não passam por essa etapa; a tradução deles só acontece quando são selecionados.
+Cada matéria é uma chamada ao modelo, com algo entre 3 mil e 15 mil tokens de entrada e até 4 mil de saída. Com as 24 buscas atuais (via aérea da criança ao adulto, cirurgia torácica pediátrica e, na interface com a via aérea, transplante pulmonar e ECMO), são cerca de 90 artigos novos por semana. As buscas de traqueostomia no adulto e de via aérea na anestesia pediátrica exigem o termo no título ou como assunto principal (MeSH `[majr]`), porque com o termo em qualquer ponto do resumo traziam muito artigo de UTI, ventilação e anestesia que só cita a via aérea de passagem. Os textos integrais não passam por essa etapa; a tradução deles só acontece quando são selecionados.
 
 ## Notícias (feeds)
 
@@ -39,11 +39,12 @@ Cada matéria é uma chamada ao modelo, com algo entre 3 mil e 15 mil tokens de 
 | Ensaios registrados | ClinicalTrials.gov: estenose subglótica, estenose traqueal, pectus, malformações pulmonares, hérnia diafragmática, traqueomalácia, traqueostomia pediátrica | Só estudos novos (`dateField=StudyFirstPostDate`). Entram como "Ensaio registrado". |
 | Centros de referência | Cincinnati Children's (Research Horizons), Nationwide Children's (Pediatrics Nationwide), Boston Children's (Answers), Mayo Clinic News Network | Nenhum desses centros tem feed só de via aérea ou cirurgia torácica: são feeds gerais, e a pré-triagem descarta o que é de outras áreas. |
 | Pacientes e imprensa | Unidos pela Vida (fibrose cística), Respiratory Therapy | Nível T2: só entram com nota alta. |
-| Saúde pública | FDA (comunicados), OMS (notícias) | Feeds gerais; a pré-triagem descarta o que não é do tema. |
-| Imprensa e universidades | ENTtoday, STAT News, Jornal da USP (ciências da saúde), Agência Brasil (saúde), Medicina S/A | Jornal da USP em T1_5; os demais em T2. |
+| Imprensa | ENTtoday | Nível T2. |
 | Google News | buscas "traqueostomia", "cirurgia torácica" criança, "hérnia diafragmática", "fibrose cística" (pt-BR) e "pediatric airway" OR "subglottic stenosis" OR "tracheal stenosis" (en) | Nível T2. O link do item é o redirecionamento do Google, então em geral só entram título e resumo. |
 
 Fontes avaliadas e deixadas de fora por estarem paradas ou sem feed: Healio (pneumologia e pediatria), AARC, APSA, AABIP, ESPO. ATS, CHEST, STS e ESTS têm página de notícias mas não têm RSS; podem entrar como `web_list` (veja `docs/sources.md`). A ANVISA não tem feed de alertas de tecnovigilância.
+
+Também foram testados e deixados de fora: STAT News, porque o feed devolve HTTP 403 ao servidor; OMS (notícias), porque o feed está quase parado (1 item em 28 dias); e FDA (comunicados), Jornal da USP (ciências da saúde), Agência Brasil (saúde) e Medicina S/A, porque nenhum dos itens amostrados passou na pré-triagem (0 de 8 em cada) e juntos somavam cerca de 85 itens por semana sem nada do tema. Para pegar o item raro desses veículos, uma busca do Google News com termo específico rende mais.
 
 ### Candidatas a página de lista (`web_list`)
 

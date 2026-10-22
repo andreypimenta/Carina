@@ -92,7 +92,7 @@
     {
       "id": "traqueostomia-adulto",
       "name": "Traqueostomia no adulto e na UTI",
-      "term": "((\"Tracheostomy\"[Mesh] OR tracheostom*[tiab] OR tracheotom*[tiab] OR decannulation[tiab]) AND (adult*[tiab] OR \"Adult\"[Mesh] OR \"Critical Care\"[Mesh] OR \"Intensive Care Units\"[Mesh] OR \"intensive care\"[tiab] OR ICU[tiab] OR \"mechanical ventilation\"[tiab])) NOT \"Published Erratum\"[pt]"
+      "term": "((tracheostom*[ti] OR tracheotom*[ti] OR decannulation[tiab] OR \"Tracheostomy\"[majr]) AND (adult*[tiab] OR \"Adult\"[Mesh] OR \"Critical Care\"[Mesh] OR \"Intensive Care Units\"[Mesh] OR \"intensive care\"[tiab] OR ICU[tiab] OR \"mechanical ventilation\"[tiab])) NOT \"Published Erratum\"[pt]"
     },
     {
       "id": "via-aerea-dificil-adulto",
@@ -107,7 +107,7 @@
     {
       "id": "via-aerea-anestesia-pediatrica",
       "name": "Via aérea na anestesia e na terapia intensiva pediátrica e neonatal",
-      "term": "((\"Airway Management\"[Mesh] OR \"Intubation, Intratracheal\"[Mesh] OR intubation[tiab] OR laryngoscop*[tiab] OR videolaryngoscop*[tiab] OR \"supraglottic airway\"[tiab] OR \"laryngeal mask\"[tiab] OR \"difficult airway\"[tiab] OR \"airway management\"[tiab] OR laryngospasm[tiab] OR \"perioperative respiratory adverse\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh]) AND (\"Anesthesia\"[Mesh] OR anesth*[tiab] OR anaesth*[tiab] OR \"Intensive Care Units, Pediatric\"[Mesh] OR \"Intensive Care Units, Neonatal\"[Mesh] OR PICU[tiab] OR NICU[tiab] OR \"intensive care\"[tiab] OR \"delivery room\"[tiab] OR \"emergency department\"[tiab])) NOT \"Published Erratum\"[pt]"
+      "term": "((intubation[ti] OR extubation[ti] OR laryngoscop*[ti] OR videolaryngoscop*[ti] OR \"supraglottic airway\"[ti] OR \"laryngeal mask\"[ti] OR airway*[ti] OR laryngospasm[ti] OR \"perioperative respiratory adverse\"[tiab] OR \"Airway Management\"[majr] OR \"Intubation, Intratracheal\"[majr]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh]) AND (\"Anesthesia\"[Mesh] OR anesth*[tiab] OR anaesth*[tiab] OR \"Intensive Care Units, Pediatric\"[Mesh] OR \"Intensive Care Units, Neonatal\"[Mesh] OR PICU[tiab] OR NICU[tiab] OR \"intensive care\"[tiab] OR \"delivery room\"[tiab] OR \"emergency department\"[tiab])) NOT \"Published Erratum\"[pt]"
     },
     {
       "id": "pneumologia-intervencionista-adulto",
@@ -117,7 +117,7 @@
     {
       "id": "cirurgia-traqueia-adulto",
       "name": "Cirurgia de traqueia e brônquio no adulto",
-      "term": "(\"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"tracheal replacement\"[tiab] OR \"tracheal transplantation\"[tiab] OR \"sleeve resection\"[tiab] OR \"sleeve lobectomy\"[tiab] OR \"carinal resection\"[tiab] OR \"tracheal surgery\"[tiab] OR bronchoplasty[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"tracheal neoplasm\"[tiab] OR \"Tracheal Neoplasms\"[Mesh]) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
+      "term": "(\"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"tracheal replacement\"[tiab] OR \"tracheal transplantation\"[tiab] OR \"carinal resection\"[tiab] OR \"tracheal surgery\"[tiab] OR bronchoplasty[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"tracheal neoplasm\"[tiab] OR \"Tracheal Neoplasms\"[Mesh]) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
     },
     {
       "id": "transplante-pulmonar-via-aerea",
