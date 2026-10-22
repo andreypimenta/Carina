@@ -15,7 +15,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return adminGet<AdminRuns>(request, "/api/admin/runs");
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `Execução · Painel do ${SITE.name}` }];
+export const meta: Route.MetaFunction = () => [{ title: `Execução · Painel do ${SITE.bareName}` }];
 
 const STATE_LABEL: Record<string, string> = { created: "Na fila", retry: "Aguardando nova tentativa", active: "Em execução" };
 

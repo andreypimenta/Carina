@@ -13,7 +13,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return adminGet<AdminSettings>(request, "/api/admin/settings");
 }
 
-export const meta: Route.MetaFunction = () => [{ title: `Configurações · Painel do ${SITE.name}` }];
+export const meta: Route.MetaFunction = () => [{ title: `Configurações · Painel do ${SITE.bareName}` }];
 
 function QrSlot({ slot, label, src }: { slot: "wechatQr" | "feishuQr"; label: string; src: string | null }) {
   const { run, pending } = useAdminAction();

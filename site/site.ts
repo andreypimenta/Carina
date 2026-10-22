@@ -18,13 +18,15 @@ export const EDITION_WHEN = {
 
 export const SITE = {
   /** 站名：导航、页面标题、分享图、RSS、MCP、后台都用它。 */
-  name: "Fôlego",
+  name: "O Fôlego",
+  /** O nome sem o artigo, para as contrações nas frases: "do Fôlego", "no Fôlego", "pelo Fôlego". */
+  bareName: "Fôlego",
   /**
    * 行业词：拼进默认说法里（withSubject / subjectAfter），比如 "Notícias de cirurgia torácica e via aérea"。
    */
   subject: "cirurgia torácica e via aérea",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
-  homeTitle: "Fôlego — cirurgia torácica pediátrica, via aérea e pneumologia pediátrica: a edição semanal",
+  homeTitle: "O Fôlego — cirurgia torácica pediátrica, via aérea e pneumologia pediátrica: a edição semanal",
   /** 主题目录页（/topics）的标题。 */
   topicsTitle: "Tópicos: doenças, procedimentos, sociedades e formatos de estudo",
   /** 反馈表单输入框里的示例。 */
@@ -69,7 +71,7 @@ export const SITE = {
   github: null as string | null,
   /** 结构化数据里的网站运营者（搜索引擎用）。 */
   organization: {
-    name: "Fôlego",
+    name: "O Fôlego",
     /** 创始人（选填）。 */
     founder: null as null | { name: string; alternateName?: string; jobTitle?: string; description?: string; url?: string },
   },
@@ -129,13 +131,13 @@ interface ContactCard {
 
 /** 关于页的文案。数字（信源数、收录数、精选数、日报期数）来自站内实时统计，不用写在这里。 */
 export const ABOUT = {
-  kicker: `Sobre o ${SITE.name}`,
+  kicker: `Sobre ${SITE.name}`,
   /** 页面描述（搜索结果、分享卡片）。 */
-  description: `Sobre o ${SITE.name}: ${SITE.description}`,
+  description: `Sobre ${SITE.name}: ${SITE.description}`,
   /** 大标题：第一行正常颜色，第二行强调色。 */
   headline: ["Toda semana saem dezenas de artigos sobre via aérea e cirurgia torácica.", "Alguns mudam o que fazemos na segunda-feira."] as [string, string],
   /** 标题下面的一段话。{sources} 会换成实时的信源数（两边自动加空格，所以 {sources} 两边不写空格）；统计没取到时换成 sourcesFallback。 */
-  lead: `O ${SITE.name} acompanha{sources}fontes por você, entre buscas no PubMed, revistas e sociedades: lê, avalia a evidência, seleciona e publica as matérias completas em português numa edição ${EDITION_WHEN.weekly}. Gratuito e sem cadastro.`,
+  lead: `${SITE.name} acompanha{sources}fontes por você, entre buscas no PubMed, revistas e sociedades: lê, avalia a evidência, seleciona e publica as matérias completas em português numa edição ${EDITION_WHEN.weekly}. Gratuito e sem cadastro.`,
   sourcesFallback: " dezenas de ",
   /** 信源河动画下面的四个环节。 */
   steps: {
@@ -157,7 +159,7 @@ export const ABOUT = {
     feishu?: ContactCard;
   },
   /** 页面底部的版权与下架说明，中间接“反馈页”的链接。 */
-  copyright: [`As matérias do ${SITE.name} são textos próprios sobre os estudos citados, com link para o original; artigos de licença aberta são traduzidos e republicados com crédito e a licença indicada. Os direitos dos textos originais pertencem aos autores e editoras. Se você representa uma fonte e quer corrigir, retirar ou mudar a forma de exibição, fale com a gente pela `, "."] as [string, string],
+  copyright: [`As matérias do ${SITE.bareName} são textos próprios sobre os estudos citados, com link para o original; artigos de licença aberta são traduzidos e republicados com crédito e a licença indicada. Os direitos dos textos originais pertencem aos autores e editoras. Se você representa uma fonte e quer corrigir, retirar ou mudar a forma de exibição, fale com a gente pela `, "."] as [string, string],
   /** 页面底部“使用规则”链接的锚点 id（选填）：外部文档写死过这个锚点就填上，以后不要改。 */
   termsAnchor: null as string | null,
 } as const;
@@ -186,8 +188,8 @@ export const REPORTS = {
   motto: SITE.subject as string,
   /** 每种报告页面的描述（搜索结果、分享卡片），不带句号；llms.txt 介绍周报、月报时也用它。 */
   descriptions: {
-    daily: `Notas diárias de ${SITE.subject} do ${SITE.name}, atualizadas ${EDITION_WHEN.daily} (horário de Brasília)`,
-    weekly: `Edição semanal do ${SITE.name}: ${SITE.subject}, publicada ${EDITION_WHEN.weekly}`,
+    daily: `Notas diárias de ${SITE.subject} do ${SITE.bareName}, atualizadas ${EDITION_WHEN.daily} (horário de Brasília)`,
+    weekly: `Edição semanal do ${SITE.bareName}: ${SITE.subject}, publicada ${EDITION_WHEN.weekly}`,
     monthly: `Balanço mensal de ${SITE.subject}`,
   },
   /**
@@ -239,12 +241,12 @@ export const CARDS: Record<string, { kicker: string; title: string; subtitle: st
   daily: { kicker: "Notas diárias", title: "O que entrou no radar a cada dia", subtitle: `As publicações de ${SITE.subject} selecionadas no dia anterior.` },
   weekly: { kicker: "Edição semanal", title: `Toda segunda às ${spokenTime(EDITION_TIMES.weekly)}, a semana em ${SITE.subject}`, subtitle: "Os estudos que mudam a conduta, as diretrizes novas e o que vale levar para o centro cirúrgico e o consultório." },
   monthly: { kicker: "Briefing mensal", title: "O que mudou no mês", subtitle: "Os fios condutores e os fatos-chave do mês." },
-  about: { kicker: "Sobre", title: `Sobre o ${SITE.name}`, subtitle: SITE.description },
-  terms: { kicker: "Termos de uso", title: `Termos de uso do ${SITE.name}`, subtitle: "O que é permitido no site, na API, no RSS e no MCP." },
-  privacy: { kicker: "Privacidade", title: `Privacidade no ${SITE.name}`, subtitle: "Como tratamos registros de acesso, dados locais do navegador e feedback enviado." },
-  changelog: { kicker: "Novidades", title: `Novidades do ${SITE.name}`, subtitle: "Novos recursos, melhorias, avisos e o que saiu do ar." },
+  about: { kicker: "Sobre", title: `Sobre ${SITE.name}`, subtitle: SITE.description },
+  terms: { kicker: "Termos de uso", title: `Termos de uso do ${SITE.bareName}`, subtitle: "O que é permitido no site, na API, no RSS e no MCP." },
+  privacy: { kicker: "Privacidade", title: `Privacidade no ${SITE.bareName}`, subtitle: "Como tratamos registros de acesso, dados locais do navegador e feedback enviado." },
+  changelog: { kicker: "Novidades", title: `Novidades do ${SITE.bareName}`, subtitle: "Novos recursos, melhorias, avisos e o que saiu do ar." },
   feedback: { kicker: "Feedback", title: "Diga o que podemos melhorar", subtitle: "Conteúdo, recursos, integração ou pedidos de correção e retirada de fontes." },
-  agent: { kicker: "Integração com agentes", title: `Conecte o ${SITE.name} ao seu agente`, subtitle: "MCP, RSS ou API: acesso anônimo, só leitura, sem API Key." },
+  agent: { kicker: "Integração com agentes", title: `Conecte ${SITE.name} ao seu agente`, subtitle: "MCP, RSS ou API: acesso anônimo, só leitura, sem API Key." },
 };
 
 /** 公开接口的访问约定里随部署而变的几处：给 Agent 的使用说明、llms.txt 会写。 */

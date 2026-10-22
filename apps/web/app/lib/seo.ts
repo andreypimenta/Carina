@@ -232,7 +232,7 @@ const REPORT_NAME = { daily: "Notas diárias", weekly: "Edição semanal", month
 export function reportLd(r: ReportDetail, path: string, description: string) {
   return articleLd({
     path,
-    headline: `${REPORT_NAME[r.kind]} do ${SITE.name} · ${r.key}`,
+    headline: `${REPORT_NAME[r.kind]} do ${SITE.bareName} · ${r.key}`,
     description,
     publishedAt: r.generatedAt,
     section: r.sections.map((s) => s.label),

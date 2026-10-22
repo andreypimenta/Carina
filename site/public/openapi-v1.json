@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "API pública do {{siteName}}",
+    "title": "API pública do {{siteBareName}}",
     "version": "{{version}}",
     "description": "API anônima e somente de leitura para clientes e agentes. Não é preciso API key.\n\nEscolhendo o endpoint: responder à pergunta de alguém dentro de um agente de IA -> leia /api/v1/agent, que lista endereços em Markdown feitos para agentes. Mostrar itens recentes ou de hoje -> /api/v1/items. Mostrar o que está em alta agora -> /api/v1/hot-topics. Mostrar o briefing diário -> /api/v1/dailies/latest; os briefings semanal e mensal -> /api/v1/weeklies/latest e /api/v1/monthlies/latest. Manter uma cópia local completa da seleção -> /api/v1/selected/snapshot uma vez, depois /api/v1/selected/changes para sempre.\n\nFrequência de consulta: use o s-maxage do Cache-Control de cada resposta como intervalo mínimo e sempre envie If-None-Match: um recurso que não mudou responde 304 com corpo vazio. Em 429 ou 503, respeite o Retry-After. Não há canal de push (nem SSE, webhooks ou streaming): consulte em intervalos.\n\nMantenha as respostas pequenas: envie Accept-Encoding: gzip ou br (curl --compressed). Para acompanhar itens novos, volte páginas só até encontrar um id que você já tem, em vez de reler a janela inteira de 7 dias a cada consulta; para guardar todos os itens selecionados, leia /api/v1/selected/snapshot uma vez e depois apenas /api/v1/selected/changes.\n\nDatas, semanas e meses dos briefings identificam edições fixas, mas correções e citações retiradas podem mudar seu conteúdo público. Revalide as cópias guardadas com If-None-Match depois que o Cache-Control expirar; não trate um briefing datado como imutável.\n\nTítulos e resumos são gerados a partir de fontes de terceiros; o original está sempre em links.original.",
     "termsOfService": "{{siteUrl}}/terms"
@@ -254,7 +254,7 @@
       "get": {
         "operationId": "hotTopics",
         "summary": "Listar os assuntos em alta, cobertos por várias fontes",
-        "description": "O Top 10 atual do {{siteName}}, ordenado pela cobertura em várias fontes e pela repercussão. Cada item traz a posição (a partir de 1); os valores internos e exibidos de repercussão não são devolvidos. Usa o último ranking publicado com sucesso, normalmente atualizado a cada cinco minutos. Caches compartilhados usam janela de validade de 60s; não consulte mais rápido que o s-maxage e use If-None-Match. Se um item tiver links.story, trata-se de uma URL HTML para pessoas: extraia o último segmento do caminho (publicId) e chame /api/v1/stories/{publicId} para obter a linha do tempo em JSON. Nunca peça links.story como API. Quando ausente, não invente um id de evento.",
+        "description": "O Top 10 atual do {{siteBareName}}, ordenado pela cobertura em várias fontes e pela repercussão. Cada item traz a posição (a partir de 1); os valores internos e exibidos de repercussão não são devolvidos. Usa o último ranking publicado com sucesso, normalmente atualizado a cada cinco minutos. Caches compartilhados usam janela de validade de 60s; não consulte mais rápido que o s-maxage e use If-None-Match. Se um item tiver links.story, trata-se de uma URL HTML para pessoas: extraia o último segmento do caminho (publicId) e chame /api/v1/stories/{publicId} para obter a linha do tempo em JSON. Nunca peça links.story como API. Quando ausente, não invente um id de evento.",
         "responses": {
           "200": {
             "description": "OK",
@@ -1129,7 +1129,7 @@
       "get": {
         "operationId": "weeklies",
         "summary": "Listar os briefings semanais",
-        "description": "Índice dos briefings semanais publicados, do mais recente para o mais antigo: semana ISO, seus dias de segunda a domingo, manchete e link no {{siteName}}. O semanal sai toda segunda-feira às {{weeklyTime}} (horário de Brasília), montado a partir dos briefings diários daquela semana, então consultar mais de uma vez por dia é trabalho desperdiçado.",
+        "description": "Índice dos briefings semanais publicados, do mais recente para o mais antigo: semana ISO, seus dias de segunda a domingo, manchete e link no {{siteBareName}}. O semanal sai toda segunda-feira às {{weeklyTime}} (horário de Brasília), montado a partir dos briefings diários daquela semana, então consultar mais de uma vez por dia é trabalho desperdiçado.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ActorUserAgent"
@@ -1659,7 +1659,7 @@
       "get": {
         "operationId": "monthlies",
         "summary": "Listar os briefings mensais",
-        "description": "Índice dos briefings mensais publicados, do mais recente para o mais antigo: mês, primeiro e último dia, manchete e link no {{siteName}}. O mensal sai todo dia 1º às {{monthlyTime}} (horário de Brasília), montado a partir dos briefings diários daquele mês.",
+        "description": "Índice dos briefings mensais publicados, do mais recente para o mais antigo: mês, primeiro e último dia, manchete e link no {{siteBareName}}. O mensal sai todo dia 1º às {{monthlyTime}} (horário de Brasília), montado a partir dos briefings diários daquele mês.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ActorUserAgent"
@@ -2628,7 +2628,7 @@
       "get": {
         "operationId": "agentLatest",
         "summary": "Itens mais recentes, como resposta para agente",
-        "description": "Os mesmos itens de /api/v1/items (na ordem da linha do tempo), formatados para um agente repassar: títulos com link para o {{siteName}}, fonte, horário de Brasília, resumo e \"Por que ler\". Por padrão, a seleção editorial das últimas 24 horas, 10 itens.",
+        "description": "Os mesmos itens de /api/v1/items (na ordem da linha do tempo), formatados para um agente repassar: títulos com link para {{siteName}}, fonte, horário de Brasília, resumo e \"Por que ler\". Por padrão, a seleção editorial das últimas 24 horas, 10 itens.",
         "parameters": [
           {
             "$ref": "#/components/parameters/ActorUserAgent"
@@ -3387,7 +3387,7 @@
       },
       "Attribution": {
         "type": "object",
-        "description": "Procedência legível por máquina do {{siteName}}, para rastreabilidade. Mantenha-a sempre que for tecnicamente viável. Citar a fonte, por si só, não é autorização; veja os termos de uso públicos.",
+        "description": "Procedência legível por máquina do {{siteBareName}}, para rastreabilidade. Mantenha-a sempre que for tecnicamente viável. Citar a fonte, por si só, não é autorização; veja os termos de uso públicos.",
         "required": [
           "name",
           "url"
@@ -3710,7 +3710,7 @@
             "type": "integer",
             "minimum": 1,
             "maximum": 10,
-            "description": "Posição (a partir de 1) no Top 10 atual do {{siteName}}."
+            "description": "Posição (a partir de 1) no Top 10 atual do {{siteBareName}}."
           },
           "id": {
             "type": "string"

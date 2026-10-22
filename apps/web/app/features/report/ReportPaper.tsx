@@ -528,7 +528,7 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
       <footer className="py-10 text-center">
         <div className="text-[13px] font-semibold tracking-[0.15em] text-ink-4">(Fim desta edição)</div>
         <p className="mt-3 text-[12px] text-ink-4">
-          {`${KIND_LABEL[report.kind]} do ${SITE.name}, ${daily ? "editado" : "compilado"} automaticamente pelo sistema editorial a partir de fontes públicas; cada item traz o link para o original · `}
+          {`${KIND_LABEL[report.kind]} do ${SITE.bareName}, ${daily ? "editado" : "compilado"} automaticamente pelo sistema editorial a partir de fontes públicas; cada item traz o link para o original · `}
           <Link to={daily ? "/daily/archive" : "#report-history"} viewTransition={daily} className="font-medium text-ink-3 transition-colors hover:text-accent">
             {daily ? "Arquivo das notas diárias" : `Edições anteriores · ${KIND_LABEL[report.kind]}`}
           </Link>

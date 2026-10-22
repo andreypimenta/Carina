@@ -91,8 +91,8 @@ export function referenceBlock(paper: Paper, access: Access, pmcid: string | nul
       ? "<p><strong>Acesso:</strong> o artigo completo é pago na editora. Autores costumam enviar uma cópia a quem pede pelo e-mail de correspondência indicado no artigo.</p>"
       : "";
   const note = basis === "integral" ? ""
-    : basis === "full" ? `<p><em>Matéria escrita pelo ${esc(SITE.name)} a partir do texto completo em acesso aberto.</em></p>`
-    : `<p><em>Matéria escrita pelo ${esc(SITE.name)} a partir do resumo publicado.</em></p>`;
+    : basis === "full" ? `<p><em>Matéria escrita pelo ${esc(SITE.bareName)} a partir do texto completo em acesso aberto.</em></p>`
+    : `<p><em>Matéria escrita pelo ${esc(SITE.bareName)} a partir do resumo publicado.</em></p>`;
   return `<h2>Referência</h2><p>${cite}</p><p>${links}</p>${accessLine}${note}`;
 }
 

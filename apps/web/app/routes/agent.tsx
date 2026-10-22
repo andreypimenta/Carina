@@ -80,7 +80,7 @@ export function meta({ location }: Route.MetaArgs) {
   const path = listPath("/agent", { tab: tab !== FIRST ? tab : null });
   return pageMeta({
     title: "Integração com agentes",
-    description: `Conecte o ${SITE.name} ao seu agente: ${WAYS} formas (${TRACKS.map((t) => t.name).join(", ")}), anônimas e só leitura, sem API Key, prontas em um minuto.`,
+    description: `Conecte ${SITE.name} ao seu agente: ${WAYS} formas (${TRACKS.map((t) => t.name).join(", ")}), anônimas e só leitura, sem API Key, prontas em um minuto.`,
     path,
     image: "/og/pages/agent.png",
   });
@@ -175,7 +175,7 @@ export default function AgentPage() {
     <ReadingLayout aside={aside}>
       <header className="lg:pt-5">
         <Kicker>INTEGRAÇÃO COM AGENTES</Kicker>
-        <h1 data-page-title="" className="mt-4 text-[28px] font-semibold leading-[1.3] text-ink sm:text-[32px]">{`Conecte o ${SITE.name} ao seu agente`}</h1>
+        <h1 data-page-title="" className="mt-4 text-[28px] font-semibold leading-[1.3] text-ink sm:text-[32px]">{`Conecte ${SITE.name} ao seu agente`}</h1>
         <p className="mt-3 max-w-[40em] text-[15px] leading-[1.8] text-ink-3">{`As ${WAYS} formas (${TRACKS.map((t) => t.short).join(", ")}) leem os mesmos dados: seleção, Em alta e as notas diárias, a edição semanal e o balanço mensal. Escolha a que combina com a sua ferramenta. Tudo é anônimo e só leitura, sem cadastro e sem API Key.`}</p>
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className={`${chip} ${healthy ? "text-ok" : "text-hot"}`}>

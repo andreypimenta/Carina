@@ -53,7 +53,7 @@ export function McpPanel(props: AgentPanelProps) {
           {client === "other" && <p className="mt-3">{`Nas configurações de MCP ou de conectores do cliente, crie um item: nome ${name}, endereço igual ao de cima, autenticação "Nenhuma" e sem API Key. Se o cliente só aceita comandos locais, use primeiro o proxy de MCP remoto que ele oferece.`}</p>}
         </Step>
         <Step n={3} title="Peça uma chamada ao agente">
-          <Ask text={`Use ${T.latest} e me diga as 5 notícias mais importantes de ${SITE.subject} das últimas 24 horas, com os links do ${SITE.name}.`} />
+          <Ask text={`Use ${T.latest} e me diga as 5 notícias mais importantes de ${SITE.subject} das últimas 24 horas, com os links do ${SITE.bareName}.`} />
           <p className="mt-2 text-[13px] text-ink-3">{`Se o cliente mostrar a chamada a ${T.latest} e a resposta trouxer o período, resumos em português e links de ${new URL(props.base).host}, está conectado.`}</p>
         </Step>
       </Steps>
