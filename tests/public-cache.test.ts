@@ -18,12 +18,12 @@ before(async () => {
   id = (await upsertMaterial({ sourceId:T, url:`https://example.com/${T}`,title:'Exemplo de cache público',
     bodyText:'Texto liberado para publicação. '.repeat(50),bodyStatus:'ok',via:'fetch',publishedAt:new Date() })).articleId;
   await sql`INSERT INTO analyses(article_id,input_revision,origin,relevance,category,title_zh,summary_zh,score,selected)
-    VALUES(${id},1,'rule','pass','research','Exemplo de cache público','Resumo do cache público',90,true)`;
+    VALUES(${id},1,'rule','pass','reviews','Exemplo de cache público','Resumo do cache público',90,true)`;
   await publishArticle(id,{releasedAt:new Date(Date.now()-60000)});
   for (const [kind,key] of [['daily','2099-10-04'],['weekly','2099-W40'],['monthly','2099-10']]) {
     const entry = {itemId:id,title:'Exemplo de cache público',summary:'Resumo do cache público'};
-    const content = kind==='daily' ? {sections:[{label:'Pesquisa e modelos',items:[entry]}],flashes:[]}
-      : {headline:'Exemplo de cache público',themes:[{heading:'Pesquisa e modelos',storyRefs:[entry]}]};
+    const content = kind==='daily' ? {sections:[{label:'Casos e revisões',items:[entry]}],flashes:[]}
+      : {headline:'Exemplo de cache público',themes:[{heading:'Casos e revisões',storyRefs:[entry]}]};
     await sql`INSERT INTO reports(kind,key,window_start,window_end,content,origin,generated_at)
       VALUES(${kind!},${key!},now()-interval '1 day',now(),${sql.json(content)},'manual',now())`;
   }

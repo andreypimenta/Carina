@@ -279,7 +279,7 @@ async function alertState(): Promise<AlertState> {
   const legacy = state["report.daily"];
   if (legacy && Number.isFinite(Date.parse(legacy.since))) {
     const date = beijingDate(legacy.since);
-    state[`${DAILY_PREFIX}${date}`] ??= { ...legacy, title: `O Briefing diário de ${date} ainda não foi gerado` };
+    state[`${DAILY_PREFIX}${date}`] ??= { ...legacy, title: `As notas diárias de ${date} ainda não foram geradas` };
     delete state["report.daily"];
   }
   return state;
@@ -304,7 +304,7 @@ async function dailyReportFindings(now: number): Promise<Finding[]> {
   const published = new Set((await sql<{ key: string }[]>`SELECT key FROM reports WHERE kind = 'daily' AND key IN ${sql(overdue)}`).map(r => r.key));
   return overdue.filter(date => !published.has(date)).map(date => ({
     key: `${DAILY_PREFIX}${date}`, level: "now",
-    title: `O Briefing diário de ${date} ainda não foi gerado`, impact: `Os leitores não veem o Briefing diário de ${date}`,
+    title: `As notas diárias de ${date} ainda não foram geradas`, impact: `Os leitores não veem as notas diárias de ${date}`,
     heals: "Ainda não foi recuperado; veja o histórico de execuções para saber se é preciso gerar manualmente",
     action: "Abra uma manutenção o quanto antes",
     detail: `reports daily ${date} não existe; veja o histórico de execuções de reports.compose`,

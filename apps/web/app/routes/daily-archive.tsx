@@ -23,26 +23,26 @@ export async function loader({ request }: { request: Request }) {
 }
 
 export function meta({ loaderData }: { loaderData?: { index: ReportIndexEntry[] } }) {
-  const entries = (loaderData?.index ?? []).map((e: ReportIndexEntry) => ({ path: `/daily/${e.key}`, name: e.title ? `${e.key} · ${e.title}` : `Briefing diário do ${SITE.name} · ${e.key}` }));
-  return pageMeta({ title: "Briefing diário · arquivo", description: `Todas as edições do briefing diário do ${SITE.name}, por data.`, path: "/daily/archive", image: "/og/pages/daily.png", jsonLd: archiveLd("/daily/archive", `Briefing diário do ${SITE.name} · arquivo`, entries) });
+  const entries = (loaderData?.index ?? []).map((e: ReportIndexEntry) => ({ path: `/daily/${e.key}`, name: e.title ? `${e.key} · ${e.title}` : `Notas diárias do ${SITE.name} · ${e.key}` }));
+  return pageMeta({ title: "Notas diárias · arquivo", description: `Todas as edições das notas diárias do ${SITE.name}, por data.`, path: "/daily/archive", image: "/og/pages/daily.png", jsonLd: archiveLd("/daily/archive", `Notas diárias do ${SITE.name} · arquivo`, entries) });
 }
 
 export default function DailyArchive() {
   const { index, today } = useLoaderData<typeof loader>();
   const months = archiveGroups("daily", index);
   return (
-    <ReportLayout kind="daily" index={index} current={null} today={today} back={{ to: "/daily", label: "Briefing" }} title="Arquivo do briefing diário">
+    <ReportLayout kind="daily" index={index} current={null} today={today} back={{ to: "/daily", label: "Notas diárias" }} title="Arquivo das notas diárias">
       <div className="@container">
         <header className="pt-5 lg:pt-0">
           <div className="flex items-center justify-between gap-4 text-[12px] text-ink-4">
-            <span>{`${SITE.name} · Briefing diário`}</span>
+            <span>{`${SITE.name} · Notas diárias`}</span>
             <span>
               <span className="num">{index[0]?.issueNumber ?? 0}</span> {(index[0]?.issueNumber ?? 0) === 1 ? "edição" : "edições"}
             </span>
           </div>
           <div className="py-6 @[880px]:py-8">
             <h1 id="report-start" data-page-title="">
-              <span className="sr-only">Arquivo do briefing diário</span>
+              <span className="sr-only">Arquivo das notas diárias</span>
               <Nameplate which="archive" className="block h-[50px] w-auto @[520px]:h-[70px] @[880px]:h-[98px]" />
             </h1>
           </div>
@@ -58,7 +58,7 @@ export default function DailyArchive() {
                     <span className="mt-1.5 text-[10.5px] leading-none text-ink-4">{weekdayShort(e.key)}</span>
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-bold leading-[1.55] text-ink transition-colors group-hover:text-accent">{e.title ?? `Briefing diário ${e.key}`}</span>
+                    <span className="block text-[15px] font-bold leading-[1.55] text-ink transition-colors group-hover:text-accent">{e.title ?? `Notas diárias ${e.key}`}</span>
                     {!!e.count && (
                       <span className="mt-1 block text-[12px] text-ink-4">
                         <span className="num">{e.count}</span>{` ${ENTRIES_UNIT}`}

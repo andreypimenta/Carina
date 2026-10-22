@@ -1,0 +1,93 @@
+{
+  "$comment": "Buscas salvas no PubMed para o módulo literatura (modules/literatura). Cada busca roda a cada execução sobre os registros que entraram no PubMed nos últimos `days` dias; cada artigo é tratado uma vez. Sintaxe do PubMed: https://pubmed.ncbi.nlm.nih.gov/help/. Para testar uma busca, cole o `term` no site do PubMed. perRun limita quantos artigos novos são escritos por execução (a cada 6 horas); languages filtra pelo idioma do artigo.",
+  "days": 7,
+  "perRun": 60,
+  "languages": [
+    "eng",
+    "por",
+    "spa",
+    "chi"
+  ],
+  "queries": [
+    {
+      "id": "estenose-via-aerea",
+      "name": "Estenose subglótica e traqueal; reconstrução",
+      "term": "(\"Laryngostenosis\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"laryngotracheal stenosis\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR laryngotracheoplasty[tiab] OR \"cricotracheal resection\"[tiab] OR \"slide tracheoplasty\"[tiab] OR \"tracheal resection\"[tiab] OR \"idiopathic subglottic stenosis\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "traqueostomia-pediatrica",
+      "name": "Traqueostomia e decanulação em crianças",
+      "term": "((\"Tracheostomy\"[Mesh] OR tracheostom*[tiab] OR tracheotom*[tiab] OR decannulation[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "malacias-laringe",
+      "name": "Malácias, pregas vocais, fenda laríngea e papilomatose",
+      "term": "(\"Laryngomalacia\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheobronchomalacia\"[Mesh] OR laryngomalacia[tiab] OR tracheomalacia[tiab] OR tracheobronchomalacia[tiab] OR aortopexy[tiab] OR tracheopexy[tiab] OR supraglottoplasty[tiab] OR \"laryngeal cleft\"[tiab] OR \"recurrent respiratory papillomatosis\"[tiab] OR ((\"Vocal Cord Paralysis\"[Mesh] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"vocal fold immobility\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh]))) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "corpo-estranho",
+      "name": "Corpo estranho na via aérea",
+      "term": "((\"Foreign Bodies\"[Mesh] OR \"foreign body\"[tiab] OR \"foreign bodies\"[tiab]) AND (aspiration[tiab] OR airway*[tiab] OR bronch*[tiab] OR trachea*[tiab])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "atresia-fistula",
+      "name": "Atresia de esôfago e fístula traqueoesofágica",
+      "term": "(\"Tracheoesophageal Fistula\"[Mesh] OR \"tracheoesophageal fistula\"[tiab] OR \"tracheo-esophageal fistula\"[tiab] OR \"Esophageal Atresia\"[Mesh] OR \"esophageal atresia\"[tiab] OR \"oesophageal atresia\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "broncoscopia-pediatrica",
+      "name": "Broncoscopia e via aérea intervencionista em crianças",
+      "term": "((\"Bronchoscopy\"[Mesh] OR bronchoscop*[tiab] OR \"airway endoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"balloon dilation\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "via-aerea-intervencionista-adulto",
+      "name": "Via aérea intervencionista do adulto",
+      "term": "(\"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"central airway obstruction\"[tiab] OR \"tracheobronchial stent\"[tiab] OR \"post-intubation tracheal stenosis\"[tiab] OR \"postintubation tracheal stenosis\"[tiab] OR \"tracheal injury\"[tiab] OR \"tracheobronchial injury\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "lesao-intubacao",
+      "name": "Lesão de via aérea por intubação em neonatos e crianças",
+      "term": "((intubation[tiab] OR extubation[tiab] OR \"endotracheal tube\"[tiab]) AND (subglottic[tiab] OR laryngeal[tiab] OR \"airway injury\"[tiab] OR stridor[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "malformacoes-pulmonares",
+      "name": "Malformações pulmonares congênitas",
+      "term": "(\"Cystic Adenomatoid Malformation of Lung, Congenital\"[Mesh] OR \"Bronchopulmonary Sequestration\"[Mesh] OR CPAM[tiab] OR CCAM[tiab] OR \"congenital pulmonary airway malformation\"[tiab] OR \"congenital lung malformation\"[tiab] OR \"congenital lung malformations\"[tiab] OR \"pulmonary sequestration\"[tiab] OR \"congenital lobar emphysema\"[tiab] OR \"congenital lobar overinflation\"[tiab] OR \"bronchogenic cyst\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "hernia-diafragmatica",
+      "name": "Hérnia diafragmática congênita",
+      "term": "(\"Hernias, Diaphragmatic, Congenital\"[Mesh] OR \"congenital diaphragmatic hernia\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "pectus",
+      "name": "Deformidades da parede torácica",
+      "term": "(\"Funnel Chest\"[Mesh] OR \"Pectus Carinatum\"[Mesh] OR \"pectus excavatum\"[tiab] OR \"pectus carinatum\"[tiab] OR \"Nuss procedure\"[tiab] OR \"chest wall deformity\"[tiab] OR \"chest wall deformities\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "empiema-pneumotorax",
+      "name": "Empiema, pneumonia necrotizante e pneumotórax em crianças",
+      "term": "((\"Empyema, Pleural\"[Mesh] OR empyema[tiab] OR \"parapneumonic effusion\"[tiab] OR \"necrotizing pneumonia\"[tiab] OR \"necrotising pneumonia\"[tiab] OR pneumothorax[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "cirurgia-toracica-pediatrica",
+      "name": "Toracoscopia, tumores e ressecções pulmonares em crianças",
+      "term": "((thoracoscop*[tiab] OR \"Thoracic Surgery, Video-Assisted\"[Mesh] OR \"thoracic surgery\"[tiab] OR \"robotic thoracic\"[tiab] OR \"mediastinal mass\"[tiab] OR \"mediastinal tumor\"[tiab] OR \"mediastinal tumour\"[tiab] OR \"lung resection\"[tiab] OR lobectomy[tiab] OR \"chest wall tumor\"[tiab] OR \"chest wall tumour\"[tiab] OR \"pleuropulmonary blastoma\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "pneumologia-pediatrica-cirurgica",
+      "name": "Fibrose cística, bronquiectasias e discinesia ciliar com interface cirúrgica ou endoscópica",
+      "term": "((\"cystic fibrosis\"[tiab] OR bronchiectasis[tiab] OR \"primary ciliary dyskinesia\"[tiab]) AND (bronchoscop*[tiab] OR \"lung transplant\"[tiab] OR \"lung transplantation\"[tiab] OR hemoptysis[tiab] OR lobectomy[tiab] OR \"lung resection\"[tiab] OR pneumothorax[tiab])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "displasia-ventilacao",
+      "name": "Displasia broncopulmonar, ventilação prolongada e via aérea",
+      "term": "((\"bronchopulmonary dysplasia\"[tiab] OR \"chronic ventilation\"[tiab] OR \"home ventilation\"[tiab] OR \"prolonged ventilation\"[tiab]) AND (tracheostom*[tiab] OR airway*[tiab] OR bronchoscop*[tiab] OR tracheomalacia[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "transplante-pulmonar-pediatrico",
+      "name": "Transplante pulmonar pediátrico",
+      "term": "((\"Lung Transplantation\"[Mesh] OR \"lung transplant\"[tiab] OR \"lung transplantation\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
+    }
+  ]
+}

@@ -15,16 +15,16 @@ test("topic lists and pool counts share the exact membership predicate", async (
   const at = new Date("2026-01-01T00:00:00Z");
   const now = new Date(+at + 1000);
   const cases = [
-    { title: "", original: null, tags: ["Agentes"], topics: ["agentes"] },
-    { title: "Anthropic Agentes", original: null, tags: [], topics: [] },
-    { title: "", original: null, tags: ["entity:anthropic"], topics: ["anthropic"] },
-    { title: "Unrelated", original: null, tags: ["entity:anthropic", "entity:openai"], topics: [] },
-    { title: "Unrelated", original: "ANTHROPIC launches a model", tags: ["entity:anthropic", "entity:openai"], topics: ["anthropic"] },
-    { title: "Epicentro", original: null, tags: ["entity:epic", "entity:openai"], topics: [] },
-    { title: "Novo recurso no «Epic»", original: null, tags: ["entity:epic", "entity:openai"], topics: ["epic"] },
-    { title: "Unselected", original: null, tags: ["Agentes", "entity:anthropic"], topics: ["agentes", "anthropic"], selected: false },
-    { title: "Withdrawn", original: null, tags: ["Agentes", "entity:anthropic"], topics: ["agentes", "anthropic"], visibility: "withdrawn" },
-    { title: "Future", original: null, tags: ["Agentes", "entity:anthropic"], topics: ["agentes", "anthropic"], future: true },
+    { title: "", original: null, tags: ["Pectus"], topics: ["pectus"] },
+    { title: "SBPT Pectus", original: null, tags: [], topics: [] },
+    { title: "", original: null, tags: ["entity:sbpt"], topics: ["sbpt"] },
+    { title: "Unrelated", original: null, tags: ["entity:sbpt", "entity:sbct"], topics: [] },
+    { title: "Unrelated", original: "sbpt releases a guideline", tags: ["entity:sbpt", "entity:sbct"], topics: ["sbpt"] },
+    { title: "Atsugi", original: null, tags: ["entity:ats", "entity:sbct"], topics: [] },
+    { title: "Novo documento da «ATS»", original: null, tags: ["entity:ats", "entity:sbct"], topics: ["ats"] },
+    { title: "Unselected", original: null, tags: ["Pectus", "entity:sbpt"], topics: ["pectus", "sbpt"], selected: false },
+    { title: "Withdrawn", original: null, tags: ["Pectus", "entity:sbpt"], topics: ["pectus", "sbpt"], visibility: "withdrawn" },
+    { title: "Future", original: null, tags: ["Pectus", "entity:sbpt"], topics: ["pectus", "sbpt"], future: true },
   ];
   await sql`INSERT INTO sources (id, name, kind, tier) VALUES (${prefix}, ${prefix}, 'rss', 'T1')`;
   for (const [i, row] of cases.entries()) {
@@ -36,7 +36,7 @@ test("topic lists and pool counts share the exact membership predicate", async (
       VALUES (${id}, ${prefix}, ${row.title}, ${row.original}, ${`https://example.org/${id}`}, ${at}, ${at},
         ${at}, ${row.future ? new Date(+now + 1) : at}, ${row.selected ?? true}, true, ${row.visibility ?? "public"}, 'news', ${row.tags})`;
   }
-  const topics = ["anthropic", "epic", "agentes"].map(slug => findTopic(slug)!);
+  const topics = ["sbpt", "ats", "pectus"].map(slug => findTopic(slug)!);
   const membership = new Map((await sql<{ id: string; topics: string[] }[]>`
     SELECT p.article_id AS id, ${topicMembership(topics)} AS topics FROM publications p WHERE p.source_id = ${prefix}`)
     .map(row => [row.id, row.topics]));

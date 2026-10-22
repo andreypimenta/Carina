@@ -160,9 +160,9 @@ async function dailyLeads(rows: Array<{ key: string; content: Record<string, any
   return leads;
 }
 
-/** The names the issues go by in their default titles ("Briefing diário · 2026-10-04", "MedIA Briefing · Briefing semanal · 2026-W38"). */
-export const DAILY_ISSUE_NAME = "Briefing diário";
-export const PERIOD_ISSUE_NAMES = { weekly: "Briefing semanal", monthly: "Briefing mensal" } as const;
+/** The names the issues go by in their default titles ("Notas diárias · 2026-10-04", "Fôlego · Edição semanal · 2026-W38"). */
+export const DAILY_ISSUE_NAME = "Notas diárias";
+export const PERIOD_ISSUE_NAMES = { weekly: "Edição semanal", monthly: "Balanço mensal" } as const;
 
 /**
  * A weekly's or monthly's overview: the one written for it, else what it carries, naming the first three
@@ -176,7 +176,7 @@ function periodOverview(content: Record<string, any>, kind: "weekly" | "monthly"
   return `${kind === "weekly" ? "Nesta semana" : "Neste mês"}, ${shown.length}${REPORTS.entry.measure ? ` ${REPORTS.entry.measure}` : ""} ${REPORTS.entry.noun}; os que mais chamaram atenção: ${shown.slice(0, 3).map((e) => e.title).join("; ")}.`;
 }
 
-/** A weekly or monthly's own headline; the composer's "<site name> · Briefing semanal · 2026-W38" names the issue, not its news. */
+/** A weekly or monthly's own headline; the composer's "<site name> · Edição semanal · 2026-W38" names the issue, not its news. */
 function periodicHeadline(content: Record<string, any>): string | null {
   const text = String(content.headline ?? content.title ?? "");
   const issueName = text.startsWith(`${SITE.name} `) && (Object.values(PERIOD_ISSUE_NAMES).some((name) => text.startsWith(`${SITE.name} · ${name} · `))

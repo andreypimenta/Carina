@@ -14,7 +14,7 @@ export function KindSwitch({ kind, phone = false }: { kind: ReportKind; phone?: 
       fill={!phone}
       size={phone ? "sm" : "md"}
       layoutId={phone ? "report-kind-phone" : "report-kind"}
-      label="Alternar entre briefing diário, semanal e mensal"
+      label="Alternar entre notas diárias, edição semanal e balanço mensal"
       active={kind}
       items={KINDS.map((k) => ({ key: k, label: KIND_SHORT[k], to: KIND_PATH[k], resetScroll: phone, prefetch: 'intent' }))}
     />
@@ -38,7 +38,7 @@ export function ReportArchive({ kind, index, current }: { kind: ReportKind; inde
       </nav>
       {kind === "daily" && (
         <IntentLink to="/daily/archive" className="flex h-12 shrink-0 items-center justify-between border-t border-line pl-1 pr-1.5 text-[12.5px] font-medium text-ink-2 transition-colors hover:text-accent">
-          Arquivo do briefing diário <IconChevronRight size={14} />
+          Arquivo das notas diárias <IconChevronRight size={14} />
         </IntentLink>
       )}
     </aside>
@@ -92,7 +92,7 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
           );
         })}
       </ul>}
-      {kind === "daily" && !open && <noscript><a href="/daily/archive">Ver o arquivo completo do briefing diário</a></noscript>}
+      {kind === "daily" && !open && <noscript><a href="/daily/archive">Ver o arquivo completo das notas diárias</a></noscript>}
     </details>
   );
 }

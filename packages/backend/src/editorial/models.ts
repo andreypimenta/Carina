@@ -28,7 +28,7 @@ export const CAPABILITIES = {
   groupReview: { label: "Revisão do agrupamento (fusões com similaridade baixa e fusões de dois eventos, relidas antes de gravar; de preferência com outro fornecedor de modelo)", env: "GROUP_REVIEW_MODEL", default: DEFAULTS.groupReview ?? "default", purposes: ["group_review", "group_story_review"] },
   digest: { label: "Panorama do evento", env: "DIGEST_MODEL", default: DEFAULTS.digest ?? "default", purposes: ["story_digest"] },
   // Dailies are computed by rule; report_lead and report_daily remain for their older receipts.
-  report: { label: "Apresentação e seções dos briefings semanal e mensal (o Briefing diário é calculado por regra, sem modelo)", env: "REPORT_MODEL", default: DEFAULTS.report ?? "default", purposes: ["report_weekly", "report_monthly", "report_lead", "report_daily"] },
+  report: { label: "Apresentação e seções da edição semanal e do balanço mensal (as notas diárias são calculadas por regra, sem modelo)", env: "REPORT_MODEL", default: DEFAULTS.report ?? "default", purposes: ["report_weekly", "report_monthly", "report_lead", "report_daily"] },
   translate: { label: "Tradução do texto integral da Seleção (inclui posts citados)", env: "TRANSLATE_MODEL", default: DEFAULTS.translate ?? "default", purposes: ["translate_body", "translate_quoted"] },
 } satisfies Record<string, Capability>;
 

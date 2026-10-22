@@ -7,7 +7,7 @@
  * 月报在每月 1 日出。排程、成刊时间窗口、缺期告警和所有提到时间的文案都读它（public/ 里的文件写占位
  * {{dailyTime}}、{{weeklyTime}}、{{monthlyTime}}）；排程每半小时检查一次，所以写整点或半点。
  */
-export const EDITION_TIMES = { daily: "08:00", weekly: "10:00", monthly: "10:30" };
+export const EDITION_TIMES = { daily: "07:00", weekly: "07:00", monthly: "07:30" };
 
 /** "todos os dias às 08:00", "toda segunda-feira às 10:00", "todo dia 1º às 10:30": o horário de publicação dentro de uma frase. */
 export const EDITION_WHEN = {
@@ -18,15 +18,15 @@ export const EDITION_WHEN = {
 
 export const SITE = {
   /** 站名：导航、页面标题、分享图、RSS、MCP、后台都用它。 */
-  name: "MedIA Briefing",
+  name: "Fôlego",
   /**
-   * 行业词：拼进默认说法里（withSubject / subjectAfter），比如 "Notícias de IA em medicina"。
+   * 行业词：拼进默认说法里（withSubject / subjectAfter），比如 "Notícias de cirurgia torácica e via aérea"。
    */
-  subject: "IA em medicina",
+  subject: "cirurgia torácica e via aérea",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
-  homeTitle: "MedIA Briefing — IA em medicina: seleção diária e briefing para médicos",
+  homeTitle: "Fôlego — cirurgia torácica pediátrica, via aérea e pneumologia pediátrica: a edição semanal",
   /** 主题目录页（/topics）的标题。 */
-  topicsTitle: "Tópicos de IA em medicina: empresas e instituições, especialidades e formatos",
+  topicsTitle: "Tópicos: doenças, procedimentos, sociedades e formatos de estudo",
   /** 反馈表单输入框里的示例。 */
   feedbackExample: "Por exemplo: ao buscar um termo, aconteceu… e eu esperava…",
   /** 反馈页标题下面的一句话。 */
@@ -34,13 +34,13 @@ export const SITE = {
   /** 反馈表单邮箱框里的提示。 */
   feedbackEmailHint: "Deixe seu e-mail se quiser que a gente responda",
   /** 一句话介绍：搜索引擎、分享卡片、RSS、llms.txt 会用。 */
-  description: `Seleciona o que vale a pena ler sobre IA em medicina em dezenas de fontes, junta as notícias sobre o mesmo fato e publica um briefing ${EDITION_WHEN.daily}.`,
+  description: `Lê a literatura e as notícias de cirurgia torácica pediátrica, via aérea adulto e pediátrica e pneumologia pediátrica, escolhe o que muda a prática e publica matérias completas em português numa edição ${EDITION_WHEN.weekly}.`,
   /** llms.txt 里一句话介绍下面的一段详细介绍（选填）。 */
   llmsIntro: null as string | null,
   /** 一行小字：分享图、海报下方。 */
-  tagline: "O que importa em IA na medicina",
+  tagline: "Cirurgia torácica e via aérea, toda semana",
   /** 搜索引擎读到的关键词（首页结构化数据）。 */
-  keywords: ["IA em medicina", "inteligência artificial na saúde", "notícias de IA médica", "briefing diário de IA em saúde"] as string[],
+  keywords: ["cirurgia torácica pediátrica", "via aérea pediátrica", "estenose subglótica", "laringotraqueoplastia", "traqueostomia", "broncoscopia", "pneumologia pediátrica", "estenose traqueal"] as string[],
   /** 网站开始收录的年份（结构化数据的时间范围，选填）。 */
   since: null as string | null,
   /** 界面语言（HTML lang、og:locale）。 */
@@ -50,15 +50,15 @@ export const SITE = {
   /** 标准图标（favicon.ico、icon.png、icon-192.png、apple-icon.png、logo.svg）以外也放在网站根目录的图标，site/brand/ 里的文件名（选填）；manifest.webmanifest 或外站引用了它们时用。 */
   rootIcons: [] as string[],
   /**
-   * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 mediabriefing_get_latest、mediabriefing_search……
+   * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 folego_get_latest、folego_search……
    * 已经有人接入后就不要再改。
    */
-  mcpPrefix: "mediabriefing",
+  mcpPrefix: "folego",
   /**
    * 公开接口（MCP、OpenAPI、llms.txt）的版本号，只升不降。
    * 改了接口里已有的字段或含义时升主版本，并在部署说明里写清。
    */
-  interfaceVersion: "4.0.0",
+  interfaceVersion: "1.0.0",
   /** 对外联系邮箱（选填）：llms.txt 和给 Agent 的使用说明里会写。 */
   contactEmail: null as string | null,
   /** 关于页底部的一行小字（选填）。 */
@@ -69,12 +69,12 @@ export const SITE = {
   github: null as string | null,
   /** 结构化数据里的网站运营者（搜索引擎用）。 */
   organization: {
-    name: "MedIA Briefing",
+    name: "Fôlego",
     /** 创始人（选填）。 */
     founder: null as null | { name: string; alternateName?: string; jobTitle?: string; description?: string; url?: string },
   },
   /** 抓取信源时报上的名字和版本（User-Agent 里用），不要冒用别的站。 */
-  crawlerName: "MedIABriefingBot/1.0",
+  crawlerName: "FolegoBot/1.0",
 } as const;
 
 /** 使用规则和隐私说明两页（正文在 pages/ 里）。 */
@@ -113,9 +113,9 @@ export const POLICY = {
 /** 条目卡片和详情页上的几处说法和显示。 */
 export const ITEM_COPY = {
   /** 模型写的那句理由叫什么：卡片、详情页、Markdown 导出、给 Agent 的回答和群推送都用它。 */
-  reasonLabel: "Por que ler",
+  reasonLabel: "Por que importa",
   /** 读者在网页和分享图上看不看得到 AI 评分。只管显示：公开 API 和 MCP 的数据照样带 score，后台照常显示。 */
-  showScore: true,
+  showScore: false,
 };
 
 /** 关于页的一张二维码卡片。 */
@@ -133,16 +133,16 @@ export const ABOUT = {
   /** 页面描述（搜索结果、分享卡片）。 */
   description: `Sobre o ${SITE.name}: ${SITE.description}`,
   /** 大标题：第一行正常颜色，第二行强调色。 */
-  headline: ["Todo dia surge novidade em IA na medicina.", "Só algumas merecem o seu tempo."] as [string, string],
+  headline: ["Toda semana saem dezenas de artigos sobre via aérea e cirurgia torácica.", "Alguns mudam o que fazemos na segunda-feira."] as [string, string],
   /** 标题下面的一段话。{sources} 会换成实时的信源数（两边自动加空格，所以 {sources} 两边不写空格）；统计没取到时换成 sourcesFallback。 */
-  lead: `O ${SITE.name} acompanha{sources}fontes por você: coleta, agrupa, avalia e seleciona, e publica um briefing ${EDITION_WHEN.daily}. Gratuito e sem cadastro.`,
+  lead: `O ${SITE.name} acompanha{sources}fontes por você, entre buscas no PubMed, revistas e sociedades: lê, avalia a evidência, seleciona e publica as matérias completas em português numa edição ${EDITION_WHEN.weekly}. Gratuito e sem cadastro.`,
   sourcesFallback: " dezenas de ",
   /** 信源河动画下面的四个环节。 */
   steps: {
-    collect: "Acompanhamos órgãos reguladores, revistas científicas, empresas, imprensa especializada e especialistas; quanto mais uma fonte publica, mais vezes é verificada (no máximo a cada 15 minutos).",
-    store: "Tudo o que é coletado fica guardado, e as notícias sobre o mesmo fato são agrupadas; é daí que sai a lista Em alta.",
-    select: `O modelo verifica se a notícia é de IA em medicina e se traz informação real, depois escreve título, resumo e "${ITEM_COPY.reasonLabel}" em português; peças de marketing e repetições ficam de fora.`,
-    publish: `Briefing diário ${EDITION_WHEN.daily}, semanal ${EDITION_WHEN.weekly} e mensal ${EDITION_WHEN.monthly} (horário de Brasília).`,
+    collect: "Buscas temáticas no PubMed, sociedades de cirurgia torácica, pneumologia, pediatria e otorrinolaringologia, reguladores e registros de ensaios clínicos. Para cada artigo, procuramos a versão de acesso aberto legal.",
+    store: "Tudo o que é coletado fica guardado, e as publicações sobre o mesmo estudo ou o mesmo fato são agrupadas.",
+    select: `O modelo avalia o desenho do estudo, o tamanho da amostra e o impacto na conduta, e escreve a matéria em português com uma camada para o pediatra e outra para o especialista. Artigos com licença aberta (CC BY) são traduzidos na íntegra.`,
+    publish: `A edição semanal sai ${EDITION_WHEN.weekly} (horário de Brasília); o feed é atualizado todos os dias e há um balanço ${EDITION_WHEN.monthly}.`,
   },
   /**
    * 作者块（选填），null 就不显示。
@@ -157,7 +157,7 @@ export const ABOUT = {
     feishu?: ContactCard;
   },
   /** 页面底部的版权与下架说明，中间接“反馈页”的链接。 */
-  copyright: [`O ${SITE.name} é um agregador de resumos e um índice de leitura; os direitos dos textos originais pertencem às respectivas fontes. Se você representa uma fonte e quer corrigir, retirar ou mudar a forma de exibição, fale com a gente pela `, "."] as [string, string],
+  copyright: [`As matérias do ${SITE.name} são textos próprios sobre os estudos citados, com link para o original; artigos de licença aberta são traduzidos e republicados com crédito e a licença indicada. Os direitos dos textos originais pertencem aos autores e editoras. Se você representa uma fonte e quer corrigir, retirar ou mudar a forma de exibição, fale com a gente pela `, "."] as [string, string],
   /** 页面底部“使用规则”链接的锚点 id（选填）：外部文档写死过这个锚点就填上，以后不要改。 */
   termsAnchor: null as string | null,
 } as const;
@@ -175,7 +175,7 @@ export const ADMIN = {
 /** Agent 接入页的示例。 */
 export const AGENT = {
   /** MCP 工具表里“搜索”一行：能搜什么、可以怎么问。 */
-  search: { scope: "Busca nos últimos 7 dias por empresa, produto, pessoa ou tema", ask: "O que a FDA aprovou de IA recentemente?" },
+  search: { scope: "Busca nos últimos 7 dias por doença, procedimento, revista ou tema", ask: "O que saiu sobre laringotraqueoplastia nesta semana?" },
 };
 
 /** 日报、周报、月报版面上的说法。 */
@@ -186,8 +186,8 @@ export const REPORTS = {
   motto: SITE.subject as string,
   /** 每种报告页面的描述（搜索结果、分享卡片），不带句号；llms.txt 介绍周报、月报时也用它。 */
   descriptions: {
-    daily: `Briefing diário de ${SITE.subject} do ${SITE.name}, publicado ${EDITION_WHEN.daily} (horário de Brasília)`,
-    weekly: `Resumo semanal de ${SITE.subject}`,
+    daily: `Notas diárias de ${SITE.subject} do ${SITE.name}, atualizadas ${EDITION_WHEN.daily} (horário de Brasília)`,
+    weekly: `Edição semanal do ${SITE.name}: ${SITE.subject}, publicada ${EDITION_WHEN.weekly}`,
     monthly: `Balanço mensal de ${SITE.subject}`,
   },
   /**
@@ -196,17 +196,17 @@ export const REPORTS = {
    */
   entry: { measure: "", noun: "destaques" },
   /** 报头上其余几个数字后面的说法；精选数和日报期数在关于页、主题页也这样写。 */
-  metricUnits: { sourcesCount: "fontes", firstPartyEvents: "anúncios oficiais", selectedCount: "selecionadas", reportsCovered: "edições do briefing" },
+  metricUnits: { sourcesCount: "fontes", firstPartyEvents: "publicações oficiais", selectedCount: "selecionadas", reportsCovered: "edições" },
   /** 报告分享图上“共几条”的说法。 */
   shareUnit: "destaques",
   /** 日报时段内有资料经过评判、但没有新大事时的标题与导语。 */
-  quiet: { title: "Dia calmo, sem grandes novidades", paragraph: `Entre {start} e {end} (horário de Brasília), não houve novos destaques de ${SITE.subject}.` },
+  quiet: { title: "Sem novidades relevantes neste dia", paragraph: `Entre {start} e {end} (horário de Brasília), não houve novos destaques de ${SITE.subject}.` },
 };
 
 /** 运维告警（只发给站长）里随部署而变的几处说法。 */
 export const ALERTS = {
   /** 多少分钟没有收录新文章就告警“网站停止收录新内容”（最多一天）；环境变量 ALERT_QUIET_MINUTES 优先。 */
-  quietMinutes: 360,
+  quietMinutes: 1440,
   /** 同一条告警里，“没有”后面补一句平时的收录量；null 就不写。 */
   usualFlow: null as string | null,
   /** worker 停了的告警里，怎么看它的日志。 */
@@ -227,17 +227,17 @@ export const SOURCE_DEFAULTS = {
  */
 export const COMMUNITY_FEEDS: { dev: string[]; hn: string[]; reddit: string[] } = {
   dev: [],
-  hn: ["rss-hn-medical"],
-  reddit: ["rss-reddit-medicine", "rss-reddit-radiology", "rss-reddit-residency", "rss-reddit-healthit", "rss-reddit-machinelearning-medical"],
+  hn: [],
+  reddit: [],
 };
 
 /** 各页分享图（/og/pages/*.png）上的文字。主题目录页的那张按主题数自动生成。 */
 export const CARDS: Record<string, { kicker: string; title: string; subtitle: string; accent?: "hot" | "amber" }> = {
-  site: { kicker: `Seleção diária · ${SITE.subject}`, title: SITE.tagline, subtitle: SITE.description },
+  site: { kicker: `Edição semanal · ${SITE.subject}`, title: SITE.tagline, subtitle: SITE.description },
   all: { kicker: "Todas as notícias", title: "As últimas notícias de todas as fontes, num só lugar", subtitle: "Tudo o que as fontes publicaram, em ordem cronológica, com filtros por categoria e tag." },
   hot: { kicker: "Em alta", title: "O que está sendo discutido nas últimas 48 horas", subtitle: "Índice de repercussão, tendência e as fontes públicas por trás dele.", accent: "hot" },
-  daily: { kicker: "Briefing diário", title: `Todo dia às ${spokenTime(EDITION_TIMES.daily)}, um briefing que dá para ler inteiro`, subtitle: `O que importou em ${SITE.subject} no dia anterior.` },
-  weekly: { kicker: "Briefing semanal", title: `Os ${REPORTS.entry.noun} da semana, de uma vez`, subtitle: "Os fios condutores da semana, os anúncios importantes e as discussões que valem rever." },
+  daily: { kicker: "Notas diárias", title: "O que entrou no radar a cada dia", subtitle: `As publicações de ${SITE.subject} selecionadas no dia anterior.` },
+  weekly: { kicker: "Edição semanal", title: `Toda segunda às ${spokenTime(EDITION_TIMES.weekly)}, a semana em ${SITE.subject}`, subtitle: "Os estudos que mudam a conduta, as diretrizes novas e o que vale levar para o centro cirúrgico e o consultório." },
   monthly: { kicker: "Briefing mensal", title: "O que mudou no mês", subtitle: "Os fios condutores e os fatos-chave do mês." },
   about: { kicker: "Sobre", title: `Sobre o ${SITE.name}`, subtitle: SITE.description },
   terms: { kicker: "Termos de uso", title: `Termos de uso do ${SITE.name}`, subtitle: "O que é permitido no site, na API, no RSS e no MCP." },

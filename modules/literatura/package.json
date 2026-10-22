@@ -1,0 +1,16 @@
+{
+  "name": "@aihot/literatura",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./module": "./module.ts",
+    "./server": "./server.ts"
+  },
+  "dependencies": {
+    "@aihot/backend": "*",
+    "@aihot/contracts": "*",
+    "cheerio": "1.2.0",
+    "zod": "4.6.5",
+    "@aihot/site": "*"
+  }
+}

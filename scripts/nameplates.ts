@@ -28,24 +28,24 @@ function gap(a: string, b: string): number {
   return H * 0.085;
 }
 
-// The subject word (SITE.subject) is not set on Portuguese nameplates: "Briefing diário" names the issue.
+// The subject word (SITE.subject) is not set on Portuguese nameplates: "Edição semanal" names the issue.
 void SITE;
 const NAMEPLATES: Record<string, Array<{ text: string; accent: boolean }>> = {
   daily: [
-    { text: "Briefing ", accent: false },
-    { text: "diário", accent: true },
+    { text: "Notas ", accent: false },
+    { text: "diárias", accent: true },
   ],
   weekly: [
-    { text: "Briefing ", accent: false },
+    { text: "Edição ", accent: false },
     { text: "semanal", accent: true },
   ],
   monthly: [
-    { text: "Briefing ", accent: false },
+    { text: "Balanço ", accent: false },
     { text: "mensal", accent: true },
   ],
   archive: [
-    { text: "Arquivo do ", accent: false },
-    { text: "briefing", accent: true },
+    { text: "Arquivo das ", accent: false },
+    { text: "edições", accent: true },
   ],
 };
 

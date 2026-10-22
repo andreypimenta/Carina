@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<article xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:mml="http://www.w3.org/1998/Math/MathML" article-type="research-article">
+<front>
+  <journal-meta><journal-title-group><journal-title>BMC Pulmonary Medicine</journal-title></journal-title-group></journal-meta>
+  <article-meta>
+    <article-id pub-id-type="pmcid">PMC12345678</article-id>
+    <title-group><article-title>Flexible bronchoscopy findings in children with persistent wheeze</article-title></title-group>
+    <permissions>
+      <copyright-statement>© The Author(s) 2026</copyright-statement>
+      <license license-type="open-access" xlink:href="http://creativecommons.org/licenses/by/4.0/">
+        <license-p>This article is licensed under a Creative Commons Attribution 4.0 International License.</license-p>
+      </license>
+    </permissions>
+    <abstract>
+      <sec><title>Background</title><p>Persistent wheeze in children has many causes.</p></sec>
+      <sec><title>Results</title><p>Tracheomalacia was found in 31% of 120 children.</p></sec>
+    </abstract>
+  </article-meta>
+</front>
+<body>
+  <sec id="s1"><title>Background</title>
+    <p>Wheeze that persists despite treatment <xref ref-type="bibr" rid="R1">[1]</xref> may reflect a structural airway problem such as <italic>tracheomalacia</italic>.</p>
+  </sec>
+  <sec id="s2"><title>Methods</title>
+    <sec id="s2a"><title>Patients</title><p>We included 120 children aged 3 months to 12 years.</p>
+      <list list-type="bullet"><list-item><p>Wheeze for more than 3 months</p></list-item><list-item><p>No known airway disease</p></list-item></list>
+    </sec>
+  </sec>
+  <sec id="s3"><title>Results</title>
+    <p>Tracheomalacia was the most frequent finding (31%; 95% CI 23&#x2013;40). See <ext-link ext-link-type="uri" xlink:href="https://example.org/data">the dataset</ext-link>.</p>
+    <fig id="F1"><label>Fig. 1</label><caption><title>Bronchoscopic findings.</title><p>Distribution by age.</p></caption><graphic xlink:href="12890_2026_1234_Fig1_HTML"/></fig>
+    <table-wrap id="T1"><label>Table 1</label><caption><p>Findings</p></caption>
+      <table><thead><tr><th>Finding</th><th>n (%)</th></tr></thead><tbody><tr><td>Tracheomalacia</td><td>37 (31)</td></tr></tbody></table>
+    </table-wrap>
+  </sec>
+</body>
+<back>
+  <ack><p>We thank the families.</p></ack>
+  <ref-list><ref id="R1"><mixed-citation>Smith J. Wheeze. Thorax. 2020.</mixed-citation></ref></ref-list>
+</back>
+</article>

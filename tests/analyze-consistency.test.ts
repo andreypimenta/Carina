@@ -20,8 +20,8 @@ const provider = await stub(async (_hit, request) => {
   }
   const content = step === "prefilter" ? { label: "PASS", reason: "local fixture" }
     : step === "score" ? { attentionScore: SELECTING_SCORE }
-    : step === "structure" ? { category: "research", tags: [], subjects: [], scope: "single", fact: null }
-    : { itemType: "model_or_research", authorRole: "principal", tags: ["Modelo/pesquisa"], editorialJudgment: "O modelo melhora a detecção", titleZh: "Laboratório lança novo modelo", summaryZh: "O laboratório lançou um novo modelo e divulgou resultados de avaliação e preço." };
+    : step === "structure" ? { category: "reviews", tags: [], subjects: [], scope: "single", fact: null }
+    : { itemType: "narrative_review", authorRole: "principal", tags: ["Revisão narrativa"], editorialJudgment: "O modelo melhora a detecção", titleZh: "Laboratório lança novo modelo", summaryZh: "O laboratório lançou um novo modelo e divulgou resultados de avaliação e preço." };
   return { choices: [{ message: { content: JSON.stringify(content) } }] };
 });
 pointModels(provider.url);

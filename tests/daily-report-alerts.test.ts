@@ -5,8 +5,11 @@ import { beijingAt } from "@aihot/contracts/time";
 import { closeDb, sql } from "@aihot/backend/db";
 import { getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 import { checkAlerts, collectFindings } from "@aihot/backend/operations/alerts";
+import { EDITION_TIMES } from "@aihot/site";
 
 const at = (date: string, time = "10:00") => beijingAt(date, time).getTime();
+// A daily edition is overdue two hours after its scheduled time (site/site.ts).
+const due = (date: string) => beijingAt(date, EDITION_TIMES.daily).getTime() + 2 * 3600_000;
 const key = (date: string) => `report.daily:${date}`;
 const daily = (keys: string[]) => keys.filter(k => k.startsWith("report.daily"));
 async function report(date: string) {
@@ -41,10 +44,10 @@ test("midnight preserves a missing edition; each date recovers only when its rep
 test("recent gap detection uses report activity and each edition's overdue time", async () => {
   await sql`INSERT INTO job_runs(job,started_at,status) VALUES('reports.compose',${new Date(at("2026-10-05"))},'failed')`;
   await report("2026-10-06");
-  const findings = await collectFindings(at("2026-10-07", "09:59"));
+  const findings = await collectFindings(due("2026-10-07") - 60_000);
   assert.deepEqual(daily(findings.map(f => f.key)), [key("2026-10-05")]);
   await report("2026-09-01");
-  assert.deepEqual(daily((await collectFindings(at("2026-10-07"))).map(f => f.key)),
+  assert.deepEqual(daily((await collectFindings(due("2026-10-07"))).map(f => f.key)),
     [1,2,3,4,5,7].map(d => key(`2026-10-0${d}`)));
 });
 

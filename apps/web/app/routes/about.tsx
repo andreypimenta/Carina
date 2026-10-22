@@ -231,7 +231,7 @@ export default function AboutPage() {
             Ver a seleção de hoje <IconArrowRight size={15} />
           </IntentLink>
           <IntentLink to="/daily" className={buttonClass("secondary", "lg")}>
-            Ler o último briefing
+            Ler a última edição
           </IntentLink>
         </div>
       </header>
@@ -243,7 +243,7 @@ export default function AboutPage() {
         <SignalRiver sources={sources} focus={focus} onArrive={onArrive} className="h-[230px] sm:h-[300px] lg:h-[360px] 2xl:h-[420px]">
           <Latest item={latest[at]} className="absolute left-[75%] top-[calc(42%+42px)] hidden w-[25%] px-6 lg:block" />
         </SignalRiver>
-        <p className="sr-only">{"Diagrama: cada linha é uma fonte; as linhas se juntam em feixes, que representam várias notícias sobre o mesmo fato; na comporta da seleção, só alguns feixes passam e chegam ao briefing diário."}</p>
+        <p className="sr-only">{"Diagrama: cada linha é uma fonte; as linhas se juntam em feixes, que representam várias notícias sobre o mesmo fato; na comporta da seleção, só alguns feixes passam e chegam à edição."}</p>
         <Latest item={latest[at]} className="mt-2 border-t border-line pt-4 lg:hidden" />
         <ol className="mt-4 grid grid-cols-1 border-t border-line-strong sm:grid-cols-2 lg:mt-0 lg:grid-cols-4">
           {stages.map((s, i) => (
