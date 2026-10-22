@@ -25,6 +25,8 @@ const SOURCE = `especiais-${T}`;
 const EDITOR = "editor@test";
 let pubmedEmpty = false;
 let pubmedRequests = 0;
+/** Something to do while the model is still writing, before it answers. */
+let whileWriting: (() => Promise<void>) | null = null;
 const modelInputs: string[] = [];
 
 const article = (pmid: string, year: string, title: string, authors: string[], abstract: string, type: string) => `
@@ -69,7 +71,9 @@ const stub = http.createServer((req, res) => {
       const timelineCall = body.messages.some((m) => m.role === "system" && m.content.includes("Linha do tempo"));
       if (timelineCall) modelInputs.push(body.messages.find((m) => m.role === "user")!.content);
       const answer = timelineCall ? timeline : { overview: "", sections: {} };
-      return send("application/json", JSON.stringify({ id: `stub-${Date.now()}`, choices: [{ message: { content: JSON.stringify(answer) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }));
+      const meanwhile = timelineCall ? whileWriting : null;
+      if (meanwhile) whileWriting = null;
+      return void Promise.resolve(meanwhile?.()).then(() => send("application/json", JSON.stringify({ id: `stub-${Date.now()}`, choices: [{ message: { content: JSON.stringify(answer) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } })));
     }
     res.writeHead(500);
     res.end("unexpected");
@@ -98,6 +102,8 @@ after(async () => {
 
 const version = async (id: number) => (await especialDetail(id))!.version;
 const row = async (id: number) => (await sql`SELECT * FROM literatura_especiais WHERE id = ${id}`)[0]!;
+/** The worker's writing as the latest request asked it. */
+const write = async (id: number) => writeEspecial(id, await version(id));
 
 test("a special reaches the site only through the editor's approval and publication; the check takes out what its studies do not support", async () => {
   const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
@@ -107,7 +113,7 @@ test("a special reaches the site only through the editor's approval and publicat
   assert.ok(job, "the writing waits for the worker; the api never calls the model");
   await assert.rejects(approveEspecial(id, { version: await version(id) }, EDITOR), Conflict, "a draft not yet written cannot be approved");
 
-  assert.deepEqual(await writeEspecial(id), { id, result: "escrito" });
+  assert.deepEqual(await write(id), { id, result: "escrito" });
   const written = (await especialDetail(id))!;
   assert.equal(written.writing, "pronto");
   assert.deepEqual(written.refs.map((r) => [r.n, r.pmid, r.year]), [[1, "5000001", "1965"], [2, "7000002", "1994"], [3, "9000003", "2020"]], "the studies are numbered oldest first");
@@ -116,7 +122,7 @@ test("a special reaches the site only through the editor's approval and publicat
   assert.doesNotMatch(written.body!, /Boston|Sem fonte/);
   assert.deepEqual(written.discarded.map((d) => d.text).sort(), ["1998 — Uma série de Boston confirmou a classificação [2].", "Sem fonte nenhuma."]);
   assert.deepEqual(written.warnings, []);
-  assert.equal(await writeEspecial(id).then((r) => r.result), "nada a escrever", "a written draft is not written (and paid for) again");
+  assert.equal(await write(id).then((r) => r.result), "nada a escrever", "a written draft is not written (and paid for) again");
 
   // Nothing is on the site yet.
   assert.equal((await publishedEspeciais()).some((e) => e.title === written.title), false);
@@ -168,7 +174,7 @@ test("a writing that fails is recorded on the draft, which can then be written a
   const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Tema sem estudos", query: "nothing at all" }, EDITOR);
   pubmedEmpty = true;
   try {
-    assert.equal((await writeEspecial(id)).result, "falhou");
+    assert.equal((await write(id)).result, "falhou");
   } finally {
     pubmedEmpty = false;
   }
@@ -177,20 +183,25 @@ test("a writing that fails is recorded on the draft, which can then be written a
   assert.match(failed.error!, /nenhum estudo/);
   await rewriteEspecial(id, { version: failed.version, theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
   assert.equal((await row(id)).writing, "pendente");
-  assert.equal((await writeEspecial(id)).result, "escrito");
+  assert.equal((await write(id)).result, "escrito");
 });
 
 const liveJobs = async (id: number) =>
   (await sql`SELECT id FROM pgboss.job WHERE name = ${ESPECIAL_QUEUE.name} AND data->>'id' = ${String(id)} AND state IN ('created', 'retry')`).map((j) => j.id as string);
 
-test("a draft still being written can be asked again, with one waiting job", async () => {
-  const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Tema que não termina", query: "subglottic stenosis" }, EDITOR);
-  await rewriteEspecial(id, { version: await version(id), theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
+test("a draft still being written can be asked again; the writing asked before leaves the new request alone", async () => {
+  const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Tema que não termina", query: "old search" }, EDITOR);
+  const first = await version(id);
+  // The first writing is still running when the editor asks again with another search.
+  whileWriting = async () => { await rewriteEspecial(id, { version: first, theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR); };
+  assert.equal((await writeEspecial(id, first)).result, "descartado ou pedido de novo enquanto era escrito");
   const r = await row(id);
   assert.equal(r.writing, "pendente");
-  assert.equal(r.theme, "Estenose subglótica pediátrica");
-  assert.equal((await liveJobs(id)).length, 1);
-  assert.equal((await writeEspecial(id)).result, "escrito");
+  assert.equal(r.title, null, "the old search's text is not kept");
+  assert.equal(r.query, "subglottic stenosis");
+  assert.equal((await writeEspecial(id, first)).result, "nada a escrever", "the old writing's retry does not pay again");
+  assert.equal((await liveJobs(id)).length, 2, "the new request is queued beside the old one");
+  assert.equal((await write(id)).result, "escrito");
 });
 
 test("a writing whose every attempt is cut short marks the draft failed, which can then be written again", async () => {
@@ -201,7 +212,7 @@ test("a writing whose every attempt is cut short marks the draft failed, which c
     const [waiting] = await liveJobs(id);
     assert.ok(waiting, `attempt ${attempt + 1} is waiting`);
     await sql`UPDATE pgboss.job SET start_after = now() WHERE id = ${waiting}`;
-    const taken = await boss.fetch<{ id: number }>(ESPECIAL_QUEUE.name, { batchSize: 100 });
+    const taken = await boss.fetch<{ id: number; version: string }>(ESPECIAL_QUEUE.name, { batchSize: 100 });
     const others = taken.filter((j) => j.data.id !== id).map((j) => j.id);
     if (others.length) await boss.complete(ESPECIAL_QUEUE.name, others);
     assert.ok(taken.some((j) => j.id === waiting));
@@ -209,15 +220,17 @@ test("a writing whose every attempt is cut short marks the draft failed, which c
     assert.equal((await row(id)).writing, "pendente");
   }
   assert.deepEqual(await liveJobs(id), [], "no attempt is left");
-  const dead = (await boss.fetch<{ id: number }>(ESPECIAL_FAILED_QUEUE.name, { batchSize: 50 })).find((j) => j.data.id === id);
+  const dead = (await boss.fetch<{ id: number; version: string }>(ESPECIAL_FAILED_QUEUE.name, { batchSize: 50 })).find((j) => j.data.id === id);
   assert.ok(dead, "the exhausted writing reaches the dead letter queue");
   await ESPECIAL_FAILED_QUEUE.run([dead.data]);
   const failed = (await especialDetail(id))!;
   assert.equal(failed.writing, "falhou");
   assert.match(failed.error!, /interrompida/);
   await rewriteEspecial(id, { version: failed.version, theme: failed.theme, query: failed.query }, EDITOR);
-  assert.equal((await writeEspecial(id)).result, "escrito");
-  await ESPECIAL_FAILED_QUEUE.run([{ id }]);
+  await ESPECIAL_FAILED_QUEUE.run([dead.data]);
+  assert.equal((await row(id)).writing, "pendente", "the old writing's end does not fail the new request");
+  assert.equal((await write(id)).result, "escrito");
+  await ESPECIAL_FAILED_QUEUE.run([{ id, version: await version(id) }]);
   assert.equal((await row(id)).writing, "pronto", "a written draft is not marked failed");
 });
 
@@ -227,7 +240,7 @@ test("with collection off, the writing fails before asking PubMed", async () => 
   const collect = process.env.COLLECT_ENABLED;
   process.env.COLLECT_ENABLED = "false";
   try {
-    assert.equal((await writeEspecial(id)).result, "falhou");
+    assert.equal((await write(id)).result, "falhou");
   } finally {
     process.env.COLLECT_ENABLED = collect;
   }

@@ -53,23 +53,31 @@ interface Row {
 }
 
 /** A writing whose every attempt was cut short (a stopped worker, the expiry): the draft is marked failed. */
-export const ESPECIAL_FAILED_QUEUE = defineQueue<{ id: number }>({
+/** A writing asked of a draft as it was then (its version): one asked earlier leaves a later request alone. */
+type Writing = { id: number; version: string };
+
+export const ESPECIAL_FAILED_QUEUE = defineQueue<Writing>({
   name: "literatura.especial-falhou",
   options: { policy: "standard", retryLimit: 3, retryDelay: 60, expireInSeconds: 60 },
   worker: { batchSize: 1 },
-  run: async ([job]) => (job ? markUnfinished(job.id) : null),
+  run: async ([job]) => (job ? markUnfinished(job.id, job.version) : null),
 });
 
-export const ESPECIAL_QUEUE = defineQueue<{ id: number }>({
+export const ESPECIAL_QUEUE = defineQueue<Writing>({
   name: "literatura.especial",
   // One retry: a writing cut short by a stopped worker is taken again (the receipt keeps what was paid for).
   options: { policy: "short", retryLimit: 1, retryDelay: 60, expireInSeconds: 900, deadLetter: ESPECIAL_FAILED_QUEUE.name },
   worker: { batchSize: 1 },
-  run: async ([job]) => (job ? writeEspecial(job.id) : null),
+  run: async ([job]) => (job ? writeEspecial(job.id, job.version) : null),
 });
 
 const versionOf = (row: Pick<Row, "updated_at">) => row.updated_at.toISOString();
 const subject = (id: number) => `especial:${id}`;
+/** The draft's writing, queued once per version asked. */
+const askWriting = (tx: Db, row: Row) => {
+  const version = versionOf(row);
+  return enqueueOn(ESPECIAL_QUEUE, { id: Number(row.id), version }, { singletonKey: `${subject(row.id)}:${version}` }, tx);
+};
 
 /** The row to change, locked, if it is as the editor saw it and in a state that allows the change. */
 async function lockFor(tx: Db, id: number, version: string, allowed: EspecialStatus[], action: string): Promise<Row | null> {
@@ -99,7 +107,7 @@ export async function createEspecial(input: unknown, actor: string): Promise<{ i
     const [row] = await tx<Row[]>`INSERT INTO literatura_especiais (format, theme, query, created_by)
       VALUES (${b.format}, ${b.theme}, ${b.query}, ${actor}) RETURNING *`;
     await audit(actor, "especial.create", subject(row!.id), null, null, snapshot(row!), { db: tx });
-    await enqueueOn(ESPECIAL_QUEUE, { id: row!.id }, { singletonKey: subject(row!.id) }, tx);
+    await askWriting(tx, row!);
     return { id: row!.id };
   });
 }
@@ -107,15 +115,14 @@ export async function createEspecial(input: unknown, actor: string): Promise<{ i
 /**
  * A draft written again from its theme and search, which the editor may have changed; the text it has is
  * replaced. A draft still being written can be asked again too (one whose writing never finished); the
- * queue keeps a single waiting job per special.
+ * writing asked before then leaves it alone.
  */
 export async function rewriteEspecial(id: number, input: unknown, actor: string): Promise<{ id: number } | null> {
   const b = Request.extend({ version: z.string() }).parse(input);
   return sql.begin(async (tx) => {
     const row = await lockFor(tx, id, b.version, ["rascunho"], "escrito de novo");
     if (!row) return null;
-    await save(tx, row, { theme: b.theme, query: b.query, writing: "pendente", error: null }, actor, "rewrite");
-    await enqueueOn(ESPECIAL_QUEUE, { id }, { singletonKey: subject(id) }, tx);
+    await askWriting(tx, await save(tx, row, { theme: b.theme, query: b.query, writing: "pendente", error: null }, actor, "rewrite"));
     return { id };
   });
 }
@@ -183,9 +190,10 @@ export async function discardEspecial(id: number, input: unknown, actor: string)
   });
 }
 
-/** The worker's writing of a draft; a draft discarded or already written meanwhile is left as it is. */
-export async function writeEspecial(id: number): Promise<{ id: number; result: string }> {
-  const [row] = await sql<Row[]>`SELECT * FROM literatura_especiais WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente'`;
+/** The worker's writing of a draft; a draft discarded, already written or asked again meanwhile is left as it is. */
+export async function writeEspecial(id: number, version: string): Promise<{ id: number; result: string }> {
+  const [row] = await sql<Row[]>`SELECT * FROM literatura_especiais
+    WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente' AND date_trunc('milliseconds', updated_at) = ${version}::timestamptz`;
   if (!row) return { id, result: "nada a escrever" };
   try {
     if (process.env.COLLECT_ENABLED !== "true") throw new Error("A coleta está desligada (COLLECT_ENABLED não é true) e o especial não consulta o PubMed sem ela; ligue a coleta e peça de novo");
@@ -194,24 +202,24 @@ export async function writeEspecial(id: number): Promise<{ id: number; result: s
       const [done] = await tx`UPDATE literatura_especiais
         SET title = ${draft.title}, dek = ${draft.dek || null}, body = ${draft.body}, refs = ${tx.json(draft.refs as never)},
           discarded = ${tx.json(draft.discarded as never)}, writing = 'pronto', error = NULL, updated_at = now()
-        WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente' RETURNING id`;
+        WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente' AND date_trunc('milliseconds', updated_at) = ${version}::timestamptz RETURNING id`;
       await completeReceipt(tx, draft.receiptId);
       return !!done;
     });
-    return { id, result: written ? "escrito" : "descartado enquanto era escrito" };
+    return { id, result: written ? "escrito" : "descartado ou pedido de novo enquanto era escrito" };
   } catch (error) {
     if (shutdownSignal.signal.aborted) throw error;
     console.error(JSON.stringify({ level: "warn", msg: "especial writing failed", id, error: logError(error) }));
     await sql`UPDATE literatura_especiais SET writing = 'falhou', error = ${String((error as Error).message ?? error).slice(0, 1000)}, updated_at = now()
-      WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente'`;
+      WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente' AND date_trunc('milliseconds', updated_at) = ${version}::timestamptz`;
     return { id, result: "falhou" };
   }
 }
 
-async function markUnfinished(id: number): Promise<{ id: number; result: string }> {
+async function markUnfinished(id: number, version: string): Promise<{ id: number; result: string }> {
   const [done] = await sql`UPDATE literatura_especiais
     SET writing = 'falhou', error = 'A escrita foi interrompida e não terminou depois de tentar de novo (o worker parou ou passou do tempo); peça para escrever de novo', updated_at = now()
-    WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente' RETURNING id`;
+    WHERE id = ${id} AND status = 'rascunho' AND writing = 'pendente' AND date_trunc('milliseconds', updated_at) = ${version}::timestamptz RETURNING id`;
   return { id, result: done ? "falhou" : "nada a marcar" };
 }
 
