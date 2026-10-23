@@ -22,7 +22,7 @@ export type EspecialWriting = "pendente" | "pronto" | "falhou";
 export const FORMATS = {
   "linha-do-tempo": {
     name: "Linha do tempo",
-    pitch: "Os estudos que marcaram um tema, da primeira descrição à melhor evidência de hoje.",
+    pitch: "A história de um tema contada pelos estudos que o marcaram, até onde estamos hoje e o que ainda não sabemos.",
   },
 } as const;
 export type EspecialFormat = keyof typeof FORMATS;
@@ -44,6 +44,8 @@ export interface Referencia {
 /** A reference as the writer and the citation check read it: with its abstract. */
 export interface ReferenciaLida extends Referencia {
   abstract: string;
+  /** How often PubMed records cite it (iCite) when the list was gathered; lists gathered before then have none. */
+  citations?: number;
 }
 
 /** A passage the citation check took out of a written draft, or flags in an edited one, and why. */
@@ -85,6 +87,9 @@ export interface AdminEspecialRow {
   publishedAt: string | null;
 }
 
+/** The PMIDs an editor typed, separated by spaces, commas or lines: "4626647, 7458136". */
+export const pmidList = (text: string) => text.split(/[\s,;]+/).filter(Boolean);
+
 export interface AdminEspeciais {
   rows: AdminEspecialRow[];
   /** The saved PubMed searches (industry/literatura.json), to start a special's search from. */
@@ -93,6 +98,8 @@ export interface AdminEspeciais {
 
 export interface AdminEspecial extends AdminEspecialRow {
   query: string;
+  /** PMIDs the editor requires in the list, whether or not the search finds them. */
+  pmids: string[];
   error: string | null;
   dek: string | null;
   body: string | null;
@@ -111,18 +118,17 @@ export interface AdminEspecial extends AdminEspecialRow {
 }
 
 // ── The text ────────────────────────────────────────────────────────────────────────────────────────────
-// Plain text an editor can change in a box: blocks are separated by a blank line; "## " opens a heading,
-// "- " a list item, "1965 — " (a year or a span of years, then a dash) a dated entry of the timeline; a study
-// is cited by its number in brackets: [3], [3, 5], [3–5].
+// Plain text an editor can change in a box: blocks are separated by a blank line; "## " opens a heading and
+// "- " a list item, any other block is a paragraph; a study is cited by its number in brackets: [3], [3, 5],
+// [3–5].
 
 export type Inline = { text: string } | { ref: number };
 export type Block =
   | { type: "heading"; text: string }
-  | { type: "paragraph"; when: string | null; text: Inline[] }
+  | { type: "paragraph"; text: Inline[] }
   | { type: "list"; items: Inline[][] };
 
 const CITATION = /\[(\d+(?:\s*[,–-]\s*\d+)*)\]/g;
-const DATED = /^(\d{4}(?:\s*[–-]\s*\d{2,4})?)\s+[—–-]\s+/;
 
 /** The numbers a citation names: "3, 5" → 3, 5; "3–5" → 3, 4, 5. */
 function numbers(inside: string): number[] {
@@ -162,29 +168,24 @@ const blocksOf = (body: string) => body.replace(/\r\n/g, "\n").split(/\n\s*\n/).
 const linesOf = (block: string) => block.split("\n").map((l) => l.trim());
 const isList = (lines: string[]) => lines.every((l) => l.startsWith("- "));
 const heading = (block: string) => block.slice(3).replace(/\s+/g, " ").trim();
-const dated = (text: string) => {
-  const m = DATED.exec(text);
-  return { when: m ? m[1]! : null, text: m ? text.slice(m[0].length) : text };
-};
 
 export function parseBody(body: string): Block[] {
   return blocksOf(body).map((block): Block => {
     if (block.startsWith("## ")) return { type: "heading", text: heading(block) };
     const lines = linesOf(block);
     if (isList(lines)) return { type: "list", items: lines.map((l) => inline(l.slice(2).trim())) };
-    const { when, text } = dated(lines.join(" "));
-    return { type: "paragraph", when, text: inline(text) };
+    return { type: "paragraph", text: inline(lines.join(" ")) };
   });
 }
 
-/** The text's headings and passages (a paragraph, a list item) as written, a dated entry's date apart. */
-export type Passage = { heading: boolean; when: string | null; text: string };
+/** The text's headings and passages (a paragraph, a list item) as written. */
+export type Passage = { heading: boolean; text: string };
 
 export function passages(body: string): Passage[] {
   return blocksOf(body).flatMap((block): Passage[] => {
-    if (block.startsWith("## ")) return [{ heading: true, when: null, text: heading(block) }];
+    if (block.startsWith("## ")) return [{ heading: true, text: heading(block) }];
     const lines = linesOf(block);
-    if (isList(lines)) return lines.map((l) => ({ heading: false, when: null, text: l.slice(2).trim() }));
-    return [{ heading: false, ...dated(lines.join(" ")) }];
+    if (isList(lines)) return lines.map((l) => ({ heading: false, text: l.slice(2).trim() }));
+    return [{ heading: false, text: lines.join(" ") }];
   });
 }

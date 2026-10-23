@@ -16,14 +16,14 @@ import { logError } from "@aihot/backend/lib/log-error";
 import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { checkText } from "./citacoes.ts";
 import { settings } from "./collect.ts";
-import { writeLinha } from "./linha-do-tempo.ts";
+import { MAX_REFS, writeLinha } from "./linha-do-tempo.ts";
 import {
   citedIn, FORMATS, isFormat, renumberCitations, type AdminEspecial, type AdminEspeciais, type AdminEspecialRow, type EspecialCard, type EspecialFormat, type EspecialPage,
   type EspecialStatus, type EspecialWriting, type Referencia, type ReferenciaLida, type Trecho,
 } from "../especiais.ts";
 
-/** How each format is written: the studies it cites and its text, from the theme and the search. */
-const FORMAT_WRITERS: Record<EspecialFormat, (id: number, theme: string, query: string) => Promise<{
+/** How each format is written: the studies it cites and its text, from the theme, the search and the PMIDs the editor requires. */
+const FORMAT_WRITERS: Record<EspecialFormat, (id: number, theme: string, query: string, pmids: string[]) => Promise<{
   title: string; dek: string; body: string; refs: ReferenciaLida[]; discarded: Trecho[]; receiptId: number;
 }>> = {
   "linha-do-tempo": writeLinha,
@@ -34,6 +34,7 @@ interface Row {
   format: EspecialFormat;
   theme: string;
   query: string;
+  pmids: string[];
   status: EspecialStatus;
   writing: EspecialWriting;
   error: string | null;
@@ -89,7 +90,7 @@ async function lockFor(tx: Db, id: number, version: string, allowed: EspecialSta
 }
 
 /** What the audit keeps of a row: its state and its text, not its studies. */
-const snapshot = (row: Row) => ({ status: row.status, writing: row.writing, theme: row.theme, query: row.query, title: row.title, dek: row.dek, body: row.body, slug: row.slug });
+const snapshot = (row: Row) => ({ status: row.status, writing: row.writing, theme: row.theme, query: row.query, pmids: row.pmids, title: row.title, dek: row.dek, body: row.body, slug: row.slug });
 
 async function save(tx: Db, before: Row, change: Partial<Row>, actor: string, action: string, reason: string | null = null): Promise<Row> {
   const [after] = await tx<Row[]>`UPDATE literatura_especiais SET ${tx(change as Record<string, unknown>)}, updated_at = now() WHERE id = ${before.id} RETURNING *`;
@@ -97,15 +98,19 @@ async function save(tx: Db, before: Row, change: Partial<Row>, actor: string, ac
   return after!;
 }
 
-const Request = z.object({ theme: z.string().trim().min(3).max(200), query: z.string().trim().min(3).max(4000) });
+const Request = z.object({
+  theme: z.string().trim().min(3).max(200),
+  query: z.string().trim().min(3).max(4000),
+  pmids: z.array(z.string().trim().regex(/^\d{1,9}$/, "um PMID tem só dígitos")).max(MAX_REFS).default([]).transform((v) => [...new Set(v)]),
+});
 /** A step from one state to the next, with the editor's optional note for the audit. */
 const Step = z.object({ version: z.string(), reason: z.string().trim().max(500).optional() });
 
 export async function createEspecial(input: unknown, actor: string): Promise<{ id: number }> {
   const b = Request.extend({ format: z.string().refine(isFormat, "formato desconhecido") }).parse(input);
   return sql.begin(async (tx) => {
-    const [row] = await tx<Row[]>`INSERT INTO literatura_especiais (format, theme, query, created_by)
-      VALUES (${b.format}, ${b.theme}, ${b.query}, ${actor}) RETURNING *`;
+    const [row] = await tx<Row[]>`INSERT INTO literatura_especiais (format, theme, query, pmids, created_by)
+      VALUES (${b.format}, ${b.theme}, ${b.query}, ${b.pmids}, ${actor}) RETURNING *`;
     await audit(actor, "especial.create", subject(row!.id), null, null, snapshot(row!), { db: tx });
     await askWriting(tx, row!);
     return { id: row!.id };
@@ -113,7 +118,7 @@ export async function createEspecial(input: unknown, actor: string): Promise<{ i
 }
 
 /**
- * A draft written again from its theme and search, which the editor may have changed; the text it has is
+ * A draft written again from its theme, search and PMIDs, which the editor may have changed; the text it has is
  * replaced. A draft still being written can be asked again too (one whose writing never finished); the
  * writing asked before then leaves it alone.
  */
@@ -122,7 +127,7 @@ export async function rewriteEspecial(id: number, input: unknown, actor: string)
   return sql.begin(async (tx) => {
     const row = await lockFor(tx, id, b.version, ["rascunho"], "escrito de novo");
     if (!row) return null;
-    await askWriting(tx, await save(tx, row, { theme: b.theme, query: b.query, writing: "pendente", error: null }, actor, "rewrite"));
+    await askWriting(tx, await save(tx, row, { theme: b.theme, query: b.query, pmids: b.pmids, writing: "pendente", error: null }, actor, "rewrite"));
     return { id };
   });
 }
@@ -197,7 +202,7 @@ export async function writeEspecial(id: number, version: string): Promise<{ id: 
   if (!row) return { id, result: "nada a escrever" };
   try {
     if (process.env.COLLECT_ENABLED !== "true") throw new Error("A coleta está desligada (COLLECT_ENABLED não é true) e o especial não consulta o PubMed sem ela; ligue a coleta e peça de novo");
-    const draft = await FORMAT_WRITERS[row.format](id, row.theme, row.query);
+    const draft = await FORMAT_WRITERS[row.format](id, row.theme, row.query, row.pmids);
     const written = await sql.begin(async (tx) => {
       const [done] = await tx`UPDATE literatura_especiais
         SET title = ${draft.title}, dek = ${draft.dek || null}, body = ${draft.body}, refs = ${tx.json(draft.refs as never)},
@@ -237,7 +242,7 @@ export async function especialDetail(id: number): Promise<BeforeJson<AdminEspeci
   const [r] = await sql<Row[]>`SELECT * FROM literatura_especiais WHERE id = ${id}`;
   if (!r) return null;
   return {
-    ...adminRow(r), query: r.query, error: r.error, dek: r.dek, body: r.body, refs: r.refs, discarded: r.discarded,
+    ...adminRow(r), query: r.query, pmids: r.pmids, error: r.error, dek: r.dek, body: r.body, refs: r.refs, discarded: r.discarded,
     warnings: r.body ? checkText({ title: r.title, dek: r.dek, body: r.body }, r.refs, r.theme) : [],
     createdBy: r.created_by, approvedBy: r.approved_by, approvedAt: r.approved_at?.toISOString() ?? null, version: versionOf(r),
     history: await auditHistory(subject(id)),
@@ -252,7 +257,7 @@ export async function draftsToReview(): Promise<number> {
 
 // ── On the site ─────────────────────────────────────────────────────────────────────────────────────────
 
-const publicRef = ({ abstract: _abstract, ...ref }: ReferenciaLida): Referencia => ref;
+const publicRef = ({ abstract: _abstract, citations: _citations, ...ref }: ReferenciaLida): Referencia => ref;
 
 /**
  * The text as the site shows it, beside its references: only the studies it cites, numbered again from 1 in

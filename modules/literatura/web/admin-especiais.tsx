@@ -6,7 +6,7 @@ import { adminGet } from "@aihot/web/lib/admin.server";
 import { useAdminAction } from "@aihot/web/features/admin/action";
 import { bj } from "@aihot/web/features/admin/format";
 import { AdminPage, Button, Card, DataTable, Field, Input, Select, Textarea } from "@aihot/web/features/admin/ui";
-import { FORMATS, type AdminEspeciais, type EspecialFormat } from "../especiais.ts";
+import { FORMATS, pmidList, type AdminEspeciais, type EspecialFormat } from "../especiais.ts";
 import { StatusBadge } from "./StatusBadge.tsx";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -21,8 +21,9 @@ function NewEspecial({ searches }: { searches: AdminEspeciais["searches"] }) {
   const [format, setFormat] = useState<EspecialFormat>("linha-do-tempo");
   const [theme, setTheme] = useState("");
   const [query, setQuery] = useState("");
+  const [pmids, setPmids] = useState("");
   const create = async () => {
-    const out = await run<{ id: number }>("POST", "/api/admin/especiais", { format, theme, query }, { label: "create", success: "Rascunho criado; o sistema começou a escrever" });
+    const out = await run<{ id: number }>("POST", "/api/admin/especiais", { format, theme, query, pmids: pmidList(pmids) }, { label: "create", success: "Rascunho criado; o sistema começou a escrever" });
     if (out) navigate(`/admin/especiais/${out.id}`);
   };
   return (
@@ -44,8 +45,11 @@ function NewEspecial({ searches }: { searches: AdminEspeciais["searches"] }) {
             {searches.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </Select>
         </Field>
-        <Field label="Busca no PubMed" hint="Na sintaxe do PubMed; teste em pubmed.ncbi.nlm.nih.gov. O sistema reúne nela os estudos mais antigos, classificações, consensos, revisões sistemáticas, ensaios, séries e os mais relevantes.">
+        <Field label="Busca no PubMed" hint="Na sintaxe do PubMed; teste em pubmed.ncbi.nlm.nih.gov. O sistema reúne nela os estudos mais antigos e os mais influentes (os mais citados entre os mais pertinentes à busca): classificações, consensos, revisões sistemáticas, ensaios e os marcos de cada década.">
           <Textarea value={query} onChange={(e) => setQuery(e.target.value)} rows={4} className="font-mono !text-[12.5px]" placeholder='("Laryngostenosis"[Mesh] OR "subglottic stenosis"[tiab]) AND (child*[tiab] OR infant*[tiab] OR "Child"[Mesh])' />
+        </Field>
+        <Field label="PMIDs obrigatórios (opcional)" hint="Estudos que precisam estar na lista mesmo que a busca não os traga, como os clássicos de um tema; separe por espaço ou vírgula.">
+          <Input value={pmids} onChange={(e) => setPmids(e.target.value)} className="font-mono !text-[12.5px]" placeholder="4626647, 7458136" />
         </Field>
       </div>
       <div className="mt-4 flex items-center justify-between gap-3">

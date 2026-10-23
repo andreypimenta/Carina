@@ -1,8 +1,11 @@
-// The specials against local stand-ins for PubMed and the model. Failure cases: a special reaches the site
-// without the editor approving and then publishing it; an approved text changes without a new approval; a
-// change made against an older view overwrites a newer one; the model's unsupported passages reach the draft;
-// a failed or never-finished writing leaves the draft stuck; PubMed is asked with collection off; the weekly carries no special, two, the same one twice, one
-// published after it was due, or one that has left the site; an issue without one breaks.
+// The specials against local stand-ins for PubMed, iCite and the model. Failure cases: a special reaches the
+// site without the editor approving and then publishing it; an approved text changes without a new approval;
+// a change made against an older view overwrites a newer one; the model's unsupported passages reach the
+// draft; a PMID the editor requires is left out of the list, or one PubMed lacks or that is an erratum is silently
+// dropped; the model does not learn how often each study is cited; iCite out fails the writing, or the model or
+// the panel read counts it never gave; a failed or never-finished writing leaves the draft stuck;
+// PubMed is asked with collection off; the weekly carries no special, two, the same one twice, one published
+// after it was due, or one that has left the site; an issue without one breaks.
 import { editionAt, tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -25,6 +28,7 @@ const SOURCE = `especiais-${T}`;
 const EDITOR = "editor@test";
 let pubmedEmpty = false;
 let pubmedRequests = 0;
+let iciteDown = false;
 /** Something to do while the model is still writing, before it answers. */
 let whileWriting: (() => Promise<void>) | null = null;
 const modelInputs: string[] = [];
@@ -36,21 +40,26 @@ const article = (pmid: string, year: string, title: string, authors: string[], a
   <AuthorList>${authors.map((a) => `<Author><LastName>${a.split(" ")[0]}</LastName><Initials>${a.split(" ")[1]}</Initials></Author>`).join("")}</AuthorList>
   <Language>eng</Language><PublicationTypeList><PublicationType>${type}</PublicationType></PublicationTypeList>
 </Article></MedlineCitation><PubmedData><ArticleIdList><ArticleId IdType="pubmed">${pmid}</ArticleId></ArticleIdList></PubmedData></PubmedArticle>`;
-const PUBMED = `<?xml version="1.0"?><PubmedArticleSet>
-${article("5000001", "1965", "Subglottic stenosis in infants and children", ["Holinger PH", "Kutnick SL"], "Thirty-one children with subglottic stenosis were treated.", "Journal Article")}
-${article("9000003", "2020", "Laryngotracheal reconstruction: a systematic review and meta-analysis", ["Silva A"], "We pooled 1,240 children; the decannulation rate was 87.5%.", "Meta-Analysis")}
-${article("7000002", "1994", "Proposed grading system for subglottic stenosis", ["Myer CM", "Cotton RT"], "A grading system with four grades is proposed.", "Journal Article")}
-</PubmedArticleSet>`;
+const ARTICLES = new Map([
+  ["5000001", article("5000001", "1965", "Subglottic stenosis in infants and children", ["Holinger PH", "Kutnick SL"], "Thirty-one children with subglottic stenosis were treated.", "Journal Article")],
+  ["9000003", article("9000003", "2020", "Laryngotracheal reconstruction: a systematic review and meta-analysis", ["Silva A"], "We pooled 1,240 children; the decannulation rate was 87.5%.", "Meta-Analysis")],
+  ["7000002", article("7000002", "1994", "Proposed grading system for subglottic stenosis", ["Myer CM", "Cotton RT"], "A grading system with four grades is proposed.", "Journal Article")],
+  // A classic the search does not find: only an editor's PMID brings it.
+  ["6000004", article("6000004", "1980", "Anterior cricoid split as an alternative to tracheotomy", ["Cotton RT", "Seid AB"], "The anterior cricoid split avoided tracheotomy in premature infants.", "Journal Article")],
+  ["6000005", article("6000005", "1981", "Erratum: Anterior cricoid split", ["Cotton RT"], "", "Published Erratum")],
+]);
+// iCite does not know 9000003 yet.
+const CITATIONS: Record<string, number> = { "5000001": 31, "7000002": 662, "6000004": 166 };
 
 const timeline = {
   titulo: "Estenose subglótica pediátrica: de 1965 à metanálise de 2020",
   linhaFina: "Da série de Holinger à metanálise de 2020.",
   abertura: "A estenose subglótica da criança é estudada desde 1965 [1].",
   epocas: [
-    { titulo: "Primeiras descrições", marcos: [{ ano: "1965", texto: "Holinger tratou crianças com estenose subglótica [1]." }] },
-    { titulo: "A classificação", marcos: [{ ano: 1994, texto: "Myer e Cotton propuseram quatro graus [2]." }, { ano: "1998", texto: "Uma série de Boston confirmou a classificação [2]." }] },
+    { titulo: "Primeiras descrições", paragrafos: ["Holinger tratou crianças com estenose subglótica [1]."] },
+    { titulo: "A classificação", paragrafos: ["Myer e Cotton propuseram quatro graus [2].", "Uma série de Boston confirmou a classificação [2]."] },
   ],
-  melhorEvidencia: "Uma metanálise de 1.240 crianças encontrou decanulação de 87,5% [3].",
+  ondeEstamos: "Uma metanálise de 1.240 crianças encontrou decanulação de 87,5% [3].",
   emAberto: ["Faltam ensaios que comparem as técnicas [3].", "Sem fonte nenhuma."],
 };
 
@@ -65,7 +74,18 @@ const stub = http.createServer((req, res) => {
       const ids = pubmedEmpty ? [] : ["5000001", "7000002", "9000003"];
       return send("application/json", JSON.stringify({ esearchresult: { count: String(ids.length), idlist: ids } }));
     }
-    if (url.startsWith("/eutils/efetch.fcgi")) return send("text/xml", PUBMED);
+    if (url.startsWith("/eutils/efetch.fcgi")) {
+      const ids = new URL(url, "http://stub").searchParams.get("id")!.split(",");
+      return send("text/xml", `<?xml version="1.0"?><PubmedArticleSet>${ids.map((id) => ARTICLES.get(id) ?? "").join("")}</PubmedArticleSet>`);
+    }
+    if (url.startsWith("/icite/pubs")) {
+      if (iciteDown) {
+        res.writeHead(503);
+        return res.end("down");
+      }
+      const ids = new URL(url, "http://stub").searchParams.get("pmids")!.split(",");
+      return send("application/json", JSON.stringify({ data: ids.filter((id) => id in CITATIONS).map((id) => ({ pmid: Number(id), year: 2000, citation_count: CITATIONS[id] })) }));
+    }
     if (url.startsWith("/v1/chat/completions")) {
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { messages: Array<{ role: string; content: string }> };
       const timelineCall = body.messages.some((m) => m.role === "system" && m.content.includes("Linha do tempo"));
@@ -87,7 +107,7 @@ before(async () => {
   config.modelCallsEnabled = true;
   delete process.env.LINHA_DO_TEMPO_MODEL;
   Object.assign(process.env, {
-    PUBMED_BASE_URL: `${base}/eutils`, LLM_BASE_URL: `${base}/v1`, LLM_API_KEY: "test-key", LLM_MODEL: "one-model",
+    PUBMED_BASE_URL: `${base}/eutils`, ICITE_BASE_URL: `${base}/icite`, LLM_BASE_URL: `${base}/v1`, LLM_API_KEY: "test-key", LLM_MODEL: "one-model",
     DEEPSEEK_BASE_URL: `${base}/v1`, DEEPSEEK_API_KEY: "test-key",
   });
   installModules([server]);
@@ -117,10 +137,13 @@ test("a special reaches the site only through the editor's approval and publicat
   const written = (await especialDetail(id))!;
   assert.equal(written.writing, "pronto");
   assert.deepEqual(written.refs.map((r) => [r.n, r.pmid, r.year]), [[1, "5000001", "1965"], [2, "7000002", "1994"], [3, "9000003", "2020"]], "the studies are numbered oldest first");
-  assert.match(modelInputs.at(-1)!, /\[1\] 1965 · Primeiras descrições/);
-  assert.match(written.body!, /^1994 — Myer e Cotton propuseram quatro graus \[2\]\.$/m);
+  assert.match(modelInputs.at(-1)!, /\[1\] 1965 · Primeiras descrições · .* · citado 31 vezes/);
+  assert.match(modelInputs.at(-1)!, /\[2\] 1994 · .* · citado 662 vezes/, "the model reads how often each study is cited");
+  assert.match(modelInputs.at(-1)!, /^\[3\] 2020 · [^\n]*Silva A$/m, "a study iCite does not know is not called never cited");
+  assert.match(written.body!, /^## 1994 · A classificação\n\nMyer e Cotton propuseram quatro graus \[2\]\.$/m);
+  assert.match(written.body!, /^## Onde estamos hoje\n\nUma metanálise/m);
   assert.doesNotMatch(written.body!, /Boston|Sem fonte/);
-  assert.deepEqual(written.discarded.map((d) => d.text).sort(), ["1998 — Uma série de Boston confirmou a classificação [2].", "Sem fonte nenhuma."]);
+  assert.deepEqual(written.discarded.map((d) => d.text).sort(), ["Sem fonte nenhuma.", "Uma série de Boston confirmou a classificação [2]."]);
   assert.deepEqual(written.warnings, []);
   assert.equal(await write(id).then((r) => r.result), "nada a escrever", "a written draft is not written (and paid for) again");
 
@@ -131,7 +154,7 @@ test("a special reaches the site only through the editor's approval and publicat
   // The editor's edits: an older view is refused; the check reads the saved text.
   await assert.rejects(editEspecial(id, { version: "2000-01-01T00:00:00.000Z", title: "Outro título", dek: "", body: "x [1]." }, EDITOR), Conflict);
   // The editor takes out the only passage citing study 2 and adds one the studies do not support.
-  const body = `${written.body!.replace(/^1994 — .*\n\n/m, "")}\n\nUm achado de 45,2% [1].`;
+  const body = `${written.body!.replace(/^Myer e Cotton .*\n\n/m, "")}\n\nUm achado de 45,2% [1].`;
   await editEspecial(id, { version: written.version, title: written.title, dek: written.dek, body }, EDITOR);
   const edited = (await especialDetail(id))!;
   assert.deepEqual(edited.warnings.map((w) => w.text), ["Um achado de 45,2% [1]."]);
@@ -158,6 +181,7 @@ test("a special reaches the site only through the editor's approval and publicat
   assert.match(page.body, /87,5% \[2\]\./);
   assert.equal(page.refCount, 2);
   assert.equal("abstract" in page.refs[0]!, false, "the page does not republish the abstracts");
+  assert.equal("citations" in page.refs[0]!, false);
   assert.match((await especialDetail(id))!.body!, /87,5% \[3\]\./, "the approved text keeps the list's numbers");
   assert.ok((await publishedEspeciais()).some((e) => e.slug === slug));
   await assert.rejects(publishEspecial(id, { version: await version(id) }, EDITOR), Conflict);
@@ -184,6 +208,42 @@ test("a writing that fails is recorded on the draft, which can then be written a
   await rewriteEspecial(id, { version: failed.version, theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
   assert.equal((await row(id)).writing, "pendente");
   assert.equal((await write(id)).result, "escrito");
+});
+
+test("the PMIDs the editor requires join the list even when the search does not find them; one PubMed lacks fails the writing, saying which", async () => {
+  await assert.rejects(createEspecial({ format: "linha-do-tempo", theme: "Estenose subglótica pediátrica", query: "subglottic stenosis", pmids: ["PMID 6000004"] }, EDITOR), /dígitos/);
+  const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Estenose subglótica pediátrica", query: "subglottic stenosis", pmids: ["6000004", "6000004"] }, EDITOR);
+  assert.deepEqual((await especialDetail(id))!.pmids, ["6000004"]);
+  assert.equal((await write(id)).result, "escrito");
+  const written = (await especialDetail(id))!;
+  assert.deepEqual(written.refs.map((r) => [r.n, r.pmid, r.year, r.citations]), [[1, "5000001", "1965", 31], [2, "6000004", "1980", 166], [3, "7000002", "1994", 662], [4, "9000003", "2020", undefined]]);
+
+  await rewriteEspecial(id, { version: written.version, theme: written.theme, query: written.query, pmids: ["6000004", "8888888"] }, EDITOR);
+  assert.equal((await write(id)).result, "falhou");
+  const failed = (await especialDetail(id))!;
+  assert.match(failed.error!, /8888888/);
+  assert.deepEqual(failed.pmids, ["6000004", "8888888"]);
+  assert.deepEqual((failed.history.at(0)!.after as { pmids: string[] }).pmids, ["6000004", "8888888"], "the audit keeps the PMIDs");
+
+  await rewriteEspecial(id, { version: failed.version, theme: written.theme, query: written.query, pmids: ["6000005"] }, EDITOR);
+  assert.equal((await write(id)).result, "falhou");
+  assert.match((await especialDetail(id))!.error!, /6000005 \(erratum\)/, "an erratum is not dropped in silence");
+});
+
+test("with iCite out, the draft is written without citation counts, and the panel says iCite did not answer", async () => {
+  const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
+  iciteDown = true;
+  const asked = modelInputs.length;
+  try {
+    assert.equal((await write(id)).result, "escrito");
+  } finally {
+    iciteDown = false;
+  }
+  const written = (await especialDetail(id))!;
+  assert.deepEqual(written.refs.map((r) => [r.pmid, r.citations]), [["5000001", undefined], ["7000002", undefined], ["9000003", undefined]]);
+  assert.equal(written.refs[0]!.kind, "Primeiras descrições");
+  assert.doesNotMatch(modelInputs.slice(asked).join("\n"), /citado/);
+  assert.match(written.discarded.find((t) => t.text === "iCite")!.reason, /não respondeu \(iCite HTTP 503\)/);
 });
 
 const liveJobs = async (id: number) =>

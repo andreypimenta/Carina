@@ -1,7 +1,8 @@
-// The specials' text and its citation check, on fixed studies. Failure cases: a passage that cites no study,
+// The specials' text and its citation check, on fixed studies. Failure cases: a paragraph that cites no study,
 // or one that is not in the list, reaches the editor as if it were sourced; a name, figure or year the cited
-// studies do not have survives; a figure written the Brazilian way is taken for an invented one; an era with
-// nothing left keeps its heading; a citation or a dated entry is drawn as plain text.
+// studies do not have survives; a figure written the Brazilian way, a sentence of transition inside a sourced
+// paragraph or an eponym of cited names is taken for an invented one; the eras' headings overlap or go out of
+// order; an era with nothing left keeps its heading; a citation is drawn as plain text.
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { checkText } from "../backend/citacoes.ts";
@@ -18,43 +19,49 @@ const THEME = "Estenose subglótica pediátrica";
 const written: Linha = {
   titulo: "Estenose subglótica pediátrica: de 1965 à metanálise de 2020",
   linhaFina: "Seis décadas de estudos, da série de Holinger ao consenso da Sociedade Europeia.",
-  abertura: "A estenose subglótica da criança é estudada desde 1965 [1].",
+  abertura: ["Trinta e uma crianças com estenose subglótica adquirida e congênita foram tratadas na série de 1965 [1]. Faltava, porém, uma forma de comparar os resultados."],
   epocas: [
-    { titulo: "Primeiras descrições", marcos: [{ ano: "1965", texto: "Holinger descreveu crianças com estenose adquirida e congênita [1]." }] },
+    // Out of order, as a model may give them: the eras go by the oldest study each cites.
+    { titulo: "Comparar as técnicas", paragrafos: ["Em 2020, uma metanálise reuniu 1.240 crianças e encontrou decanulação de 87,5% [3]."] },
     {
-      titulo: "A classificação",
-      marcos: [
-        { ano: "1994", texto: "Myer, O'Connor e Cotton propuseram quatro graus pelo maior tubo que passa [2]." },
-        { ano: "1998", texto: "Uma série de Boston com 412 crianças confirmou a classificação [2]." },
+      titulo: "Classificar para comparar",
+      paragrafos: [
+        "A pergunta mudou. Myer, O'Connor e Cotton propuseram quatro graus pelo maior tubo que passa [2], e a classificação de Myer-Cotton passou a ordenar as séries [2].",
+        "Uma série de Boston com 412 crianças confirmou a classificação [2].",
+        "Sem apoio nenhum, a técnica se espalhou.",
       ],
     },
-    { titulo: "Sem apoio", marcos: [{ ano: "2001", texto: "Um estudo mostrou benefício da técnica." }] },
+    { titulo: "Primeiras descrições", paragrafos: ["Holinger descreveu crianças com estenose adquirida e congênita [1], e a metanálise de 2020 ainda as tomaria como ponto de partida [1, 3]."] },
+    { titulo: "Sem apoio", paragrafos: ["Um estudo mostrou benefício da técnica."] },
   ],
-  melhorEvidencia: ["Uma metanálise de 1.240 crianças encontrou decanulação de 87,5% [3].", "Outra revisão confirmou o achado [7]."],
+  ondeEstamos: ["Uma metanálise de 1.240 crianças encontrou decanulação de 87,5% [3].", "Outra revisão confirmou o achado [7]."],
   emAberto: ["Faltam ensaios que comparem as técnicas [3]."],
 };
 
-test("a written timeline keeps only passages its studies support, and lists what it took out and why", () => {
+test("a written timeline keeps only paragraphs its studies support, in eras of strict chronological order, and lists what it took out and why", () => {
   const draft = assembleLinha(written, REFS, THEME);
   assert.equal(draft.title, written.titulo);
   assert.equal(draft.dek, "", "a dek naming what no study does is left out");
   assert.equal(draft.body, [
-    "A estenose subglótica da criança é estudada desde 1965 [1].",
+    "Trinta e uma crianças com estenose subglótica adquirida e congênita foram tratadas na série de 1965 [1]. Faltava, porém, uma forma de comparar os resultados.",
     "## 1965 · Primeiras descrições",
-    "1965 — Holinger descreveu crianças com estenose adquirida e congênita [1].",
-    "## 1994 · A classificação",
-    "1994 — Myer, O'Connor e Cotton propuseram quatro graus pelo maior tubo que passa [2].",
-    "## A melhor evidência hoje",
+    "Holinger descreveu crianças com estenose adquirida e congênita [1], e a metanálise de 2020 ainda as tomaria como ponto de partida [1, 3].",
+    "## 1994 · Classificar para comparar",
+    "A pergunta mudou. Myer, O'Connor e Cotton propuseram quatro graus pelo maior tubo que passa [2], e a classificação de Myer-Cotton passou a ordenar as séries [2].",
+    "## 2020 · Comparar as técnicas",
+    "Em 2020, uma metanálise reuniu 1.240 crianças e encontrou decanulação de 87,5% [3].",
+    "## Onde estamos hoje",
     "Uma metanálise de 1.240 crianças encontrou decanulação de 87,5% [3].",
-    "## Pontos em aberto",
-    "- Faltam ensaios que comparem as técnicas [3].",
+    "## O que ainda não sabemos",
+    "Faltam ensaios que comparem as técnicas [3].",
   ].join("\n\n"));
   const reasons = Object.fromEntries(draft.discarded.map((d) => [d.text, d.reason]));
-  for (const name of ["1998", "Boston", "412"]) assert.ok(reasons["1998 — Uma série de Boston com 412 crianças confirmou a classificação [2]."]!.includes(name), name);
-  assert.equal(reasons["2001 — Um estudo mostrou benefício da técnica."], "não cita nenhum estudo da lista");
+  for (const name of ["Boston", "412"]) assert.ok(reasons["Uma série de Boston com 412 crianças confirmou a classificação [2]."]!.includes(name), name);
+  assert.equal(reasons["Sem apoio nenhum, a técnica se espalhou."], "não cita nenhum estudo da lista", "a paragraph of transition alone has no source");
+  assert.equal(reasons["Um estudo mostrou benefício da técnica."], "não cita nenhum estudo da lista");
   assert.equal(reasons["Outra revisão confirmou o achado [7]."], "cita [7], que não está na lista");
   assert.match(reasons[`Linha fina: ${written.linhaFina}`]!, /Sociedade/);
-  assert.equal(draft.discarded.length, 4);
+  assert.equal(draft.discarded.length, 5);
 });
 
 test("a title naming what no study does gives way to the format and the theme", () => {
@@ -62,31 +69,34 @@ test("a title naming what no study does gives way to the format and the theme", 
   assert.equal(draft.title, `Linha do tempo: ${THEME}`);
 });
 
-test("the check reads an edited text: a passage with a figure its study lacks, a missing study and an unsupported year are flagged; a span heading is not", () => {
+test("the check reads an edited text: a paragraph with a figure, a year or a name its studies lack is flagged; a span heading and an eponym of cited names are not", () => {
   const body = [
     "## 1965–1994 · Primeiras descrições",
-    "1965 — Holinger tratou crianças [1].",
-    "1972 — Holinger tratou mais crianças [1].",
+    "Holinger tratou crianças [1].",
+    "Em 1972, Holinger tratou mais crianças [1].",
     "A decanulação chegou a 92,3% [3].",
+    "A classificação de Myer-Cotton tem quatro graus [2].",
+    "A classificação de Myer-Holinger tem quatro graus [2].",
     "- Ponto sem fonte.",
     "- Um ponto apoiado [2, 3].",
   ].join("\n\n");
   const found = checkText({ title: "Estenose subglótica pediátrica", dek: "Da série de 1965 à metanálise.", body }, REFS, THEME);
   assert.deepEqual(found.map((f) => f.text), [
-    "1972 — Holinger tratou mais crianças [1].",
+    "Em 1972, Holinger tratou mais crianças [1].",
     "A decanulação chegou a 92,3% [3].",
+    "A classificação de Myer-Holinger tem quatro graus [2].",
     "Ponto sem fonte.",
   ]);
   assert.match(found[1]!.reason, /92,3%|92\.3%/);
+  assert.match(found[2]!.reason, /^Holinger:/, "each name of an eponym must be in the studies cited");
 });
 
-test("the text's markup: headings, dated entries, lists and citations, single, several and spans", () => {
-  const blocks = parseBody("Abertura [1, 3].\n\n## 1965 · Primeiras descrições\n\n1965 — Primeira série [1].\n\n1994–1996 — Classificação [1–3].\n\n- Um ponto [2].\n- Outro ponto.");
+test("the text's markup: headings, paragraphs, lists and citations, single, several and spans", () => {
+  const blocks = parseBody("Abertura [1, 3].\n\n## 1965 · Primeiras descrições\n\nPrimeira série [1].\nContinua o parágrafo [1–3].\n\n- Um ponto [2].\n- Outro ponto.");
   assert.deepEqual(blocks, [
-    { type: "paragraph", when: null, text: [{ text: "Abertura " }, { ref: 1 }, { ref: 3 }, { text: "." }] },
+    { type: "paragraph", text: [{ text: "Abertura " }, { ref: 1 }, { ref: 3 }, { text: "." }] },
     { type: "heading", text: "1965 · Primeiras descrições" },
-    { type: "paragraph", when: "1965", text: [{ text: "Primeira série " }, { ref: 1 }, { text: "." }] },
-    { type: "paragraph", when: "1994–1996", text: [{ text: "Classificação " }, { ref: 1 }, { ref: 2 }, { ref: 3 }, { text: "." }] },
+    { type: "paragraph", text: [{ text: "Primeira série " }, { ref: 1 }, { text: ". Continua o parágrafo " }, { ref: 1 }, { ref: 2 }, { ref: 3 }, { text: "." }] },
     { type: "list", items: [[{ text: "Um ponto " }, { ref: 2 }, { text: "." }], [{ text: "Outro ponto." }]] },
   ]);
 });

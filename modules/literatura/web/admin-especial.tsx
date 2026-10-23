@@ -8,7 +8,7 @@ import { adminGet } from "@aihot/web/lib/admin.server";
 import { useAdminAction } from "@aihot/web/features/admin/action";
 import { bj } from "@aihot/web/features/admin/format";
 import { AdminPage, Button, Card, Field, Input, KV, ReasonDialog, Textarea } from "@aihot/web/features/admin/ui";
-import { FORMATS, type AdminEspecial, type Trecho } from "../especiais.ts";
+import { FORMATS, pmidList, type AdminEspecial, type Trecho } from "../especiais.ts";
 import { EspecialBody } from "./Body.tsx";
 import { StatusBadge } from "./StatusBadge.tsx";
 
@@ -49,6 +49,7 @@ function Studies({ e }: { e: AdminEspecial }) {
               <div className="text-ink-3">{[r.authors.slice(0, 3).join(", ") + (r.authors.length > 3 ? " et al." : ""), r.journal, r.year].filter(Boolean).join(" · ")}</div>
               <div className="mt-0.5 flex flex-wrap gap-x-2.5 text-[11.5px] text-ink-4">
                 <span className="text-ink-3">{r.kind}</span>
+                {r.citations !== undefined && <span>{r.citations === 1 ? "citado 1 vez" : `citado ${r.citations} vezes`}</span>}
                 <a className="hover:text-accent" href={`https://pubmed.ncbi.nlm.nih.gov/${r.pmid}/`} target="_blank" rel="noreferrer">PMID {r.pmid}</a>
                 {r.doi && <a className="break-all hover:text-accent" href={`https://doi.org/${r.doi}`} target="_blank" rel="noreferrer">DOI</a>}
               </div>
@@ -78,6 +79,7 @@ export default function EspecialAdmin() {
   const [body, setBody] = useState(e.body ?? "");
   const [theme, setTheme] = useState(e.theme);
   const [query, setQuery] = useState(e.query);
+  const [pmids, setPmids] = useState(e.pmids.join(", "));
   const [tab, setTab] = useState<"edit" | "preview">(editable ? "edit" : "preview");
   const [dialog, setDialog] = useState<null | "approve" | "publish" | "discard">(null);
   const dirty = editable && (title !== (e.title ?? "") || dek !== (e.dek ?? "") || body !== (e.body ?? ""));
@@ -89,6 +91,7 @@ export default function EspecialAdmin() {
     setBody(e.body ?? "");
     setTheme(e.theme);
     setQuery(e.query);
+    setPmids(e.pmids.join(", "));
   }, [e.version]);
 
   // While the worker writes, the page looks again every few seconds.
@@ -156,7 +159,7 @@ export default function EspecialAdmin() {
               <div className="space-y-4">
                 <Field label="Título"><Input value={title} onChange={(ev) => setTitle(ev.target.value)} maxLength={300} /></Field>
                 <Field label="Linha fina"><Textarea value={dek} onChange={(ev) => setDek(ev.target.value)} rows={2} maxLength={600} /></Field>
-                <Field label="Texto" hint="Blocos separados por linha em branco. “## ” abre um intertítulo; “- ” um item de lista; “1965 — ” (ano, travessão) um marco da linha do tempo. Cite os estudos pelo número entre colchetes: [3], [3, 5].">
+                <Field label="Texto" hint="Parágrafos separados por linha em branco. “## ” abre um intertítulo; “- ” um item de lista. Cite os estudos pelo número entre colchetes: [3], [3, 5].">
                   <Textarea value={body} onChange={(ev) => setBody(ev.target.value)} rows={26} className="font-mono !text-[12.5px] !leading-[1.7]" />
                 </Field>
                 <div className="flex items-center justify-end gap-3">
@@ -182,8 +185,8 @@ export default function EspecialAdmin() {
             </Card>
           )}
           {e.discarded.length > 0 && (
-            <Card title={`Trechos descartados ao escrever · ${e.discarded.length}`}>
-              <p className="mb-3 text-[12.5px] leading-relaxed text-ink-4">O sistema tirou do rascunho o que o modelo escreveu sem apoio nos estudos citados. Se algum trecho estiver certo, confira no estudo e escreva-o de novo no texto.</p>
+            <Card title={`Trechos descartados e avisos ao escrever · ${e.discarded.length}`}>
+              <p className="mb-3 text-[12.5px] leading-relaxed text-ink-4">O sistema tirou do rascunho o que o modelo escreveu sem apoio nos estudos citados. Se algum trecho estiver certo, confira no estudo e escreva-o de novo no texto. Aqui também aparece quando o iCite não respondeu e a lista foi escolhida sem as contagens de citações.</p>
               <Trechos items={e.discarded} empty="" />
             </Card>
           )}
@@ -192,10 +195,13 @@ export default function EspecialAdmin() {
             <div className="space-y-3">
               <Field label="Tema"><Input value={theme} onChange={(ev) => setTheme(ev.target.value)} disabled={e.status !== "rascunho"} maxLength={200} /></Field>
               <Field label="Busca no PubMed"><Textarea value={query} onChange={(ev) => setQuery(ev.target.value)} disabled={e.status !== "rascunho"} rows={4} className="font-mono !text-[12.5px]" /></Field>
+              <Field label="PMIDs obrigatórios" hint="Entram na lista mesmo que a busca não os traga; separe por espaço ou vírgula.">
+                <Input value={pmids} onChange={(ev) => setPmids(ev.target.value)} disabled={e.status !== "rascunho"} className="font-mono !text-[12.5px]" />
+              </Field>
               {e.status === "rascunho" && (
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-[12.5px] text-ink-4">Escrever de novo busca os estudos outra vez e substitui o título, a linha fina e o texto.</p>
-                  <Button busy={pending === "rewrite"} onClick={() => command("rewrite", { theme, query }, "O sistema começou a escrever de novo")}>Escrever de novo</Button>
+                  <Button busy={pending === "rewrite"} onClick={() => command("rewrite", { theme, query, pmids: pmidList(pmids) }, "O sistema começou a escrever de novo")}>Escrever de novo</Button>
                 </div>
               )}
             </div>
