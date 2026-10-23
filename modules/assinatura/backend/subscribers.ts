@@ -8,8 +8,9 @@
 import { randomBytes } from "node:crypto";
 import { sql } from "@aihot/backend/db";
 import { feedbackSourceHash } from "@aihot/backend/operations/feedback";
-import { normalizeEmail, phoneVariants, type Channel } from "../address.ts";
+import { maskAddress, normalizeEmail, phoneVariants, type Channel } from "../address.ts";
 import { CONSENT, JOIN_TEXT, LEAVE_WORDS, WHATSAPP_CONSENT } from "../copy.ts";
+import type { LinkAddress } from "../types.ts";
 import { channelReady, sendEmail, sendWhatsapp, whatsappNumber, type Outcome } from "./channels.ts";
 import { confirmationEmail, welcomeWhatsapp } from "./messages.ts";
 
@@ -113,6 +114,12 @@ export async function dueConfirmations(limit: number): Promise<number[]> {
       AND consent_at > now() - interval '7 days' AND (confirm_attempts = 0 OR updated_at < now() - interval '5 minutes')
     ORDER BY id LIMIT ${limit}`;
   return rows.map((r) => r.id);
+}
+
+/** Whose the link's token is, for its page to say before the button; reads only. */
+export async function linkAddress(token: string): Promise<LinkAddress | null> {
+  const [row] = await sql<{ channel: Channel; address: string }[]>`SELECT channel, address FROM assinatura_subscribers WHERE token = ${token}`;
+  return row ? { channel: row.channel, address: maskAddress(row.channel, row.address) } : null;
 }
 
 /** The confirmation button. Says the address's channel and whether it is now on the list. */

@@ -11,7 +11,6 @@ import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { apiGet, cachedPage, loadOr404 } from "@aihot/web/lib/api.server";
 import { pageMeta } from "@aihot/web/lib/seo";
 import { ReportPaper } from "@aihot/web/features/report/ReportPaper";
-import type { Channel } from "../address.ts";
 import type { SignupChannels } from "../types.ts";
 import { SignupForm } from "./SignupForm.tsx";
 
@@ -38,69 +37,6 @@ export function meta({ loaderData, location }: MetaArgs<typeof loader>) {
   return pageMeta({ title, rawTitle: true, description, path: location.pathname, image: "/og/pages/assine.png", type: report ? "article" : "website" });
 }
 
-type Done = { channel: Channel; status?: "confirmed" | "unsubscribed"; undo?: boolean };
-
-/** Posts the token to one of the page's buttons: the answer, or null when the link no longer works. */
-async function act<T>(path: string, token: string): Promise<T | null | "error"> {
-  const res = await fetch(path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ t: token }) }).catch(() => null);
-  if (!res) return "error";
-  if (res.status === 404) return null;
-  return res.ok ? ((await res.json()) as T) : "error";
-}
-
-function Notice() {
-  const [params] = useSearchParams();
-  const toConfirm = params.get("confirmar");
-  const toLeave = params.get("sair");
-  const token = toConfirm ?? toLeave;
-  const [state, setState] = useState<{ kind: "ask" | "busy" | "error" | "invalid" } | { kind: "confirmed" | "left" | "back"; done: Done }>({ kind: params.get("link") ? "invalid" : "ask" });
-  const where = (c: Channel) => (c === "whatsapp" ? "este número de WhatsApp" : "este e-mail");
-  if (!token && state.kind !== "invalid") return null;
-
-  const run = async (path: string, next: "confirmed" | "left" | "back") => {
-    setState({ kind: "busy" });
-    const done = await act<Done>(path, token!);
-    if (done === "error") return setState({ kind: "error" });
-    if (!done) return setState({ kind: "invalid" });
-    setState({ kind: next === "confirmed" && done.status === "unsubscribed" ? "left" : next, done });
-  };
-  const button = (label: string, onClick: () => void) => (
-    <button type="button" onClick={onClick} disabled={state.kind === "busy"} className="ml-1 font-semibold text-accent underline underline-offset-2 disabled:opacity-60">
-      {label}
-    </button>
-  );
-
-  let body: React.ReactNode;
-  if (state.kind === "invalid") body = "Este link não é mais válido. Se quiser receber a edição, inscreva-se de novo abaixo.";
-  else if (state.kind === "confirmed") body = `Pronto! Inscrição confirmada: a próxima edição chega a ${where(state.done.channel)} na segunda-feira.`;
-  else if (state.kind === "back") body = `Você voltou para a lista: a edição continua chegando a ${where(state.done.channel)}.`;
-  else if (state.kind === "left") {
-    body = state.done.status === "unsubscribed"
-      ? "Este endereço tinha saído da lista. Para voltar a receber, inscreva-se de novo abaixo."
-      : (
-        <>
-          Você saiu da lista: {where(state.done.channel)} não vai mais receber a edição.
-          {state.done.undo && button("Saiu por engano? Voltar a receber", () => run("/api/assinatura/voltar", "back"))}
-        </>
-      );
-  } else {
-    body = (
-      <>
-        {toConfirm ? "Falta um passo: confirme que quer receber a edição semanal." : "Quer deixar de receber a edição semanal?"}
-        {toConfirm
-          ? button("Confirmar inscrição", () => run("/api/assinatura/confirmar", "confirmed"))
-          : button("Não quero mais receber", () => run("/api/assinatura/sair", "left"))}
-        {state.kind === "error" && <span className="ml-1 text-ink-3">(não foi possível agora; tente de novo)</span>}
-      </>
-    );
-  }
-  return (
-    <div role="status" className="mb-5 rounded-card bg-accent-softer px-4 py-3.5 text-[14px] leading-relaxed text-ink-2 ring-1 ring-inset ring-accent/30">
-      {body}
-    </div>
-  );
-}
-
 export default function AssinePage() {
   const { report, channels } = useLoaderData<typeof loader>();
   return (
@@ -110,7 +46,6 @@ export default function AssinePage() {
         <span className="text-[12px] tracking-[0.12em] text-ink-4">EDIÇÃO SEMANAL · GRÁTIS</span>
       </header>
       <main className="mx-auto w-full max-w-[1160px] px-[var(--gutter-l)] pb-12 lg:px-10">
-        <Notice />
         <SignupForm channels={channels} title={`Receba ${SITE.name} toda semana`} />
         {report ? (
           <div className="mt-6">

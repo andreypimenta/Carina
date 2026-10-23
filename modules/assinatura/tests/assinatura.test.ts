@@ -16,7 +16,7 @@ import { installModules } from "@aihot/backend/modules";
 import { passwordLogin, sessionPrincipal, SESSION_COOKIE } from "@aihot/backend/admin/auth";
 import { buildApp } from "../../../apps/api/src/app.ts";
 import server from "../server.ts";
-import { normalizeEmail, phoneVariants } from "../address.ts";
+import { maskAddress, normalizeEmail, phoneVariants } from "../address.ts";
 import { runSends } from "../backend/send.ts";
 import { expireSubscribers } from "../backend/subscribers.ts";
 import { adminOverview } from "../backend/admin.ts";
@@ -124,6 +124,9 @@ test("addresses are read as kept", () => {
   assert.deepEqual(phoneVariants("+551187654321"), ["+551187654321", "+5511987654321"]);
   assert.equal(normalizeEmail("  Ana@Example.COM "), "ana@example.com");
   assert.equal(normalizeEmail("ana@example"), null);
+  assert.equal(maskAddress("email", "ana.silva@example.com"), "a•••@example.com");
+  assert.equal(maskAddress("whatsapp", "+5511987654321"), "+55 (11) •••••-4321");
+  assert.equal(maskAddress("whatsapp", "+351912345678"), "•••5678");
 });
 
 test("a journal number not written as digits with the country code keeps WhatsApp closed, and the admin is told why", async () => {
@@ -179,8 +182,9 @@ test("an e-mail is confirmed by the button its link opens, before anything is se
   const link = /https:\/\/folego\.example(\/assine\/confirmar\?t=([\w-]+))/.exec(mail.text)!;
   const opened = await app.inject({ url: link[1]! });
   assert.equal(opened.statusCode, 303);
-  assert.equal(opened.headers.location, `/assine?confirmar=${link[2]}`);
+  assert.equal(opened.headers.location, `/assine/confirmacao?t=${link[2]}`);
   assert.equal(opened.headers["cache-control"], "no-store");
+  assert.deepEqual((await app.inject({ url: `/api/assinatura/link?t=${link[2]}` })).json(), { address: { channel: "email", address: "a•••@example.com" } }, "the page says whose link it is, masked");
   assert.equal((await subscriber("email", email))?.status, "pending", "opening the link (a scanner, a preview) confirms nothing");
   const confirmed = await button("/api/assinatura/confirmar", link[2]!);
   assert.deepEqual(confirmed.json(), { channel: "email", status: "confirmed" });
@@ -189,7 +193,8 @@ test("an e-mail is confirmed by the button its link opens, before anything is se
   const known = await signup({ email, consent: true });
   assert.deepEqual(known.json(), { sent: true }, "a confirmed address answers as a new one");
   assert.equal((await subscriber("email", email))?.status, "confirmed");
-  assert.equal((await app.inject({ url: "/assine/confirmar?t=bad" })).headers.location, "/assine?link=invalido");
+  assert.equal((await app.inject({ url: "/assine/confirmar?t=bad" })).headers.location, "/assine/confirmacao");
+  assert.deepEqual((await app.inject({ url: "/api/assinatura/link?t=not-a-real-token-at-all" })).json(), { address: null });
   assert.equal((await button("/api/assinatura/confirmar", "not-a-real-token-at-all")).statusCode, 404);
 });
 
@@ -282,7 +287,8 @@ test("leaving takes the page's button or the mail client's one click, opening th
   const reader = await add("email", `clique-${T}@example.com`, "confirmed");
   const opened = await app.inject({ url: `/assine/sair?t=${reader.token}` });
   assert.equal(opened.statusCode, 303);
-  assert.equal(opened.headers.location, `/assine?sair=${reader.token}`);
+  assert.equal(opened.headers.location, `/assine/saida?t=${reader.token}`);
+  assert.equal((await app.inject({ url: `/api/assinatura/link?t=${reader.token}` })).json().address.address, "c•••@example.com");
   assert.equal((await subscriber("email", `clique-${T}@example.com`))?.status, "confirmed", "a scanner opening the link takes nobody off");
   assert.deepEqual((await button("/api/assinatura/sair", reader.token)).json(), { channel: "email", undo: true });
   assert.deepEqual({ ...(await subscriber("email", `clique-${T}@example.com`)) }, { id: reader.id, status: "unsubscribed", token: reader.token, left_by: "link" });
