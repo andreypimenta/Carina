@@ -34,6 +34,8 @@ export interface AdminEdition {
 export interface AdminOverview {
   /** Whether each channel's switch is on and its credentials are set. */
   ready: Record<Channel, boolean>;
+  /** What is wrong with NEWSLETTER_WHATSAPP_NUMBER, which keeps the WhatsApp channel closed; null when it is fine. */
+  whatsappNumberProblem: string | null;
   counts: Array<{ channel: Channel; status: string; n: number }>;
   editions: AdminEdition[];
   subscribers: AdminSubscriber[];

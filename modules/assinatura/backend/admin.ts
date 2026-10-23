@@ -3,7 +3,7 @@
 import { sql } from "@aihot/backend/db";
 import type { Channel } from "../address.ts";
 import type { AdminOverview, AdminSubscriber } from "../types.ts";
-import { channelReady } from "./channels.ts";
+import { channelReady, whatsappNumberProblem } from "./channels.ts";
 
 const CHANNELS = new Set(["email", "whatsapp"]);
 const STATUSES = new Set(["pending", "confirmed", "unsubscribed"]);
@@ -25,7 +25,7 @@ export async function adminOverview(query: { channel?: string; status?: string }
       WHERE (${channel}::text IS NULL OR channel = ${channel}) AND (${status}::text IS NULL OR status = ${status})
       ORDER BY id DESC LIMIT 500`,
   ]);
-  return { ready: { email: channelReady("email"), whatsapp: channelReady("whatsapp") }, counts, editions, subscribers, filter: { channel, status } };
+  return { ready: { email: channelReady("email"), whatsapp: channelReady("whatsapp") }, whatsappNumberProblem: whatsappNumberProblem(), counts, editions, subscribers, filter: { channel, status } };
 }
 
 const cell = (value: unknown) => {

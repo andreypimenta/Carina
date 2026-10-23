@@ -61,7 +61,7 @@ export default function AssinaturaAdmin() {
         ))}
         {(["email", "whatsapp"] as const).map((c) => (
           <Stat key={`${c}-ready`} label={`Envio por ${CHANNEL[c]}`} value={d.ready[c] ? "Ligado" : "Desligado"} tone={d.ready[c] ? "ok" : "warn"}
-            hint={c === "email" ? "NEWSLETTER_EMAIL_ENABLED, RESEND_API_KEY, NEWSLETTER_FROM" : "NEWSLETTER_WHATSAPP_ENABLED, NEWSLETTER_WHATSAPP_NUMBER, EVOLUTION_*"} />
+            hint={c === "email" ? "NEWSLETTER_EMAIL_ENABLED, RESEND_API_KEY, NEWSLETTER_FROM" : d.whatsappNumberProblem ?? "NEWSLETTER_WHATSAPP_ENABLED, NEWSLETTER_WHATSAPP_NUMBER, EVOLUTION_*"} />
         ))}
       </div>
 

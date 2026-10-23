@@ -5,7 +5,7 @@
 // arrived, failed for good, may succeed if tried again, or is unknown (it may have arrived: never resent
 // on its own).
 import { credential } from "@aihot/backend/config";
-import { normalizePhone, type Channel } from "../address.ts";
+import type { Channel } from "../address.ts";
 
 export type Outcome =
   | { status: "sent"; id: string }
@@ -25,10 +25,20 @@ const evolution = () => ({
   instance: credential("integrations", "EVOLUTION_INSTANCE"),
 });
 
-/** The journal's WhatsApp number readers write to, as digits ("5511987654321"); null when unset or not a number. */
+/** NEWSLETTER_WHATSAPP_NUMBER as it must be written: digits only, with the country code ("5511987654321"). */
+const NUMBER_FORM = /^\d{8,15}$/;
+
+/** The journal's WhatsApp number readers write to; null when unset or not in NUMBER_FORM. */
 export function whatsappNumber(): string | null {
   const raw = credential("integrations", "NEWSLETTER_WHATSAPP_NUMBER");
-  return (raw && normalizePhone(raw)?.slice(1)) || null;
+  return raw && NUMBER_FORM.test(raw) ? raw : null;
+}
+
+/** Why the WhatsApp channel is closed by its number, for the admin: unset, or not in NUMBER_FORM. */
+export function whatsappNumberProblem(): string | null {
+  const raw = credential("integrations", "NEWSLETTER_WHATSAPP_NUMBER");
+  if (!raw) return "NEWSLETTER_WHATSAPP_NUMBER não está definido";
+  return NUMBER_FORM.test(raw) ? null : `NEWSLETTER_WHATSAPP_NUMBER inválido ("${raw}"): use só dígitos, com o código do país, como 5511987654321`;
 }
 
 /** Whether a channel may send now: its switch on and its credentials set. Read on each use. */

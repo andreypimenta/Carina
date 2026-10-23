@@ -16,9 +16,10 @@ import { installModules } from "@aihot/backend/modules";
 import { passwordLogin, sessionPrincipal, SESSION_COOKIE } from "@aihot/backend/admin/auth";
 import { buildApp } from "../../../apps/api/src/app.ts";
 import server from "../server.ts";
-import { normalizeEmail, normalizePhone, phoneVariants } from "../address.ts";
+import { normalizeEmail, phoneVariants } from "../address.ts";
 import { runSends } from "../backend/send.ts";
 import { expireSubscribers } from "../backend/subscribers.ts";
+import { adminOverview } from "../backend/admin.ts";
 
 const T = tag();
 const WEEK = "2026-W43";
@@ -69,7 +70,7 @@ before(async () => {
   Object.assign(process.env, {
     NEWSLETTER_EMAIL_ENABLED: "true", RESEND_API_KEY: "test-resend-key", NEWSLETTER_FROM: "O Fôlego <edicao@example.com>", RESEND_BASE_URL: `${base}/resend`,
     NEWSLETTER_WHATSAPP_ENABLED: "true", EVOLUTION_API_URL: `${base}/evo`, EVOLUTION_API_KEY: "test-evo-key", EVOLUTION_INSTANCE: "folego",
-    NEWSLETTER_WHATSAPP_NUMBER: "+55 11 90000-0000",
+    NEWSLETTER_WHATSAPP_NUMBER: "5511900000000",
     EVOLUTION_WEBHOOK_SECRET: "test-webhook-secret-0123",
   });
   config.siteUrl = "https://folego.example";
@@ -118,18 +119,32 @@ async function add(channel: "email" | "whatsapp", address: string, status: "pend
   return row!;
 }
 
-test("addresses are read the Brazilian way", () => {
-  for (const given of ["(11) 98765-4321", "11987654321", "+55 11 98765-4321", "5511987654321", "011 98765 4321", "0055 11 98765-4321"]) {
-    assert.equal(normalizePhone(given), "+5511987654321", given);
-  }
-  assert.equal(normalizePhone("(51) 3333-4444"), "+555133334444", "a landline");
-  assert.equal(normalizePhone("(55) 99123-4567"), "+5555991234567", "DDD 55 is not the country code");
-  assert.equal(normalizePhone("+351 912 345 678"), "+351912345678", "another country, written with its code");
-  for (const bad of ["98765-4321", "(01) 98765-4321", "(11) 18765-4321", "abc", "+55 11 9876"]) assert.equal(normalizePhone(bad), null, bad);
+test("addresses are read as kept", () => {
   assert.deepEqual(phoneVariants("+5511987654321"), ["+5511987654321", "+551187654321"]);
   assert.deepEqual(phoneVariants("+551187654321"), ["+551187654321", "+5511987654321"]);
   assert.equal(normalizeEmail("  Ana@Example.COM "), "ana@example.com");
   assert.equal(normalizeEmail("ana@example"), null);
+});
+
+test("a journal number not written as digits with the country code keeps WhatsApp closed, and the admin is told why", async () => {
+  const hook = (text: string) => app.inject({ method: "POST", url: "/api/assinatura/evolution?token=test-webhook-secret-0123",
+    payload: { event: "messages.upsert", data: { key: { fromMe: false, remoteJid: "5511987658888@s.whatsapp.net" }, message: { conversation: text } } } });
+  try {
+    for (const bad of ["+55 11 90000-0000", "(11) 90000-0000", "1190", "55119000000001234"]) {
+      process.env.NEWSLETTER_WHATSAPP_NUMBER = bad;
+      assert.equal((await app.inject({ url: "/api/assinatura" })).json().whatsapp, null, bad);
+      const overview = await adminOverview({});
+      assert.equal(overview.ready.whatsapp, false, bad);
+      assert.match(overview.whatsappNumberProblem ?? "", /NEWSLETTER_WHATSAPP_NUMBER inválido/, bad);
+    }
+    assert.equal((await hook("QUERO O FÔLEGO")).json().action, "ignored");
+    assert.equal(await subscriber("whatsapp", "+5511987658888"), undefined, "nobody joins a closed channel");
+    delete process.env.NEWSLETTER_WHATSAPP_NUMBER;
+    assert.match((await adminOverview({})).whatsappNumberProblem ?? "", /não está definido/);
+  } finally {
+    process.env.NEWSLETTER_WHATSAPP_NUMBER = "5511900000000";
+  }
+  assert.equal((await adminOverview({})).whatsappNumberProblem, null);
 });
 
 test("an e-mail is confirmed by the button its link opens, before anything is sent, and a sign-up answers the same whatever the address's state", async () => {

@@ -44,14 +44,14 @@ NEWSLETTER_FROM=O Fôlego <edicao@ofolego.com>   # domínio verificado no Resend
 
 # WhatsApp
 NEWSLETTER_WHATSAPP_ENABLED=true
-NEWSLETTER_WHATSAPP_NUMBER=+55 11 98765-4321   # o número da instância, para onde o leitor escreve
+NEWSLETTER_WHATSAPP_NUMBER=5511987654321      # o número da instância, para onde o leitor escreve: só dígitos, com o código do país
 EVOLUTION_API_URL=https://evolution.seudominio.com
 EVOLUTION_API_KEY=...            # a chave global ou a da instância
 EVOLUTION_INSTANCE=folego        # nome da instância conectada ao número
 EVOLUTION_WEBHOOK_SECRET=...     # uma sequência aleatória (openssl rand -hex 24)
 ```
 
-Depois de mudar, reinicie a api e o worker (`docker compose up -d`). O Painel → Inscritos mostra se cada canal está ligado. Sem o webhook (abaixo), ninguém consegue se inscrever pelo WhatsApp.
+Depois de mudar, reinicie a api e o worker (`docker compose up -d`). O Painel → Inscritos mostra se cada canal está ligado. Um `NEWSLETTER_WHATSAPP_NUMBER` fora do formato (só dígitos, 8 a 15, com o código do país) deixa o WhatsApp fechado, e o Painel → Inscritos mostra o motivo. Sem o webhook (abaixo), ninguém consegue se inscrever pelo WhatsApp.
 
 ### Apontar a Evolution para o webhook
 
