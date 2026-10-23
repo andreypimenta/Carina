@@ -218,11 +218,11 @@ As listas temáticas do diretório (Airway guidelines, Pediatric airway, Broncho
 
 | Organização | Fonte do site | Situação |
 |---|---|---|
-| Global Tracheostomy Collaborative (GTC) | `rss-youtube-gtc` (canal no YouTube), da tarefa do diretório de fontes | O site não tem notícias, e o feed do calendário de eventos vem vazio; o canal oficial no YouTube entra no lugar. |
-| National Tracheostomy Safety Project (NTSP) | `rss-trachy-talk` (podcast) e `rss-youtube-ntsp` (YouTube), da tarefa do diretório de fontes; `web-ntsp-news` desligada | A lista de notícias mostra a data como "18/09/2026" (dd/mm/aaaa), formato que o coletor não lê. |
+| Global Tracheostomy Collaborative (GTC) | `rss-youtube-gtc` (canal no YouTube), das fontes do diretório de fontes (branch `fm/carina-diretorio-fontes`) | O site não tem notícias, e o feed do calendário de eventos vem vazio; o canal oficial no YouTube entra no lugar. |
+| National Tracheostomy Safety Project (NTSP) | `rss-trachy-talk` (podcast) e `rss-youtube-ntsp` (YouTube), das fontes do diretório de fontes (branch `fm/carina-diretorio-fontes`); `web-ntsp-news` desligada | A lista de notícias mostra a data como "18/09/2026" (dd/mm/aaaa), formato que o coletor não lê. |
 | Atos Medical US (comercial) | `web-atos-medical-us` | ativa. A página `https://www.atosmedical.us/blogs-and-news` traz título e link de cada texto (59 em 23/10/2026); a data vem do JSON-LD da matéria (`detail`). |
-| Boston Medical Products (comercial) | nenhuma | O site (bosmed.com) não tem notícias. A página de eventos lista as feiras em que a empresa expõe, com o link para o site de cada congresso e sem data de publicação. |
-| Stening (comercial) | nenhuma | O site (stening.com.ar) não tem notícias: os "Reportes de Broncología" são artigos e PDFs sem data de publicação. O endereço stening.com é outra página. |
-| I:Emedics (comercial) | nenhuma | O site (iemedics.com) responde HTTP 403, com a página de desafio do Cloudflare, a qualquer leitura automática. |
+| Boston Medical Products (comercial) | `rss-gnews-boston-medical-products` (Google News pelo nome da empresa com tracheostomy, airway, stent ou Montgomery) | O site (bosmed.com) não tem notícias. A página de eventos lista as feiras em que a empresa expõe, com o link para o site de cada congresso e sem data de publicação. A pesquisa trouxe 10 itens na prévia de 23/10/2026. |
+| Stening (comercial) | `rss-gnews-stening` (Google News por "Stening", entre aspas, com stent, airway, tracheal ou bronchoscopy) | O site (stening.com.ar) não tem notícias: os "Reportes de Broncología" são artigos e PDFs sem data de publicação. O endereço stening.com é outra página. O nome vai entre aspas porque, sem elas, a pesquisa traz textos sobre "stenting". A pesquisa trouxe 1 item na prévia de 23/10/2026. |
+| I:Emedics (comercial) | `rss-gnews-iemedics` (Google News por "I:Emedics" ou iemedics com airway, bronchoscopy ou stent) | O site (iemedics.com) responde HTTP 403, com a página de desafio do Cloudflare, a qualquer leitura automática. Ligada, sem itens na verificação de 23/10/2026. |
 
 O restante do diretório de redes (vídeos do YouTube, o podcast Trachy Talk e os sites de WABIP, AABIP, CHOP, Cincinnati e Boston Children's) não está nesta tabela; esses itens ficam com o diretório de fontes.

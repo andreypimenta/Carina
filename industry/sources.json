@@ -578,6 +578,69 @@
       ]
     },
     {
+      "id": "rss-gnews-boston-medical-products",
+      "name": "Google News · Boston Medical Products（comercial）",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22Boston+Medical+Products%22+(tracheostomy+OR+airway+OR+stent+OR+%22Montgomery%22)&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "Google News",
+        "comercial"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-stening",
+      "name": "Google News · Stening（comercial）",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22Stening%22+(stent+OR+airway+OR+tracheal+OR+bronchoscopy)&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "Google News",
+        "comercial"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-iemedics",
+      "name": "Google News · I:Emedics（comercial）",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=(%22I%3AEmedics%22+OR+iemedics)+(airway+OR+bronchoscopy+OR+stent)&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "Google News",
+        "comercial"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
       "id": "rss-sbp-pneumologia",
       "name": "SBP · pneumologia",
       "kind": "rss",
