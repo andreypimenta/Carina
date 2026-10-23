@@ -8,7 +8,7 @@ import { config } from "../config.ts";
 import { sql } from "../db.ts";
 import { escapeXml, SITE_LANG } from "../lib/text.ts";
 import { proxyBodyImages } from "../media/imgproxy.ts";
-import { DAILY_ISSUE_NAME, feedIssues, PERIOD_ISSUE_NAMES, type FeedIssue, type ReportKind } from "./reports.ts";
+import { DAILY_ISSUE_NAME, feedIssues, issueClosings, PERIOD_ISSUE_NAMES, type FeedIssue, type ReportKind } from "./reports.ts";
 import { textToHtml } from "../content/sanitize.ts";
 import type { FeedNotice } from "../modules.ts";
 import { publicCategoryCondition, exportTranslation, xView, type ItemRow } from "./items.ts";
@@ -199,13 +199,17 @@ const ISSUE_NAME: Record<ReportKind, string> = { daily: DAILY_ISSUE_NAME, ...PER
 /** Issues each report feed keeps: a month of dailies, a quarter of weeklies, a year of monthlies. */
 const ISSUES_KEPT: Record<ReportKind, number> = { daily: 30, weekly: 12, monthly: 12 };
 
-/** One issue: its headline, its lead (a weekly's or monthly's overview) and its contents, each entry linking to its page. */
+/**
+ * One issue: its headline, its lead (a weekly's or monthly's overview), its contents, each entry linking to its
+ * page, and the modules' closing lines.
+ */
 function issueXml(kind: ReportKind, r: FeedIssue): string {
   const url = kind === "daily" ? dailyUrl(r.key) : periodUrl(kind, r.key);
   const name = `${SITE.name} · ${ISSUE_NAME[kind]}`;
   const title = r.headline ? `${name} · ${r.key} — ${r.headline}` : `${name} · ${r.key}`;
   const contents = r.sections.map((s) => `<p><strong>${escapeXml(s.label)}</strong></p>\n<ul>${s.items.map((i) => `<li><a href="${escapeXml(i.link)}">${escapeXml(i.title)}</a></li>`).join("")}</ul>`);
-  const description = [`<p>${escapeXml(r.leadParagraph ?? r.headline ?? "")}</p>`, ...contents, `<p>via ${escapeXml(SITE.name)} · <a href="${url}">${url}</a></p>`].join("\n");
+  const closings = issueClosings(kind).map((c) => `<p>${escapeXml(c.text)} <a href="${escapeXml(c.url)}">${escapeXml(c.url)}</a></p>`);
+  const description = [`<p>${escapeXml(r.leadParagraph ?? r.headline ?? "")}</p>`, ...contents, `<p>via ${escapeXml(SITE.name)} · <a href="${url}">${url}</a></p>`, ...closings].join("\n");
   return `    <item>
       <title>${cdata(title)}</title>
       <link>${url}</link>

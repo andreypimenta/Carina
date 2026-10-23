@@ -321,6 +321,14 @@ function readingMinutes(text: string): number {
   return Math.max(1, Math.round([...text].length / 450));
 }
 
+/** The modules' lines closing an issue in its feed and its Agent answer (ServerModule.reports.closing). */
+export function issueClosings(kind: ReportKind): Array<{ text: string; url: string }> {
+  return serverModules().flatMap((m) => {
+    const closing = m.reports?.closing?.(kind);
+    return closing ? [{ text: closing.text, url: siteUrl(closing.path) }] : [];
+  });
+}
+
 /** The modules' parts of an issue as it shows now, from what each saved with it (ServerModule.reports). */
 async function issueParts(kind: ReportKind, key: string, saved: Record<string, unknown> | undefined): Promise<Record<string, unknown>> {
   const parts: Record<string, unknown> = {};

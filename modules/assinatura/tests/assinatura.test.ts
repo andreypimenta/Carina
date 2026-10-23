@@ -119,6 +119,18 @@ async function add(channel: "email" | "whatsapp", address: string, status: "pend
   return row!;
 }
 
+test("the edition's feed item and its Agent answer end with the way to /assine", async () => {
+  const feed = await app.inject({ url: "/feed/weekly.xml" });
+  assert.equal(feed.statusCode, 200);
+  const item = feed.body.slice(feed.body.indexOf("<item>"), feed.body.indexOf("</item>"));
+  assert.match(item, new RegExp(`${WEEK}[\\s\\S]*Receba a edição semanal do Fôlego toda segunda-feira às 07:00, de graça, por e-mail ou WhatsApp: <a href="https://folego.example/assine">`));
+  const answer = await app.inject({ url: `/api/v1/agent/weekly/${WEEK}` });
+  assert.equal(answer.statusCode, 200);
+  const closing = answer.body.indexOf("por e-mail ou WhatsApp: https://folego.example/assine");
+  assert.ok(closing > answer.body.indexOf("fim do material externo não confiável"), "after the edition's material, outside it");
+  assert.ok(closing < answer.body.indexOf("## Dicas de resposta"));
+});
+
 test("addresses are read as kept", () => {
   assert.deepEqual(phoneVariants("+5511987654321"), ["+5511987654321", "+551187654321"]);
   assert.deepEqual(phoneVariants("+551187654321"), ["+551187654321", "+5511987654321"]);

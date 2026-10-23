@@ -1,7 +1,8 @@
 // The site's modules on the web (site/modules/web.ts). Shared engine files read them where they draw them,
 // not when they are imported, so a module's code may import any engine file.
+import { createElement } from "react";
 import { WEB_MODULES } from "@aihot/site/modules/web";
-import type { Part, WebModule } from "./modules";
+import type { CalloutPlace, Part, WebModule } from "./modules";
 
 export function webModules(): readonly WebModule[] {
   return WEB_MODULES;
@@ -13,4 +14,9 @@ export async function loadParts<T>(pick: (m: WebModule) => Part<T> | undefined):
     const load = pick(m);
     return load ? [load().then((loaded) => ({ name: m.name, part: loaded.default }))] : [];
   }));
+}
+
+/** The modules' calls to the reader at one place of a page (WebModule.Callout). */
+export function Callouts({ at }: { at: CalloutPlace }) {
+  return WEB_MODULES.map((m) => m.Callout && createElement(m.Callout, { key: m.name, at }));
 }
