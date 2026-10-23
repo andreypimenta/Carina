@@ -1,52 +1,47 @@
 // The timeline (linha do tempo), the first format of the specials: from a theme and a PubMed search the editor
-// gives, the landmark studies (the oldest records, classifications, consensus statements, systematic reviews,
-// trials, large series and the best matches) and the model's account of them by era, in Portuguese, ending
-// with the best evidence today and what is still open (industry/prompts/linha-do-tempo.md). Every passage
-// cites studies of the list; what the citation check finds wrong is taken out, and listed, before the editor
-// reads the draft (citacoes.ts).
+// gives, the landmark studies (the PMIDs the editor requires, the oldest records, and the most influential
+// classifications, consensus statements, systematic reviews, trials and studies of each decade) and the
+// model's account of them, in Portuguese: an essay in running paragraphs under era headings, ending with where
+// the theme's central questions stand today and what is still unknown (industry/prompts/linha-do-tempo.md).
+// Every paragraph cites studies of the list; what the citation check finds wrong is taken out, and listed,
+// before the editor reads the draft (citacoes.ts).
 import { z } from "zod";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { modelFor } from "@aihot/backend/editorial/models";
 import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
 import { authorLine, fetchPapers, searchAll, skippable, type Paper } from "./pubmed.ts";
+import { influence, type Influence } from "./icite.ts";
 import { corpusOf, passageProblem, unnamed } from "./citacoes.ts";
-import { FORMATS, type ReferenciaLida, type Trecho } from "../especiais.ts";
+import { citedIn, FORMATS, type ReferenciaLida, type Trecho } from "../especiais.ts";
 
 export const LINHA_STEP = "linha-do-tempo";
 export const LINHA_PURPOSE = "especial_linha_do_tempo";
 const VERSION = () => promptVersion(LINHA_STEP);
 
 /**
- * The landmarks the list gathers: each a filter on the editor's search and how many studies it adds, in this
- * order of precedence; a study found by two keeps the first one's kind. The best matches fill the list.
+ * The kinds of landmark sought among the search's records, each a filter on the editor's search and how many
+ * of its most influential records the list takes, in this order of precedence.
  */
-const LANDMARKS: Array<{ kind: string; filter: string | null; max: number }> = [
-  { kind: "Primeiras descrições", filter: null, max: 6 },
-  { kind: "Classificação", filter: '(classification[ti] OR grading[ti] OR staging[ti] OR "grading system"[tiab] OR "classification system"[tiab])', max: 4 },
-  { kind: "Diretriz ou consenso", filter: '(Guideline[pt] OR "Practice Guideline"[pt] OR "Consensus Development Conference"[pt] OR consensus[ti] OR guideline*[ti] OR recommendation*[ti])', max: 5 },
-  { kind: "Revisão sistemática", filter: '(systematic[sb] OR "Meta-Analysis"[pt])', max: 6 },
-  { kind: "Ensaio clínico", filter: '("Randomized Controlled Trial"[pt] OR "Controlled Clinical Trial"[pt] OR "Clinical Trial"[pt])', max: 6 },
-  { kind: "Série ou coorte", filter: '("Multicenter Study"[pt] OR "Cohort Studies"[Mesh] OR "Retrospective Studies"[Mesh] OR "case series"[tiab])', max: 6 },
-  { kind: "Estudo", filter: null, max: 7 },
+const LANDMARKS: Array<{ kind: string; filter: string; max: number }> = [
+  { kind: "Classificação", filter: '(classification[ti] OR grading[ti] OR staging[ti] OR "grading system"[tiab] OR "classification system"[tiab])', max: 2 },
+  { kind: "Diretriz ou consenso", filter: '(Guideline[pt] OR "Practice Guideline"[pt] OR "Consensus Development Conference"[pt] OR consensus[ti] OR guideline*[ti] OR recommendation*[ti])', max: 3 },
+  { kind: "Revisão sistemática", filter: '(systematic[sb] OR "Meta-Analysis"[pt])', max: 4 },
+  { kind: "Ensaio clínico", filter: '("Randomized Controlled Trial"[pt] OR "Controlled Clinical Trial"[pt] OR "Clinical Trial"[pt])', max: 3 },
 ];
+/** The most studies a list has; the editor's own come first. */
+export const MAX_REFS = 40;
+/** The oldest records of the search open the list, however little cited. */
+const OLDEST = 2;
+/** Each decade with cited records gives the list up to this many of its most influential. */
+const PER_DECADE = 2;
+/** A record's influence is its citations, discounted by its Best Match rank: at this rank it counts half. */
+const RELEVANCE = 300;
 /** A list shorter than this is not a history: the search is too narrow. */
 const MIN_REFS = 3;
 /** What the model reads of each abstract. */
 const ABSTRACT_CHARS = 1500;
 /** esearch reaches only a search's first 10,000 records. */
 const REACH = 9_999;
-
-/** The oldest records of a search; a search too large for esearch to reach its end is first narrowed to earlier decades. */
-async function oldestPmids(term: string, max: number): Promise<string[]> {
-  let scoped = term;
-  let { count } = await searchAll(scoped, "pub_date", 0);
-  for (const until of [2009, 1999, 1989, 1979]) {
-    if (count <= REACH) break;
-    scoped = `(${term}) AND 1800:${until}[dp]`;
-    ({ count } = await searchAll(scoped, "pub_date", 0));
-  }
-  return (await searchAll(scoped, "pub_date", max, Math.max(0, Math.min(count, REACH) - max))).pmids;
-}
 
 /** What kind of landmark a study is listed as: the record's own publication type, unless it was found as one of the oldest or a classification. */
 function kindOf(paper: Paper, found: string): string {
@@ -62,22 +57,52 @@ function kindOf(paper: Paper, found: string): string {
   return found;
 }
 
-/** The landmark studies of a search, oldest first, numbered as the text cites them. */
-export async function gatherReferences(query: string): Promise<ReferenciaLida[]> {
+/**
+ * Which records the list takes, and what each was found as: the PMIDs the editor requires (as the kind of
+ * landmark the search finds them as, if it does), then the search's oldest records, its most influential
+ * classifications, consensus statements, systematic reviews and trials (`byKind`, the search's records of each
+ * LANDMARKS kind), the most influential of each decade, and the most influential of all, up to MAX_REFS.
+ * `pmids` are the search's records in PubMed's Best Match order (its first REACH, for a larger search); a
+ * record's influence is how often it is cited, discounted by how far down that order it is, so that a
+ * much-cited record the search only grazes does not crowd out the theme's own.
+ */
+export function chooseLandmarks(pmids: string[], known: ReadonlyMap<string, Influence>, byKind: ReadonlyMap<string, string[]>, required: string[]): Map<string, string> {
+  const rank = new Map(pmids.map((pmid, i) => [pmid, i]));
+  const weight = (pmid: string) => (known.get(pmid)?.citations ?? 0) / (1 + rank.get(pmid)! / RELEVANCE);
+  const byWeight = (list: string[]) => list.filter((pmid) => rank.has(pmid)).sort((a, b) => weight(b) - weight(a) || rank.get(a)! - rank.get(b)!);
+  const year = (pmid: string) => known.get(pmid)?.year ?? null;
+
   const found = new Map<string, string>();
-  for (const l of LANDMARKS) {
-    const pmids = l.kind === "Primeiras descrições" ? await oldestPmids(query, l.max)
-      : (await searchAll(l.filter ? `(${query}) AND ${l.filter}` : query, "relevance", l.max + found.size)).pmids;
+  const take = (list: string[], kind: string, max = MAX_REFS) => {
     let added = 0;
-    for (const pmid of pmids) {
-      if (added >= l.max) break;
+    for (const pmid of list) {
+      if (found.size >= MAX_REFS || added >= max) break;
       if (found.has(pmid)) continue;
-      found.set(pmid, l.kind);
+      found.set(pmid, kind);
       added++;
     }
-  }
-  const papers = (await fetchPapers([...found.keys()])).filter((p) => !skippable(p));
-  return papers
+  };
+  for (const pmid of required) take([pmid], LANDMARKS.find((l) => byKind.get(l.kind)?.includes(pmid))?.kind ?? "Estudo");
+  const dated = pmids.filter((pmid) => year(pmid) !== null);
+  take([...dated].sort((a, b) => year(a)! - year(b)! || rank.get(a)! - rank.get(b)!), "Primeiras descrições", OLDEST);
+  for (const l of LANDMARKS) take(byWeight(byKind.get(l.kind) ?? []), l.kind, l.max);
+  const decades = Map.groupBy(dated.filter((pmid) => known.get(pmid)!.citations > 0), (pmid) => Math.floor(year(pmid)! / 10));
+  for (const decade of [...decades.keys()].sort()) take(byWeight(decades.get(decade)!), "Estudo", PER_DECADE);
+  take(byWeight(pmids), "Estudo");
+  return found;
+}
+
+/** The landmark studies of a search and the PMIDs the editor requires (chooseLandmarks), oldest first, numbered as the text cites them. */
+export async function gatherReferences(query: string, required: string[] = []): Promise<ReferenciaLida[]> {
+  const { pmids } = await searchAll(query, "relevance", REACH);
+  const known = await influence([...new Set([...required, ...pmids])]);
+  const byKind = new Map<string, string[]>();
+  for (const l of LANDMARKS) byKind.set(l.kind, (await searchAll(`(${query}) AND ${l.filter}`, "relevance", REACH)).pmids);
+  const found = chooseLandmarks(pmids, known, byKind, required);
+  const fetched = await fetchPapers([...found.keys()]);
+  const absent = required.filter((pmid) => !fetched.some((p) => p.pmid === pmid));
+  if (absent.length) throw new Error(`O PubMed não tem ${absent.length === 1 ? "o PMID" : "os PMIDs"} ${absent.join(", ")}; corrija a lista de PMIDs e peça de novo.`);
+  return fetched.filter((p) => !skippable(p))
     .sort((a, b) => (a.year ?? "9999").localeCompare(b.year ?? "9999") || Number(a.pmid) - Number(b.pmid))
     .map((p, i) => ({
       n: i + 1,
@@ -89,19 +114,21 @@ export async function gatherReferences(query: string): Promise<ReferenciaLida[]>
       year: p.year,
       kind: kindOf(p, found.get(p.pmid)!),
       abstract: p.abstract.map((s) => (s.label ? `${s.label}: ${s.text}` : s.text)).join(" "),
+      citations: known.get(p.pmid)?.citations ?? 0,
     }));
 }
 
-/** What the model reads: the theme, the search and the studies. */
+/** What the model reads: the theme, the search and the studies, each with how often it has been cited. */
 export function linhaInput(theme: string, query: string, refs: ReferenciaLida[]): string {
   const cut = (text: string) => (text.length > ABSTRACT_CHARS ? `${text.slice(0, text.lastIndexOf(" ", ABSTRACT_CHARS))} […]` : text);
+  const cited = (n: number | undefined) => (n === undefined ? [] : [n === 1 ? "citado 1 vez" : `citado ${n} vezes`]);
   return [
     `Tema: ${theme}`,
     `Busca no PubMed: ${query}`,
     `Estudos (${refs.length}, em ordem cronológica; cite pelo número entre colchetes):`,
     ...refs.map((r) => [
       "",
-      `[${r.n}] ${r.year ?? "ano não informado"} · ${r.kind} · ${r.journal} · ${authorLine(r.authors, 6) || "autores não informados"}`,
+      [`[${r.n}] ${r.year ?? "ano não informado"}`, r.kind, r.journal, authorLine(r.authors, 6) || "autores não informados", ...cited(r.citations)].join(" · "),
       `Título: ${r.title}`,
       r.abstract ? `Resumo: ${cut(r.abstract)}` : "Resumo: não disponível (escreva só a partir do título)",
     ].join("\n")),
@@ -115,33 +142,27 @@ const texts = z.union([z.string(), z.array(z.string())]).nullish()
 const Output = z.object({
   titulo: z.string().min(10),
   linhaFina: text,
-  abertura: text,
-  epocas: z.array(z.object({ titulo: text, marcos: z.array(z.object({ ano: z.union([z.string(), z.number()]).nullish().transform((v) => String(v ?? "").trim()), texto: text })).nullish().transform((v) => v ?? []) })).min(1),
-  melhorEvidencia: texts,
+  abertura: texts,
+  epocas: z.array(z.object({ titulo: text, paragrafos: texts })).min(1),
+  ondeEstamos: texts,
   emAberto: texts,
 });
 export type Linha = z.infer<typeof Output>;
 
-/** The years a span of dated entries covers: "1965–1979", or one year. */
-function span(whens: string[]): string {
-  const years = whens.flatMap((w) => w.match(/\d{4}/g) ?? []).sort();
-  if (!years.length) return "";
-  return years[0] === years.at(-1) ? years[0]! : `${years[0]}–${years.at(-1)}`;
-}
-
 /**
- * The draft from what the model wrote: each passage the check takes out is listed with its reason, an era
- * left with no entry loses its heading, and an era's heading is the span of its entries' years, which the
- * check has read, before its name. A title naming what no study does gives way to the format's name and the
- * theme; such a dek is left out.
+ * The draft from what the model wrote: each paragraph the check takes out is listed with its reason, and an
+ * era left with none loses its heading. Eras go in the order of the oldest study each cites, and each heading
+ * opens with the years of the studies it cites, up to the year before the next era begins, so the headings
+ * never overlap. A title naming what no study does gives way to the format's name and the theme; such a dek
+ * is left out.
  */
 export function assembleLinha(out: Linha, refs: ReferenciaLida[], theme: string): { title: string; dek: string; body: string; discarded: Trecho[] } {
   const byNumber = new Map(refs.map((r) => [r.n, r]));
   const all = corpusOf(refs, [theme]);
   const discarded: Trecho[] = [];
-  const stands = (when: string | null, passage: string) => {
-    const reason = passageProblem({ when, text: passage }, byNumber, [theme]);
-    if (reason) discarded.push({ text: when ? `${when} — ${passage}` : passage, reason });
+  const stands = (passage: string) => {
+    const reason = passageProblem(passage, byNumber, [theme]);
+    if (reason) discarded.push({ text: passage, reason });
     return !reason;
   };
   const free = (label: string, value: string) => {
@@ -149,21 +170,25 @@ export function assembleLinha(out: Linha, refs: ReferenciaLida[], theme: string)
     if (names.length) discarded.push({ text: `${label}: ${value}`, reason: `${names.join(", ")}: não aparece em nenhum estudo da lista` });
     return !names.length;
   };
-  const blocks: string[] = [];
-  if (out.abertura && stands(null, out.abertura)) blocks.push(out.abertura);
-  for (const era of out.epocas) {
-    const entries = era.marcos.filter((m) => m.texto).map((m) => ({ when: /^\d{4}(\s*[–-]\s*\d{2,4})?$/.test(m.ano) ? m.ano : null, text: m.texto }))
-      .filter((m) => stands(m.when, m.text));
-    if (!entries.length) continue;
-    const years = span(entries.flatMap((e) => (e.when ? [e.when] : [])));
-    const name = era.titulo && free("Intertítulo", era.titulo) ? era.titulo : "";
-    if (years || name) blocks.push(`## ${[years, name].filter(Boolean).join(" · ")}`);
-    blocks.push(...entries.map((e) => (e.when ? `${e.when} — ${e.text}` : e.text)));
-  }
-  const evidence = out.melhorEvidencia.filter((p) => stands(null, p));
-  if (evidence.length) blocks.push("## A melhor evidência hoje", ...evidence);
-  const open = out.emAberto.filter((p) => stands(null, p));
-  if (open.length) blocks.push("## Pontos em aberto", open.map((p) => `- ${p.replace(/\s+/g, " ")}`).join("\n"));
+  const yearsCited = (paragraphs: string[]) => paragraphs.flatMap(citedIn).map((n) => Number(byNumber.get(n)?.year)).filter((y) => y > 0).sort((a, b) => a - b);
+  const eras = out.epocas
+    .map((era) => ({ name: era.titulo, paragraphs: era.paragrafos.filter(stands) }))
+    .filter((era) => era.paragraphs.length)
+    .map((era) => ({ ...era, years: yearsCited(era.paragraphs) }))
+    .sort((a, b) => (a.years[0] ?? Infinity) - (b.years[0] ?? Infinity));
+  const blocks: string[] = out.abertura.filter(stands);
+  eras.forEach((era, i) => {
+    const next = eras[i + 1]?.years[0];
+    const within = era.years.filter((y) => next === undefined || y < next);
+    const span = within.length ? (within[0] === within.at(-1) ? `${within[0]}` : `${within[0]}–${within.at(-1)}`) : "";
+    const name = era.name && free("Intertítulo", era.name) ? era.name : "";
+    if (span || name) blocks.push(`## ${[span, name].filter(Boolean).join(" · ")}`);
+    blocks.push(...era.paragraphs);
+  });
+  const today = out.ondeEstamos.filter(stands);
+  if (today.length) blocks.push("## Onde estamos hoje", ...today);
+  const open = out.emAberto.filter(stands);
+  if (open.length) blocks.push("## O que ainda não sabemos", ...open);
   return {
     title: free("Título", out.titulo) ? out.titulo : `${FORMATS["linha-do-tempo"].name}: ${theme}`,
     dek: out.linhaFina && free("Linha fina", out.linhaFina) ? out.linhaFina : "",
@@ -172,9 +197,9 @@ export function assembleLinha(out: Linha, refs: ReferenciaLida[], theme: string)
   };
 }
 
-/** A timeline draft: the studies of the search and the text written from them. */
-export async function writeLinha(id: number, theme: string, query: string) {
-  const refs = await gatherReferences(query);
+/** A timeline draft: the studies of the search (and the editor's PMIDs) and the text written from them. */
+export async function writeLinha(id: number, theme: string, query: string, pmids: string[]) {
+  const refs = await gatherReferences(query, pmids);
   if (refs.length < MIN_REFS) {
     const found = refs.length === 0 ? "não encontrou nenhum estudo" : `encontrou só ${refs.length} ${refs.length === 1 ? "estudo" : "estudos"}`;
     throw new Error(`A busca ${found} no PubMed; amplie a busca e peça de novo.`);
@@ -188,7 +213,7 @@ export async function writeLinha(id: number, theme: string, query: string) {
     user: linhaInput(theme, query, refs),
     schema: Output,
     temperature: 0.3,
-    maxTokens: 8000,
+    maxTokens: 12000,
     // Inside the worker's shutdown drain (jobs/queue.ts), so a stop never leaves the receipt unknown.
     timeoutMs: 180_000,
   });

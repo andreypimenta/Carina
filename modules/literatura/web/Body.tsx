@@ -1,8 +1,7 @@
 // A special's text and its studies, as its page and the admin's preview show them (../especiais.ts
-// parseBody): headings, paragraphs, the timeline's dated entries on a line of their own, lists, and each
-// citation as a superscript number that leads to its study.
+// parseBody): headings, paragraphs, lists, and each citation as a superscript number that leads to its study.
 import type { ReactNode } from "react";
-import { parseBody, type Block, type Inline, type Referencia } from "../especiais.ts";
+import { parseBody, type Inline, type Referencia } from "../especiais.ts";
 
 const TEXT = "text-[17px] leading-[1.8] tracking-[0.012em] text-(--prose-ink) xl:text-[18px]";
 
@@ -38,25 +37,10 @@ function Inlines({ parts }: { parts: Inline[] }) {
   return <>{out}</>;
 }
 
-type Group = { type: "timeline"; entries: Array<Extract<Block, { type: "paragraph" }>> } | Block;
-
-/** Consecutive dated entries make one stretch of the timeline. */
-function grouped(blocks: Block[]): Group[] {
-  const out: Group[] = [];
-  for (const b of blocks) {
-    const last = out.at(-1);
-    if (b.type === "paragraph" && b.when) {
-      if (last?.type === "timeline") last.entries.push(b);
-      else out.push({ type: "timeline", entries: [b] });
-    } else out.push(b);
-  }
-  return out;
-}
-
 export function EspecialBody({ body }: { body: string }) {
   return (
     <div className="space-y-5">
-      {grouped(parseBody(body)).map((g, i) => {
+      {parseBody(body).map((g, i) => {
         if (g.type === "heading") return <h2 key={i} className="!mt-11 text-[21px] font-bold leading-[1.4] text-ink xl:text-[23px]">{g.text}</h2>;
         if (g.type === "list") {
           return (
@@ -68,19 +52,6 @@ export function EspecialBody({ body }: { body: string }) {
                 </li>
               ))}
             </ul>
-          );
-        }
-        if (g.type === "timeline") {
-          return (
-            <ol key={i} className="relative ml-1.5 border-l-2 border-accent/25 pl-6">
-              {g.entries.map((e, j) => (
-                <li key={j} className="relative pb-6 last:pb-1">
-                  <span className="absolute -left-[31px] top-[7px] size-3 rounded-full bg-accent ring-4 ring-bg" aria-hidden="true" />
-                  <div className="num text-[14px] font-bold tracking-[0.04em] text-accent">{e.when}</div>
-                  <p className={`mt-1 ${TEXT}`}><Inlines parts={e.text} /></p>
-                </li>
-              ))}
-            </ol>
           );
         }
         return <p key={i} className={TEXT}><Inlines parts={g.text} /></p>;

@@ -17,20 +17,23 @@ export function corpusOf(refs: ReferenciaLida[], also: string[]): string {
   return `${englishFigures(text)}\n${portugueseFigures(text)}`;
 }
 
+/** An eponym of two names, "Myer-Cotton" or "Fearon-Cotton", as the two names, each read on its own. */
+const eponyms = (text: string) => text.replace(/(\p{Lu}[\p{Ll}'’]+)-(?=\p{Lu}\p{Ll})/gu, "$1 ");
+
 /** What `text` names or figures that the corpus does not. */
-export const unnamed = (text: string, corpus: string) => ungrounded(portugueseFigures(withoutCitations(text)), corpus);
+export const unnamed = (text: string, corpus: string) => ungrounded(eponyms(portugueseFigures(withoutCitations(text))), corpus);
 
 /**
  * Why a passage cannot stand, or null: it cites no study, cites one that is not in the list, or names or
- * figures what the studies it cites do not. A dated entry's date is read as its first sentence, so it must
- * be a year of a study it cites.
+ * figures what the studies it cites do not. A paragraph is read whole, so a sentence that leads from one study
+ * to the next needs no citation of its own, but what it names must be in the studies the paragraph cites.
  */
-export function passageProblem(passage: { when: string | null; text: string }, refs: ReadonlyMap<number, ReferenciaLida>, also: string[]): string | null {
-  const cited = citedIn(passage.text);
+export function passageProblem(passage: string, refs: ReadonlyMap<number, ReferenciaLida>, also: string[]): string | null {
+  const cited = citedIn(passage);
   if (!cited.length) return "não cita nenhum estudo da lista";
   const missing = cited.filter((n) => !refs.has(n));
   if (missing.length) return `cita ${missing.map((n) => `[${n}]`).join(", ")}, que não está na lista`;
-  const names = unnamed(passage.when ? `${passage.when}. ${passage.text}` : passage.text, corpusOf(cited.map((n) => refs.get(n)!), also));
+  const names = unnamed(passage, corpusOf(cited.map((n) => refs.get(n)!), also));
   return names.length ? `${names.join(", ")}: não aparece nos estudos citados` : null;
 }
 
@@ -51,8 +54,8 @@ export function checkText(text: { title: string | null; dek: string | null; body
       free("Intertítulo", p.text, p.text.replace(/\s*·\s*/g, ". "));
       continue;
     }
-    const reason = passageProblem(p, byNumber, [theme]);
-    if (reason) found.push({ text: p.when ? `${p.when} — ${p.text}` : p.text, reason });
+    const reason = passageProblem(p.text, byNumber, [theme]);
+    if (reason) found.push({ text: p.text, reason });
   }
   return found;
 }
