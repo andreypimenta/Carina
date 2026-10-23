@@ -7,16 +7,16 @@ import { collapseWhitespace, stripTags } from "../lib/text.ts";
 import { readable, type ExtractedBody } from "../content/extract.ts";
 import { sanitizeBody } from "../content/sanitize.ts";
 import { jinaRead } from "../providers/jina.ts";
-import { articleUtcOffset, parseLooseDate } from "./dates.ts";
+import { articleDateOrder, articleUtcOffset, parseLooseDate, type DateOrder } from "./dates.ts";
 import { FetchError, type Candidate, type SourceRow } from "./types.ts";
 import { SITE_UTC_OFFSET } from "@aihot/contracts/time";
 
 const JINA_PREFIX = "https://r.jina.ai/";
 
 /** A date rule names one element; unrelated tooltips must not hide its visible publication date. */
-function elementDate(el: ReturnType<cheerio.CheerioAPI>, utcOffset?: string): Date | null {
+function elementDate(el: ReturnType<cheerio.CheerioAPI>, utcOffset?: string, dateOrder?: DateOrder): Date | null {
   for (const value of [el.attr("datetime"), el.attr("content"), el.attr("title"), el.text()]) {
-    const date = parseLooseDate(value, utcOffset);
+    const date = parseLooseDate(value, utcOffset, dateOrder);
     if (date) return date;
   }
   return null;
@@ -173,11 +173,11 @@ export function fromHtml(html: string, base: string, source: SourceRow): Candida
     let publishedAt: Date | null = null;
     if (c.publishedAtSelector) {
       const dateEl = el.find(c.publishedAtSelector).first();
-      publishedAt = elementDate(dateEl, c.publishedAtUtcOffset);
+      publishedAt = elementDate(dateEl, c.publishedAtUtcOffset, c.publishedAtDateOrder);
     }
     if (!publishedAt && c.publishedAtRegex) {
       const m = new RegExp(c.publishedAtRegex).exec($.html(el));
-      publishedAt = parseLooseDate(m?.[1], c.publishedAtUtcOffset);
+      publishedAt = parseLooseDate(m?.[1], c.publishedAtUtcOffset, c.publishedAtDateOrder);
     }
     seen.add(url);
     out.push({ url, title, publishedAt });
@@ -367,6 +367,7 @@ export interface DetailNeed {
 export async function fetchDetail(url: string, source: SourceRow, need: DetailNeed): Promise<{ publishedAt: Date | null; title: string | null; summary: string | null; body: ExtractedBody | null }> {
   const d = source.config.detail ?? {};
   const offset = articleUtcOffset(source.config);
+  const order = articleDateOrder(source.config);
   const jinaListing = String(source.config.url ?? "").startsWith(JINA_PREFIX);
   const dateInJina = need.date && jinaListing && !!d.publishedAtRegex;
   const titleInJina = need.title && jinaListing && !!d.titleRegex;
@@ -389,9 +390,9 @@ export async function fetchDetail(url: string, source: SourceRow, need: DetailNe
   if (need.date && dateText !== null) {
     if ($ && !dateInJina && d.publishedAtSelector) {
       const el = $(d.publishedAtSelector).first();
-      publishedAt = elementDate(el, offset);
+      publishedAt = elementDate(el, offset, order);
     }
-    if (!publishedAt && d.publishedAtRegex) publishedAt = parseLooseDate(new RegExp(d.publishedAtRegex).exec(dateText)?.[1], offset);
+    if (!publishedAt && d.publishedAtRegex) publishedAt = parseLooseDate(new RegExp(d.publishedAtRegex).exec(dateText)?.[1], offset, order);
     // An authoritative rule is the only source of the date: when its byline is missing, no other
     // timestamp on the page (an update time, a related post) stands in for it.
     const authoritative = d.publishedAtAuthoritative === true && !!(d.publishedAtSelector || d.publishedAtRegex);
