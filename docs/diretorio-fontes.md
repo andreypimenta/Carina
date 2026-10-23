@@ -24,8 +24,7 @@ O jornal ganhou uma agenda de congressos (módulo `agenda`).
 Os termos das tabelas:
 - **Ativa:** a fonte entra ligada e trouxe itens com data na verificação.
 - **Desligada:** a fonte está cadastrada com `enabled: false`. Em todos os casos, outro caminho ativo cobre a mesma fonte; ele está na mesma linha.
-- **Só aqui:** não há o que cadastrar, e o item fica registrado só nesta tabela.
-- **Aguardando meio de acesso:** perfis e pesquisas de X, Instagram e LinkedIn. O meio de acesso às redes está sendo avaliado à parte. O `x_search` (SocialData, pago) não foi usado sem chave.
+- **Integração das redes:** perfis, pesquisas e hashtags de X, Instagram e LinkedIn. Entram pela tarefa à parte de integração das redes sociais (X pelo SocialData, Instagram pelo ScrapeCreators, LinkedIn pelos sites das instituições), não por este PR.
 
 ## Periódicos
 
@@ -85,7 +84,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 | Difficult Airway Society (DAS): Guidelines | `rss-das`; congresso em `das-2026` na agenda | ativa | O feed da categoria de notícias traz os mesmos posts do feed geral. Último post em 31/03/2026. |
 | National Tracheostomy Safety Project (NTSP) | `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp` | ativa | A lista de notícias escreve a data como "18/09/2026"; a fonte declara a ordem dia/mês/ano. |
 | SFORL | `rss-sforl`, `rss-sforl-mediatheque` | ativa | O feed do sforl.org funciona, mas está quieto desde 24/01/2025. A página de produção científica é uma lista de PDFs sem data. A médiathèque (webinars, vídeos) publica com frequência. |
-| ANZCA Library: Airway Management | só aqui | | É um guia LibGuides: uma coletânea de links para artigos, diretrizes e vídeos de outras fontes, sem lista datada e sem feed. As fontes que ele reúne (DAS, NTSP, periódicos) entram pelos seus próprios caminhos. |
+| ANZCA Library: Airway Management | `rss-gnews-site-anzca-airway` (Google News, `site:libguides.anzca.edu.au airway`) | ativa | É um guia LibGuides: uma coletânea de links para artigos, diretrizes e vídeos de outras fontes, sem lista datada e sem feed; por isso entra pela busca do Google News no domínio. As fontes que ele reúne (DAS, NTSP, periódicos) entram pelos seus próprios caminhos. |
 
 ### Brasil e América Latina
 
@@ -102,7 +101,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 | Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
 | Japan Society for Respiratory Endoscopy (JSRE) | `web-jsre-news` | ativa | Lista de avisos "学会から", com a data "2026年8月31日", fuso `+09:00`. |
-| Indian Association for Bronchology (IAB) | BRONCOCON em `broncocon-2026` na agenda; o site, só aqui | | O site só tem páginas de eventos, sem data na lista e sem feed. |
+| Indian Association for Bronchology (IAB) | `rss-gnews-site-iab` (Google News, `site:iabronchology.org`); BRONCOCON em `broncocon-2026` na agenda | ativa | O site só tem páginas de eventos, sem data na lista e sem feed; por isso entra pela busca do Google News no domínio. |
 | APIPA | `json-apipa-programs` (API REST do WordPress, os PDFs dos programas de reuniões); `rss-apipa` | ativa; feed desligado | O feed está abandonado: só um post "testing", de 2019. O site publica cada reunião como um PDF de programa, e a API de mídia do WordPress lista esses PDFs com data. |
 
 ### Sociedades que o diretório ainda não tinha validado
@@ -111,7 +110,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 |---|---|---|
 | ATS (catálogo de diretrizes) | `web-ats-press` (já existia), `json-j-ajrccm`; as diretrizes também chegam pelas buscas do PubMed (`diretorio-diretrizes`) | ativa |
 | STS | `web-sts-press` (já existia), `json-j-ann-thorac-surg` | ativa |
-| ESPO | só aqui: já tinha sido avaliada e deixada de fora por não ter feed (veja `docs/fontes.md`) | |
+| ESPO | `rss-gnews-site-espo` (Google News, `site:espo.eu.com OR "European Society of Pediatric Otorhinolaryngology"`) | ativa | Não tem feed (veja `docs/fontes.md`); entra pela busca do Google News. |
 | Outras sociedades nacionais | o diretório não nomeia nenhuma | |
 
 ## Centros de referência
@@ -137,7 +136,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 | EurekAlert! | `web-eurekalert` | ativa | Os feeds RSS antigos (`/rss/*.xml`) respondem 404, e o filtro de assunto da lista é ignorado. Por isso a fonte lê a lista de todos os comunicados, de todas as áreas, de hora em hora; a pré-triagem descarta os de outros temas. A data vem como "23-Oct-2026". |
 | Medscape | `rss-medscape-pulmonary` (`/cx/rssfeeds/2694.xml`, "Medscape Pulmonary Medicine") | ativa | Depois de muitas leituras seguidas, o Medscape respondeu 429 por algum tempo; na leitura espaçada da coleta, o feed responde. |
 | ENTtoday | `rss-enttoday` (já existia) | ativa | |
-| MDedge | só aqui | | Não tem feed, e a página de pneumologia não mostra matéria posterior a 25/11/2025: não há o que coletar. |
+| MDedge | `rss-gnews-site-mdedge` (Google News, `site:mdedge.com airway OR tracheostomy OR bronchoscopy OR intubation`) | ativa | Não tem feed, e a página de pneumologia não mostra matéria posterior a 25/11/2025; a busca do Google News no domínio traz o que o MDedge publicar sobre via aérea. |
 | Outros agregadores | o diretório não nomeia nenhum | | |
 
 ## Pacientes e familiares
@@ -157,8 +156,8 @@ Episódios de podcast e vídeos entram como itens de notícia, com o título e a
 | ERS Respiratory Channel: Guidelines in Focus | `web-ers-guidelines-in-focus` (a página do canal 38); `rss-ers-channel` | ativa; RSS desligado | O RSS do canal tem títulos genéricos ("Replay", "Guidelines in Focus"), e seus links respondem 404 fora do login. A página do canal lista cada episódio com título, link e data ("15.07.2026", dia/mês/ano declarado). |
 | SBCT Pró-Ligas: aulas em vídeo | `web-sbct-pro-ligas` | ativa | Veja SBCT acima. |
 | La médiathèque de la SFORL | `rss-sforl-mediatheque` | ativa | |
-| ANZCA Library: Apps, Podcasts & Online Lectures | só aqui | | Guia LibGuides, sem lista datada e sem feed. |
-| Global Tracheostomy Collaborative no LinkedIn | aguardando meio de acesso (veja Redes sociais) | | O LinkedIn exige login. O canal da GTC no YouTube já entra. |
+| ANZCA Library: Apps, Podcasts & Online Lectures | `rss-gnews-site-anzca-media` (Google News, `site:libguides.anzca.edu.au podcast OR lecture OR app`) | ativa | Guia LibGuides, sem lista datada e sem feed; entra pela busca do Google News no domínio. |
+| Global Tracheostomy Collaborative no LinkedIn | integração das redes (veja Redes sociais) | | O LinkedIn exige login; entra pelos sites, na tarefa à parte de integração das redes. O canal da GTC no YouTube já entra. |
 
 ## Registros e preprints
 
@@ -172,7 +171,7 @@ Os preprints entram com o nome da fonte dizendo "sem revisão por pares". As reg
 | bioRxiv | `json-biorxiv-airway` (Europe PMC, preprints do bioRxiv) | ativa | |
 | CTIS (UE) | `json-ctis-airway`, `json-ctis-tracheostomy` (API pública de busca do CTIS, POST) | ativa | A busca lê várias palavras como uma expressão só, então há uma fonte por termo. As datas vêm como "31/08/2026" (dia/mês/ano declarado). O link abre a página do estudo no portal do CTIS. |
 | ISRCTN | `xml-isrctn-airway` (API de busca do ISRCTN, em XML) | ativa | O site pede cookies e JavaScript; a API devolve um XML próprio, agora lido pelo `json_list` com `mode: "xml"`, já do mais novo para o mais antigo. |
-| WHO ICTRP | só aqui | | O portal de busca (trialsearch.who.int) respondeu 502 em todos os endereços, inclusive no de um estudo, e o ICTRP não tem API pública. Os registros primários que ele agrega e que o diretório cita (ClinicalTrials.gov, ISRCTN, CTIS, ReBEC) entram direto. |
+| WHO ICTRP | `web-who-ictrp` (https://trialsearch.who.int/) | desligada | O portal de busca (trialsearch.who.int) respondeu 502 em todos os endereços em 23/10/2026, inclusive no de um estudo, e o ICTRP não tem API pública. Os registros primários que ele agrega e que o diretório cita (ClinicalTrials.gov, ISRCTN, CTIS, ReBEC) entram direto. |
 | ReBEC | `web-rebec` (a lista de ensaios novos da página inicial) | ativa | Sem feed (`/api/` responde 403, e a busca responde 404). A página inicial lista os ensaios registrados mais recentes, de todos os temas, com a data em mm/dd/aaaa declarada na própria página; a pré-triagem descarta os de outros temas. |
 
 ## Congressos e encontros
@@ -295,7 +294,7 @@ Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-g
 | Páginas e alertas dos periódicos essenciais | seção Periódicos |
 | Inspeção de RSS reais | cada feed cadastrado foi lido pela pré-visualização |
 | Organizações independentes de pacientes | o diretório não nomeia nenhuma além da GTC e do NTSP; `rss-unidos-pela-vida` já existia |
-| Redes sociais | os canais do YouTube entraram; os perfis de X, Instagram e LinkedIn aguardam o meio de acesso (seção Redes sociais) |
+| Redes sociais | os canais do YouTube entraram; os perfis de X, Instagram e LinkedIn entram pela integração das redes, tarefa à parte (seção Redes sociais) |
 | Centros europeus, latino-americanos, asiáticos e australianos | os que já eram coletados, mais o Instituto Nacional del Tórax e, pelo YouTube, Cambridge University Hospitals e Narayana Health |
 | Corpo estranho, trauma laringotraqueal e ECMO com cirurgia de via aérea | buscas do PubMed que já existiam (`corpo-estranho`, `trauma-laringotraqueal`, `ecmo-via-aerea`), as do Scholar, os alertas do Google News e as buscas novas do ClinicalTrials.gov |
 | WHO ICTRP, CTIS, ReBEC, ISRCTN, medRxiv e bioRxiv | seção Registros e preprints |
@@ -304,7 +303,7 @@ Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-g
 
 Segundo diretório do dono: perfis, canais, pesquisas e hashtags para garimpar notícias, artigos, cursos, casos e congressos de via aérea.
 
-Os vídeos do YouTube e o podcast entram já, pelo RSS do canal de cada vídeo listado e pelo feed do podcast. Os perfis de X, Instagram e LinkedIn e as pesquisas e hashtags ficam registrados aqui como "aguardando meio de acesso": as três redes exigem login ou uma API paga para ler, e o meio de acesso está sendo avaliado à parte. Os perfis comerciais servem só para descobrir tecnologia, nunca como fonte primária de eficácia.
+Os vídeos do YouTube e o podcast entram já, pelo RSS do canal de cada vídeo listado e pelo feed do podcast. Os perfis de X, Instagram e LinkedIn e as pesquisas e hashtags ficam registrados aqui como "integração das redes": as três redes exigem login ou uma API paga para ler, e entram pela tarefa à parte de integração das redes sociais (X pelo SocialData, Instagram pelo ScrapeCreators, LinkedIn pelos sites das instituições), não por este PR. Os perfis comerciais servem só para descobrir tecnologia, nunca como fonte primária de eficácia.
 
 ### YouTube e podcast
 
@@ -334,17 +333,17 @@ Os canais dos hospitais são gerais (Mayo Clinic, CUH, Chesterfield e Narayana p
 
 | Perfil | Foco | Situação |
 |---|---|---|
-| Difficult Airway Society, https://x.com/dasairway (publicações de exemplo: https://x.com/dasairway/status/2074120130640900458 e https://x.com/dasairway/status/1993238096993763446) | via aérea difícil, intubação, diretrizes, webinars | aguardando meio de acesso (a DAS já entra por `rss-das`) |
-| Difficult Airway Society Residents, https://x.com/dasresidents | educação, congressos, pesquisa | aguardando meio de acesso |
-| Journal of Bronchology & Interventional Pulmonology, https://x.com/JBronchOnline | broncoscopia intervencionista, próteses, obstrução central | aguardando meio de acesso (os artigos já entram por `json-j-jbip`) |
-| Karthik Balakrishnan, MD, https://x.com/KBalakrishnanMD | reconstrução de laringe, traqueia e via aérea pediátrica | aguardando meio de acesso |
-| Eric Levi, MD, https://x.com/DrEricLevi | ORL pediátrica, traqueostomia | aguardando meio de acesso |
-| Abdullah Sindi, https://x.com/3bdallahSindi | estenose subglótica, dilatação, reconstrução | aguardando meio de acesso |
-| ENT Papers, https://x.com/ENT_Papers | curadoria de artigos de ORL e via aérea | aguardando meio de acesso |
-| Suveer Singh / Respitudoc, https://x.com/respitudoc | broncoscopia, pneumologia intervencionista | aguardando meio de acesso |
-| Ali Abedi, MD, https://x.com/DocAbedi | pneumologia intervencionista, próteses, traqueostomia | aguardando meio de acesso |
-| ANZ Society of Paediatric Otorhinolaryngology, https://x.com/ANZSPO | ORL pediátrica, broncoscopia, congressos | aguardando meio de acesso |
-| VisionAir Solutions (comercial), https://x.com/VisionAirStents | próteses de silicone personalizadas | aguardando meio de acesso; só para descobrir tecnologia |
+| Difficult Airway Society, https://x.com/dasairway (publicações de exemplo: https://x.com/dasairway/status/2074120130640900458 e https://x.com/dasairway/status/1993238096993763446) | via aérea difícil, intubação, diretrizes, webinars | integração das redes (a DAS já entra por `rss-das`) |
+| Difficult Airway Society Residents, https://x.com/dasresidents | educação, congressos, pesquisa | integração das redes |
+| Journal of Bronchology & Interventional Pulmonology, https://x.com/JBronchOnline | broncoscopia intervencionista, próteses, obstrução central | integração das redes (os artigos já entram por `json-j-jbip`) |
+| Karthik Balakrishnan, MD, https://x.com/KBalakrishnanMD | reconstrução de laringe, traqueia e via aérea pediátrica | integração das redes |
+| Eric Levi, MD, https://x.com/DrEricLevi | ORL pediátrica, traqueostomia | integração das redes |
+| Abdullah Sindi, https://x.com/3bdallahSindi | estenose subglótica, dilatação, reconstrução | integração das redes |
+| ENT Papers, https://x.com/ENT_Papers | curadoria de artigos de ORL e via aérea | integração das redes |
+| Suveer Singh / Respitudoc, https://x.com/respitudoc | broncoscopia, pneumologia intervencionista | integração das redes |
+| Ali Abedi, MD, https://x.com/DocAbedi | pneumologia intervencionista, próteses, traqueostomia | integração das redes |
+| ANZ Society of Paediatric Otorhinolaryngology, https://x.com/ANZSPO | ORL pediátrica, broncoscopia, congressos | integração das redes |
+| VisionAir Solutions (comercial), https://x.com/VisionAirStents | próteses de silicone personalizadas | integração das redes; só para descobrir tecnologia |
 
 Listas temáticas do diretório, que entram junto com os perfis:
 - **Airway guidelines:** @dasairway, @dasresidents, @ENT_Papers, @JBronchOnline;
@@ -355,31 +354,31 @@ Listas temáticas do diretório, que entram junto com os perfis:
 
 | Perfil | Foco | Situação |
 |---|---|---|
-| Global Tracheostomy Collaborative, https://www.linkedin.com/company/the-global-tracheostomy-collaborative | segurança, qualidade, desfechos | aguardando meio de acesso (a GTC já entra por `rss-youtube-gtc`) |
-| National Tracheostomy Safety Project, https://www.linkedin.com/company/national-tracheostomy-safety-project | emergências, algoritmos, treinamento | aguardando meio de acesso (o NTSP já entra por `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp`) |
-| Atos Medical US (comercial), https://www.linkedin.com/company/atos-medical-us | laringectomia, estoma, dispositivos | aguardando meio de acesso; só para descobrir tecnologia |
-| Boston Medical Products (comercial), https://www.linkedin.com/company/boston-medical-products-inc- | produtos e educação em traqueostomia | aguardando meio de acesso; só para descobrir tecnologia |
-| Stening (comercial), https://www.linkedin.com/company/stening | próteses traqueobrônquicas, tubos em T | aguardando meio de acesso; só para descobrir tecnologia |
-| I:Emedics (comercial), https://www.linkedin.com/company/i-emedics-pte-ltd | broncoscopia e via aérea, Ásia | aguardando meio de acesso; só para descobrir tecnologia |
+| Global Tracheostomy Collaborative, https://www.linkedin.com/company/the-global-tracheostomy-collaborative | segurança, qualidade, desfechos | integração das redes (a GTC já entra por `rss-youtube-gtc`) |
+| National Tracheostomy Safety Project, https://www.linkedin.com/company/national-tracheostomy-safety-project | emergências, algoritmos, treinamento | integração das redes (o NTSP já entra por `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp`) |
+| Atos Medical US (comercial), https://www.linkedin.com/company/atos-medical-us | laringectomia, estoma, dispositivos | integração das redes; só para descobrir tecnologia |
+| Boston Medical Products (comercial), https://www.linkedin.com/company/boston-medical-products-inc- | produtos e educação em traqueostomia | integração das redes; só para descobrir tecnologia |
+| Stening (comercial), https://www.linkedin.com/company/stening | próteses traqueobrônquicas, tubos em T | integração das redes; só para descobrir tecnologia |
+| I:Emedics (comercial), https://www.linkedin.com/company/i-emedics-pte-ltd | broncoscopia e via aérea, Ásia | integração das redes; só para descobrir tecnologia |
 
 ### Publicações no Instagram
 
-O diretório lista publicações avulsas, com o autor a conferir. Cada uma fica aqui até haver o meio de acesso, que permita também confirmar a conta de origem.
+O diretório lista publicações avulsas, com o autor a conferir. Cada uma fica aqui até a integração do Instagram (ScrapeCreators, tarefa à parte), que permita também confirmar a conta de origem.
 
 | Publicação | Tema | Situação |
 |---|---|---|
-| https://www.instagram.com/p/DOQuGhsjuax/ | Bronchoscopy and Interventional Pulmonology: prótese de silicone, broncoscopia rígida | aguardando meio de acesso |
-| https://www.instagram.com/p/CXJm4UkvpMi/ | equipe de Stanford: reconstrução pediátrica complexa | aguardando meio de acesso |
-| https://www.instagram.com/p/DCZQZgDq3-O/ | children's airway / complex airway | aguardando meio de acesso |
-| https://www.instagram.com/p/DZNjhn3kRYb/ | pediatric airway research | aguardando meio de acesso |
-| https://www.instagram.com/p/C4BB-o_xWh6/ | tracheostomy education | aguardando meio de acesso |
-| https://www.instagram.com/reel/DbcuJcOO0s0/ | airway stent case (reel) | aguardando meio de acesso |
-| https://www.instagram.com/reel/Ddi2nNoOp-v/ | pediatric tracheostomy education (reel) | aguardando meio de acesso |
-| https://www.instagram.com/p/DBYwzXVMVe_/ | laryngotracheal reconstruction patient story | aguardando meio de acesso |
+| https://www.instagram.com/p/DOQuGhsjuax/ | Bronchoscopy and Interventional Pulmonology: prótese de silicone, broncoscopia rígida | integração das redes |
+| https://www.instagram.com/p/CXJm4UkvpMi/ | equipe de Stanford: reconstrução pediátrica complexa | integração das redes |
+| https://www.instagram.com/p/DCZQZgDq3-O/ | children's airway / complex airway | integração das redes |
+| https://www.instagram.com/p/DZNjhn3kRYb/ | pediatric airway research | integração das redes |
+| https://www.instagram.com/p/C4BB-o_xWh6/ | tracheostomy education | integração das redes |
+| https://www.instagram.com/reel/DbcuJcOO0s0/ | airway stent case (reel) | integração das redes |
+| https://www.instagram.com/reel/Ddi2nNoOp-v/ | pediatric tracheostomy education (reel) | integração das redes |
+| https://www.instagram.com/p/DBYwzXVMVe_/ | laryngotracheal reconstruction patient story | integração das redes |
 
 ### Pesquisas no X
 
-Todas aguardam meio de acesso.
+Todas entram pela integração do X (SocialData, tarefa à parte).
 
 | Pesquisa |
 |---|
@@ -395,7 +394,7 @@ Todas aguardam meio de acesso.
 
 ### Hashtags no Instagram e no LinkedIn
 
-Aguardando meio de acesso: #AirwayManagement, #DifficultAirway, #PediatricAirway, #PaediatricAirway, #AirwayReconstruction, #LaryngotrachealReconstruction, #SubglotticStenosis, #TrachealStenosis, #Tracheostomy, #TracheostomyCare, #Decannulation, #Tracheomalacia, #Bronchomalacia, #InterventionalPulmonology, #RigidBronchoscopy, #AirwayStent, #Laryngology, #PediatricENT, #ThoracicSurgery, #ECMO.
+Entram pela integração das redes (Instagram pelo ScrapeCreators, LinkedIn pelos sites; tarefa à parte): #AirwayManagement, #DifficultAirway, #PediatricAirway, #PaediatricAirway, #AirwayReconstruction, #LaryngotrachealReconstruction, #SubglotticStenosis, #TrachealStenosis, #Tracheostomy, #TracheostomyCare, #Decannulation, #Tracheomalacia, #Bronchomalacia, #InterventionalPulmonology, #RigidBronchoscopy, #AirwayStent, #Laryngology, #PediatricENT, #ThoracicSurgery, #ECMO.
 
 ### Filtro de ruído e ordem sugeridos pelo diretório
 
@@ -409,7 +408,7 @@ O checklist do diretório para separar ruído:
 7. Está dentro dos últimos 12 meses?
 8. O artigo original está indexado no PubMed ou num periódico com avaliação editorial verificável?
 
-Esses critérios já são os da pré-triagem e das notas (`industry/prompts/`). Valem para as redes quando o meio de acesso entrar.
+Esses critérios já são os da pré-triagem e das notas (`industry/prompts/`). Valem para as redes quando a integração das redes entrar.
 
 A ordem de prioridade do diretório:
 1. DAS;

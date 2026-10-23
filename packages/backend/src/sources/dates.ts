@@ -33,8 +33,8 @@ const MONTHS: Record<string, string> = Object.fromEntries([
 const MONTH_NAMES = Object.keys(MONTHS).sort((a, b) => b.length - a.length).join("|");
 /** A day, a written month and a year: "30 de mayo de 2026", "1º de outubro de 2026", "3 set. 2026", "23-Oct-2026". */
 const WRITTEN_DAY_MONTH = new RegExp(`(?<![\\p{L}\\d])(\\d{1,2})[º°]?(?:\\s+de\\s+|\\s+|-)(${MONTH_NAMES})\\.?(?:\\s+del?\\s+|,?\\s+|-)(\\d{4})(?!\\d)`, "iu");
-/** The time a written date may be followed by: ", 10:00", " at 10:00 PM GMT", " às 14:30". */
-const WRITTEN_TIME = /^\s*,?\s*(?:at\s+|às\s+|a las\s+)?(\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:\s*[AP]M)?(?:\s*(?:Z|[+-]\d{2}:?\d{2}|GMT|UTC?|[EMPC][SD]T))?)/i;
+/** The time a written date may be followed by: ", 10:00", " at 10:00 p.m. GMT+0200", " às 14:30". */
+const WRITTEN_TIME = /^\s*,?\s*(?:at\s+|às\s+|a las\s+)?(\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(?:\s*([ap])\.?m\.?(?![\p{L}\d]))?(\s*(?:Z|[+-]\d{2}:?\d{2}|(?:GMT|UTC?)(?:[+-]\d{2}:?\d{2})?|[EMPC][SD]T)(?![\p{L}\d]))?/iu;
 /** A numeric date with the year last: "18/09/2026", "04.23.2026", "24/09/26". */
 const DAY_MONTH_YEAR = /(?<![\d./-])(\d{1,2})([./-])(\d{1,2})\2(\d{4}|\d{2})(?![\d./-])/;
 
@@ -48,7 +48,8 @@ function normalized(v: string, dateOrder?: DateOrder): string {
   if (written) {
     // Only a time right after the date is kept: the words around it ("segunda-feira,", "· 4 min de leitura") are no date.
     const time = WRITTEN_TIME.exec(v.slice(written.index + written[0].length));
-    return `${written[1]} ${MONTHS[written[2]!.toLowerCase()]} ${written[3]}${time ? ` ${time[1]}` : ""}`;
+    const clock = time ? ` ${time[1]}${time[2] ? ` ${time[2].toUpperCase()}M` : ""}${time[3] ?? ""}` : "";
+    return `${written[1]} ${MONTHS[written[2]!.toLowerCase()]} ${written[3]}${clock}`;
   }
   const m = DAY_MONTH_YEAR.exec(v);
   if (!m) return v;

@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import http from "node:http";
 import { after, test } from "node:test";
 import { config } from "@aihot/backend/config";
+import { readable } from "@aihot/backend/content/extract";
 import { unsupportedConfig } from "@aihot/backend/sources/config-keys";
 import { parseLooseDate } from "@aihot/backend/sources/dates";
 import { fetchJsonList } from "@aihot/backend/sources/json-list";
@@ -26,6 +27,14 @@ test("the words around a written date do not hide it, and a time right after it 
   assert.equal(iso("Published 26 Sep 2026 · 4 min read", "+00:00"), "2026-09-26T00:00:00.000Z");
   assert.equal(iso("8 March 2026 02:30:45", "+08:00"), "2026-03-07T18:30:45.000Z");
   assert.equal(iso("Sat, 26 Sep 2026 10:00:00 +0200", "-07:00"), "2026-09-26T08:00:00.000Z");
+});
+
+test("a written date's whole time is kept: a dotted meridiem and a GMT offset are not dropped", () => {
+  assert.equal(iso("5 October 2026 10:00 p.m.", "+00:00"), "2026-10-05T22:00:00.000Z");
+  assert.equal(iso("5 October 2026 12:30 a.m.", "+00:00"), "2026-10-05T00:30:00.000Z");
+  assert.equal(iso("5 de octubre de 2026, 10:00 pm", "-05:00"), "2026-10-06T03:00:00.000Z");
+  assert.equal(iso("Sat, 05 Oct 2026 10:00:00 GMT+0200", "-07:00"), "2026-10-05T08:00:00.000Z");
+  assert.equal(iso("5 October 2026 10:00 p.m. GMT+0200", "-07:00"), "2026-10-05T20:00:00.000Z");
 });
 
 test("a numeric date with the year last is read when a number above 12 says which is the day", () => {
@@ -61,6 +70,8 @@ test("the declared order is a config key of listings and detail rules, with only
   assert.deepEqual(unsupportedConfig("rss", { publishedAtDateOrder: "dmy" }), ["publishedAtDateOrder"]);
 });
 
+const prose = "The trial enrolled children with subglottic stenosis and followed them for a year after surgery. ".repeat(4);
+const metaOnly = `<html><head><meta property="article:published_time" content="05/10/2026"></head><body><article><h1>Two</h1><p>${prose}</p></article></body></html>`;
 const page = `<html><body><ul id="news">` +
   `<li><a href="/news/one">First</a><span class="d">05/10/2026</span></li>` +
   `<li><a href="/news/two">Second</a><span class="d">18/09/2026</span></li></ul>` +
@@ -68,7 +79,7 @@ const page = `<html><body><ul id="news">` +
 const json = JSON.stringify({ data: [{ id: "a", title: "Trial A", decided: "05/10/2026" }, { id: "b", title: "Trial B", decided: "31/08/2026" }] });
 const server = http.createServer((req, res) => {
   res.setHeader("content-type", req.url === "/trials.json" ? "application/json" : "text/html");
-  res.end(req.url === "/trials.json" ? json : page);
+  res.end(req.url === "/trials.json" ? json : req.url === "/news/meta" ? metaOnly : page);
 });
 await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
 const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
@@ -87,6 +98,14 @@ test("a listing, its detail pages and a JSON list read day-first dates when the 
 
   const detail = await fetchDetail(base + "/news/one", { config: { publishedAtDateOrder: "dmy", detail: { publishedAtSelector: ".byline", publishedAtUtcOffset: "+00:00" } } } as never, { date: true, title: false, summary: false });
   assert.equal(detail.publishedAt?.toISOString(), "2026-10-05T00:00:00.000Z");
+
+  const fallback = (order?: "dmy" | "mdy") => fetchDetail(base + "/news/meta", { config: { publishedAtDateOrder: order, detail: { publishedAtUtcOffset: "+00:00" } } } as never, { date: true, title: false, summary: true, body: true });
+  const dmy = await fallback("dmy");
+  assert.equal(dmy.publishedAt?.toISOString(), "2026-10-05T00:00:00.000Z");
+  assert.equal(dmy.body?.publishedAt?.toISOString(), "2026-10-05T00:00:00.000Z");
+  assert.equal((await fallback("mdy")).publishedAt?.toISOString(), "2026-05-10T00:00:00.000Z");
+  assert.equal((await fallback()).publishedAt, null);
+  assert.equal(readable(metaOnly, "https://example.org/news/meta", "+00:00", "dmy")?.publishedAt?.toISOString(), "2026-10-05T00:00:00.000Z");
 
   const trials = await fetchJsonList({ id: "test-json", config: { url: `${base}/trials.json`, itemsPath: "data", titlePaths: ["title"], urlTemplate: "https://example.org/t/{id}", publishedAtPath: "decided", publishedAtUtcOffset: "+01:00", publishedAtDateOrder: "dmy" } } as never);
   assert.deepEqual(trials.map((item) => item.publishedAt?.toISOString()), ["2026-10-04T23:00:00.000Z", "2026-08-30T23:00:00.000Z"]);

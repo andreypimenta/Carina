@@ -202,7 +202,7 @@ function fromIntercomChangelog(html: string, base: string, source: SourceRow): C
   $("article .intercom-interblocks-subheading3:has(h3[id]), article .intercom-interblocks-subheading:has(h2[id])").each((_i, node) => {
     const block = $(node);
     const heading = block.find("h2[id], h3[id]").first();
-    const date = parseLooseDate(heading.text(), source.config.publishedAtUtcOffset ?? "+00:00");
+    const date = parseLooseDate(heading.text(), source.config.publishedAtUtcOffset ?? "+00:00", source.config.publishedAtDateOrder);
     if (!date) return;
     const parts: string[] = [];
     const titles: string[] = [];
@@ -233,6 +233,7 @@ function fromDocusaurusChangelog(html: string, base: string, source: SourceRow):
   const $ = cheerio.load(html);
   const out: Candidate[] = [];
   const offset = source.config.publishedAtUtcOffset;
+  const order = source.config.publishedAtDateOrder;
   // A date heading is no update itself: it dates the updates under it, up to the next h2.
   let sectionDate: Date | null = null;
   $("article h2[id], article h3[id], .markdown h2[id], .markdown h3[id]").each((_i, h) => {
@@ -258,7 +259,7 @@ function fromDocusaurusChangelog(html: string, base: string, source: SourceRow):
       url,
       identityKey: `url:${url}`,
       title,
-      publishedAt: parseLooseDate(title, offset) ?? sectionDate ?? parseLooseDate(stripTags(bodyHtml).slice(0, 80), offset),
+      publishedAt: parseLooseDate(title, offset, order) ?? sectionDate ?? parseLooseDate(stripTags(bodyHtml).slice(0, 80), offset, order),
       bodyHtml,
       bodyText: stripTags(bodyHtml),
       bodyStatus: "ok",
@@ -379,7 +380,7 @@ export async function fetchDetail(url: string, source: SourceRow, need: DetailNe
     if (res.status !== 200) throw new FetchError(`HTTP ${res.status} for detail`, res.status);
     html = res.text();
     if (need.body && /html/.test(res.headers.get("content-type") ?? "")) {
-      try { body = readable(html, res.url, offset); }
+      try { body = readable(html, res.url, offset, order); }
       catch { /* A failed extraction must not discard the detail metadata. */ }
     }
   }
@@ -398,8 +399,8 @@ export async function fetchDetail(url: string, source: SourceRow, need: DetailNe
     const authoritative = d.publishedAtAuthoritative === true && !!(d.publishedAtSelector || d.publishedAtRegex);
     if (!publishedAt && $ && !dateInJina && !authoritative) {
       const meta = $('meta[property="article:published_time"], meta[name="pubdate"], meta[itemprop="datePublished"]').attr("content");
-      publishedAt = parseLooseDate(meta, offset) ?? parseLooseDate(jsonLdPublished($, html!), offset)
-        ?? parseLooseDate($("time[datetime]").first().attr("datetime"), offset);
+      publishedAt = parseLooseDate(meta, offset, order) ?? parseLooseDate(jsonLdPublished($, html!), offset, order)
+        ?? parseLooseDate($("time[datetime]").first().attr("datetime"), offset, order);
     }
   }
 
