@@ -25,6 +25,7 @@ import { takePreview } from "../features/item/preview";
 import { IconArrowLeft, IconCopy, IconDownload, IconExternal, IconImage, IconMenu, IconMore, IconShare } from "../components/icons";
 import { BarButton, PhoneBar } from "../components/shell/PhoneBar";
 import { isPhone, type Screen } from "../components/shell/screens";
+import { Callouts } from "../site-modules";
 
 export const handle: Screen = { home: "featured", toolbar: true };
 export { pageHeaders as headers } from "../lib/api.server";
@@ -573,6 +574,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
               </ul>
             </section>
           )}
+          <Callouts at="item-end" />
         </article>
       </ArticleLayout>
 

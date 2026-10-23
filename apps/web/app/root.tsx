@@ -19,7 +19,7 @@ import { rememberPage, THEME_BOOT_SCRIPT, useThemeSync } from "./lib/local-state
 import { apiGet } from "./lib/api.server";
 import { useHydratedFlag } from "./lib/hydration";
 import { titled } from "./lib/seo";
-import { webModules } from "./site-modules";
+import { Callouts, webModules } from "./site-modules";
 
 export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.ico", sizes: "any" },
@@ -103,6 +103,7 @@ function SiteShell({ changelogVersion, children }: { changelogVersion: string | 
         <div className="mx-auto w-full max-w-[640px] pl-[var(--gutter-l)] pr-[var(--gutter-r)] lg:max-w-[var(--page-max-wide)] lg:px-0">
           {webModules().map((m) => m.root?.Top && <m.root.Top key={m.name} />)}
           {children}
+          <Callouts at="foot" />
         </div>
       </main>
       <TabBar changelogVersion={changelogVersion} />

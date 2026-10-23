@@ -119,6 +119,12 @@ export interface ReportPagePart {
   Block: ComponentType<{ data: unknown; report: ReportDetail }>;
 }
 
+/**
+ * Where a module's Callout is drawn: under an issue's masthead ("report-top") and before its colophon
+ * ("report-end"), at the end of an article ("item-end"), and at the foot of every public page ("foot").
+ */
+export type CalloutPlace = "report-top" | "report-end" | "item-end" | "foot";
+
 export interface WebModule {
   /** Its folder under modules/. */
   name: string;
@@ -156,6 +162,11 @@ export interface WebModule {
     /** Headers the document's own request to the api carries (the root loader). */
     documentHeaders?: (request: Request) => Record<string, string>;
   };
+  /**
+   * A call to the reader of its own (to subscribe, say), drawn where a reader who came by a shared link meets
+   * it (CalloutPlace). A module's standalone issue (ReportPaper `standalone`) draws none.
+   */
+  Callout?: ComponentType<{ at: CalloutPlace }>;
   agent?: Part<AgentPart>;
   topicPage?: Part<TopicPagePart>;
   reportPage?: Part<ReportPagePart>;

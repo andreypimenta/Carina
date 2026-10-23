@@ -19,7 +19,7 @@ import { Halftone } from "./Halftone";
 import { Nameplate } from "./Nameplate";
 import { IssueDots } from "./IssueDots";
 import { monthDay } from "../../lib/format";
-import { loadParts } from "../../site-modules";
+import { Callouts, loadParts } from "../../site-modules";
 import { EDITION, KIND_LABEL, MOTTO, dateLine, dateMark, headline, metricItems, neighbourLabel, reportPath, shortDay } from "./format";
 
 const PARTS = await loadParts((m) => m.reportPage);
@@ -481,6 +481,7 @@ export function ReportPaper({ report, index, standalone = false }: { report: Rep
   return (
     <article className="@container">
       <Masthead report={report} index={index} quiet={quiet} />
+      {!standalone && <Callouts at="report-top" />}
       {quiet ? (
         report.lead && <QuietFront lead={report.lead} />
       ) : (
@@ -532,6 +533,7 @@ export function ReportPaper({ report, index, standalone = false }: { report: Rep
         </SectionPage>
       )}
 
+      {!standalone && <Callouts at="report-end" />}
       {!standalone && <Neighbours report={report} index={index} />}
       {!daily && !standalone && <History report={report} index={index} />}
       <footer className={`py-10 text-center ${standalone ? "mt-16 border-t border-line-strong" : ""}`}>

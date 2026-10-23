@@ -8,6 +8,8 @@ O módulo `modules/assinatura` deixa o leitor receber a edição semanal por **e
 
 `/assine/2026-W43` mostra uma edição em particular: é o link que cada envio leva, para que uma mensagem encaminhada abra a mesma edição.
 
+O resto do site leva a `/assine`, para quem chega pelo jornal compartilhado: **Assine grátis** no menu lateral, **Assine** na barra inferior do celular e uma linha na página **Meu**; uma faixa “Receba a edição semanal toda segunda-feira às 07:00, de graça” (dia e hora de `EDITION_WHEN.weekly`, em `site/site.ts`) embaixo do cabeçalho de cada edição (semanal, mensal e nota diária) e no pé de todas as páginas; e um quadro **Quero receber** no fim de cada edição e de cada matéria. Nada abre por cima da leitura. Esses textos não citam canal: quem escolhe e-mail ou WhatsApp é a página `/assine`, que só mostra os canais ligados.
+
 A inscrição só mostra os canais que estão ligados (abaixo): o formulário de e-mail e o botão **Receber pelo WhatsApp**. Com os dois desligados, a página diz que as inscrições abrem em breve.
 
 ## Inscrição, confirmação e saída
