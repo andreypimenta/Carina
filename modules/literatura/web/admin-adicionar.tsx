@@ -8,7 +8,7 @@ import { useAdminAction } from "@aihot/web/features/admin/action";
 import { toast } from "@aihot/web/features/admin/toast";
 import { bj } from "@aihot/web/features/admin/format";
 import { AdminPage, Badge, Button, Card, DataTable, Field, Input } from "@aihot/web/features/admin/ui";
-import type { AdicionarPedido, AdminAdicionados } from "../adicionar.ts";
+import { notIncluded, type AdicionarPedido, type AdminAdicionados } from "../adicionar.ts";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   return adminGet<AdminAdicionados>(request, "/api/admin/literatura/adicionados");
@@ -21,9 +21,6 @@ const STATUS: Record<string, string> = {
   integral: "Texto integral traduzido",
   "materia-full": "Matéria (texto completo)",
   "materia-abstract": "Matéria (resumo)",
-  "aguardando-pmc": "Aguardando o PMC",
-  "aguardando-modelo": "Chamadas de modelo desligadas",
-  "fonte-pausada": "Fonte pausada",
   "sem-texto": "Sem resumo nem texto",
   erratum: "Errata",
   idioma: "Idioma fora da lista",
@@ -39,7 +36,7 @@ function AddForm() {
     const out = await run<AdicionarPedido>("POST", "/api/admin/literatura/adicionar", { id, select, reason }, { label: "add" });
     if (!out) return;
     setId("");
-    toast(out.queued ? `PMID ${out.pmid} na fila: ${out.title}` : `PMID ${out.pmid} já tinha sido recebido; não é escrito de novo${select && out.existing?.articleId ? " (marcado como Seleção)" : ""}`, "ok");
+    toast(out.queued ? `PMID ${out.pmid} na fila: ${out.title}. Atualize a página para ver se foi incluído; se não foi, o motivo aparece abaixo.` : `PMID ${out.pmid} já tinha sido recebido; não é escrito de novo${select && out.existing?.articleId ? " (marcado como Seleção)" : ""}`, "ok");
   };
   return (
     <Card title="Adicionar artigo por PMID/DOI">
@@ -82,13 +79,22 @@ export default function AdicionarAdmin() {
                 <div className="font-mono text-[11.5px] text-ink-4">{`PMID ${r.pmid}`}</div>
               </div>
             ) },
-            { key: "status", label: "Resultado", render: (r) => (
-              <span className="flex flex-wrap gap-1">
-                <Badge tone={r.status === "falhou" ? "bad" : r.articleId ? "ok" : "warn"} title={r.error ?? undefined}>{STATUS[r.status] ?? r.status}</Badge>
-                {r.existing && <Badge>Já recebido</Badge>}
-                {r.selected && <Badge tone="accent">Seleção</Badge>}
-              </span>
-            ) },
+            { key: "status", label: "Resultado", render: (r) => {
+              const skipped = notIncluded(r.status);
+              if (skipped) return (
+                <div className="min-w-0">
+                  <Badge tone="bad">Não incluído</Badge>
+                  <div className="mt-1 text-[12px] text-ink-3">{skipped}</div>
+                </div>
+              );
+              return (
+                <span className="flex flex-wrap gap-1">
+                  <Badge tone={r.status === "falhou" ? "bad" : r.articleId ? "ok" : "warn"} title={r.error ?? undefined}>{STATUS[r.status] ?? r.status}</Badge>
+                  {r.existing && <Badge>Já recebido</Badge>}
+                  {r.selected && <Badge tone="accent">Seleção</Badge>}
+                </span>
+              );
+            } },
             { key: "item", label: "Item", render: (r) => (r.articleId ? <Link to={`/admin/content/${r.articleId}`} className="font-mono text-[12px] text-accent">{r.articleId}</Link> : "—") },
             { key: "at", label: "Quando", render: (r) => <span className="num text-ink-3">{`${bj(r.at)} · ${r.actor}`}</span> },
           ]}

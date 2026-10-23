@@ -25,3 +25,16 @@ export interface Adicionado {
 export interface AdminAdicionados {
   rows: Adicionado[];
 }
+
+/** Why the paper was not included, for an outcome takePaper leaves unrecorded: nothing takes it later on its own. */
+const NOT_INCLUDED: Record<string, string> = {
+  "aguardando-pmc": "o texto integral ainda não chegou ao PMC",
+  "aguardando-modelo": "as chamadas de modelo estão desligadas",
+  "fonte-pausada": "a fonte da literatura está pausada",
+};
+
+/** "Não incluído: …; adicione de novo mais tarde", or null when the outcome is recorded. */
+export function notIncluded(status: string): string | null {
+  const why = NOT_INCLUDED[status];
+  return why ? `Não incluído: ${why}. Nada o retoma sozinho; adicione de novo mais tarde.` : null;
+}

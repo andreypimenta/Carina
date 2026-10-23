@@ -12,7 +12,7 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
 import server from "../server.ts";
-import { ADICIONAR_QUEUE, addPaper, findPaper, listAdded, parseId, requestAdd } from "../backend/adicionar.ts";
+import { ADICIONAR_QUEUE, addPaper, findPaper, listAdded, notIncluded, parseId, requestAdd } from "../backend/adicionar.ts";
 import { INTEGRAL_SOURCE, MATERIA_SOURCE } from "../backend/collect.ts";
 
 const PMID = "42215001";
@@ -95,6 +95,22 @@ test("a DOI is found through PubMed's article identifier; an unknown one is refu
   assert.ok(searches.includes(`"${DOI}"[aid]`));
   await assert.rejects(() => findPaper("10.9999/nowhere"), /não está no PubMed/);
   await assert.rejects(() => findPaper("1"), /não está no PubMed/);
+});
+
+test("with model calls off the paper is not included, says so, and can be added again", async () => {
+  const paper = await findPaper(PMID);
+  config.modelCallsEnabled = false;
+  try {
+    const out = await addPaper(paper, { select: true, reason: "estreia", actor: "test:editor" });
+    assert.equal(out.status, "aguardando-modelo");
+    assert.equal(out.articleId, null);
+    assert.equal(out.selected, false);
+    assert.match(notIncluded(out.status)!, /^Não incluído: .*adicione de novo mais tarde/);
+    assert.equal((await sql`SELECT 1 FROM literatura_papers WHERE pmid = ${PMID}`).length, 0, "nothing recorded");
+  } finally {
+    config.modelCallsEnabled = true;
+  }
+  assert.equal(notIncluded("materia-abstract"), null);
 });
 
 test("a paper from May enters as news of now, selected as the admin's manual correction does it, and is not taken again", async () => {

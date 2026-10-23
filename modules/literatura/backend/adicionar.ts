@@ -13,6 +13,7 @@ import { enqueueOn } from "@aihot/backend/jobs/queue";
 import { logError } from "@aihot/backend/lib/log-error";
 import { defineQueue } from "@aihot/backend/modules";
 import type { Adicionado, AdicionarPedido } from "../adicionar.ts";
+export { notIncluded } from "../adicionar.ts";
 import { enabledSources, takePaper } from "./collect.ts";
 import { fetchPapers, pmidsForDoi, type Paper } from "./pubmed.ts";
 

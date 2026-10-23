@@ -9,7 +9,7 @@ import { parseArgs } from "node:util";
 import { closeDb } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
-import { addPaper, defaultReason, earlier, findPaper } from "@aihot/literatura/adicionar";
+import { addPaper, defaultReason, earlier, findPaper, notIncluded } from "@aihot/literatura/adicionar";
 import { SERVER_MODULES } from "@aihot/site/modules/server";
 
 const ACTOR = "script:literatura-adicionar";
@@ -34,11 +34,15 @@ try {
   } else {
     installModules(SERVER_MODULES);
     const out = await addPaper(paper, { select: values.select, reason, actor: ACTOR });
-    console.log(`${out.existing ? "already taken" : "taken"}: ${out.status}${out.articleId ? `  item ${out.articleId}` : "  no item"}${out.selected ? "  Seleção = sim" : ""}`);
-    if (values.select && !out.articleId) console.log("warning  no item to select");
-    // The new item queued its processing jobs; the queue's connection must close too.
-    await stopBoss();
+    const skipped = notIncluded(out.status);
+    if (skipped) console.log(`NOT INCLUDED: ${out.status}  ${skipped}`);
+    else {
+      console.log(`${out.existing ? "already taken" : "taken"}: ${out.status}${out.articleId ? `  item ${out.articleId}` : "  no item"}${out.selected ? "  Seleção = sim" : ""}`);
+      if (values.select && !out.articleId) console.log("warning  no item to select");
+    }
   }
 } finally {
+  // A new item queues its processing jobs; the queue's connection must close too.
+  await stopBoss();
   await closeDb();
 }
