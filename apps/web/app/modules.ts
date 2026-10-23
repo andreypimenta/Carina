@@ -140,6 +140,11 @@ export interface WebModule {
     /** Where the model prices are kept: the models page links its 未定价 there (routes/admin/models.tsx). */
     prices?: string;
   };
+  /**
+   * Public pages that draw their own chrome, like the admin (root.tsx): addresses starting with one of these
+   * get no sidebar, tab bar, search or the root's Top and Bottom parts. "/assine" covers "/assine/…".
+   */
+  ownChrome?: string[];
   /** Parts of every public page (root.tsx); the admin has its own chrome and gets none of them. */
   root?: {
     /** An inline script in <head>, after the theme's: it runs before the page paints. */

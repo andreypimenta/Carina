@@ -9,6 +9,7 @@ O Fôlego acompanha a literatura (buscas salvas no PubMed) e as notícias de soc
 - **Artigos científicos**: módulo `modules/literatura`, configurado em `industry/literatura.json`. Detalhes em [docs/fontes.md](docs/fontes.md).
 - **Especiais**: textos do jornal escritos a partir de estudos do PubMed (o primeiro formato é a Linha do tempo), que ficam como rascunho no painel e só vão ao ar depois de aprovados e publicados pelo editor. Detalhes em [docs/especiais.md](docs/especiais.md).
 - **Critério editorial**: prompts em `industry/prompts/` (pré-triagem, nota, matéria, estrutura), taxonomia em `industry/taxonomy.ts` e tópicos em `industry/topics.json`.
+- **Assinatura**: a página `/assine` (só a edição e o formulário, para mandar em grupos) e o envio da edição por e-mail (Resend) e WhatsApp (Evolution API), no módulo `modules/assinatura`. Detalhes em [docs/assinatura.md](docs/assinatura.md).
 - **Identidade e textos do site**: `site/site.ts`.
 
 ## Rodar
