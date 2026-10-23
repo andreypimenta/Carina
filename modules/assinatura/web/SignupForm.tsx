@@ -53,11 +53,11 @@ export function SignupForm({ channels, title, compact = false }: { channels: Sig
         <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-accent text-accent-contrast">
           <IconCheck size={22} />
         </div>
-        <h2 className="mt-4 text-[20px] font-bold text-ink">{state.sent ? "Quase lá!" : "Procure o link que já enviamos"}</h2>
+        <h2 className="mt-4 text-[20px] font-bold text-ink">{state.sent ? "Quase lá!" : "Tente de novo mais tarde"}</h2>
         <p className="mx-auto mt-2 max-w-[34em] text-[14.5px] leading-relaxed text-ink-3">
           {state.sent
             ? "Enviamos um link de confirmação para o seu e-mail. A edição só começa a chegar depois que você confirmar. Não achou o e-mail? Olhe na caixa de spam ou promoções."
-            : "Já mandamos vários links de confirmação para este e-mail. Olhe na caixa de spam ou promoções; se não encontrar, tente de novo amanhã."}
+            : "Não conseguimos enviar um novo link agora. Se já pediu antes, olhe na caixa de spam ou promoções; se não encontrar, tente de novo amanhã."}
         </p>
       </section>
     );
