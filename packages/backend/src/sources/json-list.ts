@@ -1,8 +1,9 @@
-// JSON sources: plain JSON APIs, JSON embedded in HTML (script tags, window variables).
+// JSON sources: plain JSON APIs, JSON embedded in HTML (script tags, window variables), and XML APIs read as JSON.
+import { XMLParser } from "fast-xml-parser";
 import { credential } from "../config.ts";
 import { fetchListing } from "./listing-fetch.ts";
 import { collapseWhitespace, stripTags } from "../lib/text.ts";
-import { parseLooseDate } from "./dates.ts";
+import { parseLooseDate, type DateOrder } from "./dates.ts";
 import { FetchError, type Candidate, type SourceRow } from "./types.ts";
 
 export function getPath(obj: unknown, path: string): unknown {
@@ -43,7 +44,7 @@ export function renderTemplate(template: string, item: unknown): string | null {
 /** "2026-09-30 17:43:58": a date and time without a zone, which Date.parse would read in the server's zone. */
 const ZONELESS_TIME = /^\d{4}-\d{1,2}-\d{1,2}[ T]\d{1,2}:\d{2}(?::\d{2}(?:\.\d+)?)?$/;
 
-function toDate(v: unknown, unit: string | undefined, utcOffset: string | undefined): Date | null {
+function toDate(v: unknown, unit: string | undefined, utcOffset: string | undefined, dateOrder?: DateOrder): Date | null {
   if (v === null || v === undefined || v === "") return null;
   // JSON can hold a value nothing converts ({"toString": null}, or a list of one): it is no date, and the
   // items after it are still read.
@@ -63,8 +64,9 @@ function toDate(v: unknown, unit: string | undefined, utcOffset: string | undefi
     const d = m ? new Date(`${m[1]}-${m[2]}-${m[3]}T00:00:00Z`) : null;
     return d && Number.isFinite(d.getTime()) && d.toISOString().startsWith(`${m![1]}-${m![2]}-${m![3]}`) ? d : null;
   }
-  // A time without a zone is in the source's offset, as list pages read it; any other text as Date.parse reads it.
-  if (ZONELESS_TIME.test(text)) return parseLooseDate(text, utcOffset);
+  // A time without a zone is in the source's offset, as list pages read it, and so is a date whose day and month
+  // order the source declares ("31/08/2026"); any other text as Date.parse reads it.
+  if (ZONELESS_TIME.test(text) || dateOrder) return parseLooseDate(text, utcOffset, dateOrder);
   const t = Date.parse(text);
   return Number.isFinite(t) ? new Date(t) : null;
 }
@@ -81,6 +83,9 @@ function findKey(obj: unknown, key: string, depth = 0): unknown {
   }
   return undefined;
 }
+
+/** An XML answer as the paths read it: attributes as "@name", an element's text beside them as "#text". Values stay strings. */
+const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", textNodeName: "#text", parseTagValue: false, parseAttributeValue: false, trimValues: true });
 
 function embeddedJson(html: string, source: SourceRow): unknown {
   const mode = source.config.mode;
@@ -162,7 +167,13 @@ export async function fetchJsonList(source: SourceRow): Promise<Candidate[]> {
   if (res.status !== 200) throw new FetchError(`HTTP ${res.status}`, res.status);
   let data: unknown;
   if (c.mode === "html_json_key" || c.mode === "html_window_var") data = embeddedJson(res.text(), source);
-  else {
+  else if (c.mode === "xml") {
+    try {
+      data = xml.parse(res.text(), true);
+    } catch {
+      throw new FetchError("response is not XML");
+    }
+  } else {
     try {
       data = JSON.parse(res.text());
     } catch {
@@ -171,6 +182,8 @@ export async function fetchJsonList(source: SourceRow): Promise<Candidate[]> {
   }
   let items = c.itemsPath ? getPath(data, c.itemsPath) : c.jsonKey ? getPath(data, c.jsonKey) : data;
   if (c.itemsObjectValues && items && typeof items === "object" && !Array.isArray(items)) items = Object.values(items);
+  // In XML a single repeated element is an object, not a list of one.
+  else if (c.mode === "xml" && items && typeof items === "object" && !Array.isArray(items)) items = [items];
   if (!Array.isArray(items)) throw new FetchError("items path did not resolve to an array");
 
   const out: Candidate[] = [];
@@ -187,7 +200,7 @@ export async function fetchJsonList(source: SourceRow): Promise<Candidate[]> {
       url,
       title: collapseWhitespace(stripTags(title)),
       author: firstString(item, c.authorPaths),
-      publishedAt: toDate(getPath(item, c.publishedAtPath), c.publishedAtUnit, c.publishedAtUtcOffset),
+      publishedAt: toDate(getPath(item, c.publishedAtPath), c.publishedAtUnit, c.publishedAtUtcOffset, c.publishedAtDateOrder),
       excerpt: summary ? collapseWhitespace(stripTags(summary)).slice(0, 2000) : null,
       bodyText: summaryIsBody ? stripTags(summary!) : null,
       bodyStatus: summaryIsBody ? "ok" : "pending",

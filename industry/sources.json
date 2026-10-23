@@ -1061,6 +1061,2533 @@
       ],
       "site_fulltext": false,
       "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-wabip",
+      "name": "WABIP",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.wabip.com/feed/",
+        "itemUrlPrefixRewrite": {
+          "from": "https://www.wabip.com/zh/",
+          "to": "https://www.wabip.com/"
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-aaohns",
+      "name": "AAO-HNS",
+      "kind": "json_list",
+      "config": {
+        "url": "https://www.entnet.org/wp-json/wp/v2/resource?per_page=20&_fields=id,date_gmt,link,title",
+        "mode": "json_api",
+        "titlePaths": [
+          "title.rendered"
+        ],
+        "urlTemplate": "{raw:link}",
+        "publishedAtPath": "date_gmt",
+        "publishedAtUtcOffset": "+00:00",
+        "externalIdPath": "id",
+        "allowUrlPrefixes": [
+          "https://www.entnet.org/resource/"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "titleSelector": "h1",
+          "titleAuthoritative": true
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "aaohns",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-sbct",
+      "name": "SBCT",
+      "kind": "json_list",
+      "config": {
+        "url": "https://www.sbct.com.br/wp-json/wp/v2/posts?categories=7&per_page=20&_fields=id,date_gmt,link,title",
+        "mode": "json_api",
+        "titlePaths": [
+          "title.rendered"
+        ],
+        "urlTemplate": "{raw:link}",
+        "publishedAtPath": "date_gmt",
+        "publishedAtUtcOffset": "+00:00",
+        "externalIdPath": "id",
+        "allowUrlPrefixes": [
+          "https://www.sbct.com.br/"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "titleSelector": "title",
+          "titleAuthoritative": true
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "sbct",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-sam",
+      "name": "Society for Airway Management",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://samhq.com/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-das",
+      "name": "Difficult Airway Society",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://das.uk.com/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ers-guideline",
+      "name": "ERS (busca \"guideline\")",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.ersnet.org/feed/?s=guideline",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "ers",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-els-news",
+      "name": "European Laryngological Society",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.elsoc.org/",
+        "parseMode": "html",
+        "itemSelector": ".news-grid article.card",
+        "linkSelector": "h3.title a",
+        "titleSelector": "h3.title a",
+        "publishedAtSelector": "time",
+        "allowUrlPrefixes": [
+          "https://www.elsoc.org/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-jsre-news",
+      "name": "JSRE · 日本呼吸器内視鏡学会",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.jsre.org/modules/infolist/index.php?content_id=2",
+        "parseMode": "html",
+        "itemSelector": "ul.newsList",
+        "linkSelector": "a[href*='modules/info/']",
+        "titleSelector": "a[href*='modules/info/']",
+        "publishedAtSelector": "li:first-child",
+        "publishedAtUtcOffset": "+09:00",
+        "allowUrlPrefixes": [
+          "https://www.jsre.org/modules/info/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-saesp-news",
+      "name": "SAESP",
+      "kind": "web_list",
+      "config": {
+        "url": "https://saesp.org.br/noticias/",
+        "parseMode": "html",
+        "itemSelector": ".e-loop-item",
+        "linkSelector": "a.elementor-button-link",
+        "titleSelector": "h2.elementor-heading-title",
+        "allowUrlPrefixes": [
+          "https://saesp.org.br/"
+        ],
+        "denyUrlPrefixes": [
+          "https://saesp.org.br/noticias/"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "publishedAtUtcOffset": "-03:00"
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-alat-news",
+      "name": "ALAT",
+      "kind": "web_list",
+      "config": {
+        "url": "https://alatorax.org/es/articulos",
+        "parseMode": "html",
+        "itemSelector": "div.bg-white.rounded-lg.shadow-md",
+        "linkSelector": "h2 a",
+        "titleSelector": "h2 a",
+        "allowUrlPrefixes": [
+          "https://alatorax.org/es/"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "publishedAtUtcOffset": "-05:00"
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-sforl-mediatheque",
+      "name": "SFORL · médiathèque",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://mediatheque.sforl.org/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade",
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-sforl",
+      "name": "SFORL",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.sforl.org/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-apipa",
+      "name": "APIPA",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://apipa.co/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "json-apipa-programs",
+      "name": "APIPA · programas de reuniões",
+      "kind": "json_list",
+      "config": {
+        "url": "https://apipa.co/wp-json/wp/v2/media?per_page=20&mime_type=application/pdf&_fields=id,date_gmt,title,source_url",
+        "mode": "json_api",
+        "titlePaths": [
+          "title.rendered"
+        ],
+        "urlTemplate": "{raw:source_url}",
+        "publishedAtPath": "date_gmt",
+        "publishedAtUtcOffset": "+00:00",
+        "externalIdPath": "id",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade",
+        "congresso"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-ntsp-news",
+      "name": "National Tracheostomy Safety Project",
+      "kind": "web_list",
+      "config": {
+        "url": "https://tracheostomy.org.uk/news",
+        "parseMode": "html",
+        "itemSelector": "#news-list a.card-link",
+        "linkSelector": "a",
+        "titleSelector": "h4",
+        "publishedAtSelector": ".card-body li",
+        "publishedAtDateOrder": "dmy",
+        "publishedAtUtcOffset": "+00:00",
+        "allowUrlPrefixes": [
+          "https://tracheostomy.org.uk/news/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-aats-newsroom",
+      "name": "AATS · newsroom",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.aats.org/newsroom",
+        "parseMode": "html",
+        "itemSelector": ".card--click",
+        "linkSelector": "a.card_click",
+        "titleSelector": "h3.card-title",
+        "allowUrlPrefixes": [
+          "https://www.aats.org/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "aats",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-gnews-site-aats",
+      "name": "Google News · site:aats.org (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Aaats.org&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-aabip-conference",
+      "name": "AABIP · congresso",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://aabipconference.com/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade",
+        "congresso"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-gnews-aabip",
+      "name": "Google News · AABIP (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22AABIP%22+OR+%22American+Association+for+Bronchology%22&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ests-meeting",
+      "name": "ESTS · congresso",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://estsmeeting.com/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "ests",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade",
+        "congresso"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "rss-ers-channel",
+      "name": "ERS Respiratory Channel",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://channel.ersnet.org/rss.xml",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "ers",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade",
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "web-ers-guidelines-in-focus",
+      "name": "ERS Respiratory Channel · Guidelines in Focus",
+      "kind": "web_list",
+      "config": {
+        "url": "https://channel.ersnet.org/channel-38-guidelines-in-focus",
+        "parseMode": "html",
+        "itemSelector": "a.ers-thumbnail",
+        "linkSelector": "a",
+        "titleSelector": ".ers_thumbnail-caption",
+        "publishedAtSelector": ".ers_thumbnail-caption__bold",
+        "publishedAtDateOrder": "dmy",
+        "publishedAtUtcOffset": "+01:00",
+        "allowUrlPrefixes": [
+          "https://channel.ersnet.org/channel-38-guidelines-in-focus"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "ers",
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "sociedade",
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-trachy-talk",
+      "name": "Trachy Talk (NTSP) · podcast",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://rss.buzzsprout.com/2561274.rss",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "podcast"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-ntsp",
+      "name": "NTSP · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCLKm3tMq8BL4PeBqX4ejgAg",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-gtc",
+      "name": "Global Tracheostomy Collaborative · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UC4BCNFeDIDhRk4qqNj3Aabw",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-aspo",
+      "name": "ASPO · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCOJnGzc5_X7Ir5T-RXjGerg",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "aspo",
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-sbct",
+      "name": "SBCT · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCVpXb1E7Ce9sUBQH3gbogTA",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "sbct",
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
+    },
+    {
+      "id": "web-sbct-pro-ligas",
+      "name": "SBCT · Pró-Ligas (aulas em vídeo)",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.sbct.com.br/sbct-pro-ligas/",
+        "parseMode": "html",
+        "preserveUrlFragment": true,
+        "itemSelector": ".e-con-full:has(> .elementor-widget-image a[href^='#elementor-action']):has(> .elementor-widget-heading)",
+        "linkSelector": "a[href^='#elementor-action']",
+        "titleSelector": ".elementor-widget-heading:last-child",
+        "publishedAtSelector": ".elementor-widget-image + .elementor-widget-heading",
+        "publishedAtDateOrder": "dmy",
+        "allowUrlPrefixes": [
+          "https://www.sbct.com.br/sbct-pro-ligas/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": "sbct",
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "sociedade",
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-mayo-clinic",
+      "name": "Mayo Clinic · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UC8fQzKHIhSoZeSq3bwQx4mw",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-airway-on-demand",
+      "name": "AirwayOnDemand (Dr. Will Rosenblatt) · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCY2mivGgN23XzoE6zZOVTvA",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-cuh-nhs",
+      "name": "Cambridge University Hospitals NHS · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCGGBLHQcvjEbyNfnM6KZikw",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-chesterfield-royal",
+      "name": "Chesterfield Royal Hospital · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCIekfV7jUZ6ka6YRZnj-J6g",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-narayana-health",
+      "name": "Narayana Health · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCr5mB2bbUrjEKeWNSYqDpdw",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-youtube-romaine-johnson",
+      "name": "Romaine Johnson · YouTube",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCMyWMjLbWbi_jM_tk7-57eg",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "vídeo"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-torax-cl",
+      "name": "Instituto Nacional del Tórax (Chile)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://torax.cl/feed/",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-childrens-colorado",
+      "name": "Children's Hospital Colorado · Advances & Answers",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.childrenscolorado.org/advances-answers/recent-articles/",
+        "parseMode": "html",
+        "itemSelector": ".article-item",
+        "linkSelector": "h3 a",
+        "titleSelector": "h3 a",
+        "publishedAtSelector": ".article-item-meta__read-time span",
+        "publishedAtDateOrder": "mdy",
+        "publishedAtUtcOffset": "-07:00",
+        "allowUrlPrefixes": [
+          "https://www.childrenscolorado.org/advances-answers/recent-articles/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 240,
+      "tags": [
+        "centro de referência"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-mgb",
+      "name": "Google News · Mass General Brigham, via aérea (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Amassgeneralbrigham.org+airway+OR+trachea+OR+tracheostomy+OR+bronchoscopy&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-healio-pulmonology",
+      "name": "Healio · pneumologia",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.healio.com/sws/feed/news/pulmonology",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-medscape-pulmonary",
+      "name": "Medscape · pneumologia",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://www.medscape.com/cx/rssfeeds/2694.xml",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-eurekalert",
+      "name": "EurekAlert!",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.eurekalert.org/news-releases/browse",
+        "parseMode": "html",
+        "itemSelector": "article.post",
+        "linkSelector": "a",
+        "titleSelector": "h2.post_title",
+        "publishedAtSelector": ".reltime",
+        "publishedAtUtcOffset": "-05:00",
+        "allowUrlPrefixes": [
+          "https://www.eurekalert.org/news-releases/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 60,
+      "tags": [
+        "imprensa"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-jstage-respend",
+      "name": "Respiratory Endoscopy (J-STAGE)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://api.jstage.jst.go.jp/searchapi/do?service=3&cdjournal=respend&pubyearfrom=2026&count=1000",
+        "sortByPublishedAt": true,
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-jstage-jjsre",
+      "name": "気管支学 · JJSRE (J-STAGE)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://api.jstage.jst.go.jp/searchapi/do?service=3&cdjournal=jjsre&pubyearfrom=2026&count=1000",
+        "sortByPublishedAt": true,
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-j-acta-anaesth-scand",
+      "name": "Acta Anaesthesiologica Scandinavica",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://onlinelibrary.wiley.com/action/showFeed?jc=13996576&type=etoc&feed=rss",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-j-pediatric-pulmonology",
+      "name": "Pediatric Pulmonology",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://onlinelibrary.wiley.com/action/showFeed?jc=10990496&type=etoc&feed=rss",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-j-laryngoscope",
+      "name": "The Laryngoscope",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://onlinelibrary.wiley.com/action/showFeed?jc=15314995&type=etoc&feed=rss",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-j-anaesthesia",
+      "name": "Anaesthesia",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://onlinelibrary.wiley.com/action/showFeed?jc=13652044&type=etoc&feed=rss",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-j-critical-care",
+      "name": "Critical Care",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://link.springer.com/search.rss?facet-content-type=Article&facet-journal-id=13054&sortOrder=newestFirst",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-otolaryngol-clin",
+      "name": "Otolaryngologic Clinics of North America",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0030-6665,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-jtcvs",
+      "name": "The Journal of Thoracic and Cardiovascular Surgery",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0022-5223,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-ann-thorac-surg",
+      "name": "The Annals of Thoracic Surgery",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0003-4975,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-ijporl",
+      "name": "International Journal of Pediatric Otorhinolaryngology",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0165-5876,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-chest",
+      "name": "CHEST (periódico)",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0012-3692,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-bja",
+      "name": "British Journal of Anaesthesia",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0007-0912,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-j-pediatr-surg",
+      "name": "Journal of Pediatric Surgery",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0022-3468,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-ajrccm",
+      "name": "American Journal of Respiratory and Critical Care Medicine",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:1073-449X,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-ejcts",
+      "name": "European Journal of Cardio-Thoracic Surgery",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:1010-7940,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-erj",
+      "name": "European Respiratory Journal",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0903-1936,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-jbip",
+      "name": "Journal of Bronchology & Interventional Pulmonology",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:1944-6586,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-pccm",
+      "name": "Pediatric Critical Care Medicine",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:1529-7535,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-anesthesiology",
+      "name": "Anesthesiology",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:0003-3022,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-j-respir-care",
+      "name": "Respiratory Care",
+      "kind": "json_list",
+      "config": {
+        "url": "https://api.crossref.org/works?filter=issn:1943-3654,type:journal-article&sort=created&order=desc&rows=40&select=DOI,title,created,URL",
+        "mode": "json_api",
+        "itemsPath": "message.items",
+        "titlePaths": [
+          "title.0"
+        ],
+        "urlTemplate": "{raw:URL}",
+        "publishedAtPath": "created.date-time",
+        "externalIdPath": "DOI",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "periódico"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-tracheostomy-adult",
+      "name": "ClinicalTrials.gov · traqueostomia em adultos",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=tracheostomy&aggFilters=ages:adult&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-difficult-airway",
+      "name": "ClinicalTrials.gov · via aérea difícil e acesso cervical",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?term=%22difficult+airway%22+OR+cricothyroidotomy+OR+cricothyrotomy+OR+%22front+of+neck+access%22&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-airway-management",
+      "name": "ClinicalTrials.gov · manejo da via aérea",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=%22airway+management%22&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-central-airway",
+      "name": "ClinicalTrials.gov · obstrução central, próteses e broncoscopia terapêutica",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?term=%22central+airway+obstruction%22+OR+%22airway+stent%22+OR+%22rigid+bronchoscopy%22+OR+%22therapeutic+bronchoscopy%22+OR+%22interventional+bronchoscopy%22+OR+%22tracheal+tumor%22+OR+%22tracheal+neoplasm%22&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-foreign-body",
+      "name": "ClinicalTrials.gov · corpo estranho na via aérea",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=%22foreign+body+aspiration%22&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-tbm-edac",
+      "name": "ClinicalTrials.gov · traqueobroncomalácia e colapso dinâmico",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?term=tracheobronchomalacia+OR+%22excessive+dynamic+airway+collapse%22&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-vocal-cord-paralysis",
+      "name": "ClinicalTrials.gov · paralisia de pregas vocais (todas as idades)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?cond=vocal+cord+paralysis&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-decannulation",
+      "name": "ClinicalTrials.gov · decanulação de traqueostomia",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?term=decannulation+AND+tracheostomy&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-airway-trauma",
+      "name": "ClinicalTrials.gov · trauma de laringe e traqueia",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?term=%22tracheal+injury%22+OR+%22laryngeal+injury%22+OR+%22airway+trauma%22+OR+%22tracheobronchial+injury%22&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-ctgov-ecmo-airway",
+      "name": "ClinicalTrials.gov · ECMO na cirurgia de via aérea",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://clinicaltrials.gov/api/rss?term=ECMO+AND+%28%22airway+surgery%22+OR+tracheal+OR+%22airway+obstruction%22%29&dateField=StudyFirstPostDate",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-ctis-airway",
+      "name": "CTIS (UE) · via aérea",
+      "kind": "json_list",
+      "config": {
+        "url": "https://euclinicaltrials.eu/ctis-public-api/search",
+        "mode": "json_api",
+        "method": "POST",
+        "bodyJson": {
+          "pagination": {
+            "page": 1,
+            "size": 25
+          },
+          "sort": {
+            "property": "decisionDate",
+            "direction": "DESC"
+          },
+          "searchCriteria": {
+            "containAny": "airway"
+          }
+        },
+        "itemsPath": "data",
+        "titlePaths": [
+          "ctTitle"
+        ],
+        "summaryPaths": [
+          "conditions"
+        ],
+        "urlTemplate": "https://euclinicaltrials.eu/search-for-clinical-trials/?lang=en&EUCT={ctNumber}",
+        "publishedAtPath": "decisionDateOverall",
+        "publishedAtDateOrder": "dmy",
+        "publishedAtUtcOffset": "+01:00",
+        "externalIdPath": "ctNumber",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-ctis-tracheostomy",
+      "name": "CTIS (UE) · traqueostomia",
+      "kind": "json_list",
+      "config": {
+        "url": "https://euclinicaltrials.eu/ctis-public-api/search",
+        "mode": "json_api",
+        "method": "POST",
+        "bodyJson": {
+          "pagination": {
+            "page": 1,
+            "size": 25
+          },
+          "sort": {
+            "property": "decisionDate",
+            "direction": "DESC"
+          },
+          "searchCriteria": {
+            "containAny": "tracheostomy"
+          }
+        },
+        "itemsPath": "data",
+        "titlePaths": [
+          "ctTitle"
+        ],
+        "summaryPaths": [
+          "conditions"
+        ],
+        "urlTemplate": "https://euclinicaltrials.eu/search-for-clinical-trials/?lang=en&EUCT={ctNumber}",
+        "publishedAtPath": "decisionDateOverall",
+        "publishedAtDateOrder": "dmy",
+        "publishedAtUtcOffset": "+01:00",
+        "externalIdPath": "ctNumber",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "xml-isrctn-airway",
+      "name": "ISRCTN · via aérea",
+      "kind": "json_list",
+      "config": {
+        "url": "https://www.isrctn.com/api/query/format/default?q=tracheostomy+OR+tracheal+OR+subglottic+OR+laryngotracheal+OR+laryngeal+OR+bronchoscopy+OR+intubation+OR+extubation+OR+%22difficult+airway%22&limit=100",
+        "mode": "xml",
+        "itemsPath": "allTrials.fullTrial",
+        "titlePaths": [
+          "trial.trialDescription.title"
+        ],
+        "summaryPaths": [
+          "trial.trialDescription.scientificTitle"
+        ],
+        "urlTemplate": "https://www.isrctn.com/ISRCTN{trial.isrctn.#text}",
+        "publishedAtPath": "trial.isrctn.@dateAssigned",
+        "externalIdPath": "trial.isrctn.#text",
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-rebec",
+      "name": "ReBEC · ensaios novos",
+      "kind": "web_list",
+      "config": {
+        "url": "https://ensaiosclinicos.gov.br/",
+        "parseMode": "html",
+        "itemSelector": "div.card-body",
+        "linkSelector": "a.title_link",
+        "titleSelector": "a.title_link",
+        "publishedAtSelector": ".value",
+        "publishedAtDateOrder": "mdy",
+        "publishedAtUtcOffset": "-03:00",
+        "allowUrlPrefixes": [
+          "https://ensaiosclinicos.gov.br/rg/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-medrxiv-airway",
+      "name": "medRxiv · preprints de via aérea, sem revisão por pares",
+      "kind": "json_list",
+      "config": {
+        "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=SRC%3APPR+AND+PUBLISHER%3A%22medRxiv%22+AND+%28TITLE_ABS%3A%22tracheal+stenosis%22+OR+TITLE_ABS%3A%22subglottic+stenosis%22+OR+TITLE_ABS%3A%22laryngotracheal%22+OR+TITLE_ABS%3A%22cricotracheal%22+OR+TITLE_ABS%3Atracheoplasty+OR+TITLE_ABS%3Atracheostomy+OR+TITLE_ABS%3Atracheotomy+OR+TITLE_ABS%3Adecannulation+OR+TITLE_ABS%3Atracheomalacia+OR+TITLE_ABS%3Atracheobronchomalacia+OR+TITLE_ABS%3Alaryngomalacia+OR+TITLE_ABS%3A%22difficult+airway%22+OR+TITLE_ABS%3A%22airway+management%22+OR+TITLE_ABS%3A%22airway+stent%22+OR+TITLE_ABS%3A%22central+airway+obstruction%22+OR+TITLE_ABS%3A%22rigid+bronchoscopy%22+OR+TITLE_ABS%3A%22interventional+bronchoscopy%22+OR+TITLE_ABS%3A%22therapeutic+bronchoscopy%22+OR+TITLE_ABS%3A%22laryngeal+cleft%22+OR+TITLE_ABS%3A%22vocal+fold+paralysis%22+OR+TITLE_ABS%3A%22vocal+cord+paralysis%22+OR+TITLE_ABS%3A%22foreign+body+aspiration%22+OR+TITLE_ABS%3A%22tracheal+tumor%22+OR+TITLE_ABS%3A%22airway+trauma%22+OR+TITLE_ABS%3A%22tracheal+injury%22+OR+TITLE_ABS%3A%22complete+tracheal+rings%22+OR+TITLE_ABS%3Aintubation+OR+TITLE_ABS%3Aextubation%29&format=json&resultType=core&pageSize=25&sort=FIRST_PDATE_D+desc",
+        "mode": "json_api",
+        "itemsPath": "resultList.result",
+        "titlePaths": [
+          "title"
+        ],
+        "summaryPaths": [
+          "abstractText"
+        ],
+        "authorPaths": [
+          "authorString"
+        ],
+        "urlTemplate": "https://doi.org/{raw:doi}",
+        "publishedAtPath": "firstPublicationDate",
+        "externalIdPath": "id",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "preprint"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "json-biorxiv-airway",
+      "name": "bioRxiv · preprints de via aérea, sem revisão por pares",
+      "kind": "json_list",
+      "config": {
+        "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=SRC%3APPR+AND+PUBLISHER%3A%22bioRxiv%22+AND+%28TITLE_ABS%3A%22tracheal+stenosis%22+OR+TITLE_ABS%3A%22subglottic+stenosis%22+OR+TITLE_ABS%3A%22laryngotracheal%22+OR+TITLE_ABS%3A%22cricotracheal%22+OR+TITLE_ABS%3Atracheoplasty+OR+TITLE_ABS%3Atracheostomy+OR+TITLE_ABS%3Atracheotomy+OR+TITLE_ABS%3Adecannulation+OR+TITLE_ABS%3Atracheomalacia+OR+TITLE_ABS%3Atracheobronchomalacia+OR+TITLE_ABS%3Alaryngomalacia+OR+TITLE_ABS%3A%22difficult+airway%22+OR+TITLE_ABS%3A%22airway+management%22+OR+TITLE_ABS%3A%22airway+stent%22+OR+TITLE_ABS%3A%22central+airway+obstruction%22+OR+TITLE_ABS%3A%22rigid+bronchoscopy%22+OR+TITLE_ABS%3A%22interventional+bronchoscopy%22+OR+TITLE_ABS%3A%22therapeutic+bronchoscopy%22+OR+TITLE_ABS%3A%22laryngeal+cleft%22+OR+TITLE_ABS%3A%22vocal+fold+paralysis%22+OR+TITLE_ABS%3A%22vocal+cord+paralysis%22+OR+TITLE_ABS%3A%22foreign+body+aspiration%22+OR+TITLE_ABS%3A%22tracheal+tumor%22+OR+TITLE_ABS%3A%22airway+trauma%22+OR+TITLE_ABS%3A%22tracheal+injury%22+OR+TITLE_ABS%3A%22complete+tracheal+rings%22+OR+TITLE_ABS%3Aintubation+OR+TITLE_ABS%3Aextubation%29&format=json&resultType=core&pageSize=25&sort=FIRST_PDATE_D+desc",
+        "mode": "json_api",
+        "itemsPath": "resultList.result",
+        "titlePaths": [
+          "title"
+        ],
+        "summaryPaths": [
+          "abstractText"
+        ],
+        "authorPaths": [
+          "authorString"
+        ],
+        "urlTemplate": "https://doi.org/{raw:doi}",
+        "publishedAtPath": "firstPublicationDate",
+        "externalIdPath": "id",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "preprint"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-arxiv-airway",
+      "name": "arXiv · preprints de via aérea, sem revisão por pares",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://export.arxiv.org/api/query?search_query=abs%3A%22tracheal+stenosis%22+OR+abs%3A%22subglottic+stenosis%22+OR+abs%3A%22airway+stenosis%22+OR+abs%3Alaryngotracheal+OR+abs%3Atracheostomy+OR+abs%3Atracheomalacia+OR+abs%3Aintubation+OR+abs%3Abronchoscopy+OR+abs%3A%22airway+stent%22+OR+abs%3A%22difficult+airway%22+OR+abs%3A%22upper+airway+obstruction%22&sortBy=submittedDate&sortOrder=descending&max_results=50",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 720,
+      "tags": [
+        "preprint"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-laryngotracheal-stenosis",
+      "name": "Google News · \"laryngotracheal stenosis\" (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22laryngotracheal+stenosis%22&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-laryngotracheal-reconstruction",
+      "name": "Google News · \"laryngotracheal reconstruction\" (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22laryngotracheal+reconstruction%22&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-cricotracheal-resection",
+      "name": "Google News · \"cricotracheal resection\" (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22cricotracheal+resection%22&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-pediatric-tracheostomy-guideline",
+      "name": "Google News · \"pediatric tracheostomy\" guideline (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22pediatric+tracheostomy%22+guideline&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-paediatric-tracheostomy-guideline",
+      "name": "Google News · \"paediatric tracheostomy\" guideline (EN-GB)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22paediatric+tracheostomy%22+guideline&hl=en-GB&gl=GB&ceid=GB:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-decannulation-guideline",
+      "name": "Google News · tracheostomy decannulation guideline (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=tracheostomy+decannulation+guideline&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-tracheobronchomalacia",
+      "name": "Google News · tracheobronchomalacia tracheopexy (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=tracheobronchomalacia+tracheopexy&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-central-airway-obstruction",
+      "name": "Google News · \"central airway obstruction\" bronchoscopy (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22central+airway+obstruction%22+bronchoscopy&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-airway-stent",
+      "name": "Google News · \"airway stent\" guideline (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22airway+stent%22+guideline&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-difficult-airway",
+      "name": "Google News · \"difficult airway\" guideline (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22difficult+airway%22+guideline&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-laryngeal-cleft",
+      "name": "Google News · \"laryngeal cleft\" surgery (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22laryngeal+cleft%22+surgery&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-foreign-body-aspiration",
+      "name": "Google News · \"foreign body aspiration\" bronchoscopy (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22foreign+body+aspiration%22+bronchoscopy&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-tracheal-tumor",
+      "name": "Google News · \"tracheal tumor\" surgery (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22tracheal+tumor%22+surgery&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-ecmo-airway-surgery",
+      "name": "Google News · ECMO \"airway surgery\" (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=ECMO+%22airway+surgery%22&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-estenose-traqueia",
+      "name": "Google News · \"estenose de traqueia\" (pt-BR)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22estenose+de+traqueia%22&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-traqueostomia-pediatrica",
+      "name": "Google News · \"traqueostomia pediátrica\" (pt-BR)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22traqueostomia+pedi%C3%A1trica%22&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-estenosis-traqueal",
+      "name": "Google News · \"estenosis traqueal\" cirugía (ES)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22estenosis+traqueal%22+cirug%C3%ADa&hl=es-419&gl=MX&ceid=MX:es-419",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-cincinnati",
+      "name": "Google News · site:cincinnatichildrens.org \"airway\" (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Acincinnatichildrens.org+%22airway%22&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-boston-answers",
+      "name": "Google News · site:answers.childrenshospital.org tracheomalacia (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Aanswers.childrenshospital.org+tracheomalacia&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-chop",
+      "name": "Google News · site:chop.edu \"airway\" reconstruction (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Achop.edu+%22airway%22+reconstruction&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-wabip",
+      "name": "Google News · site:wabip.com guideline airway (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Awabip.com+guideline+airway&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-sbct",
+      "name": "Google News · site:sbct.com.br traqueia (pt-BR)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Asbct.com.br+traqueia&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-anzca-airway",
+      "name": "Google News · site:libguides.anzca.edu.au airway (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Alibguides.anzca.edu.au+airway&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-anzca-media",
+      "name": "Google News · site:libguides.anzca.edu.au podcast OR lecture OR app (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Alibguides.anzca.edu.au+podcast+OR+lecture+OR+app&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-iab",
+      "name": "Google News · site:iabronchology.org (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Aiabronchology.org&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-espo",
+      "name": "Google News · site:espo.eu.com OR \"European Society of Pediatric Otorhinolaryngology\" (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Aespo.eu.com+OR+%22European+Society+of+Pediatric+Otorhinolaryngology%22&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-site-mdedge",
+      "name": "Google News · site:mdedge.com via aérea (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Amdedge.com+airway+OR+tracheostomy+OR+bronchoscopy+OR+intubation&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "imprensa",
+        "Google News"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "web-who-ictrp",
+      "name": "WHO ICTRP",
+      "kind": "web_list",
+      "config": {
+        "url": "https://trialsearch.who.int/",
+        "parseMode": "html",
+        "allowUrlPrefixes": [
+          "https://trialsearch.who.int/"
+        ],
+        "_aihot": {
+          "initialBackfillLimit": 3
+        }
+      },
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "ensaio registrado"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "enabled": false
     }
   ]
 }

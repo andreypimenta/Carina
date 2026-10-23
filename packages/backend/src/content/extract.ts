@@ -9,7 +9,7 @@ import { isVideoPageUrl } from "../lib/video-url.ts";
 import { jinaRead } from "../providers/jina.ts";
 import { BudgetExceededError } from "../providers/receipts.ts";
 import { getArticle } from "../providers/socialdata.ts";
-import { articleUtcOffset, parseLooseDate } from "../sources/dates.ts";
+import { articleDateOrder, articleUtcOffset, parseLooseDate, type DateOrder } from "../sources/dates.ts";
 import type { SourceRow } from "../sources/types.ts";
 import { onlyXArticleLink, xArticleText } from "../sources/x.ts";
 import { sanitizeBody, trimTrailingChrome } from "./sanitize.ts";
@@ -52,8 +52,8 @@ function settleInlineVisibility(document: ReturnType<typeof parseHTML>["document
   }
 }
 
-/** A publication time the page prints without a zone is read in utcOffset (the source's articleUtcOffset). */
-export function readable(html: string, url: string, utcOffset?: string): ExtractedBody | null {
+/** A publication time the page prints without a zone is read in utcOffset (the source's articleUtcOffset), a numeric one in dateOrder. */
+export function readable(html: string, url: string, utcOffset?: string, dateOrder?: DateOrder): ExtractedBody | null {
   if (isVideoPageUrl(url)) return null;
   const { document } = parseHTML(html);
   try {
@@ -76,17 +76,17 @@ export function readable(html: string, url: string, utcOffset?: string): Extract
     images.push({ kind: "image", url: m[1]!.replace(/&amp;/g, "&"), width: w ? Number(w[1]) : null, height: h ? Number(h[1]) : null });
     if (images.length >= 12) break;
   }
-  return { html: clean, text, images, via: "readability", publishedAt: parseLooseDate(article.publishedTime, utcOffset) };
+  return { html: clean, text, images, via: "readability", publishedAt: parseLooseDate(article.publishedTime, utcOffset, dateOrder) };
 }
 
-export async function extractFromUrl(url: string, subject: string, utcOffset?: string): Promise<ExtractedBody | null> {
+export async function extractFromUrl(url: string, subject: string, utcOffset?: string, dateOrder?: DateOrder): Promise<ExtractedBody | null> {
   if (isVideoPageUrl(url)) return null;
   try {
     const res = await guardedFetch(url, { timeoutMs: 20_000, maxBytes: 6 * 1024 * 1024 });
     if (isVideoPageUrl(res.url)) return null;
     const type = res.headers.get("content-type") ?? "";
     if (res.status === 200 && /html/.test(type)) {
-      const got = readable(res.text(), res.url, utcOffset);
+      const got = readable(res.text(), res.url, utcOffset, dateOrder);
       if (got) return got;
     }
   } catch {
@@ -122,7 +122,7 @@ export async function extractArticleBody(articleId: string): Promise<"ok" | "unc
     FROM articles a JOIN sources s ON s.id = a.source_id WHERE a.id = ${articleId}`;
   if (!a || a.body_status === "ok") return "skipped";
   if (a.x_post?.tweetId) return extractXArticle(a.id, a.x_post.tweetId, a.revision);
-  const got = await extractFromUrl(a.url, `article:${a.id}`, articleUtcOffset(a.config));
+  const got = await extractFromUrl(a.url, `article:${a.id}`, articleUtcOffset(a.config), articleDateOrder(a.config));
   if (!got) {
     return markUnconfirmed(articleId, a.revision);
   }

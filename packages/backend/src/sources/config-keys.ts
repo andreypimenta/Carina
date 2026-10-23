@@ -11,11 +11,11 @@ const KEYS: Record<SourceRow["kind"], string[]> = {
   rss: [...COLLECTED, "feedUrl", "summaryIsBody", "preserveUrlFragment", "allowCategories", "denyCategories"],
   web_list: [
     ...COLLECTED, "url", "baseUrl", "parseMode", "adapter", "cacheToleranceSeconds", "linksStartLine", "preserveUrlFragment",
-    "itemSelector", "linkSelector", "titleSelector", "publishedAtSelector", "publishedAtRegex", "publishedAtUtcOffset",
+    "itemSelector", "linkSelector", "titleSelector", "publishedAtSelector", "publishedAtRegex", "publishedAtUtcOffset", "publishedAtDateOrder",
   ],
   json_list: [
     ...COLLECTED, "url", "mode", "method", "headers", "bodyJson", "jsonKey", "windowVar", "itemsPath", "itemsObjectValues",
-    "titlePaths", "summaryPaths", "summaryIsBody", "authorPaths", "publishedAtPath", "publishedAtUnit", "publishedAtUtcOffset", "externalIdPath",
+    "titlePaths", "summaryPaths", "summaryIsBody", "authorPaths", "publishedAtPath", "publishedAtUnit", "publishedAtUtcOffset", "publishedAtDateOrder", "externalIdPath",
     "urlTemplate", "urlTemplateFallback", "rawDropKeys", "requireBoolean", "minNumeric",
   ],
   // X accounts are mostly read in shards, which apply only these.
@@ -32,7 +32,7 @@ const NESTED: Record<string, string[]> = {
   requireBoolean: ["path", "equals"],
   minNumeric: ["path", "min"],
   detail: [
-    "maxFetches", "publishedAtSelector", "publishedAtRegex", "publishedAtUtcOffset", "publishedAtAuthoritative", "upgradeDatePrecision",
+    "maxFetches", "publishedAtSelector", "publishedAtRegex", "publishedAtUtcOffset", "publishedAtDateOrder", "publishedAtAuthoritative", "upgradeDatePrecision",
     "titleSelector", "titleRegex", "titleAuthoritative", "summarySelector",
   ],
 };
@@ -41,6 +41,7 @@ const VALUES: Record<string, string[]> = {
   publisherRole: ["organization", "person"],
   adapter: ["mimo_home"],
   parseMode: ["html", "markdown", "docusaurus_changelog", "intercom_changelog"],
+  publishedAtDateOrder: ["dmy", "mdy"],
 };
 
 function utcInstant(value: unknown): boolean {
@@ -62,7 +63,10 @@ export function unsupportedConfig(kind: SourceRow["kind"], config: Record<string
     }))) out.push(key);
     else if (VALUES[key] && !VALUES[key]!.includes(String(value))) out.push(`${key}=${String(value)}`);
     else if (NESTED[key] && value && typeof value === "object") {
-      for (const sub of Object.keys(value)) if (!NESTED[key]!.includes(sub)) out.push(`${key}.${sub}`);
+      for (const [sub, subValue] of Object.entries(value)) {
+        if (!NESTED[key]!.includes(sub)) out.push(`${key}.${sub}`);
+        else if (VALUES[sub] && !VALUES[sub]!.includes(String(subValue))) out.push(`${key}.${sub}=${String(subValue)}`);
+      }
     }
   }
   return out;

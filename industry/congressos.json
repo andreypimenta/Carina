@@ -1,0 +1,108 @@
+{
+  "$comment": "Agenda de congressos do Fôlego (módulo agenda, modules/agenda): a página /agenda e o bloco da edição semanal, que mostra os congressos em andamento ou que começam nos 30 dias seguintes à edição. Datas no formato AAAA-MM-DD; sem `end`, o congresso aparece só no dia de início. `place` e `end` ficam de fora quando o organizador não os publicou. Origem: o diretório de fontes do dono (23/10/2026) e, para as edições seguintes, o site do próprio organizador.",
+  "congressos": [
+    {
+      "id": "aats-2026",
+      "name": "AATS Annual Meeting 2026",
+      "organizer": "AATS",
+      "start": "2026-05-02",
+      "end": "2026-05-05",
+      "url": "https://events.aats.org/am26",
+      "about": "Programa científico com a categoria Airway Disease."
+    },
+    {
+      "id": "broncocon-2026",
+      "name": "BRONCOCON 2026",
+      "organizer": "Indian Association for Bronchology",
+      "start": "2026-06-26",
+      "end": "2026-06-28",
+      "place": "Pune, Índia",
+      "url": "https://www.broncocon2026pune.com/",
+      "about": "Broncoscopia rígida e intervenção pediátrica."
+    },
+    {
+      "id": "alat-2026",
+      "name": "19º Congreso ALAT",
+      "organizer": "ALAT",
+      "start": "2026-07-07",
+      "place": "Cartagena, Colômbia",
+      "url": "https://congreso2026.alatorax.org/",
+      "about": "Endoscopia respiratória e pneumologia intervencionista latino-americanas; programação pediátrica."
+    },
+    {
+      "id": "aabip-2026",
+      "name": "AABIP Annual Conference 2026",
+      "organizer": "AABIP",
+      "start": "2026-08-20",
+      "end": "2026-08-22",
+      "url": "https://aabipconference.com/",
+      "about": "Broncoscopia diagnóstica e terapêutica."
+    },
+    {
+      "id": "its-2026",
+      "name": "10º International Tracheostomy Symposium",
+      "organizer": "Global Tracheostomy Collaborative",
+      "start": "2026-10-01",
+      "url": "https://www.globaltrach.org/past-conferences",
+      "about": "Cuidado da pessoa traqueostomizada."
+    },
+    {
+      "id": "cbpt-2026",
+      "name": "42º Congresso Brasileiro de Pneumologia e Tisiologia",
+      "organizer": "SBPT",
+      "start": "2026-10-13",
+      "end": "2026-10-17",
+      "place": "Natal, RN",
+      "url": "https://sbpt.org.br/portal/eventos-sbpt/",
+      "about": "Pneumologia e endoscopia respiratória no Brasil."
+    },
+    {
+      "id": "das-2026",
+      "name": "DAS Annual Scientific Meeting 2026",
+      "organizer": "Difficult Airway Society",
+      "start": "2026-11-11",
+      "end": "2026-11-13",
+      "place": "País de Gales, Reino Unido",
+      "url": "https://das.uk.com/category/news/",
+      "about": "Via aérea difícil e acesso cervical de emergência."
+    },
+    {
+      "id": "wcbip-2026",
+      "name": "World Congress for Bronchology and Interventional Pulmonology (WCBIP) 2026",
+      "organizer": "WABIP",
+      "start": "2026-12-03",
+      "end": "2026-12-06",
+      "place": "Melbourne, Austrália",
+      "url": "https://www.wabip.com/",
+      "about": "Broncologia e pneumologia intervencionista."
+    },
+    {
+      "id": "aspo-2027",
+      "name": "ASPO-HNS Annual Meeting 2027 (no COSM)",
+      "organizer": "ASPO-HNS",
+      "start": "2027-04-09",
+      "url": "https://www.aspo.us/annual-meeting-members",
+      "about": "Cirurgia otorrinolaringológica pediátrica e reconstrução laringotraqueal."
+    },
+    {
+      "id": "ests-2027",
+      "name": "35º Congresso da ESTS",
+      "organizer": "ESTS",
+      "start": "2027-05-30",
+      "end": "2027-06-01",
+      "place": "Zurique, Suíça",
+      "url": "https://estsmeeting.com/",
+      "about": "Ressecção e reconstrução de vias aéreas."
+    },
+    {
+      "id": "alat-2027",
+      "name": "20º Congreso ALAT",
+      "organizer": "ALAT",
+      "start": "2027-07-07",
+      "end": "2027-07-10",
+      "place": "Costa Rica",
+      "url": "https://alatorax.org/es/eventos/20o-congreso-alat-costa-rica-2027",
+      "about": "Endoscopia respiratória e pneumologia intervencionista latino-americanas."
+    }
+  ]
+}

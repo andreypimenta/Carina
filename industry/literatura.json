@@ -133,6 +133,131 @@
       "id": "ecmo-via-aerea",
       "name": "ECMO na cirurgia e na obstrução crítica da via aérea",
       "term": "((\"Extracorporeal Membrane Oxygenation\"[Mesh] OR ECMO[tiab] OR \"extracorporeal membrane oxygenation\"[tiab] OR \"extracorporeal life support\"[tiab]) AND (trachea*[tiab] OR \"airway obstruction\"[tiab] OR \"airway surgery\"[tiab] OR \"central airway\"[tiab] OR \"airway stenosis\"[tiab] OR \"airway management\"[tiab] OR \"mediastinal mass\"[tiab] OR \"anterior mediastinal\"[tiab] OR bronchoscop*[tiab] OR \"airway stent\"[tiab])) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
+    },
+    {
+      "id": "diretorio-adulto",
+      "name": "Diretório: via aérea em adultos (busca pronta, como está)",
+      "term": "(\"Airway Management\"[Mesh] OR \"Airway Obstruction\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR \"Tracheostomy\"[Mesh] OR \"Bronchoscopy\"[Mesh] OR \"Intubation, Intratracheal\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheal Neoplasms\"[Mesh] OR \"Laryngeal Neoplasms\"[Mesh] OR \"Vocal Cord Paralysis\"[Mesh] OR laryngotracheal[tiab] OR cricotracheal[tiab] OR laryngotracheoplasty[tiab] OR tracheoplasty[tiab] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR tracheostom*[tiab] OR tracheotom*[tiab] OR \"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR \"interventional bronchoscopy\"[tiab] OR \"therapeutic bronchoscopy\"[tiab] OR \"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"tracheal stent\"[tiab] OR \"bronchial stent\"[tiab] OR \"airway dilation\"[tiab] OR \"airway dilatation\"[tiab] OR tracheobronchomalacia[tiab] OR bronchomalacia[tiab] OR \"excessive dynamic airway collapse\"[tiab] OR \"airway trauma\"[tiab] OR \"tracheal injury\"[tiab] OR \"tracheobronchial injury\"[tiab] OR \"laryngeal injury\"[tiab] OR \"airway tumor\"[tiab] OR \"airway tumour\"[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"laryngeal cleft\"[tiab] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"foreign body aspiration\"[tiab] OR ((ECMO[tiab] OR \"Extracorporeal Membrane Oxygenation\"[Mesh]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscopy[tiab])) OR ((laser[tiab] OR cryotherapy[tiab] OR electrocautery[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab]))) AND (\"Adult\"[Mesh] OR \"Aged\"[Mesh] OR adult*[tiab])"
+    },
+    {
+      "id": "diretorio-pediatrica",
+      "name": "Diretório: via aérea pediátrica (busca pronta, como está)",
+      "term": "(\"Airway Management\"[Mesh] OR \"Airway Obstruction\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR \"Tracheostomy\"[Mesh] OR \"Bronchoscopy\"[Mesh] OR \"Intubation, Intratracheal\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheal Neoplasms\"[Mesh] OR \"Laryngeal Neoplasms\"[Mesh] OR \"Vocal Cord Paralysis\"[Mesh] OR laryngotracheal[tiab] OR cricotracheal[tiab] OR laryngotracheoplasty[tiab] OR tracheoplasty[tiab] OR \"slide tracheoplasty\"[tiab] OR \"complete tracheal rings\"[tiab] OR \"congenital tracheal stenosis\"[tiab] OR \"subglottic stenosis\"[tiab] OR \"tracheal resection\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR tracheostom*[tiab] OR tracheotom*[tiab] OR \"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR \"interventional bronchoscopy\"[tiab] OR \"therapeutic bronchoscopy\"[tiab] OR \"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"airway dilation\"[tiab] OR \"airway dilatation\"[tiab] OR tracheobronchomalacia[tiab] OR bronchomalacia[tiab] OR laryngomalacia[tiab] OR \"congenital airway anomaly\"[tiab] OR \"congenital airway anomalies\"[tiab] OR \"laryngeal cleft\"[tiab] OR \"laryngotracheoesophageal cleft\"[tiab] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"foreign body aspiration\"[tiab] OR \"airway trauma\"[tiab] OR \"tracheal injury\"[tiab] OR \"airway tumor\"[tiab] OR \"airway tumour\"[tiab] OR \"subglottic hemangioma\"[tiab] OR ((ECMO[tiab] OR \"Extracorporeal Membrane Oxygenation\"[Mesh]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscopy[tiab])) OR ((laser[tiab] OR cryotherapy[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab]))) AND (\"Infant\"[Mesh] OR \"Child\"[Mesh] OR \"Adolescent\"[Mesh] OR pediatric*[tiab] OR paediatric*[tiab] OR neonat*[tiab] OR newborn*[tiab] OR infant*[tiab] OR child*[tiab] OR adolescen*[tiab])"
+    },
+    {
+      "id": "diretorio-traqueostomia-decanulacao",
+      "name": "Diretório: traqueostomia e decanulação (busca pronta, como está)",
+      "term": "(\"Tracheostomy\"[Mesh] OR tracheostom*[tiab] OR tracheotom*[tiab]) AND (decannulat*[tiab] OR \"home care\"[tiab] OR caregiver*[tiab] OR \"care coordination\"[tiab] OR \"patient safety\"[tiab] OR discharge[tiab] OR guideline[pt] OR \"practice guideline\"[pt] OR consensus[tiab] OR recommendation*[tiab])"
+    },
+    {
+      "id": "diretorio-cirurgia-estrutural",
+      "name": "Diretório: cirurgia estrutural (busca pronta, como está)",
+      "term": "(\"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR laryngotracheal[tiab] OR cricotracheal[tiab] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"complete tracheal rings\"[tiab]) AND (reconstruct*[tiab] OR resect*[tiab] OR tracheoplast*[tiab] OR laryngotracheoplast*[tiab] OR dilat*[tiab] OR stent*[tiab])"
+    },
+    {
+      "id": "diretorio-tematica-sem-idade",
+      "name": "Diretório: bloco temático sem o bloco de idade",
+      "term": "((\"Airway Management\"[Mesh] OR \"Airway Obstruction\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR \"Tracheostomy\"[Mesh] OR \"Bronchoscopy\"[Mesh] OR \"Intubation, Intratracheal\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheal Neoplasms\"[Mesh] OR \"Laryngeal Neoplasms\"[Mesh] OR \"Vocal Cord Paralysis\"[Mesh] OR laryngotracheal[tiab] OR cricotracheal[tiab] OR laryngotracheoplasty[tiab] OR tracheoplasty[tiab] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR tracheostom*[tiab] OR tracheotom*[tiab] OR \"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR \"interventional bronchoscopy\"[tiab] OR \"therapeutic bronchoscopy\"[tiab] OR \"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"tracheal stent\"[tiab] OR \"bronchial stent\"[tiab] OR \"airway dilation\"[tiab] OR \"airway dilatation\"[tiab] OR tracheobronchomalacia[tiab] OR bronchomalacia[tiab] OR \"excessive dynamic airway collapse\"[tiab] OR \"airway trauma\"[tiab] OR \"tracheal injury\"[tiab] OR \"tracheobronchial injury\"[tiab] OR \"laryngeal injury\"[tiab] OR \"airway tumor\"[tiab] OR \"airway tumour\"[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"laryngeal cleft\"[tiab] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"foreign body aspiration\"[tiab] OR ((ECMO[tiab] OR \"Extracorporeal Membrane Oxygenation\"[Mesh]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscopy[tiab])) OR ((laser[tiab] OR cryotherapy[tiab] OR electrocautery[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab])) OR \"slide tracheoplasty\"[tiab] OR \"complete tracheal rings\"[tiab] OR \"congenital tracheal stenosis\"[tiab] OR laryngomalacia[tiab] OR \"congenital airway anomaly\"[tiab] OR \"congenital airway anomalies\"[tiab] OR \"laryngotracheoesophageal cleft\"[tiab] OR \"subglottic hemangioma\"[tiab] OR ((laser[tiab] OR cryotherapy[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab])))) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "diretorio-reconstrucao",
+      "name": "Diretório: só reconstrução (estenose, LTR, traqueoplastia, ressecção)",
+      "term": "(\"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"laryngotracheal stenosis\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR laryngotracheoplast*[tiab] OR tracheoplast*[tiab] OR \"tracheal resection\"[tiab] OR \"cricotracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "diretorio-manejo-anestesico",
+      "name": "Diretório: manejo anestésico da via aérea (separado da doença estrutural)",
+      "term": "(\"Airway Management\"[Mesh] OR \"Intubation, Intratracheal\"[Mesh] OR \"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR videolaryngoscop*[tiab] OR \"supraglottic airway\"[tiab] OR extubation[tiab] OR \"front of neck access\"[tiab] OR \"front-of-neck access\"[tiab] OR cricothyro*[tiab]) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "diretorio-doenca-estrutural",
+      "name": "Diretório: doença e cirurgia estrutural da via aérea (sem os termos de manejo anestésico)",
+      "term": "((\"Airway Obstruction\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR \"Tracheostomy\"[Mesh] OR \"Bronchoscopy\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheal Neoplasms\"[Mesh] OR \"Laryngeal Neoplasms\"[Mesh] OR \"Vocal Cord Paralysis\"[Mesh] OR laryngotracheal[tiab] OR cricotracheal[tiab] OR laryngotracheoplasty[tiab] OR tracheoplasty[tiab] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR tracheostom*[tiab] OR tracheotom*[tiab] OR \"interventional bronchoscopy\"[tiab] OR \"therapeutic bronchoscopy\"[tiab] OR \"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"tracheal stent\"[tiab] OR \"bronchial stent\"[tiab] OR \"airway dilation\"[tiab] OR \"airway dilatation\"[tiab] OR tracheobronchomalacia[tiab] OR bronchomalacia[tiab] OR \"excessive dynamic airway collapse\"[tiab] OR \"airway trauma\"[tiab] OR \"tracheal injury\"[tiab] OR \"tracheobronchial injury\"[tiab] OR \"laryngeal injury\"[tiab] OR \"airway tumor\"[tiab] OR \"airway tumour\"[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"laryngeal cleft\"[tiab] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"foreign body aspiration\"[tiab] OR ((ECMO[tiab] OR \"Extracorporeal Membrane Oxygenation\"[Mesh]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscopy[tiab])) OR ((laser[tiab] OR cryotherapy[tiab] OR electrocautery[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab])) OR \"slide tracheoplasty\"[tiab] OR \"complete tracheal rings\"[tiab] OR \"congenital tracheal stenosis\"[tiab] OR laryngomalacia[tiab] OR \"congenital airway anomaly\"[tiab] OR \"congenital airway anomalies\"[tiab] OR \"laryngotracheoesophageal cleft\"[tiab] OR \"subglottic hemangioma\"[tiab] OR ((laser[tiab] OR cryotherapy[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab])))) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "diretorio-diretrizes",
+      "name": "Diretório: diretrizes e consensos de via aérea (termos livres e tipos de publicação)",
+      "term": "((\"Airway Management\"[Mesh] OR \"Airway Obstruction\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR \"Tracheostomy\"[Mesh] OR \"Bronchoscopy\"[Mesh] OR \"Intubation, Intratracheal\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheal Neoplasms\"[Mesh] OR \"Laryngeal Neoplasms\"[Mesh] OR \"Vocal Cord Paralysis\"[Mesh] OR laryngotracheal[tiab] OR cricotracheal[tiab] OR laryngotracheoplasty[tiab] OR tracheoplasty[tiab] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR tracheostom*[tiab] OR tracheotom*[tiab] OR \"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR \"interventional bronchoscopy\"[tiab] OR \"therapeutic bronchoscopy\"[tiab] OR \"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"tracheal stent\"[tiab] OR \"bronchial stent\"[tiab] OR \"airway dilation\"[tiab] OR \"airway dilatation\"[tiab] OR tracheobronchomalacia[tiab] OR bronchomalacia[tiab] OR \"excessive dynamic airway collapse\"[tiab] OR \"airway trauma\"[tiab] OR \"tracheal injury\"[tiab] OR \"tracheobronchial injury\"[tiab] OR \"laryngeal injury\"[tiab] OR \"airway tumor\"[tiab] OR \"airway tumour\"[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"laryngeal cleft\"[tiab] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"foreign body aspiration\"[tiab] OR ((ECMO[tiab] OR \"Extracorporeal Membrane Oxygenation\"[Mesh]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscopy[tiab])) OR ((laser[tiab] OR cryotherapy[tiab] OR electrocautery[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab])) OR \"slide tracheoplasty\"[tiab] OR \"complete tracheal rings\"[tiab] OR \"congenital tracheal stenosis\"[tiab] OR laryngomalacia[tiab] OR \"congenital airway anomaly\"[tiab] OR \"congenital airway anomalies\"[tiab] OR \"laryngotracheoesophageal cleft\"[tiab] OR \"subglottic hemangioma\"[tiab] OR ((laser[tiab] OR cryotherapy[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab]))) AND (guideline[pt] OR \"practice guideline\"[pt] OR \"consensus development conference\"[pt] OR guideline*[tiab] OR consensus[tiab] OR recommendation*[tiab] OR \"position statement\"[tiab] OR \"expert panel\"[tiab] OR Delphi[tiab])) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-estenose-adulto",
+      "name": "Google Scholar → PubMed: Estenose em adultos",
+      "term": "(\"subglottic stenosis\" AND adult AND treatment) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-ressecao-cricotraqueal",
+      "name": "Google Scholar → PubMed: Ressecção cricotraqueal",
+      "term": "(\"cricotracheal resection\" AND outcomes) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-ressecao-traqueal",
+      "name": "Google Scholar → PubMed: Ressecção traqueal",
+      "term": "(\"tracheal resection\" AND reconstruction AND outcomes) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-reconstrucao-pediatrica",
+      "name": "Google Scholar → PubMed: Reconstrução pediátrica",
+      "term": "(\"laryngotracheal reconstruction\" AND children) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-traqueoplastia-congenita",
+      "name": "Google Scholar → PubMed: Traqueoplastia congênita",
+      "term": "(\"slide tracheoplasty\" AND \"complete tracheal rings\") NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-crianca-traqueostomizada",
+      "name": "Google Scholar → PubMed: Criança traqueostomizada",
+      "term": "(\"pediatric tracheostomy\" AND guideline) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-decanulacao",
+      "name": "Google Scholar → PubMed: Decanulação",
+      "term": "(tracheostomy AND decannulation AND children AND bronchoscopy) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-malacia",
+      "name": "Google Scholar → PubMed: Malácia",
+      "term": "(tracheobronchomalacia AND tracheopexy AND outcomes) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-proteses",
+      "name": "Google Scholar → PubMed: Próteses",
+      "term": "(\"airway stent\" AND benign AND stenosis) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-broncoscopia-terapeutica",
+      "name": "Google Scholar → PubMed: Broncoscopia terapêutica",
+      "term": "(\"therapeutic bronchoscopy\" AND \"central airway obstruction\") NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-fenda-laringea",
+      "name": "Google Scholar → PubMed: Fenda laríngea",
+      "term": "(\"laryngeal cleft\" AND endoscopic AND repair) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-paralisia-bilateral",
+      "name": "Google Scholar → PubMed: Paralisia bilateral",
+      "term": "(\"bilateral vocal fold paralysis\" AND airway AND surgery) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-corpo-estranho",
+      "name": "Google Scholar → PubMed: Corpo estranho",
+      "term": "(\"foreign body aspiration\" AND children AND bronchoscopy) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-trauma",
+      "name": "Google Scholar → PubMed: Trauma",
+      "term": "(\"tracheobronchial injury\" AND surgical AND management) NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "scholar-ecmo",
+      "name": "Google Scholar → PubMed: ECMO",
+      "term": "(ECMO AND \"airway surgery\") NOT \"Published Erratum\"[pt]"
+    },
+    {
+      "id": "periodicos-sem-feed",
+      "name": "Periódicos do diretório sem feed utilizável, nos temas de via aérea",
+      "term": "((\"Otolaryngol Clin North Am\"[ta] OR \"J Thorac Cardiovasc Surg\"[ta] OR \"Ann Thorac Surg\"[ta] OR \"Int J Pediatr Otorhinolaryngol\"[ta] OR \"Chest\"[ta] OR \"Br J Anaesth\"[ta] OR \"J Pediatr Surg\"[ta] OR \"Am J Respir Crit Care Med\"[ta] OR \"Eur J Cardiothorac Surg\"[ta] OR \"Eur Respir J\"[ta] OR \"J Bronchology Interv Pulmonol\"[ta] OR \"Pediatr Crit Care Med\"[ta] OR \"Anesthesiology\"[ta] OR \"Respir Care\"[ta]) AND (\"Airway Management\"[Mesh] OR \"Airway Obstruction\"[Mesh] OR \"Tracheal Stenosis\"[Mesh] OR \"Laryngostenosis\"[Mesh] OR \"Tracheostomy\"[Mesh] OR \"Bronchoscopy\"[Mesh] OR \"Intubation, Intratracheal\"[Mesh] OR \"Tracheomalacia\"[Mesh] OR \"Tracheal Neoplasms\"[Mesh] OR \"Laryngeal Neoplasms\"[Mesh] OR \"Vocal Cord Paralysis\"[Mesh] OR laryngotracheal[tiab] OR cricotracheal[tiab] OR laryngotracheoplasty[tiab] OR tracheoplasty[tiab] OR \"subglottic stenosis\"[tiab] OR \"tracheal stenosis\"[tiab] OR \"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"laryngotracheal reconstruction\"[tiab] OR tracheostom*[tiab] OR tracheotom*[tiab] OR \"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR \"interventional bronchoscopy\"[tiab] OR \"therapeutic bronchoscopy\"[tiab] OR \"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"tracheal stent\"[tiab] OR \"bronchial stent\"[tiab] OR \"airway dilation\"[tiab] OR \"airway dilatation\"[tiab] OR tracheobronchomalacia[tiab] OR bronchomalacia[tiab] OR \"excessive dynamic airway collapse\"[tiab] OR \"airway trauma\"[tiab] OR \"tracheal injury\"[tiab] OR \"tracheobronchial injury\"[tiab] OR \"laryngeal injury\"[tiab] OR \"airway tumor\"[tiab] OR \"airway tumour\"[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"laryngeal cleft\"[tiab] OR \"vocal fold paralysis\"[tiab] OR \"vocal cord paralysis\"[tiab] OR \"foreign body aspiration\"[tiab] OR ((ECMO[tiab] OR \"Extracorporeal Membrane Oxygenation\"[Mesh]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscopy[tiab])) OR ((laser[tiab] OR cryotherapy[tiab] OR electrocautery[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab])) OR \"slide tracheoplasty\"[tiab] OR \"complete tracheal rings\"[tiab] OR \"congenital tracheal stenosis\"[tiab] OR laryngomalacia[tiab] OR \"congenital airway anomaly\"[tiab] OR \"congenital airway anomalies\"[tiab] OR \"laryngotracheoesophageal cleft\"[tiab] OR \"subglottic hemangioma\"[tiab] OR ((laser[tiab] OR cryotherapy[tiab]) AND (airway[tiab] OR tracheal[tiab] OR bronchoscop*[tiab])))) NOT \"Published Erratum\"[pt]"
     }
   ]
 }
