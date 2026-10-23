@@ -30,10 +30,3 @@ export function formatPhone(e164: string): string {
   const m = /^\+55([1-9][1-9])(\d{4,5})(\d{4})$/.exec(e164);
   return m ? `+55 (${m[1]}) ${m[2]}-${m[3]}` : e164;
 }
-
-/** "a•••@gmail.com", "+55 (11) •••••-4321": enough of an address for its owner to know it, on a page anyone with the link opens. */
-export function maskAddress(channel: Channel, address: string): string {
-  if (channel === "email") return address.replace(/^([^@])[^@]*@/, "$1•••@");
-  const phone = formatPhone(address);
-  return phone === address ? `•••${address.slice(-4)}` : phone.replace(/\) \d+-/, (m) => `) ${"•".repeat(m.length - 3)}-`);
-}

@@ -1,5 +1,4 @@
-// What the module's api answers its pages: the admin overview, the ways to sign up open now, and whose a
-// message's link is. Types
+// What the module's api answers its pages: the admin overview, and the ways to sign up open now. Types
 // only, shared by the backend and the web.
 import type { Channel } from "./address.ts";
 
@@ -7,12 +6,6 @@ import type { Channel } from "./address.ts";
 export interface SignupChannels {
   email: boolean;
   whatsapp: string | null;
-}
-
-/** Whose a message's link is, as its page shows it: the channel and the address masked (maskAddress). */
-export interface LinkAddress {
-  channel: Channel;
-  address: string;
 }
 
 export interface AdminSubscriber {

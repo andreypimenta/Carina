@@ -1,5 +1,5 @@
 // Where the links in the messages land (/assine/confirmacao, /assine/saida, sent here by the api with the
-// token): the journal's name, whose address it is, and one button. Opening the page changes nothing; only the
+// token): the journal's name and one button. Opening the page changes nothing; only the
 // click confirms or takes the address off, so a mail scanner or a link preview that opens it does neither.
 // After leaving, the reader can come back with one more click. Nothing else of the site, and no sign-up form.
 import { useState } from "react";
@@ -7,19 +7,13 @@ import { data, Link, useLoaderData, type HeadersArgs, type LoaderFunctionArgs, t
 import { SITE } from "@aihot/site";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { IconCheck } from "@aihot/web/components/icons";
-import { loadOr404 } from "@aihot/web/lib/api.server";
 import { pageMeta } from "@aihot/web/lib/seo";
 import type { Channel } from "../address.ts";
-import type { LinkAddress } from "../types.ts";
 
-export async function loader({ request }: LoaderFunctionArgs) {
+export function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
-  const token = url.searchParams.get("t");
-  const { address } = token
-    ? await loadOr404<{ address: LinkAddress | null }>(`/api/assinatura/link?${new URLSearchParams({ t: token })}`, { signal: request.signal })
-    : { address: null };
   return data(
-    { leave: url.pathname.endsWith("/saida"), token: address ? token : null, address },
+    { leave: url.pathname.endsWith("/saida"), token: url.searchParams.get("t") },
     { headers: { "Cache-Control": "no-store", "Referrer-Policy": "no-referrer", "X-Robots-Tag": "noindex, nofollow" } },
   );
 }
@@ -46,10 +40,8 @@ async function act<T>(path: string, token: string): Promise<T | null | "error"> 
 const BUTTON = "inline-flex h-12 w-full items-center justify-center rounded-full px-6 text-[15.5px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-60";
 
 export default function LinkPage() {
-  const { leave, token, address } = useLoaderData<typeof loader>();
+  const { leave, token } = useLoaderData<typeof loader>();
   const [state, setState] = useState<{ kind: "ask" | "busy" | "error" | "invalid" } | { kind: "confirmed" | "left" | "back"; done: Done }>({ kind: token ? "ask" : "invalid" });
-  // "e-mail a•••@gmail.com", "WhatsApp +55 (11) •••••-4321": both take "o", so the sentences below say "ao", "no", "o".
-  const who = `${address?.channel === "whatsapp" ? "WhatsApp" : "e-mail"} ${address?.address}`;
 
   const run = async (path: string, next: "confirmed" | "left" | "back") => {
     setState({ kind: "busy" });
@@ -70,11 +62,11 @@ export default function LinkPage() {
   } else if (state.kind === "confirmed") {
     ok = true;
     title = "Inscrição confirmada";
-    body = `A próxima edição chega ao ${who} na segunda-feira.`;
+    body = "A próxima edição chega na segunda-feira.";
   } else if (state.kind === "back") {
     ok = true;
     title = "Você voltou para a lista";
-    body = `A edição continua chegando ao ${who}.`;
+    body = "A edição continua chegando.";
   } else if (state.kind === "left" && state.done.status === "unsubscribed") {
     title = "Este endereço tinha saído da lista";
     body = "Para voltar a receber a edição, inscreva-se de novo.";
@@ -82,7 +74,7 @@ export default function LinkPage() {
   } else if (state.kind === "left") {
     ok = true;
     title = "Você saiu da lista";
-    body = `O ${who} não vai mais receber a edição.`;
+    body = "Você não vai mais receber a edição.";
     if (state.done.undo) {
       action = (
         <button type="button" onClick={() => run("/api/assinatura/voltar", "back")} className={`${BUTTON} bg-bg-sunk text-ink ring-1 ring-inset ring-line-soft`}>
@@ -93,8 +85,8 @@ export default function LinkPage() {
   } else {
     title = leave ? "Deixar de receber a edição?" : "Falta um passo";
     body = leave
-      ? `Ao clicar no botão, o ${who} sai da lista da edição semanal do ${SITE.bareName}.`
-      : `Confirme que quer receber a edição semanal do ${SITE.bareName} no ${who}.`;
+      ? `Ao clicar no botão, você sai da lista da edição semanal do ${SITE.bareName}.`
+      : `Confirme que quer receber a edição semanal do ${SITE.bareName}.`;
     action = (
       <>
         <button
@@ -123,7 +115,6 @@ export default function LinkPage() {
         <p className="mt-2 text-[15px] leading-relaxed text-ink-3">{body}</p>
         {action && <div className="mt-6">{action}</div>}
       </section>
-      <Link to="/assine" className="mt-6 text-[13px] text-ink-4 underline-offset-2 hover:text-accent hover:underline">Ler a edição desta semana</Link>
     </main>
   );
 }

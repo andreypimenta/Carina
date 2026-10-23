@@ -10,8 +10,8 @@ import { sendProblem } from "@aihot/api/http/respond";
 import { adminHandler } from "@aihot/api/routes/admin-auth";
 import { adminOverview, subscribersCsv } from "../backend/admin.ts";
 import { retrySends } from "../backend/send.ts";
-import { confirm, handleInbound, linkAddress, openChannels, resubscribe, SignupRejected, subscribe, unsubscribe } from "../backend/subscribers.ts";
-import type { LinkAddress, SignupChannels } from "../types.ts";
+import { confirm, handleInbound, openChannels, resubscribe, SignupRejected, subscribe, unsubscribe } from "../backend/subscribers.ts";
+import type { SignupChannels } from "../types.ts";
 
 const tokenOf = (req: FastifyRequest) => {
   const t = (req.query as Record<string, unknown>).t;
@@ -53,13 +53,6 @@ export function registerAssinatura(app: FastifyInstance) {
       req.log.error({ err: error }, "signup failed");
       return sendProblem(req, reply, { status: 503, code: "temporarily_unavailable", detail: "No momento não é possível se inscrever; tente de novo daqui a pouco.", retryAfter: 30 });
     }
-  });
-
-  // Whose a link is, for its page to say before the button; null when the token is nobody's.
-  app.get("/api/assinatura/link", async (req, reply) => {
-    const token = tokenOf(req);
-    const body: { address: LinkAddress | null } = { address: token ? await linkAddress(token) : null };
-    return reply.header("Cache-Control", "no-store").send(body);
   });
 
   // The page's buttons, with the token its link carried.

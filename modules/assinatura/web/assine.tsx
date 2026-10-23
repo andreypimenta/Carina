@@ -1,10 +1,8 @@
 // The page to share in WhatsApp groups: the newest weekly edition (or the one in its address, the link each
 // message carries) set in the site's own edition, with the sign-up form above and below it, and nothing of
 // the rest of the site (WebModule.ownChrome). With no edition yet, a short presentation and the form. The
-// links in the messages land here (?confirmar=, ?sair=, ?link=) and change nothing: a button asks the reader
-// before confirming or leaving, so a mail scanner or a link preview that opens them does neither.
-import { useState } from "react";
-import { data, Link, useLoaderData, useSearchParams, type LoaderFunctionArgs, type MetaArgs } from "react-router";
+// links in the messages have a page of their own (link.tsx).
+import { data, Link, useLoaderData, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import type { ReportDetail, ReportLatestPage } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
