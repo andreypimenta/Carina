@@ -1,6 +1,6 @@
 # Fontes do Fôlego
 
-O Fôlego tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS e páginas de lista de sociedades, reguladores, registros de ensaios, centros de referência e imprensa (`industry/sources.json`).
+O Fôlego tem dois tipos de fonte: os **artigos científicos**, que vêm do módulo `literatura` (buscas salvas no PubMed), e as **notícias**, que vêm de feeds RSS e páginas de lista de sociedades, reguladores, registros de ensaios, centros de referência e imprensa (`industry/sources.json`). Perfis, pesquisas e hashtags do X e do Instagram entram como notícias também (veja [Redes sociais](#redes-sociais-x-instagram-e-linkedin)).
 
 ## Artigos científicos (módulo literatura)
 
@@ -107,3 +107,122 @@ Não foi possível verificar Royal Children's Melbourne, Necker, Stanford, Sabar
 A produção chinesa relevante chega principalmente pelo PubMed: as buscas aceitam artigos em chinês (`chi` em `languages`), e a matéria é escrita a partir do resumo em inglês que o PubMed traz. Os portais de notícias médicas chineses (dxy.cn, medlive.cn) publicam sobretudo por WeChat e não têm seção de cirurgia torácica pediátrica.
 
 As fontes desta lista são importadas na primeira vez que o site sobe. Depois disso, mexa nelas no Painel → Fontes.
+
+## Redes sociais (X, Instagram e LinkedIn)
+
+Em 23/10/2026 o dono do Fôlego mandou um diretório de perfis, pesquisas e hashtags de via aérea nas redes sociais e escolheu como cada rede entra: o **X** pela SocialData (fontes `x_search`), o **Instagram** pela API paga da ScrapeCreators (módulo `modules/instagram`) e o **LinkedIn** só pelos sites das organizações, porque a API oficial do LinkedIn só lê páginas que a própria conta administra e o contrato de uso proíbe raspagem.
+
+Os itens das redes passam pela mesma pré-triagem, pelas mesmas notas e pelos mesmos limiares de qualquer material. Perfis comerciais (fabricantes) servem só para descobrir tecnologia, nunca como fonte primária de eficácia: entram no nível T2 (o limiar mais alto), com a etiqueta `comercial` e "（comercial）" no nome (a observação entre parênteses largos só aparece no Painel), e a nota de seleção já limita a publicidade de dispositivo sem dado clínico.
+
+### Como ligar
+
+Num site que já está no ar, estas fontes entram na próxima atualização, porque a importação só acrescenta as fontes novas.
+
+**X.** As 20 fontes `x_search` (11 perfis e 9 pesquisas) entram desligadas, porque sem chave a coleta só falharia. Para ligar:
+
+1. Crie uma conta na SocialData, faça um depósito pequeno (US$ 10–20 duram meses) e ponha `SOCIALDATA_API_KEY=` no `.env` do servidor.
+2. Reinicie a API e o worker e confira o limite da SocialData em Painel → Configurações (o padrão é 10 por minuto, 100 por hora e 1000 por dia).
+3. Ligue as fontes: `node --env-file=.env scripts/enable-sources.ts x_search` (no Docker, `docker compose exec worker node scripts/enable-sources.ts x_search`). Para ligar só algumas, acrescente `--ids=x-dasairway,x-ent-papers`.
+
+Os perfis são lidos juntos, numa busca a cada 30 minutos; cada pesquisa é lida sozinha, num ritmo que o coletor ajusta pelo volume (de 15 a 120 minutos). Só os posts novos são cobrados, a US$ 0,0002 cada: a estimativa é de US$ 1–3 por mês. As pesquisas excluem respostas (`-filter:replies`); retuítes nunca entram.
+
+**Instagram.** Ponha no `.env` a chave `SCRAPECREATORS_API_KEY=` e `INSTAGRAM_COLLECT_ENABLED=true` (a coleta também exige `COLLECT_ENABLED=true`) e reinicie o worker. A coleta roda a cada 6 horas, aos 40 minutos (00:40, 06:40, 12:40 e 18:40, horário de Brasília). Na primeira execução ela cria o limite `scrapecreators` em Painel → Configurações (40 por minuto, 80 por hora e 200 por dia); cada chamada passa pelos recibos e por esse limite. Cada execução faz uma chamada por hashtag e uma por perfil (até três quando o perfil publicou muito desde a última leitura), umas 24 chamadas de 1 crédito: cerca de 2.900 créditos por mês, ou uns US$ 5,50 no pacote de US$ 47 por 25 mil créditos. As hashtags e os perfis ficam em `industry/instagram.json`; cada perfil aponta para a sua fonte `external` em `industry/sources.json`, e uma fonte pausada no Painel não é lida.
+
+Como a coleta do Instagram funciona:
+
+- **Hashtags:** a busca da ScrapeCreators (`/v1/instagram/search/hashtag`) devolve posts do último dia (`date_posted=last-day`). É uma busca de melhor esforço, pelo índice do Google, e não o feed completo da hashtag. Todos os posts das hashtags entram pela fonte `instagram-hashtags`.
+- **Perfis:** os posts do perfil (`/v2/instagram/user/posts`), do mais novo para o mais antigo.
+- **Uma vez só:** cada post entra uma vez, identificado pelo código da publicação (`instagram:<shortcode>`, o mesmo em todo endereço do post); o post que aparece numa hashtag e no perfil do autor vira um material só. Cada hashtag e cada perfil guarda o post mais novo que já viu (tabela `instagram_feeds`): a leitura seguinte não aceita posts mais antigos que ele, menos as 48 horas que o motor ainda conta como novidade, e só passa à página seguinte de um perfil quando a página inteira é nova. Uma chamada repetida dentro das mesmas 6 horas reaproveita a resposta já paga.
+- **O que fica de fora:** anúncios, e posts sem legenda (não há o que a pré-triagem ler).
+- **Primeira leitura:** o que já estava publicado entra arquivado pela data, sem ir para "hoje", como a primeira importação de uma fonte nova.
+- **O material:** a legenda é o corpo (o título é a primeira linha) e a imagem do post vai junto. O link é o do post no Instagram.
+
+Ressalva editorial: hashtags genéricas (`#ECMO`, `#ThoracicSurgery`, `#Tracheostomy`, `#AirwayManagement`) trazem muito conteúdo de paciente, estudante e marketing. A pré-triagem descarta a maior parte, mas cada post descartado ainda passa pelo modelo.
+
+**LinkedIn.** Nada é coletado no LinkedIn. Cada organização do diretório é acompanhada pelo site, quando ele tem uma lista de notícias que o coletor lê (veja a tabela abaixo).
+
+### Destino de cada item do diretório de redes
+
+"Desligada" quer dizer que a fonte está cadastrada em `industry/sources.json` com `enabled: false`. "Aguardando a chave" quer dizer que a fonte está ligada, mas a coleta do Instagram só roda com `INSTAGRAM_COLLECT_ENABLED=true` e `SCRAPECREATORS_API_KEY`. Nenhuma das duas APIs pagas foi chamada nesta configuração: os testes usam servidores locais falsos.
+
+**Perfis do X** (a prioridade alta do diretório, mais o fabricante VisionAir):
+
+| Perfil | Fonte | Nível | Situação |
+|---|---|---|---|
+| Difficult Airway Society, [@dasairway](https://x.com/dasairway) | `x-dasairway` | T1_5 (sociedade; inclui os fios da própria conta) | desligada até a chave da SocialData |
+| DAS Residents, [@dasresidents](https://x.com/dasresidents) | `x-dasresidents` | T1_5 (sociedade) | desligada até a chave da SocialData |
+| Journal of Bronchology & Interventional Pulmonology, [@JBronchOnline](https://x.com/JBronchOnline) | `x-jbronchonline` | T1_5 (periódico) | desligada até a chave da SocialData |
+| ANZ Society of Paediatric Otorhinolaryngology, [@ANZSPO](https://x.com/ANZSPO) | `x-anzspo` | T1_5 (sociedade) | desligada até a chave da SocialData |
+| Karthik Balakrishnan, [@KBalakrishnanMD](https://x.com/KBalakrishnanMD) | `x-kbalakrishnanmd` | T2 (pesquisador) | desligada até a chave da SocialData |
+| Eric Levi, [@DrEricLevi](https://x.com/DrEricLevi) | `x-drericlevi` | T2 (pesquisador) | desligada até a chave da SocialData |
+| Abdullah Sindi, [@3bdallahSindi](https://x.com/3bdallahSindi) | `x-3bdallahsindi` | T2 (pesquisador) | desligada até a chave da SocialData |
+| Suveer Singh / Respitudoc, [@respitudoc](https://x.com/respitudoc) | `x-respitudoc` | T2 (pesquisador) | desligada até a chave da SocialData |
+| Ali Abedi, [@DocAbedi](https://x.com/DocAbedi) | `x-docabedi` | T2 (pesquisador) | desligada até a chave da SocialData |
+| ENT Papers, [@ENT_Papers](https://x.com/ENT_Papers) | `x-ent-papers` | T2 (curadoria) | desligada até a chave da SocialData |
+| VisionAir Solutions, [@VisionAirStents](https://x.com/VisionAirStents) | `x-visionairstents` | T2, comercial | desligada até a chave da SocialData |
+
+As listas temáticas do diretório (Airway guidelines, Pediatric airway, Bronchoscopy / devices) não viram fontes: os mesmos perfis já entram um a um. As duas publicações de exemplo da DAS chegam pela fonte `x-dasairway`.
+
+**Pesquisas no X** (todas T2, com `-filter:replies` acrescentado à consulta do diretório):
+
+| Pesquisa do diretório | Fonte | Situação |
+|---|---|---|
+| `("airway stenosis" OR "subglottic stenosis") -crypto -fitness` | `x-busca-estenose` | desligada até a chave da SocialData |
+| `("laryngotracheal reconstruction" OR "cricotracheal resection")` | `x-busca-reconstrucao-laringotraqueal` | desligada até a chave da SocialData |
+| `("pediatric airway" OR "paediatric airway") (surgery OR reconstruction)` | `x-busca-via-aerea-pediatrica` | desligada até a chave da SocialData |
+| `(tracheostomy OR tracheotomy) (decannulation OR guideline)` | `x-busca-traqueostomia` | desligada até a chave da SocialData |
+| `(tracheobronchomalacia OR bronchomalacia) (tracheopexy OR bronchoscopy)` | `x-busca-malacia` | desligada até a chave da SocialData |
+| `("central airway obstruction" OR "airway stent") bronchoscopy` | `x-busca-obstrucao-central` | desligada até a chave da SocialData |
+| `("foreign body aspiration" OR "rigid bronchoscopy") pediatric` | `x-busca-corpo-estranho` | desligada até a chave da SocialData |
+| `("difficult airway" OR "awake intubation") guideline` | `x-busca-via-aerea-dificil` | desligada até a chave da SocialData |
+| `(airway OR tracheal) (ECMO OR extracorporeal)` | `x-busca-ecmo` | desligada até a chave da SocialData |
+
+**Hashtags.** No Instagram, todas entram pela fonte `instagram-hashtags` (T2), aguardando a chave. No LinkedIn, nenhuma é lida: não há meio de acesso dentro dos termos.
+
+| Hashtag | Instagram | LinkedIn |
+|---|---|---|
+| #AirwayManagement | `instagram-hashtags`, aguardando a chave | não coletada |
+| #DifficultAirway | `instagram-hashtags`, aguardando a chave | não coletada |
+| #PediatricAirway | `instagram-hashtags`, aguardando a chave | não coletada |
+| #PaediatricAirway | `instagram-hashtags`, aguardando a chave | não coletada |
+| #AirwayReconstruction | `instagram-hashtags`, aguardando a chave | não coletada |
+| #LaryngotrachealReconstruction | `instagram-hashtags`, aguardando a chave | não coletada |
+| #SubglotticStenosis | `instagram-hashtags`, aguardando a chave | não coletada |
+| #TrachealStenosis | `instagram-hashtags`, aguardando a chave | não coletada |
+| #Tracheostomy | `instagram-hashtags`, aguardando a chave | não coletada |
+| #TracheostomyCare | `instagram-hashtags`, aguardando a chave | não coletada |
+| #Decannulation | `instagram-hashtags`, aguardando a chave | não coletada |
+| #Tracheomalacia | `instagram-hashtags`, aguardando a chave | não coletada |
+| #Bronchomalacia | `instagram-hashtags`, aguardando a chave | não coletada |
+| #InterventionalPulmonology | `instagram-hashtags`, aguardando a chave | não coletada |
+| #RigidBronchoscopy | `instagram-hashtags`, aguardando a chave | não coletada |
+| #AirwayStent | `instagram-hashtags`, aguardando a chave | não coletada |
+| #Laryngology | `instagram-hashtags`, aguardando a chave | não coletada |
+| #PediatricENT | `instagram-hashtags`, aguardando a chave | não coletada |
+| #ThoracicSurgery | `instagram-hashtags`, aguardando a chave | não coletada |
+| #ECMO | `instagram-hashtags`, aguardando a chave | não coletada |
+
+**Publicações do Instagram.** O diretório traz publicações avulsas, não perfis. O autor de cada uma foi lido em 23/10/2026 nos metadados da página pública do post (`og:url`), sem chamada paga. Os autores que são perfis de via aérea viraram fontes:
+
+| Publicação | Autor | Fonte | Situação |
+|---|---|---|---|
+| [DOQuGhsjuax](https://www.instagram.com/p/DOQuGhsjuax/) (estent de silicone, broncoscopia rígida) | @interventionalbronchoscopy (Bronchoscopy and Interventional Pulmonology) | `instagram-interventionalbronchoscopy` (T2, curadoria) | aguardando a chave |
+| [CXJm4UkvpMi](https://www.instagram.com/p/CXJm4UkvpMi/) (reconstrução pediátrica complexa) | @stanfordohns (Stanford OHNS) | `instagram-stanfordohns` (T2, departamento; publica de toda a otorrino) | aguardando a chave |
+| [DCZQZgDq3-O](https://www.instagram.com/p/DCZQZgDq3-O/) (via aérea da criança) e [DBYwzXVMVe_](https://www.instagram.com/p/DBYwzXVMVe_/) (história de paciente, reconstrução laringotraqueal) | @cincychildrens (Cincinnati Children's) | `instagram-cincychildrens` (T2, como as notícias gerais dos hospitais) | aguardando a chave |
+| [DZNjhn3kRYb](https://www.instagram.com/p/DZNjhn3kRYb/) (pesquisa em via aérea pediátrica) | @aspohns (ASPO-HNS) | `instagram-aspohns` (T1_5, sociedade) | aguardando a chave |
+| [C4BB-o_xWh6](https://www.instagram.com/p/C4BB-o_xWh6/) (educação em traqueostomia) | @jamanetwork (JAMA Network) | nenhuma | Perfil geral de um grupo de revistas, quase todo fora do tema; os artigos da JAMA chegam pelo PubMed. |
+| [DbcuJcOO0s0](https://www.instagram.com/reel/DbcuJcOO0s0/) (reel, caso de estent de via aérea) | @drdeepak.ir (radiologista vascular e intervencionista) | nenhuma | O perfil é de radiologia vascular; o reel é um caso avulso. |
+| [Ddi2nNoOp-v](https://www.instagram.com/reel/Ddi2nNoOp-v/) (reel, traqueostomia pediátrica) | @patrik_hutzel (Intensive Care Hotline / Intensive Care at Home) | nenhuma | Perfil de um serviço comercial de UTI domiciliar, de terapia intensiva em geral. |
+
+**Organizações do LinkedIn**, acompanhadas pelos sites:
+
+| Organização | Fonte do site | Situação |
+|---|---|---|
+| Global Tracheostomy Collaborative (GTC) | `rss-youtube-gtc` (canal no YouTube), da tarefa do diretório de fontes | O site não tem notícias, e o feed do calendário de eventos vem vazio; o canal oficial no YouTube entra no lugar. |
+| National Tracheostomy Safety Project (NTSP) | `rss-trachy-talk` (podcast) e `rss-youtube-ntsp` (YouTube), da tarefa do diretório de fontes; `web-ntsp-news` desligada | A lista de notícias mostra a data como "18/09/2026" (dd/mm/aaaa), formato que o coletor não lê. |
+| Atos Medical US (comercial) | `web-atos-medical-us` | ativa. A página `https://www.atosmedical.us/blogs-and-news` traz título e link de cada texto (59 em 23/10/2026); a data vem do JSON-LD da matéria (`detail`). |
+| Boston Medical Products (comercial) | nenhuma | O site (bosmed.com) não tem notícias. A página de eventos lista as feiras em que a empresa expõe, com o link para o site de cada congresso e sem data de publicação. |
+| Stening (comercial) | nenhuma | O site (stening.com.ar) não tem notícias: os "Reportes de Broncología" são artigos e PDFs sem data de publicação. O endereço stening.com é outra página. |
+| I:Emedics (comercial) | nenhuma | O site (iemedics.com) responde HTTP 403, com a página de desafio do Cloudflare, a qualquer leitura automática. |
+
+O restante do diretório de redes (vídeos do YouTube, o podcast Trachy Talk e os sites de WABIP, AABIP, CHOP, Cincinnati e Boston Children's) não está nesta tabela; esses itens ficam com o diretório de fontes.
