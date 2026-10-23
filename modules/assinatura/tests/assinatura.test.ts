@@ -179,7 +179,7 @@ test("an e-mail is confirmed by the button its link opens, before anything is se
   const link = /https:\/\/folego\.example(\/assine\/confirmar\?t=([\w-]+))/.exec(mail.text)!;
   const opened = await app.inject({ url: link[1]! });
   assert.equal(opened.statusCode, 303);
-  assert.equal(opened.headers.location, `/assine?confirmar=${link[2]}`);
+  assert.equal(opened.headers.location, `/assine/confirmacao?t=${link[2]}`);
   assert.equal(opened.headers["cache-control"], "no-store");
   assert.equal((await subscriber("email", email))?.status, "pending", "opening the link (a scanner, a preview) confirms nothing");
   const confirmed = await button("/api/assinatura/confirmar", link[2]!);
@@ -189,7 +189,7 @@ test("an e-mail is confirmed by the button its link opens, before anything is se
   const known = await signup({ email, consent: true });
   assert.deepEqual(known.json(), { sent: true }, "a confirmed address answers as a new one");
   assert.equal((await subscriber("email", email))?.status, "confirmed");
-  assert.equal((await app.inject({ url: "/assine/confirmar?t=bad" })).headers.location, "/assine?link=invalido");
+  assert.equal((await app.inject({ url: "/assine/confirmar?t=bad" })).headers.location, "/assine/confirmacao");
   assert.equal((await button("/api/assinatura/confirmar", "not-a-real-token-at-all")).statusCode, 404);
 });
 
@@ -282,7 +282,7 @@ test("leaving takes the page's button or the mail client's one click, opening th
   const reader = await add("email", `clique-${T}@example.com`, "confirmed");
   const opened = await app.inject({ url: `/assine/sair?t=${reader.token}` });
   assert.equal(opened.statusCode, 303);
-  assert.equal(opened.headers.location, `/assine?sair=${reader.token}`);
+  assert.equal(opened.headers.location, `/assine/saida?t=${reader.token}`);
   assert.equal((await subscriber("email", `clique-${T}@example.com`))?.status, "confirmed", "a scanner opening the link takes nobody off");
   assert.deepEqual((await button("/api/assinatura/sair", reader.token)).json(), { channel: "email", undo: true });
   assert.deepEqual({ ...(await subscriber("email", `clique-${T}@example.com`)) }, { id: reader.id, status: "unsubscribed", token: reader.token, left_by: "link" });

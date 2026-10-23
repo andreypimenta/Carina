@@ -1,5 +1,5 @@
 // The module's addresses on the api: the sign-up the page posts, the links in the messages (which only open
-// the page: its buttons post to confirm, leave and undo, so a link scanner or a preview changes nothing), the
+// their own page: its button posts to confirm, leave and undo, so a link scanner or a preview changes nothing), the
 // mail clients' one-click leave, Evolution's webhook for incoming WhatsApp messages and the admin's view.
 import { timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -18,8 +18,9 @@ const tokenOf = (req: FastifyRequest) => {
   return typeof t === "string" && /^[A-Za-z0-9_-]{16,64}$/.test(t) ? t : null;
 };
 
-const toPage = (reply: FastifyReply, params: Record<string, string>) =>
-  reply.header("Cache-Control", "no-store").header("Referrer-Policy", "no-referrer").redirect(`/assine?${new URLSearchParams(params)}`, 303);
+/** A link's page, with its token; one that cannot be a token opens the page without it, which says the link no longer works. */
+const toPage = (reply: FastifyReply, page: string, token: string | null) =>
+  reply.header("Cache-Control", "no-store").header("Referrer-Policy", "no-referrer").redirect(token ? `${page}?${new URLSearchParams({ t: token })}` : page, 303);
 
 /** Evolution's webhook carries the secret as ?token= or as a bearer token. */
 function webhookAllowed(req: FastifyRequest): boolean {
@@ -70,18 +71,12 @@ export function registerAssinatura(app: FastifyInstance) {
     return channel ? { channel } : null;
   });
 
-  // The links in the messages open the page, which asks; the one-click unsubscribe mail clients post (RFC 8058),
+  // The links in the messages open their page, which asks; the one-click unsubscribe mail clients post (RFC 8058),
   // whatever its body, takes the address off at once.
   app.register(async (links) => {
     links.addContentTypeParser("*", { parseAs: "string", bodyLimit: 16 * 1024 }, (_req, _body, done) => done(null, null));
-    links.get("/assine/confirmar", async (req, reply) => {
-      const token = tokenOf(req);
-      return toPage(reply, token ? { confirmar: token } : { link: "invalido" });
-    });
-    links.get("/assine/sair", async (req, reply) => {
-      const token = tokenOf(req);
-      return toPage(reply, token ? { sair: token } : { link: "invalido" });
-    });
+    links.get("/assine/confirmar", async (req, reply) => toPage(reply, "/assine/confirmacao", tokenOf(req)));
+    links.get("/assine/sair", async (req, reply) => toPage(reply, "/assine/saida", tokenOf(req)));
     links.post("/assine/sair", async (req, reply) => {
       const token = tokenOf(req);
       const done = token ? await unsubscribe(token, "one-click") : null;
