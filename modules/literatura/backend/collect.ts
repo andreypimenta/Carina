@@ -78,7 +78,7 @@ export function integralBody(paper: Paper, full: FullText, access: Access, pmcid
 interface Outcome { pmid: string; status: string; articleId?: string }
 
 /** Which of the two sources take material now: one paused in the admin takes none. */
-async function enabledSources(): Promise<{ integral: boolean; materia: boolean }> {
+export async function enabledSources(): Promise<{ integral: boolean; materia: boolean }> {
   const rows = await sql<{ id: string }[]>`SELECT id FROM sources WHERE id IN (${INTEGRAL_SOURCE}, ${MATERIA_SOURCE}) AND enabled`;
   const ids = new Set(rows.map((r) => r.id));
   return { integral: ids.has(INTEGRAL_SOURCE), materia: ids.has(MATERIA_SOURCE) };

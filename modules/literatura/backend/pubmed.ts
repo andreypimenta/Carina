@@ -64,6 +64,11 @@ export async function searchAll(term: string, sort: "relevance" | "pub_date", ma
   return esearch({ term, sort, retmax: String(max), retstart: String(start) });
 }
 
+/** PMIDs of the records carrying a DOI (PubMed's article identifier field). */
+export async function pmidsForDoi(doi: string): Promise<string[]> {
+  return (await esearch({ term: `"${doi.replace(/"/g, "")}"[aid]`, retmax: "5" })).pmids;
+}
+
 /** The records of up to 200 PMIDs. */
 export async function fetchPapers(pmids: string[]): Promise<Paper[]> {
   if (!pmids.length) return [];
