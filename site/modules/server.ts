@@ -2,5 +2,6 @@
 import type { ServerModule } from "@aihot/backend/modules";
 import literatura from "@aihot/literatura/server";
 import assinatura from "@aihot/assinatura/server";
+import agenda from "@aihot/agenda/server";
 
-export const SERVER_MODULES: readonly ServerModule[] = [literatura, assinatura];
+export const SERVER_MODULES: readonly ServerModule[] = [literatura, agenda, assinatura];
