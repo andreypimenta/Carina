@@ -1,5 +1,5 @@
-// What each message says: the confirmations, the weekly edition as an e-mail (tables and inline styles,
-// which mail clients keep) and as a WhatsApp text. The edition is the one the site shows, read from the
+// What each message says: the e-mail confirmation, the WhatsApp welcome, the weekly edition as an e-mail
+// (tables and inline styles, which mail clients keep) and as a WhatsApp text. The edition is the one the site shows, read from the
 // public read layer (publication/reports.ts loadReport): withdrawn items are left out, as on the page.
 import type { ReportCitation, ReportDetail } from "@aihot/contracts/site";
 import { isoWeekRange } from "@aihot/contracts/time";
@@ -70,13 +70,12 @@ export function confirmationEmail(token: string) {
   return { subject, text, html };
 }
 
-export function confirmationWhatsapp(token: string): string {
+/** The one reply to a number that wrote JOIN_TEXT: it is on the list, and how to leave. */
+export function welcomeWhatsapp(token: string): string {
   return [
-    `Olá! Recebemos um pedido para enviar a edição semanal do *${SITE.name}* para este número, ${EDITION_WHEN.weekly}.`,
+    `Inscrição feita! A edição semanal do *${SITE.name}* chega por aqui ${EDITION_WHEN.weekly} (horário de Brasília).`,
     "",
-    `Para confirmar, toque no link ou responda *SIM*: ${links.confirm(token)}`,
-    "",
-    "Se não foi você, ignore esta mensagem: sem a confirmação, nada será enviado.",
+    `Para não receber mais, responda SAIR ou toque em ${links.leave(token)}`,
   ].join("\n");
 }
 

@@ -1,10 +1,11 @@
 // The two ways out: e-mail through Resend and WhatsApp through an Evolution API instance. Each is a safety
 // valve like the engine's pushes: nothing leaves the process unless its switch is exactly "true" and its
-// credentials are set (NEWSLETTER_EMAIL_ENABLED, NEWSLETTER_WHATSAPP_ENABLED). A send says whether it
+// credentials are set (NEWSLETTER_EMAIL_ENABLED, NEWSLETTER_WHATSAPP_ENABLED; WhatsApp also needs the
+// journal's number, NEWSLETTER_WHATSAPP_NUMBER, which readers write to). A send says whether it
 // arrived, failed for good, may succeed if tried again, or is unknown (it may have arrived: never resent
 // on its own).
 import { credential } from "@aihot/backend/config";
-import type { Channel } from "../address.ts";
+import { normalizePhone, type Channel } from "../address.ts";
 
 export type Outcome =
   | { status: "sent"; id: string }
@@ -24,6 +25,12 @@ const evolution = () => ({
   instance: credential("integrations", "EVOLUTION_INSTANCE"),
 });
 
+/** The journal's WhatsApp number readers write to, as digits ("5511987654321"); null when unset or not a number. */
+export function whatsappNumber(): string | null {
+  const raw = credential("integrations", "NEWSLETTER_WHATSAPP_NUMBER");
+  return (raw && normalizePhone(raw)?.slice(1)) || null;
+}
+
 /** Whether a channel may send now: its switch on and its credentials set. Read on each use. */
 export function channelReady(channel: Channel): boolean {
   if (channel === "email") {
@@ -31,7 +38,7 @@ export function channelReady(channel: Channel): boolean {
     return process.env.NEWSLETTER_EMAIL_ENABLED === "true" && !!r.key && !!r.from;
   }
   const e = evolution();
-  return process.env.NEWSLETTER_WHATSAPP_ENABLED === "true" && !!e.url && !!e.key && !!e.instance;
+  return process.env.NEWSLETTER_WHATSAPP_ENABLED === "true" && !!e.url && !!e.key && !!e.instance && !!whatsappNumber();
 }
 
 const brief = (text: string) => text.replace(/\s+/g, " ").slice(0, 300);
@@ -102,9 +109,10 @@ export async function whatsappConnected(): Promise<boolean> {
  * One text message to a number (E.164). Evolution has no idempotency key: once the request may have
  * reached it (a timeout, an answer of its own failure), the outcome is unknown and the message is not
  * sent again on its own. A refusal of the request (no such number on WhatsApp, a wrong key or instance)
- * sent nothing.
+ * sent nothing. A message whose links only lead to actions goes without a preview: Evolution would open
+ * the first one to draw it.
  */
-export async function sendWhatsapp(to: string, text: string): Promise<Outcome> {
+export async function sendWhatsapp(to: string, text: string, { preview = true } = {}): Promise<Outcome> {
   const e = evolution();
   if (!channelReady("whatsapp")) return { status: "failed", error: "envio por WhatsApp desligado ou sem configuração" };
   let res: Response;
@@ -112,7 +120,7 @@ export async function sendWhatsapp(to: string, text: string): Promise<Outcome> {
     res = await fetch(`${e.url}/message/sendText/${encodeURIComponent(e.instance!)}`, {
       method: "POST",
       headers: { apikey: e.key!, "content-type": "application/json" },
-      body: JSON.stringify({ number: to.replace(/^\+/, ""), text }),
+      body: JSON.stringify({ number: to.replace(/^\+/, ""), text, linkPreview: preview }),
       signal: AbortSignal.timeout(30_000),
     });
   } catch (error) {

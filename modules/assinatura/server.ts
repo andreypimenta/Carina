@@ -1,5 +1,5 @@
 // The subscription module's backend: its api routes (api/routes.ts), the run every minute that sends the
-// confirmations and the weekly edition (backend/send.ts), and the expiry of addresses nobody confirmed or
+// e-mail confirmations and the weekly edition (backend/send.ts), and the expiry of addresses nobody confirmed or
 // that left (backend/subscribers.ts).
 import type { ServerModule } from "@aihot/backend/modules";
 import { registerAssinatura } from "./api/routes.ts";

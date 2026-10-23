@@ -1,5 +1,6 @@
-// The module's addresses on the api: the sign-up the page posts, the links in the messages (confirm, leave,
-// and its undo), Evolution's webhook for incoming WhatsApp messages and the admin's view of the list.
+// The module's addresses on the api: the sign-up the page posts, the links in the messages (which only open
+// the page: its buttons post to confirm, leave and undo, so a link scanner or a preview changes nothing), the
+// mail clients' one-click leave, Evolution's webhook for incoming WhatsApp messages and the admin's view.
 import { timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { credential } from "@aihot/backend/config";
@@ -32,7 +33,7 @@ function webhookAllowed(req: FastifyRequest): boolean {
 
 export function registerAssinatura(app: FastifyInstance) {
   app.get("/api/assinatura", async (_req, reply) => {
-    const body: SignupChannels = { channels: openChannels() };
+    const body: SignupChannels = openChannels();
     return reply.header("Cache-Control", "public, max-age=60").send(body);
   });
 
@@ -42,7 +43,7 @@ export function registerAssinatura(app: FastifyInstance) {
     const text = (v: unknown) => (typeof v === "string" ? v : null);
     try {
       const sent = await subscribe({
-        email: text(b.email), phone: text(b.phone), consent: b.consent, trap: text(b.website),
+        email: text(b.email), consent: b.consent, trap: text(b.website),
         ip: String(req.headers["x-real-ip"] ?? req.ip ?? ""), userAgent: String(req.headers["user-agent"] ?? ""),
       });
       return reply.code(202).send({ sent });
@@ -53,28 +54,33 @@ export function registerAssinatura(app: FastifyInstance) {
     }
   });
 
-  app.post("/api/assinatura/voltar", async (req, reply) => {
-    reply.header("Cache-Control", "no-store");
-    const t = (req.body as Record<string, unknown> | null)?.t;
-    const channel = typeof t === "string" ? await resubscribe(t) : null;
-    if (!channel) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "Este link não serve mais; inscreva-se de novo pelo formulário." });
-    return reply.send({ channel });
+  // The page's buttons, with the token its link carried.
+  const tokenAction = <T>(path: string, act: (token: string) => Promise<T | null>) =>
+    app.post(path, async (req, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const t = (req.body as Record<string, unknown> | null)?.t;
+      const done = typeof t === "string" ? await act(t) : null;
+      if (!done) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "Este link não serve mais; inscreva-se de novo pelo formulário." });
+      return reply.send(done);
+    });
+  tokenAction("/api/assinatura/confirmar", confirm);
+  tokenAction("/api/assinatura/sair", (t) => unsubscribe(t, "link"));
+  tokenAction("/api/assinatura/voltar", async (t) => {
+    const channel = await resubscribe(t);
+    return channel ? { channel } : null;
   });
 
-  // The links in the messages, and the one-click unsubscribe mail clients post (RFC 8058), whatever its body.
+  // The links in the messages open the page, which asks; the one-click unsubscribe mail clients post (RFC 8058),
+  // whatever its body, takes the address off at once.
   app.register(async (links) => {
     links.addContentTypeParser("*", { parseAs: "string", bodyLimit: 16 * 1024 }, (_req, _body, done) => done(null, null));
     links.get("/assine/confirmar", async (req, reply) => {
       const token = tokenOf(req);
-      const done = token ? await confirm(token) : null;
-      if (!done) return toPage(reply, { link: "invalido" });
-      return toPage(reply, done.status === "confirmed" ? { confirmado: done.channel } : { saiu: done.channel });
+      return toPage(reply, token ? { confirmar: token } : { link: "invalido" });
     });
     links.get("/assine/sair", async (req, reply) => {
       const token = tokenOf(req);
-      const done = token ? await unsubscribe(token, "link") : null;
-      if (!done) return toPage(reply, { link: "invalido" });
-      return toPage(reply, done.undo ? { saiu: done.channel, t: token! } : { saiu: done.channel });
+      return toPage(reply, token ? { sair: token } : { link: "invalido" });
     });
     links.post("/assine/sair", async (req, reply) => {
       const token = tokenOf(req);

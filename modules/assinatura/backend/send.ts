@@ -1,4 +1,4 @@
-// The worker's run, every minute: confirmations that are due, then the weekly edition. An edition is planned
+// The worker's run, every minute: e-mail confirmations that are due, then the weekly edition. An edition is planned
 // once per channel, when it is the newest and its week ended at most three days ago, for the addresses
 // confirmed then: one send each (assinatura_sends), so nobody gets it twice. A send that may succeed later is
 // tried up to MAX_ATTEMPTS times, ten minutes apart and more; one that may have arrived is never resent on its
@@ -118,7 +118,7 @@ export async function runSends(options: RunOptions = {}): Promise<Record<string,
   const count = (what: string) => { counts[what] = (counts[what] ?? 0) + 1; };
 
   if (ready.email) {
-    for (const id of await dueConfirmations("email", 50)) {
+    for (const id of await dueConfirmations(50)) {
       if (left() < 2_000) break;
       count(`confirm_email_${await sendConfirmation(id)}`);
       await wait(EMAIL_GAP_MS);
@@ -144,7 +144,7 @@ export async function runSends(options: RunOptions = {}): Promise<Record<string,
   }
 
   if (ready.whatsapp) {
-    // Each WhatsApp message waits its turn, across runs: confirmations first, then the edition.
+    // Each WhatsApp message waits its turn, across runs.
     const turn = async () => {
       const gap = WHATSAPP_GAP_MS + Math.floor(Math.random() * WHATSAPP_GAP_MS / 2);
       const due = lastWhatsapp + gap - Date.now();
@@ -153,10 +153,6 @@ export async function runSends(options: RunOptions = {}): Promise<Record<string,
       lastWhatsapp = Date.now();
       return true;
     };
-    for (const id of await dueConfirmations("whatsapp", 10)) {
-      if (!(await turn())) break;
-      count(`confirm_whatsapp_${await sendConfirmation(id)}`);
-    }
     while (left() > 2_000) {
       const [due] = await sql`SELECT 1 FROM assinatura_sends s JOIN assinatura_subscribers sub ON sub.id = s.subscriber_id
         WHERE sub.channel = 'whatsapp' AND s.status = 'pending' AND s.next_attempt_at <= now() LIMIT 1`;

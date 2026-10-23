@@ -1,6 +1,7 @@
 // The addresses a reader may give, as the module keeps them: an e-mail in lower case, a WhatsApp number in
-// E.164 (+5511987654321). Read by the sign-up form (to say what is wrong before sending) and by the backend,
-// which decides. Plain functions, no backend code: the web imports them too.
+// E.164 (+5511987654321), from the sender of a WhatsApp message or the journal's number in the configuration.
+// The sign-up form reads an e-mail too, to say what is wrong before sending; the backend decides. Plain
+// functions, no backend code: the web imports them too.
 
 export type Channel = "email" | "whatsapp";
 

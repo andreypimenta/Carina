@@ -23,7 +23,7 @@ O que você envia pela página de feedback, o e-mail opcional, o endereço da p�
 
 ## 3. Assinatura da edição semanal
 
-Se você se inscreve para receber a edição semanal, guardamos o e-mail e/ou o número de WhatsApp informados, a frase de consentimento que você aceitou, as datas de inscrição, confirmação e saída, e o registro de cada edição enviada. Esses dados servem só para mandar a edição: o e-mail sai pelo serviço Resend e a mensagem de WhatsApp por uma instância da Evolution API ligada ao número do site. Nada é enviado antes de você confirmar pelo link que chega no próprio endereço. Para sair, use o link de qualquer envio ou responda SAIR no WhatsApp. Inscrições não confirmadas em 30 dias e endereços que saíram há 30 dias são apagados.
+Se você se inscreve para receber a edição semanal, guardamos o e-mail informado ou o número de WhatsApp de onde veio a sua mensagem, a frase de consentimento que você aceitou (no WhatsApp, junto com a mensagem que você mandou), as datas de inscrição, confirmação e saída, e o registro de cada edição enviada. Esses dados servem só para mandar a edição: o e-mail sai pelo serviço Resend e a mensagem de WhatsApp por uma instância da Evolution API ligada ao número do site. No e-mail, nada é enviado antes de você confirmar pelo link que chega no próprio endereço. No WhatsApp, só escrevemos para quem mandou primeiro a mensagem de inscrição ao número do site. Para sair, use o link de qualquer envio ou responda SAIR no WhatsApp. E-mails não confirmados em 30 dias e endereços que saíram há 30 dias são apagados.
 
 ## 4. Registros do servidor e da rede
 

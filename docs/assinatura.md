@@ -1,6 +1,6 @@
 # Assinatura da edição semanal
 
-O módulo `modules/assinatura` deixa o leitor receber a edição semanal por **e-mail** (API do Resend) ou por **WhatsApp** (uma instância da Evolution API), ou pelos dois.
+O módulo `modules/assinatura` deixa o leitor receber a edição semanal por **e-mail** (API do Resend) ou por **WhatsApp** (uma instância da Evolution API), ou pelos dois. O site nunca escreve primeiro para um número de WhatsApp: é o leitor que manda uma mensagem ao número do jornal.
 
 ## A página `/assine`
 
@@ -8,15 +8,17 @@ O módulo `modules/assinatura` deixa o leitor receber a edição semanal por **e
 
 `/assine/2026-W43` mostra uma edição em particular: é o link que cada envio leva, para que uma mensagem encaminhada abra a mesma edição.
 
-O formulário só mostra os canais que estão ligados (abaixo). Com os dois desligados, a página diz que as inscrições abrem em breve.
+A inscrição só mostra os canais que estão ligados (abaixo): o formulário de e-mail e o botão **Receber pelo WhatsApp**. Com os dois desligados, a página diz que as inscrições abrem em breve.
 
 ## Inscrição, confirmação e saída
 
-- **Inscrição**: e-mail, WhatsApp (DDD brasileiro, guardado em E.164: `+5511987654321`) ou os dois, e a caixa de consentimento (texto em `modules/assinatura/copy.ts`, guardado com cada endereço). A resposta é a mesma para um endereço novo, pendente ou já confirmado, para ninguém descobrir quem está na lista.
-- **Confirmação dupla**: cada endereço recebe um link de confirmação (e-mail na hora; WhatsApp pelo worker, no ritmo do número) e não recebe nenhuma edição antes de confirmar. No WhatsApp, responder **SIM** também confirma. Um pedido repetido reenvia a confirmação no máximo a cada 10 minutos.
-- **Saída com um clique**: todo envio leva o link `/assine/sair?t=…`. O e-mail traz também os cabeçalhos `List-Unsubscribe` e `List-Unsubscribe-Post` (RFC 8058), que os clientes de e-mail mostram como botão. No WhatsApp, responder **SAIR** ou **PARAR** tira o número da lista. Depois de sair pelo link, a página oferece “Voltar a receber” (para um clique por engano ou um antivírus de e-mail que abriu o link).
+- **E-mail**: o formulário pede o e-mail e a caixa de consentimento (texto em `modules/assinatura/copy.ts`, guardado com cada endereço). A resposta é a mesma para um endereço novo, pendente ou já confirmado, para ninguém descobrir quem está na lista.
+- **Confirmação dupla do e-mail**: o endereço recebe na hora um link de confirmação e não recebe nenhuma edição antes de confirmar. Um pedido repetido reenvia a confirmação no máximo a cada 10 minutos, até 5 tentativas; depois disso, por 24 horas, a resposta diz para procurar na caixa de spam e tentar de novo mais tarde, sem enviar nada. Passado um dia da última tentativa, um novo pedido recomeça as tentativas.
+- **WhatsApp**: o botão **Receber pelo WhatsApp** abre o WhatsApp (`wa.me`) com a mensagem **QUERO O FÔLEGO** pronta para o número do jornal (`NEWSLETTER_WHATSAPP_NUMBER`), com a frase de consentimento ao lado. Quando a mensagem chega (maiúsculas, acentos e pontuação à parte: “quero o folego”, “Quero o Fôlego!”), o número entra na lista já confirmado, com o consentimento e a mensagem guardados, e recebe uma única mensagem de boas-vindas que diz como sair. Um número que já está na lista não recebe outra.
+- **Os links não mudam nada sozinhos**: os links `/assine/confirmar?t=…` e `/assine/sair?t=…` só abrem a página `/assine`, que pede um clique no botão **Confirmar inscrição** ou **Não quero mais receber**. Assim, um antivírus de e-mail ou a prévia de link que abre o endereço não confirma nem tira ninguém da lista. Depois de sair, a página oferece “Voltar a receber”. As mensagens do WhatsApp que levam esses links saem sem prévia de link.
+- **Saída**: todo envio leva o link de saída. O e-mail traz também os cabeçalhos `List-Unsubscribe` e `List-Unsubscribe-Post` (RFC 8058), que os clientes de e-mail mostram como botão e que tiram o endereço da lista com um clique. No WhatsApp, responder **SAIR** ou **PARAR** tira o número da lista.
 - **Abuso**: campo-armadilha invisível, no máximo 5 inscrições por aparelho a cada 10 minutos (identificador irreversível de IP e navegador, como no feedback).
-- **Prazo dos dados**: endereços não confirmados em 30 dias e endereços que saíram há 30 dias são apagados pela limpeza diária.
+- **Prazo dos dados**: e-mails não confirmados em 30 dias e endereços que saíram há 30 dias são apagados pela limpeza diária.
 
 ## Envio da edição
 
@@ -25,7 +27,7 @@ O worker roda `assinatura.send` a cada minuto (só existe com algum canal ligado
 - Cada envio é uma linha de `assinatura_sends` (um por endereço e edição), e por isso nada é mandado duas vezes.
 - Falha que pode passar (Resend fora do ar ou limitando, Evolution com a chave ou instância erradas) é tentada de novo até 3 vezes, com 10 e 20 minutos de espera. O e-mail leva uma chave de idempotência, então uma nova tentativa nunca gera segunda cópia.
 - No WhatsApp, um tempo esgotado ou um erro 5xx da Evolution pode ter entregado a mensagem: o envio fica como **sem confirmação de entrega** e não é repetido sozinho. No Painel → **Inscritos**, “Enviar de novo” devolve esses envios (e os que falharam) para a fila, depois de você conferir na instância.
-- Ritmo no WhatsApp: uma mensagem a cada 12 a 18 segundos (cerca de 4 por minuto), confirmações primeiro. Antes de cada rodada o worker confere se a instância está conectada; se não estiver, não manda nada e tenta no minuto seguinte.
+- Ritmo no WhatsApp: uma mensagem a cada 12 a 18 segundos (cerca de 4 por minuto). Antes de cada rodada o worker confere se a instância está conectada; se não estiver, não manda nada e tenta no minuto seguinte.
 - O e-mail é a edição em HTML próprio para e-mail (manchete, destaques, seções, link de cada matéria para o site e para o original), com o link da página e o de saída. A mensagem de WhatsApp traz a manchete, os destaques, o link da edição e como sair.
 
 O Painel → **Inscritos** mostra a contagem por canal e status, as edições enviadas com o resultado de cada uma, a lista (os 500 mais recentes) e o botão **Exportar CSV** com a lista inteira.
@@ -42,17 +44,18 @@ NEWSLETTER_FROM=O Fôlego <edicao@ofolego.com>   # domínio verificado no Resend
 
 # WhatsApp
 NEWSLETTER_WHATSAPP_ENABLED=true
+NEWSLETTER_WHATSAPP_NUMBER=+55 11 98765-4321   # o número da instância, para onde o leitor escreve
 EVOLUTION_API_URL=https://evolution.seudominio.com
 EVOLUTION_API_KEY=...            # a chave global ou a da instância
 EVOLUTION_INSTANCE=folego        # nome da instância conectada ao número
 EVOLUTION_WEBHOOK_SECRET=...     # uma sequência aleatória (openssl rand -hex 24)
 ```
 
-Depois de mudar, reinicie a api e o worker (`docker compose up -d`). O Painel → Inscritos mostra se cada canal está ligado.
+Depois de mudar, reinicie a api e o worker (`docker compose up -d`). O Painel → Inscritos mostra se cada canal está ligado. Sem o webhook (abaixo), ninguém consegue se inscrever pelo WhatsApp.
 
 ### Apontar a Evolution para o webhook
 
-O webhook recebe as mensagens que chegam ao número: `SAIR` e `PARAR` descadastram, `SIM` e `CONFIRMAR` confirmam uma inscrição pendente, e o resto é registrado no log da api e ignorado (fica para quem mais atende o número). Mensagens de grupos e as enviadas pela própria instância são ignoradas. Ele só aceita chamadas com o segredo `EVOLUTION_WEBHOOK_SECRET`, na URL (`?token=`) ou no cabeçalho `Authorization: Bearer`.
+O webhook recebe as mensagens que chegam ao número: `QUERO O FÔLEGO` inscreve o número (só com o canal ligado), `SAIR` e `PARAR` descadastram, e o resto é registrado no log da api e ignorado (fica para quem mais atende o número). Mensagens de grupos e as enviadas pela própria instância são ignoradas. Ele só aceita chamadas com o segredo `EVOLUTION_WEBHOOK_SECRET`, na URL (`?token=`) ou no cabeçalho `Authorization: Bearer`.
 
 Na Evolution API v2, configure o webhook da instância com o evento `MESSAGES_UPSERT`:
 

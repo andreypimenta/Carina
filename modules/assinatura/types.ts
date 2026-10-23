@@ -1,9 +1,11 @@
-// What the module's api answers its pages: the admin overview, and the channels open for sign-ups. Types
+// What the module's api answers its pages: the admin overview, and the ways to sign up open now. Types
 // only, shared by the backend and the web.
 import type { Channel } from "./address.ts";
 
+/** The ways to sign up open now: the e-mail form, and the journal's WhatsApp number (digits) readers write to. */
 export interface SignupChannels {
-  channels: Record<Channel, boolean>;
+  email: boolean;
+  whatsapp: string | null;
 }
 
 export interface AdminSubscriber {

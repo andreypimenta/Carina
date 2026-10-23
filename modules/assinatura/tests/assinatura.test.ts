@@ -1,8 +1,9 @@
 // Sign-ups, confirmations, leaving, the weekly sends and WhatsApp replies, against local stand-ins for Resend
 // and the Evolution API: nothing is sent anywhere. Failure cases: an address receives an edition before it
 // confirmed, or twice; a reader confirmed after the edition went out gets it late; a message that may have
-// arrived is sent again on its own; leaving needs more than one click; a stranger's WhatsApp text or an
-// unsigned webhook changes the list; a sign-up tells whether an address is already on it.
+// arrived is sent again on its own; opening a link (a scanner, a preview) confirms or removes an address; a
+// number that never wrote is sent anything; a stranger's WhatsApp text or an unsigned webhook changes the
+// list; a sign-up tells whether an address is already on it.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -27,7 +28,7 @@ const noWait = async () => {};
 
 interface Mail { key: string; to: string; subject: string; html: string; text: string; headers?: Record<string, string> }
 const mails: Mail[] = [];
-const texts: Array<{ number: string; text: string }> = [];
+const texts: Array<{ number: string; text: string; linkPreview?: boolean }> = [];
 /** Addresses Resend answers 503 the first time; numbers Evolution answers 500 or 400. */
 const busyOnce = new Set<string>();
 const evoBroken = new Set<string>();
@@ -50,7 +51,7 @@ const stub = http.createServer((req, res) => {
     if (url === "/evo/instance/connectionState/folego") return json(200, { instance: { instanceName: "folego", state: "open" } });
     if (url === "/evo/message/sendText/folego" && req.method === "POST") {
       assert.equal(req.headers.apikey, "test-evo-key");
-      const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { number: string; text: string };
+      const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { number: string; text: string; linkPreview?: boolean };
       if (evoBroken.has(body.number)) return json(500, { error: "Internal Server Error" });
       if (evoRefused.has(body.number)) return json(400, { response: { message: [{ exists: false, number: body.number }] } });
       texts.push(body);
@@ -68,6 +69,7 @@ before(async () => {
   Object.assign(process.env, {
     NEWSLETTER_EMAIL_ENABLED: "true", RESEND_API_KEY: "test-resend-key", NEWSLETTER_FROM: "O Fôlego <edicao@example.com>", RESEND_BASE_URL: `${base}/resend`,
     NEWSLETTER_WHATSAPP_ENABLED: "true", EVOLUTION_API_URL: `${base}/evo`, EVOLUTION_API_KEY: "test-evo-key", EVOLUTION_INSTANCE: "folego",
+    NEWSLETTER_WHATSAPP_NUMBER: "+55 11 90000-0000",
     EVOLUTION_WEBHOOK_SECRET: "test-webhook-secret-0123",
   });
   config.siteUrl = "https://folego.example";
@@ -108,6 +110,8 @@ async function until<T>(read: () => T | undefined, what: string): Promise<T> {
 const subscriber = async (channel: string, address: string) =>
   (await sql<{ id: number; status: string; token: string; left_by: string | null }[]>`SELECT id, status, token, left_by FROM assinatura_subscribers WHERE channel = ${channel} AND address = ${address}`)[0];
 
+const button = (path: string, t: string) => app.inject({ method: "POST", url: path, payload: { t } });
+
 async function add(channel: "email" | "whatsapp", address: string, status: "pending" | "confirmed" | "unsubscribed") {
   const [row] = await sql<{ id: number; token: string }[]>`INSERT INTO assinatura_subscribers (channel, address, status, token, consent, consent_at, confirm_sent_at, confirmed_at)
     VALUES (${channel}, ${address}, ${status}, ${randomBytes(18).toString("base64url")}, 'test', now(), now(), ${status === "pending" ? null : new Date()}) RETURNING id, token`;
@@ -128,47 +132,66 @@ test("addresses are read the Brazilian way", () => {
   assert.equal(normalizeEmail("ana@example"), null);
 });
 
-test("a sign-up is confirmed by its own link before anything is sent, and answers the same whatever the address's state", async () => {
+test("an e-mail is confirmed by the button its link opens, before anything is sent, and a sign-up answers the same whatever the address's state", async () => {
   const email = `ana-${T}@example.com`;
+  assert.deepEqual((await app.inject({ url: "/api/assinatura" })).json(), { email: true, whatsapp: "5511900000000" });
   assert.equal((await signup({ email, consent: false })).statusCode, 400, "consent is required");
   assert.equal((await signup({ email: "nope", consent: true })).statusCode, 400);
   const bot = await signup({ email: `bot-${T}@example.com`, consent: true, website: "http://spam" });
   assert.equal(bot.statusCode, 202, "a bot is answered as a person");
   assert.equal(await subscriber("email", `bot-${T}@example.com`), undefined, "and nothing is kept");
 
+  const typed = await signup({ phone: "(11) 97777-0001", consent: true });
+  assert.equal(typed.statusCode, 400, "a number typed into the form is not a sign-up");
   const first = await signup({ email: email.toUpperCase(), phone: "(11) 97777-0001", consent: true });
   assert.equal(first.statusCode, 202);
-  assert.deepEqual(first.json().sent, { email: true, whatsapp: true });
+  assert.deepEqual(first.json(), { sent: true });
   const mail = await until(() => mails.find((m) => m.to === email), "the confirmation e-mail");
   assert.match(mail.subject, /Confirme/);
   assert.equal((await subscriber("email", email))?.status, "pending");
-  assert.equal(texts.length, 0, "WhatsApp waits for the worker's paced run");
 
   const again = await signup({ email, consent: true });
-  assert.equal(again.statusCode, 202);
-  assert.deepEqual(again.json(), { sent: { email: true, whatsapp: false } });
+  assert.deepEqual(again.json(), { sent: true });
   await new Promise((resolve) => setTimeout(resolve, 100));
   assert.equal(mails.filter((m) => m.to === email).length, 1, "a second request within ten minutes sends no second confirmation");
 
-  // Weeks after the edition: only the confirmations are due.
+  // Weeks after the edition: nothing else is due, and nothing goes to the typed number.
   await runSends({ wait: noWait, now: LATER });
-  const wa = texts.find((t) => t.number === "5511977770001");
-  assert.ok(wa, "the WhatsApp confirmation goes out with the worker");
-  assert.match(wa.text, /assine\/confirmar\?t=/);
+  assert.equal(await subscriber("whatsapp", "+5511977770001"), undefined);
+  assert.equal(texts.filter((t) => t.number === "5511977770001").length, 0, "the site never writes first to a number");
   assert.equal(mails.filter((m) => m.to === email).length, 1, "the worker does not send the e-mail confirmation again");
 
-  const link = /https:\/\/folego\.example(\/assine\/confirmar\?t=[\w-]+)/.exec(mail.text)![1]!;
-  const confirmed = await app.inject({ url: link });
-  assert.equal(confirmed.statusCode, 303);
-  assert.equal(confirmed.headers.location, "/assine?confirmado=email");
-  assert.equal(confirmed.headers["cache-control"], "no-store");
+  const link = /https:\/\/folego\.example(\/assine\/confirmar\?t=([\w-]+))/.exec(mail.text)!;
+  const opened = await app.inject({ url: link[1]! });
+  assert.equal(opened.statusCode, 303);
+  assert.equal(opened.headers.location, `/assine?confirmar=${link[2]}`);
+  assert.equal(opened.headers["cache-control"], "no-store");
+  assert.equal((await subscriber("email", email))?.status, "pending", "opening the link (a scanner, a preview) confirms nothing");
+  const confirmed = await button("/api/assinatura/confirmar", link[2]!);
+  assert.deepEqual(confirmed.json(), { channel: "email", status: "confirmed" });
   assert.equal((await subscriber("email", email))?.status, "confirmed");
-  assert.equal((await subscriber("whatsapp", "+5511977770001"))?.status, "pending", "each address is confirmed by its own link");
 
   const known = await signup({ email, consent: true });
-  assert.deepEqual(known.json(), { sent: { email: true, whatsapp: false } }, "a confirmed address answers as a new one");
+  assert.deepEqual(known.json(), { sent: true }, "a confirmed address answers as a new one");
   assert.equal((await subscriber("email", email))?.status, "confirmed");
-  assert.equal((await app.inject({ url: "/assine/confirmar?t=not-a-real-token-at-all" })).headers.location, "/assine?link=invalido");
+  assert.equal((await app.inject({ url: "/assine/confirmar?t=bad" })).headers.location, "/assine?link=invalido");
+  assert.equal((await button("/api/assinatura/confirmar", "not-a-real-token-at-all")).statusCode, 404);
+});
+
+test("an e-mail whose confirmations ran out gets none for a day, and the reader is told so; then they start again", async () => {
+  const email = `spam-${T}@example.com`;
+  const row = await add("email", email, "pending");
+  await sql`UPDATE assinatura_subscribers SET confirm_attempts = 5, confirm_sent_at = now() - interval '1 hour' WHERE id = ${row.id}`;
+  const stuck = await signup({ email, consent: true });
+  assert.equal(stuck.statusCode, 202);
+  assert.deepEqual(stuck.json(), { sent: false }, "the reader is told to look in the spam, not that a link went out");
+  await new Promise((resolve) => setTimeout(resolve, 100));
+  assert.equal(mails.filter((m) => m.to === email).length, 0);
+
+  await sql`UPDATE assinatura_subscribers SET confirm_sent_at = now() - interval '25 hours' WHERE id = ${row.id}`;
+  assert.deepEqual((await signup({ email, consent: true })).json(), { sent: true });
+  await until(() => mails.find((m) => m.to === email), "a new confirmation");
+  assert.equal((await sql<{ confirm_attempts: number }[]>`SELECT confirm_attempts FROM assinatura_subscribers WHERE id = ${row.id}`)[0]!.confirm_attempts, 1);
 });
 
 test("each confirmed reader gets the edition once; a failure that may pass is tried again, one that may have arrived is not", async () => {
@@ -240,13 +263,15 @@ test("each confirmed reader gets the edition once; a failure that may pass is tr
   assert.equal((await runSends({ wait: noWait, now: LATER })).planned_email, undefined, "an old edition is not sent to anyone new");
 });
 
-test("leaving takes one click, from the link or the mail client's button, and a mistaken click can be undone", async () => {
+test("leaving takes the page's button or the mail client's one click, opening the link alone changes nothing, and a mistaken click can be undone", async () => {
   const reader = await add("email", `clique-${T}@example.com`, "confirmed");
-  const left = await app.inject({ url: `/assine/sair?t=${reader.token}` });
-  assert.equal(left.statusCode, 303);
-  assert.equal(left.headers.location, `/assine?saiu=email&t=${reader.token}`);
+  const opened = await app.inject({ url: `/assine/sair?t=${reader.token}` });
+  assert.equal(opened.statusCode, 303);
+  assert.equal(opened.headers.location, `/assine?sair=${reader.token}`);
+  assert.equal((await subscriber("email", `clique-${T}@example.com`))?.status, "confirmed", "a scanner opening the link takes nobody off");
+  assert.deepEqual((await button("/api/assinatura/sair", reader.token)).json(), { channel: "email", undo: true });
   assert.deepEqual({ ...(await subscriber("email", `clique-${T}@example.com`)) }, { id: reader.id, status: "unsubscribed", token: reader.token, left_by: "link" });
-  const back = await app.inject({ method: "POST", url: "/api/assinatura/voltar", payload: { t: reader.token } });
+  const back = await button("/api/assinatura/voltar", reader.token);
   assert.equal(back.statusCode, 200);
   assert.equal((await subscriber("email", `clique-${T}@example.com`))?.status, "confirmed");
 
@@ -255,11 +280,11 @@ test("leaving takes one click, from the link or the mail client's button, and a 
   assert.equal((await subscriber("email", `clique-${T}@example.com`))?.left_by, "one-click");
 
   const never = await add("email", `nunca-${T}@example.com`, "pending");
-  await app.inject({ url: `/assine/sair?t=${never.token}` });
-  assert.equal((await app.inject({ method: "POST", url: "/api/assinatura/voltar", payload: { t: never.token } })).statusCode, 404, "only a confirmed address comes back without confirming");
+  await button("/api/assinatura/sair", never.token);
+  assert.equal((await button("/api/assinatura/voltar", never.token)).statusCode, 404, "only a confirmed address comes back without confirming");
 });
 
-test("WhatsApp replies: SAIR and PARAR leave, SIM confirms, the rest and unsigned calls change nothing", async () => {
+test("WhatsApp: QUERO O FÔLEGO puts the number on the list with one welcome, SAIR and PARAR leave, the rest and unsigned calls change nothing", async () => {
   const hook = (payload: object, token = "test-webhook-secret-0123") => app.inject({ method: "POST", url: `/api/assinatura/evolution?token=${token}`, payload: payload as Record<string, unknown> });
   const message = (from: Record<string, unknown>, text: string) => ({ event: "messages.upsert", instance: "folego", data: { key: { fromMe: false, id: "x", ...from }, message: { conversation: text } } });
   const reader = await add("whatsapp", "+5511987650001", "confirmed");
@@ -267,10 +292,14 @@ test("WhatsApp replies: SAIR and PARAR leave, SIM confirms, the rest and unsigne
 
   assert.equal((await hook(message({ remoteJid: "5511987650001@s.whatsapp.net" }, "SAIR"), "wrong")).statusCode, 403);
   assert.equal((await app.inject({ method: "POST", url: "/api/assinatura/evolution", payload: message({ remoteJid: "5511987650001@s.whatsapp.net" }, "SAIR") })).statusCode, 403);
+  assert.equal((await hook(message({ remoteJid: "5511987659999@s.whatsapp.net" }, "QUERO O FÔLEGO"), "wrong")).statusCode, 403);
+  assert.equal(await subscriber("whatsapp", "+5511987659999"), undefined);
   assert.equal((await subscriber("whatsapp", "+5511987650001"))?.status, "confirmed");
 
   assert.equal((await hook(message({ remoteJid: "5511987650001@s.whatsapp.net" }, "Olá, gostei da edição"))).json().action, "ignored");
+  assert.equal((await hook(message({ remoteJid: "5511987650003@s.whatsapp.net" }, "sim"))).json().action, "ignored", "an unknown number's reply is nobody's request");
   assert.equal((await hook(message({ remoteJid: "120363@g.us", participant: "5511987650001@s.whatsapp.net" }, "sair"))).json().action, "ignored", "a group's message is nobody's request");
+  assert.equal((await hook(message({ remoteJid: "120363@g.us", participant: "5511987650004@s.whatsapp.net" }, "quero o fôlego"))).json().action, "ignored");
   assert.equal((await hook({ ...message({ remoteJid: "5511987650001@s.whatsapp.net" }, "sair"), data: { key: { remoteJid: "5511987650001@s.whatsapp.net", fromMe: true }, message: { conversation: "sair" } } })).json().action, "ignored", "the instance's own message");
   assert.equal(texts.length, sent, "nothing is answered");
 
@@ -280,11 +309,28 @@ test("WhatsApp replies: SAIR and PARAR leave, SIM confirms, the rest and unsigne
   assert.equal((await subscriber("whatsapp", "+5511987650001"))?.left_by, "whatsapp");
   assert.equal(texts.length, sent + 1, "the reader is told");
 
-  const pending = await add("whatsapp", "+5511987650002", "pending");
-  assert.equal((await hook(message({ remoteJid: "5511987650002@s.whatsapp.net" }, "sim"))).json().action, "confirmed");
-  assert.equal((await subscriber("whatsapp", "+5511987650002"))?.status, "confirmed");
-  assert.equal((await hook(message({ remoteJid: "5511987650002@s.whatsapp.net" }, "PARAR"))).json().subscriber, pending.id);
-  assert.equal((await subscriber("whatsapp", "+5511987650002"))?.status, "unsubscribed");
+  for (const [i, text] of ["QUERO O FÔLEGO", "quero o folego", "Quero o Fôlego!"].entries()) {
+    const number = `55119876501${i}0`;
+    const joined = await hook(message({ remoteJid: `${number}@s.whatsapp.net` }, text));
+    assert.equal(joined.json().action, "joined", text);
+    const row = (await sql<{ status: string; consent: string; confirmed_at: Date | null }[]>`SELECT status, consent, confirmed_at FROM assinatura_subscribers WHERE channel = 'whatsapp' AND address = ${`+${number}`}`)[0];
+    assert.equal(row?.status, "confirmed");
+    assert.ok(row?.confirmed_at);
+    assert.ok(row?.consent.includes(text.trim()), "the message is kept with the consent");
+    const welcome = texts.filter((t) => t.number === number);
+    assert.equal(welcome.length, 1);
+    assert.match(welcome[0]!.text, /responda SAIR/);
+    assert.match(welcome[0]!.text, /\/assine\/sair\?t=/);
+    assert.equal(welcome[0]!.linkPreview, false, "a message with an action link goes without a preview");
+  }
+  assert.equal((await hook(message({ remoteJid: "5511987650100@s.whatsapp.net" }, "quero o fôlego"))).json().action, "ignored");
+  assert.equal(texts.filter((t) => t.number === "5511987650100").length, 1, "a number already on the list gets no second welcome");
+
+  // A number that left comes back by writing again.
+  assert.equal((await hook(message({ remoteJid: "5511987650001@s.whatsapp.net" }, "Quero o Fôlego"))).json().action, "joined");
+  assert.equal((await subscriber("whatsapp", "+5511987650001"))?.status, "confirmed");
+  assert.equal((await hook(message({ remoteJid: "5511987650001@s.whatsapp.net" }, "PARAR"))).json().subscriber, reader.id);
+  assert.equal((await subscriber("whatsapp", "+5511987650001"))?.status, "unsubscribed");
 });
 
 test("addresses nobody confirmed, and those that left, are erased after 30 days", async () => {
