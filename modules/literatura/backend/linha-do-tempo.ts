@@ -43,6 +43,18 @@ const ABSTRACT_CHARS = 1500;
 /** esearch reaches only a search's first 10,000 records. */
 const REACH = 9_999;
 
+/** The oldest records of a search; a search too large for esearch to reach its end is first narrowed to earlier decades. */
+async function oldestPmids(term: string, max: number): Promise<string[]> {
+  let scoped = term;
+  let { count } = await searchAll(scoped, "pub_date", 0);
+  for (const until of [2009, 1999, 1989, 1979]) {
+    if (count <= REACH) break;
+    scoped = `(${term}) AND 1800:${until}[dp]`;
+    ({ count } = await searchAll(scoped, "pub_date", 0));
+  }
+  return (await searchAll(scoped, "pub_date", max, Math.max(0, Math.min(count, REACH) - max))).pmids;
+}
+
 /** What kind of landmark a study is listed as: the record's own publication type, unless it was found as one of the oldest or a classification. */
 function kindOf(paper: Paper, found: string): string {
   if (found === "Primeiras descrições" || found === "Classificação") return found;
@@ -64,9 +76,10 @@ function kindOf(paper: Paper, found: string): string {
  * LANDMARKS kind), the most influential of each decade, and the most influential of all, up to MAX_REFS.
  * `pmids` are the search's records in PubMed's Best Match order (its first REACH, for a larger search); a
  * record's influence is how often it is cited, discounted by how far down that order it is, so that a
- * much-cited record the search only grazes does not crowd out the theme's own.
+ * much-cited record the search only grazes does not crowd out the theme's own. Without iCite, `oldest` are
+ * the search's oldest records by publication date, and the rest follows the Best Match order.
  */
-export function chooseLandmarks(pmids: string[], known: ReadonlyMap<string, Influence>, byKind: ReadonlyMap<string, string[]>, required: string[]): Map<string, string> {
+export function chooseLandmarks(pmids: string[], known: ReadonlyMap<string, Influence>, byKind: ReadonlyMap<string, string[]>, required: string[], oldest?: string[]): Map<string, string> {
   const rank = new Map(pmids.map((pmid, i) => [pmid, i]));
   const weight = (pmid: string) => (known.get(pmid)?.citations ?? 0) / (1 + rank.get(pmid)! / RELEVANCE);
   const byWeight = (list: string[]) => list.filter((pmid) => rank.has(pmid)).sort((a, b) => weight(b) - weight(a) || rank.get(a)! - rank.get(b)!);
@@ -84,7 +97,7 @@ export function chooseLandmarks(pmids: string[], known: ReadonlyMap<string, Infl
   };
   for (const pmid of required) take([pmid], LANDMARKS.find((l) => byKind.get(l.kind)?.includes(pmid))?.kind ?? "Estudo");
   const dated = pmids.filter((pmid) => year(pmid) !== null);
-  take([...dated].sort((a, b) => year(a)! - year(b)! || rank.get(a)! - rank.get(b)!), "Primeiras descrições", OLDEST);
+  take(oldest ?? [...dated].sort((a, b) => year(a)! - year(b)! || rank.get(a)! - rank.get(b)!), "Primeiras descrições", OLDEST);
   for (const l of LANDMARKS) take(byWeight(byKind.get(l.kind) ?? []), l.kind, l.max);
   const decades = Map.groupBy(dated.filter((pmid) => known.get(pmid)!.citations > 0), (pmid) => Math.floor(year(pmid)! / 10));
   for (const decade of [...decades.keys()].sort()) take(byWeight(decades.get(decade)!), "Estudo", PER_DECADE);
@@ -92,17 +105,31 @@ export function chooseLandmarks(pmids: string[], known: ReadonlyMap<string, Infl
   return found;
 }
 
-/** The landmark studies of a search and the PMIDs the editor requires (chooseLandmarks), oldest first, numbered as the text cites them. */
-export async function gatherReferences(query: string, required: string[] = []): Promise<ReferenciaLida[]> {
+/**
+ * The landmark studies of a search and the PMIDs the editor requires (chooseLandmarks), oldest first, numbered
+ * as the text cites them. With iCite out, the list is chosen without citation counts and `notices` says so; a
+ * required PMID that PubMed lacks or that is no paper to report on fails the writing, saying which and why.
+ */
+export async function gatherReferences(query: string, required: string[] = []): Promise<{ refs: ReferenciaLida[]; notices: Trecho[] }> {
   const { pmids } = await searchAll(query, "relevance", REACH);
-  const known = await influence([...new Set([...required, ...pmids])]);
+  const notices: Trecho[] = [];
+  let known: Map<string, Influence> | null = null;
+  try {
+    known = await influence([...new Set([...required, ...pmids])]);
+  } catch (err) {
+    notices.push({ text: "iCite", reason: `não respondeu (${(err as Error).message}); os estudos foram escolhidos sem as contagens de citações: os mais antigos pela data de publicação e os demais pela ordem de relevância do PubMed` });
+  }
   const byKind = new Map<string, string[]>();
   for (const l of LANDMARKS) byKind.set(l.kind, (await searchAll(`(${query}) AND ${l.filter}`, "relevance", REACH)).pmids);
-  const found = chooseLandmarks(pmids, known, byKind, required);
+  const found = chooseLandmarks(pmids, known ?? new Map(), byKind, required, known ? undefined : await oldestPmids(query, OLDEST));
   const fetched = await fetchPapers([...found.keys()]);
-  const absent = required.filter((pmid) => !fetched.some((p) => p.pmid === pmid));
-  if (absent.length) throw new Error(`O PubMed não tem ${absent.length === 1 ? "o PMID" : "os PMIDs"} ${absent.join(", ")}; corrija a lista de PMIDs e peça de novo.`);
-  return fetched.filter((p) => !skippable(p))
+  const unusable = required.flatMap((pmid) => {
+    const paper = fetched.find((p) => p.pmid === pmid);
+    const why = paper ? skippable(paper) : "não existe no PubMed";
+    return why ? [`${pmid} (${why})`] : [];
+  });
+  if (unusable.length) throw new Error(`${unusable.length === 1 ? "O PMID obrigatório" : "Os PMIDs obrigatórios"} ${unusable.join(", ")} não ${unusable.length === 1 ? "pode" : "podem"} entrar na lista; corrija a lista de PMIDs e peça de novo.`);
+  const refs = fetched.filter((p) => !skippable(p))
     .sort((a, b) => (a.year ?? "9999").localeCompare(b.year ?? "9999") || Number(a.pmid) - Number(b.pmid))
     .map((p, i) => ({
       n: i + 1,
@@ -114,11 +141,12 @@ export async function gatherReferences(query: string, required: string[] = []): 
       year: p.year,
       kind: kindOf(p, found.get(p.pmid)!),
       abstract: p.abstract.map((s) => (s.label ? `${s.label}: ${s.text}` : s.text)).join(" "),
-      citations: known.get(p.pmid)?.citations ?? 0,
+      citations: known ? known.get(p.pmid)?.citations ?? 0 : undefined,
     }));
+  return { refs, notices };
 }
 
-/** What the model reads: the theme, the search and the studies, each with how often it has been cited. */
+/** What the model reads: the theme, the search and the studies, each with how often it has been cited (when iCite answered). */
 export function linhaInput(theme: string, query: string, refs: ReferenciaLida[]): string {
   const cut = (text: string) => (text.length > ABSTRACT_CHARS ? `${text.slice(0, text.lastIndexOf(" ", ABSTRACT_CHARS))} […]` : text);
   const cited = (n: number | undefined) => (n === undefined ? [] : [n === 1 ? "citado 1 vez" : `citado ${n} vezes`]);
@@ -199,7 +227,7 @@ export function assembleLinha(out: Linha, refs: ReferenciaLida[], theme: string)
 
 /** A timeline draft: the studies of the search (and the editor's PMIDs) and the text written from them. */
 export async function writeLinha(id: number, theme: string, query: string, pmids: string[]) {
-  const refs = await gatherReferences(query, pmids);
+  const { refs, notices } = await gatherReferences(query, pmids);
   if (refs.length < MIN_REFS) {
     const found = refs.length === 0 ? "não encontrou nenhum estudo" : `encontrou só ${refs.length} ${refs.length === 1 ? "estudo" : "estudos"}`;
     throw new Error(`A busca ${found} no PubMed; amplie a busca e peça de novo.`);
@@ -217,5 +245,6 @@ export async function writeLinha(id: number, theme: string, query: string, pmids
     // Inside the worker's shutdown drain (jobs/queue.ts), so a stop never leaves the receipt unknown.
     timeoutMs: 180_000,
   });
-  return { refs, ...assembleLinha(res.data, refs, theme), receiptId: res.receiptId };
+  const draft = assembleLinha(res.data, refs, theme);
+  return { refs, ...draft, discarded: [...notices, ...draft.discarded], receiptId: res.receiptId };
 }

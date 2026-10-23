@@ -185,8 +185,8 @@ export default function EspecialAdmin() {
             </Card>
           )}
           {e.discarded.length > 0 && (
-            <Card title={`Trechos descartados ao escrever · ${e.discarded.length}`}>
-              <p className="mb-3 text-[12.5px] leading-relaxed text-ink-4">O sistema tirou do rascunho o que o modelo escreveu sem apoio nos estudos citados. Se algum trecho estiver certo, confira no estudo e escreva-o de novo no texto.</p>
+            <Card title={`Trechos descartados e avisos ao escrever · ${e.discarded.length}`}>
+              <p className="mb-3 text-[12.5px] leading-relaxed text-ink-4">O sistema tirou do rascunho o que o modelo escreveu sem apoio nos estudos citados. Se algum trecho estiver certo, confira no estudo e escreva-o de novo no texto. Aqui também aparece quando o iCite não respondeu e a lista foi escolhida sem as contagens de citações.</p>
               <Trechos items={e.discarded} empty="" />
             </Card>
           )}

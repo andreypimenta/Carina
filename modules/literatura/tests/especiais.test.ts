@@ -1,8 +1,9 @@
 // The specials against local stand-ins for PubMed, iCite and the model. Failure cases: a special reaches the
 // site without the editor approving and then publishing it; an approved text changes without a new approval;
 // a change made against an older view overwrites a newer one; the model's unsupported passages reach the
-// draft; a PMID the editor requires is left out of the list, or one PubMed lacks is silently dropped; the model
-// does not learn how often each study is cited; a failed or never-finished writing leaves the draft stuck;
+// draft; a PMID the editor requires is left out of the list, or one PubMed lacks or that is an erratum is silently
+// dropped; the model does not learn how often each study is cited; iCite out fails the writing, or the model or
+// the panel read counts it never gave; a failed or never-finished writing leaves the draft stuck;
 // PubMed is asked with collection off; the weekly carries no special, two, the same one twice, one published
 // after it was due, or one that has left the site; an issue without one breaks.
 import { editionAt, tag } from "../../../tests/setup.ts";
@@ -45,6 +46,7 @@ const ARTICLES = new Map([
   ["7000002", article("7000002", "1994", "Proposed grading system for subglottic stenosis", ["Myer CM", "Cotton RT"], "A grading system with four grades is proposed.", "Journal Article")],
   // A classic the search does not find: only an editor's PMID brings it.
   ["6000004", article("6000004", "1980", "Anterior cricoid split as an alternative to tracheotomy", ["Cotton RT", "Seid AB"], "The anterior cricoid split avoided tracheotomy in premature infants.", "Journal Article")],
+  ["6000005", article("6000005", "1981", "Erratum: Anterior cricoid split", ["Cotton RT"], "", "Published Erratum")],
 ]);
 const CITATIONS: Record<string, number> = { "5000001": 31, "7000002": 662, "9000003": 63, "6000004": 166 };
 
@@ -220,17 +222,26 @@ test("the PMIDs the editor requires join the list even when the search does not 
   assert.match(failed.error!, /8888888/);
   assert.deepEqual(failed.pmids, ["6000004", "8888888"]);
   assert.deepEqual((failed.history.at(0)!.after as { pmids: string[] }).pmids, ["6000004", "8888888"], "the audit keeps the PMIDs");
+
+  await rewriteEspecial(id, { version: failed.version, theme: written.theme, query: written.query, pmids: ["6000005"] }, EDITOR);
+  assert.equal((await write(id)).result, "falhou");
+  assert.match((await especialDetail(id))!.error!, /6000005 \(erratum\)/, "an erratum is not dropped in silence");
 });
 
-test("with iCite out, the writing fails and can be asked again", async () => {
+test("with iCite out, the draft is written without citation counts, and the panel says iCite did not answer", async () => {
   const { id } = await createEspecial({ format: "linha-do-tempo", theme: "Estenose subglótica pediátrica", query: "subglottic stenosis" }, EDITOR);
   iciteDown = true;
+  const asked = modelInputs.length;
   try {
-    assert.equal((await write(id)).result, "falhou");
+    assert.equal((await write(id)).result, "escrito");
   } finally {
     iciteDown = false;
   }
-  assert.match((await especialDetail(id))!.error!, /iCite HTTP 503/);
+  const written = (await especialDetail(id))!;
+  assert.deepEqual(written.refs.map((r) => [r.pmid, r.citations]), [["5000001", undefined], ["7000002", undefined], ["9000003", undefined]]);
+  assert.equal(written.refs[0]!.kind, "Primeiras descrições");
+  assert.doesNotMatch(modelInputs.slice(asked).join("\n"), /citado/);
+  assert.match(written.discarded.find((t) => t.text === "iCite")!.reason, /não respondeu \(iCite HTTP 503\)/);
 });
 
 const liveJobs = async (id: number) =>
