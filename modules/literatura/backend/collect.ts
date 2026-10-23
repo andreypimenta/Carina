@@ -2,7 +2,9 @@
 // republish a translation enters as its full text (source literatura-integral, translated by the engine once
 // it is selected); every other paper enters as the site's own article about it (source literatura-materia),
 // written from the full text when a legal open copy is readable, else from the abstract. Both sources show
-// their full text on the site; the engine judges, selects and groups them like any other material.
+// their full text on the site; the engine judges, selects and groups them like any other material. A paper
+// found days after entering PubMed is still news for the week's edition: the engine's 48-hour rule
+// (content/materials.ts) that archives late material as history does not apply to these two sources.
 // A paper that fails (a service down, an unusable answer) is tried again on later runs, up to MAX_ATTEMPTS.
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -25,9 +27,7 @@ export const MIN_FULL_TEXT = 1500;
 export const MAX_ATTEMPTS = 3;
 /**
  * A paper Unpaywall reports open under a republishable licence, with no PMC copy yet, waits this many days
- * after entering PubMed for PMC to have it before it is written up instead. It stays under the engine's
- * 48-hour rule (content/materials.ts): material found more than 48 hours after its date is archived and never
- * reaches an edition, so the wait cannot be longer.
+ * after entering PubMed for PMC to have it before it is written up instead.
  */
 export const PMC_WAIT_DAYS = 1.5;
 /** The engine translates about this much of a body (editorial/translate.ts); longer texts are only partly translated. */
@@ -105,7 +105,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
     const res = await upsertMaterial({
       sourceId: INTEGRAL_SOURCE, url, title: paper.title, author: authorLine(paper.authors) || null, language,
       publishedAt, excerpt: paper.abstract.map((s) => s.text).join(" ").slice(0, 1000) || null,
-      bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok", raw, via: "literatura",
+      bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok", raw, via: "literatura", staleOnDiscovery: false,
     });
     if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId);
     return record(paper, "integral", res.articleId);
@@ -127,7 +127,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url, title: materia.titulo.trim(), author: authorLine(paper.authors) || null, language: "pt",
       publishedAt, excerpt: materia.linhaFina.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
-      raw: { ...raw, originalTitle: paper.title, basis }, via: "literatura",
+      raw: { ...raw, originalTitle: paper.title, basis }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
     await tx`INSERT INTO literatura_papers (pmid, status, article_id) VALUES (${paper.pmid}, ${`materia-${basis}`}, ${res.articleId})

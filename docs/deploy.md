@@ -211,6 +211,16 @@ docker compose logs -f --tail 100 api worker web
 
 后台的“运行”页能看到每个定时任务最近的结果，“信源”页能看到每个信源的抓取状况。
 
+### 首发批次重新归为新闻（一次性）
+
+首发时第一批采集大多被标成历史（新信源首次导入、发现时已超过 48 小时），历史内容不进日报和周报。`scripts/estreia-reclassificar.ts` 只处理明确列出的 id：去掉历史标记（`timeline_at` 改为发现时间）并重新发布；`--deselect`、`--select` 与后台“人工修正”的“精选”字段相同（同样写审计），`--select` 的内容按执行时间放出，进下一期日报；`--recompose-daily` 重写那天的日报，旧版本保留为修订。不加 `--apply` 只显示会改什么。
+
+```bash
+docker compose exec worker node scripts/estreia-reclassificar.ts <id> … [--ids-file=ids.txt] \
+  [--deselect=<id>,…] [--select=<id>,…] [--recompose-daily=2026-10-23]            # 预览
+docker compose exec worker node scripts/estreia-reclassificar.ts … --apply --reason="<原因>"
+```
+
 ### 管理员会话与配置变更
 
 会话绑定登录方式、登录时的管理员凭据或飞书身份。修改管理员密码、飞书管理员名单或会话密钥后，应重启所有 API 进程，使它们加载相同的新配置；只编辑配置文件不代表正在运行的进程已生效，混用旧代码或旧配置的进程不能提供统一撤权。

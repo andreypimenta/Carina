@@ -7,7 +7,7 @@
 // independent participants, first-hand), and the first one leads. Sections are the industry pack's
 // (industry/taxonomy.ts TAG_SECTIONS, then CATEGORIES).
 import { addDays } from "@aihot/contracts/time";
-import { CATEGORIES, TAG_SECTIONS } from "@aihot/industry/taxonomy";
+import { CATEGORIES, TAG_SECTIONS, UNCAPPED_SOURCES } from "@aihot/industry/taxonomy";
 import { sql } from "../db.ts";
 import { currentSignals } from "../events/hot.ts";
 import { pickRepresentative, representativePriority, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "../publication/representative.ts";
@@ -27,8 +27,9 @@ export const sectionOf = (category: string | null, tags: readonly string[]) =>
 /** A daily's size: the entries readers get in full, and the one-line flashes after them. */
 export const MAIN_ENTRIES = 12;
 export const FLASH_ENTRIES = 10;
-/** No source fills a daily: at most this many main entries lead with the same source. */
+/** No source fills a daily: at most this many main entries lead with the same source, except the pack's uncapped sources. */
 const PER_SOURCE = 2;
+const UNCAPPED = new Set(UNCAPPED_SOURCES);
 /** A follow-up of a covered event takes a full entry when this many sources carry its new facts. */
 const FOLLOW_UP_SOURCES = 4;
 /** The pack's `commentary` categories (how-tos, opinions): a follow-up of theirs is a flash, whoever wrote it. */
@@ -381,8 +382,8 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
  * The issue from the ranked entries, by rule: a roundup that mentions events of this issue is listed
  * under the most important of them; a follow-up of a covered event takes a full entry only when the
  * party itself acted (not as commentary) or four or more sources carry its new facts, else it is a flash;
- * then the most important entries in full, at most two per source, and the next ones as flashes. The
- * first entry leads the issue and the next three are its highlights.
+ * then the most important entries in full, at most two per source (the pack's uncapped sources aside), and
+ * the next ones as flashes. The first entry leads the issue and the next three are its highlights.
  */
 export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; flashes: EditionEntry[]; stats: Record<string, number> } {
   const byStory = new Map(entries.filter((e) => e.storyId !== null).map((e) => [e.storyId!, e]));
@@ -409,7 +410,7 @@ export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; f
   const perSource = new Map<string, number>();
   for (const e of live) {
     const n = perSource.get(e.entry.sourceId) ?? 0;
-    if (main.length < MAIN_ENTRIES && n < PER_SOURCE && full(e)) {
+    if (main.length < MAIN_ENTRIES && (n < PER_SOURCE || UNCAPPED.has(e.entry.sourceId)) && full(e)) {
       main.push(e);
       perSource.set(e.entry.sourceId, n + 1);
     } else rest.push(e);
