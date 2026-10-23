@@ -273,11 +273,6 @@ export interface ServerModule {
      * when nothing): what is no longer public is left out. Null shows nothing.
      */
     read?: (saved: unknown, issue: ReportIssue) => Promise<unknown>;
-    /**
-     * A line closing each issue of the kind in its feed and its Agent answer (publication/reports.ts
-     * issueClosings): what to tell the reader and the site's page it leads to ("/assine"); null for none.
-     */
-    closing?: (kind: ReportKind) => { text: string; path: string } | null;
   };
   /**
    * Source kinds it collects in its own way (admin/sources.ts), by kind: `resumed` runs in the transaction

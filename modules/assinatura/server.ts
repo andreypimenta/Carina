@@ -1,9 +1,8 @@
 // The subscription module's backend: its api routes (api/routes.ts), the run every minute that sends the
-// e-mail confirmations and the weekly edition (backend/send.ts), the expiry of addresses nobody confirmed or
-// that left (backend/subscribers.ts), and the line to /assine closing every issue in the feeds and the Agent answers.
+// e-mail confirmations and the weekly edition (backend/send.ts), and the expiry of addresses nobody confirmed or
+// that left (backend/subscribers.ts).
 import type { ServerModule } from "@aihot/backend/modules";
 import { registerAssinatura } from "./api/routes.ts";
-import { CLOSING } from "./copy.ts";
 import { problemSends, runSends } from "./backend/send.ts";
 import { expireSubscribers } from "./backend/subscribers.ts";
 
@@ -19,7 +18,6 @@ const server: ServerModule = {
     },
   ],
   retention: (now) => expireSubscribers(now),
-  reports: { closing: () => ({ text: CLOSING, path: "/assine" }) },
   admin: {
     // The navigation's badge: recent sends that failed or may not have arrived.
     counts: { assinaturaProblems: () => problemSends() },

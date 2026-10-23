@@ -6,7 +6,7 @@ import { EDITION_WHEN, SITE } from "@aihot/site";
 import type { CalloutPlace } from "@aihot/web/modules";
 import { IconArrowRight, IconMail } from "@aihot/web/components/icons";
 
-const LINE = "Receba a edição toda segunda — por e-mail ou WhatsApp.";
+const LINE = `Receba a edição semanal ${EDITION_WHEN.weekly}, de graça.`;
 
 export function Callout({ at }: { at: CalloutPlace }) {
   if (at === "report-end" || at === "item-end") {
@@ -15,7 +15,7 @@ export function Callout({ at }: { at: CalloutPlace }) {
         <div className="min-w-0">
           <h2 className="text-[18px] font-bold leading-snug text-ink">{at === "report-end" ? "Gostou desta edição?" : "Gostou desta matéria?"}</h2>
           <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-3">
-            {`A edição semanal do ${SITE.bareName} chega ${EDITION_WHEN.weekly}, de graça, por e-mail ou WhatsApp. Você sai quando quiser.`}
+            {`A edição semanal do ${SITE.bareName} chega ${EDITION_WHEN.weekly}, de graça. Você sai quando quiser.`}
           </p>
         </div>
         <Link

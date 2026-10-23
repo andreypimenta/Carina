@@ -5,9 +5,6 @@ import { EDITION_WHEN, SITE } from "@aihot/site";
 /** The sentence a reader ticks to subscribe an e-mail (LGPD): what is sent, how often, and how to leave. */
 export const CONSENT = `Quero receber a edição semanal do ${SITE.bareName}, ${EDITION_WHEN.weekly} (horário de Brasília), neste e-mail. Uso este dado só para esse envio e posso sair quando quiser, pelo link de cada mensagem.`;
 
-/** The line closing each issue in the feeds and the Agent answers, before the address of /assine. */
-export const CLOSING = `Receba a edição semanal do ${SITE.bareName} ${EDITION_WHEN.weekly}, de graça, por e-mail ou WhatsApp:`;
-
 /** The message a reader sends the journal's number to receive the edition there. */
 export const JOIN_TEXT = `QUERO ${SITE.name.toUpperCase()}`;
 

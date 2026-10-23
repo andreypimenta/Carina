@@ -11,7 +11,7 @@ export default defineWebModule({
   ownChrome: ["/assine"],
   sidebar: { section: "Conteúdo", items: [{ to: "/assine", label: "Assine grátis", icon: IconMail }] },
   tabs: [{ key: "assine", to: "/assine", label: "Assine", icon: IconMail }],
-  tools: [{ to: "/assine", label: "Receber a edição por e-mail ou WhatsApp", icon: <IconMail size={20} /> }],
+  tools: [{ to: "/assine", label: "Receber a edição semanal", icon: <IconMail size={20} /> }],
   Callout,
   admin: { content: [{ to: "/admin/assinatura", label: "Inscritos", count: "assinaturaProblems", tone: "bad" }] },
 });
