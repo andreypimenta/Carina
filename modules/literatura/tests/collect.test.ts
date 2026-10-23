@@ -1,7 +1,8 @@
 // The literature run against local stand-ins for PubMed, Unpaywall, Europe PMC and the model. Failure cases:
 // a paper whose licence allows it is not republished in full, or one whose licence does not is republished;
 // the site's article is written from the abstract when a readable full text exists; a paper is written twice
-// (paying twice) on the next run; an erratum becomes an article; the article lands outside today.
+// (paying twice) on the next run; an erratum becomes an article; the article lands outside today; a paper found
+// days after entering PubMed is archived as history and never reaches an edition.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -83,8 +84,9 @@ test("a run republishes the open-licence paper, writes the closed one from its a
   assert.equal(modelInputs.length, 1, "only the closed paper is written by the model");
   assert.match(modelInputs[0]!, /Texto disponível: somente o resumo/);
 
-  const papers = await sql<{ pmid: string; status: string; source_id: string | null; title: string | null; body_html: string | null; language: string | null; url: string | null; published_at: Date | null }[]>`
-    SELECT p.pmid, p.status, a.source_id, a.title, a.body_html, a.language, a.url, a.published_at
+  const papers = await sql<{ pmid: string; status: string; source_id: string | null; title: string | null; body_html: string | null; language: string | null; url: string | null; published_at: Date | null;
+    backfill: boolean | null; backfill_reason: string | null; timeline_at: Date | null; discovered_at: Date | null }[]>`
+    SELECT p.pmid, p.status, a.source_id, a.title, a.body_html, a.language, a.url, a.published_at, a.backfill, a.backfill_reason, a.timeline_at, a.discovered_at
     FROM literatura_papers p LEFT JOIN articles a ON a.id = p.article_id
     WHERE p.pmid IN ('41000001', '41000002', '41000003') ORDER BY p.pmid`;
   const [closed, open, erratum] = papers;
@@ -95,6 +97,12 @@ test("a run republishes the open-licence paper, writes the closed one from its a
   assert.match(closed!.body_html!, /Para o pediatra/);
   assert.match(closed!.body_html!, /o artigo completo é pago na editora/);
   assert.equal(closed!.published_at!.toISOString(), "2026-10-19T03:00:00.000Z");
+  for (const paper of [closed!, open!]) {
+    assert.ok(paper.discovered_at!.getTime() - paper.published_at!.getTime() > 48 * 3600_000, "the fixture's paper entered PubMed more than 48 hours ago");
+    assert.equal(paper.backfill, false, "a paper days old is still news for the week's edition");
+    assert.equal(paper.backfill_reason, null);
+    assert.equal(paper.timeline_at!.getTime(), paper.discovered_at!.getTime(), "it counts in the edition of the day it was found");
+  }
 
   assert.equal(open!.source_id, INTEGRAL_SOURCE);
   assert.equal(open!.language, "en");

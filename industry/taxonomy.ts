@@ -31,6 +31,12 @@ export const TAG_SECTIONS: ReadonlyArray<{ tag: string; section: string }> = [
 ];
 
 /**
+ * Fontes sem o teto de duas entradas por fonte no corpo da nota diária: as duas fontes de artigos do PubMed
+ * (modules/literatura), em que cada item é um artigo diferente e não a mesma redação repetida.
+ */
+export const UNCAPPED_SOURCES: readonly string[] = ["literatura-materia", "literatura-integral"];
+
+/**
  * O tipo de publicação mais acompanhado neste setor (aqui, diretrizes e consensos): o número no cabeçalho das edições.
  * Só conta quando categoria e tag batem; unit vem logo depois do número. Setores sem esse tipo usam null.
  */

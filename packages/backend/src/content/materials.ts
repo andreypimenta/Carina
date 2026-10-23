@@ -50,6 +50,8 @@ export interface MaterialInput {
   discoveredAt?: Date;
   /** Explicit backfill: first import of a new source, or a report flagged as backfill. */
   backfill?: string | null;
+  /** False for a source whose material stays news for days after its date (a search that looks a week back). */
+  staleOnDiscovery?: boolean;
   /** Keep an existing id when importing history. */
   id?: string;
 }
@@ -76,14 +78,14 @@ export interface TimelineDecision {
   backfillReason: string | null;
 }
 
-/** The one timeline rule shared by every entrance. */
-export function decideTimeline(claimed: Date | null | undefined, discoveredAt: Date, explicitBackfill?: string | null): TimelineDecision {
+/** The one timeline rule shared by every entrance; a source may opt out of the stale-on-discovery part. */
+export function decideTimeline(claimed: Date | null | undefined, discoveredAt: Date, explicitBackfill?: string | null, staleOnDiscovery = true): TimelineDecision {
   let publishedAt: Date | null = claimed && Number.isFinite(claimed.getTime()) ? claimed : null;
   if (publishedAt && publishedAt.getTime() > discoveredAt.getTime() + FUTURE_TOLERANCE_MS) publishedAt = null;
   let backfillReason: string | null = null;
   if (explicitBackfill) backfillReason = explicitBackfill;
   else if (!publishedAt) backfillReason = "unknown-publication-time";
-  else if (publishedAt && discoveredAt.getTime() - publishedAt.getTime() > STALE_ON_DISCOVERY_MS) backfillReason = "stale-on-discovery";
+  else if (staleOnDiscovery && discoveredAt.getTime() - publishedAt.getTime() > STALE_ON_DISCOVERY_MS) backfillReason = "stale-on-discovery";
   const backfill = backfillReason !== null;
   const timelineAt = backfill && publishedAt ? publishedAt : discoveredAt;
   return { publishedAt, timelineAt, backfill, backfillReason };
@@ -170,7 +172,7 @@ async function upsertIn(db: Db, m: MaterialInput): Promise<MaterialResult> {
   const discoveredAt = m.discoveredAt ?? new Date();
   const title = collapseWhitespace(m.title).slice(0, 1000) || m.url;
 
-  const t = decideTimeline(m.publishedAt, discoveredAt, m.backfill);
+  const t = decideTimeline(m.publishedAt, discoveredAt, m.backfill, m.staleOnDiscovery);
   // Most listing entries are already stored. Lock and reuse those rows without attempting an
   // insert of their body and raw payload on every collection. The unique key still arbitrates
   // concurrent first discoveries; after losing that insert, read and lock its winner.

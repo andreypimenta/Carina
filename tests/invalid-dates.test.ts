@@ -100,10 +100,13 @@ test("storage preserves finite future claims and existing timeline boundaries", 
     { name: "future", claim: new Date(discoveredAt.getTime() + FUTURE_TOLERANCE_MS + 1), trusted: false, backfill: 'unknown-publication-time' },
     { name: "old", claim: new Date(discoveredAt.getTime() - STALE_ON_DISCOVERY_MS - 1), trusted: true, backfill: "stale-on-discovery" },
     { name: "explicit", claim: new Date(NaN), trusted: false, backfill: "manual-backfill" },
+    // A source whose material stays news for days opts out of the stale rule, not of the others.
+    { name: "old-news", claim: new Date(discoveredAt.getTime() - STALE_ON_DISCOVERY_MS - 1), trusted: true, backfill: null, staleOnDiscovery: false },
+    { name: "undated-news", claim: new Date(NaN), trusted: false, backfill: "unknown-publication-time", staleOnDiscovery: false },
   ];
   for (const c of cases) {
     const result = await upsertMaterial({ sourceId: s.id, url: `https://example.org/${s.id}/${c.name}`, title: c.name,
-      publishedAt: c.claim, discoveredAt, via: "import", backfill: c.name === "explicit" ? c.backfill : null });
+      publishedAt: c.claim, discoveredAt, via: "import", backfill: c.name === "explicit" ? c.backfill : null, staleOnDiscovery: c.staleOnDiscovery });
     const row = await timeline(result.articleId);
     assert.equal(row.published_at_claim?.getTime() ?? null, Number.isFinite(c.claim.getTime()) ? c.claim.getTime() : null, c.name);
     assert.equal(row.published_at?.getTime() ?? null, c.trusted ? c.claim.getTime() : null, c.name);
