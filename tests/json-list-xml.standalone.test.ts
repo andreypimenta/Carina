@@ -31,7 +31,7 @@ const source = (file: string) => ({ id: "test-xml", config: {
 
 test("XML elements, attributes and text map like JSON paths, with leading zeros kept", async () => {
   const items = await fetchJsonList(source("/two.xml"));
-  assert.deepEqual(items.map((i) => [i.url, i.title, i.excerpt, i.publishedAt?.toISOString(), i.raw?.externalId]), [
+  assert.deepEqual(items.map((i) => [i.url, i.title, i.excerpt, i.publishedAt?.toISOString(), (i.raw as { externalId?: unknown } | undefined)?.externalId]), [
     ["https://www.isrctn.com/ISRCTN00123456", "Airway & trial", "Scientific Airway & trial", "2026-10-06T09:00:00.000Z", "00123456"],
     ["https://www.isrctn.com/ISRCTN86231109", "Second", "Scientific Second", "2026-09-09T09:21:20.000Z", "86231109"],
   ]);

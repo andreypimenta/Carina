@@ -1,118 +1,143 @@
-# Diretório de fontes de via aérea: destino de cada item
+# Diretórios de fontes e de redes sociais: destino de cada item
 
-Em 23/10/2026 o dono do Fôlego enviou um diretório curado de fontes online sobre manejo, doenças e cirurgia de vias aéreas (adulto e pediatria) e pediu que tudo entrasse no jornal, sem exceção. Este documento dá o destino de cada item do diretório: como entrou (o id da fonte em `industry/sources.json` ou o da busca em `industry/literatura.json`), se está ativo e, quando não está, o motivo verificado.
+Em 23/10/2026 o dono do Fôlego mandou dois diretórios e pediu que tudo entrasse no jornal, sem exceção:
+- um de fontes online sobre manejo, doenças e cirurgia de vias aéreas (adulto e pediatria);
+- outro de perfis, canais, pesquisas e hashtags em redes sociais.
 
-Como foi verificado: cada feed e cada página de lista passou pelo caminho de pré-visualização do Painel (`previewSource`: a mesma leitura e os mesmos filtros da coleta, sem gravar nada). Quando a data vem da página da matéria (`detail`), a leitura da matéria (`fetchDetail`) também foi rodada nos primeiros itens. As buscas do PubMed foram rodadas com a função do próprio módulo (`searchPmids`, GET no esearch). Tudo foi testado a partir do servidor do site. Quando a URL do diretório é uma página estática (sobre, programa, inscrição), foi procurado o portal de notícias da instituição.
+Este documento dá o destino de cada item: como entrou (o id da fonte em `industry/sources.json`, o da busca em `industry/literatura.json` ou o do congresso em `industry/congressos.json`), se está ativo e, quando não está, o motivo verificado.
 
-"Ativa" quer dizer que a fonte entra ligada e trouxe itens com data. "Desligada" quer dizer que ela está cadastrada em `industry/sources.json` com `enabled: false`; pode ser ligada no Painel → Fontes quando o motivo deixar de valer. "Só aqui" quer dizer que não há o que cadastrar (nenhum feed, lista ou API utilizável), e o item fica registrado só nesta tabela.
+Como foi verificado:
+- **Feeds e páginas de lista:** passaram pelo caminho de pré-visualização do Painel (`previewSource`), que faz a mesma leitura e aplica os mesmos filtros da coleta, sem gravar nada.
+- **Datas vindas da matéria (`detail`):** a leitura da matéria (`fetchDetail`) também foi rodada nos primeiros itens.
+- **Buscas do PubMed:** rodadas com a função do próprio módulo (`searchPmids`, GET no esearch).
+- **Páginas estáticas:** quando a URL do diretório é uma página estática (sobre, programa, inscrição), foi procurado o portal de notícias da instituição.
+
+Tudo foi testado a partir do servidor do site.
+
+Para caber o diretório inteiro, o coletor passou a ler:
+- datas por extenso em português, espanhol e inglês ("30 de mayo de 2026", "23-Oct-2026");
+- datas numéricas com o ano no fim ("18/09/2026"), com a ordem declarada pela fonte quando o dia e o mês podem ser trocados (`publishedAtDateOrder`, veja `docs/sources.md`);
+- APIs que respondem em XML (`json_list` com `mode: "xml"`).
+
+O jornal ganhou uma agenda de congressos (módulo `agenda`).
+
+Os termos das tabelas:
+- **Ativa:** a fonte entra ligada e trouxe itens com data na verificação.
+- **Desligada:** a fonte está cadastrada com `enabled: false`. Em todos os casos, outro caminho ativo cobre a mesma fonte; ele está na mesma linha.
+- **Só aqui:** não há o que cadastrar, e o item fica registrado só nesta tabela.
+- **Aguardando meio de acesso:** perfis e pesquisas de X, Instagram e LinkedIn. O meio de acesso às redes está sendo avaliado à parte. O `x_search` (SocialData, pago) não foi usado sem chave.
 
 ## Periódicos
 
-Quando a editora publica um feed de sumário com data por artigo, ele entra como fonte de notícias (nível T1). Quando não publica, ou o feed não serve, os artigos de via aérea do periódico vêm pela busca `periodicos-sem-feed` do PubMed (o título do periódico em `[ta]` e o bloco temático do diretório), e viram matéria do Fôlego como os outros artigos do PubMed.
+Os feeds de sumário e as listas do Crossref trazem todos os artigos do periódico, não só os de via aérea; a pré-triagem descarta os de outros temas. O Crossref responde 429 quando recebe muitas leituras seguidas do mesmo endereço (aconteceu na verificação, ao ler os 14 periódicos em sequência); a fonte que levar 429 é lida de novo na rodada seguinte.
 
-| Periódico | Como entrou | Situação | Motivo |
+Os artigos de via aérea desses periódicos também chegam pelo PubMed:
+- pela busca `periodicos-sem-feed`, que procura o título do periódico em `[ta]` dentro do bloco temático do diretório;
+- pelas buscas temáticas.
+
+Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
+
+| Periódico | Como entrou | Situação | Observação |
 |---|---|---|---|
-| Respiratory Endoscopy (J-STAGE) | `rss-jstage-respend` (WebAPI pública do J-STAGE, Atom por artigo) | ativa | O RSS de novidades do J-STAGE (`AF05S010NewRssDld`) vem vazio para esta revista; a WebAPI lista os artigos com data. Ela devolve os mais antigos primeiro, por isso a fonte ordena por data e pede a partir de 2026 (`pubyearfrom=2026`, até 1000 artigos). |
+| Respiratory Endoscopy (J-STAGE) | `rss-jstage-respend` (WebAPI pública do J-STAGE, Atom por artigo) | ativa | O RSS de novidades do J-STAGE (`AF05S010NewRssDld`) vem vazio para esta revista. A WebAPI lista os artigos com data, mas devolve os mais antigos primeiro; por isso a fonte ordena por data e pede a partir de 2026 (`pubyearfrom=2026`, até 1000 artigos). |
 | The Journal of the Japan Society for Respiratory Endoscopy (気管支学) | `rss-jstage-jjsre` (WebAPI do J-STAGE) | ativa | O RSS de novidades do J-STAGE só diz "新着記事を登載しました" e aponta todos os itens para a página da revista. Os títulos e resumos estão em japonês. |
 | Acta Anaesthesiologica Scandinavica | `rss-j-acta-anaesth-scand` (RSS Wiley) | ativa | |
 | Pediatric Pulmonology | `rss-j-pediatric-pulmonology` (RSS Wiley) | ativa | |
-| Otolaryngologic Clinics of North America | `periodicos-sem-feed` (PubMed); `rss-j-otolaryngol-clin` | busca ativa; feed desligado | O RSS do ScienceDirect não traz data no item (só o texto "Available online…" no resumo), e a página do artigo responde 403. Item sem data não é publicado. |
-| American Journal of Respiratory and Critical Care Medicine (diretriz ATS) | `periodicos-sem-feed`; `rss-j-ajrccm` | busca ativa; feed desligado | O feed do atsjournals.org redireciona para academic.oup.com, que responde 403 (página de desafio do Cloudflare). A URL do diretório é um registro institucional (Johns Hopkins), não uma lista; a diretriz de traqueostomia pediátrica também chega por `traqueostomia-pediatrica` e `diretorio-diretrizes`. |
-| The Journal of Thoracic and Cardiovascular Surgery | `periodicos-sem-feed`; `rss-j-jtcvs` | busca ativa; feed desligado | ScienceDirect: item sem data e artigo com 403. |
-| The Annals of Thoracic Surgery | `periodicos-sem-feed`; `rss-j-ann-thorac-surg` | busca ativa; feed desligado | ScienceDirect: item sem data e artigo com 403. |
-| European Journal of Cardio-Thoracic Surgery | `periodicos-sem-feed` | busca ativa; feed só aqui | academic.oup.com responde 403 à página da revista, e o endereço do feed não pôde ser lido. |
+| Otolaryngologic Clinics of North America | `json-j-otolaryngol-clin` (Crossref), `periodicos-sem-feed` | ativa | O RSS do ScienceDirect não traz data no item (só o texto "Available online…" no resumo), e a página do artigo responde 403. A API pública do Crossref lista os artigos novos de cada ISSN, com a data em que o DOI foi criado. |
+| American Journal of Respiratory and Critical Care Medicine (diretriz ATS) | `json-j-ajrccm` (Crossref), `periodicos-sem-feed` | ativa | O feed do atsjournals.org redireciona para academic.oup.com, que responde 403 (Cloudflare). A URL do diretório é um registro institucional (Johns Hopkins). A diretriz de traqueostomia pediátrica também chega por `traqueostomia-pediatrica` e `diretorio-diretrizes`. |
+| The Journal of Thoracic and Cardiovascular Surgery | `json-j-jtcvs` (Crossref), `periodicos-sem-feed` | ativa | ScienceDirect: item sem data e artigo com 403. |
+| The Annals of Thoracic Surgery | `json-j-ann-thorac-surg` (Crossref), `periodicos-sem-feed` | ativa | ScienceDirect: item sem data e artigo com 403. |
+| European Journal of Cardio-Thoracic Surgery | `json-j-ejcts` (Crossref), `periodicos-sem-feed` | ativa | academic.oup.com responde 403. |
 | The Laryngoscope | `rss-j-laryngoscope` (RSS Wiley) | ativa | |
-| International Journal of Pediatric Otorhinolaryngology | `periodicos-sem-feed`; `rss-j-ijporl` | busca ativa; feed desligado | ScienceDirect: item sem data e artigo com 403. |
-| Journal of Bronchology & Interventional Pulmonology | `periodicos-sem-feed`; `rss-j-jbip` | busca ativa; feed desligado | O feed do journals.lww.com responde 403. |
-| CHEST | `periodicos-sem-feed`; `rss-j-chest` | busca ativa; feed desligado | ScienceDirect: item sem data e artigo com 403. Os comunicados da CHEST já entram por `web-chest-press`. |
-| European Respiratory Journal | `periodicos-sem-feed`; `rss-j-erj` | busca ativa; feed desligado | O feed do publications.ersnet.org responde 403 (Cloudflare). |
-| British Journal of Anaesthesia | `periodicos-sem-feed`; `rss-j-bja` | busca ativa; feed desligado | ScienceDirect: item sem data e artigo com 403. |
+| International Journal of Pediatric Otorhinolaryngology | `json-j-ijporl` (Crossref), `periodicos-sem-feed` | ativa | ScienceDirect: item sem data e artigo com 403. |
+| Journal of Bronchology & Interventional Pulmonology | `json-j-jbip` (Crossref), `periodicos-sem-feed` | ativa | journals.lww.com responde 403. |
+| CHEST | `json-j-chest` (Crossref), `periodicos-sem-feed` | ativa | ScienceDirect: item sem data e artigo com 403. Os comunicados da CHEST entram por `web-chest-press`. |
+| European Respiratory Journal | `json-j-erj` (Crossref), `periodicos-sem-feed` | ativa | publications.ersnet.org responde 403 (Cloudflare). |
+| British Journal of Anaesthesia | `json-j-bja` (Crossref), `periodicos-sem-feed` | ativa | ScienceDirect: item sem data e artigo com 403. |
 | Anaesthesia | `rss-j-anaesthesia` (RSS Wiley) | ativa | |
-| Anesthesiology | `periodicos-sem-feed`; `rss-j-anesthesiology` | busca ativa; feed desligado | A revista está no journals.lww.com, que responde 403 à página e ao feed. |
-| Journal of Pediatric Surgery | `periodicos-sem-feed`; `rss-j-j-pediatr-surg` | busca ativa; feed desligado | ScienceDirect: item sem data e artigo com 403. |
-| Critical Care | `rss-j-critical-care` (RSS de busca do Springer) | ativa | O feed antigo (ccforum.biomedcentral.com) redireciona para o Springer; o RSS de busca do Springer por periódico traz os artigos com data. |
-| Pediatric Critical Care Medicine | `periodicos-sem-feed`; `rss-j-pccm` | busca ativa; feed desligado | O feed do journals.lww.com responde 403. |
-| Respiratory Care | `periodicos-sem-feed` | busca ativa; feed só aqui | A revista passou para o SAGE: o feed antigo (rc.rcjournal.com) redireciona para a página da revista no journals.sagepub.com, que responde 403, e o feed da Liebert responde 404. |
-
-Os feeds de sumário trazem todos os artigos do periódico, não só os de via aérea. A pré-triagem descarta os de outros temas.
+| Anesthesiology | `json-j-anesthesiology` (Crossref), `periodicos-sem-feed` | ativa | journals.lww.com responde 403. |
+| Journal of Pediatric Surgery | `json-j-j-pediatr-surg` (Crossref), `periodicos-sem-feed` | ativa | ScienceDirect: item sem data e artigo com 403. |
+| Critical Care | `rss-j-critical-care` (RSS de busca do Springer) | ativa | O feed antigo (ccforum.biomedcentral.com) redireciona para o Springer. |
+| Pediatric Critical Care Medicine | `json-j-pccm` (Crossref), `periodicos-sem-feed` | ativa | journals.lww.com responde 403. |
+| Respiratory Care | `json-j-respir-care` (Crossref, ISSN eletrônico), `periodicos-sem-feed` | ativa | A revista passou para o SAGE, que responde 403. O SAGE criou DOIs novos para o acervo antigo no ISSN impresso, então a fonte lê só o eletrônico (1943-3654), onde estão os artigos novos. |
 
 ## Sociedades e diretrizes
 
 ### Internacionais e norte-americanas
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
-| AAO-HNS / AAO-HNSF: Clinical Practice Guidelines | `json-aaohns` (API REST do WordPress do entnet.org, tipo `resource`) | ativa | A lista de diretrizes do diretório é montada por JavaScript, e o feed do site vem vazio. A API traz todos os recursos publicados (diretrizes, comunicados, consensos, avisos), com data; o título vem da página (`detail`), porque a API o entrega com entidades HTML (`&#8211;`). A página inicial respondeu 403 numa das tentativas. |
-| ASPO-HNS | `rss-youtube-aspo` (canal oficial no YouTube) | ativa | O site não tem página de notícias, e o feed do calendário de eventos (JEvents) vem vazio. A página do congresso anual é estática. |
-| AATS | `web-aats-newsroom` | desligada | A lista do newsroom não tem data, e a matéria também não (sem `article:published_time`, JSON-LD ou `<time>`). Os artigos do JTCVS chegam por `periodicos-sem-feed`. |
-| AABIP | `rss-aabip-conference` | desligada; resto só aqui | O site (aabip.memberclicks.net) não tem notícias, só páginas de cursos e newsletters em PDF. O feed do site do congresso (aabipconference.com) só tem os posts de demonstração do tema, de 2023. Os artigos do JBIP chegam por `periodicos-sem-feed`. |
-| WABIP | `rss-wabip`, `rss-gnews-site-wabip` | ativa | O site às vezes recusa a conexão (aconteceu em várias tentativas de 23/10/2026); a coleta tenta de novo na rodada seguinte. O site multilíngue responde em chinês ao `accept-language` do coletor, por isso a fonte troca os links `/zh/` pelos em inglês (`itemUrlPrefixRewrite`). |
+| AAO-HNS / AAO-HNSF: Clinical Practice Guidelines | `json-aaohns` (API REST do WordPress do entnet.org) | ativa | A lista do diretório é montada por JavaScript, e o feed do site vem vazio. A API traz todos os recursos publicados (diretrizes, comunicados, consensos, avisos), com data. O título vem da página (`detail`), porque a API o entrega com entidades HTML. |
+| ASPO-HNS | `rss-youtube-aspo` (canal oficial no YouTube); congresso em `aspo-2027` na agenda | ativa | O site não tem página de notícias, e o feed do calendário de eventos (JEvents) vem vazio. |
+| AATS | `rss-gnews-site-aats` (Google News, `site:aats.org`); `web-aats-newsroom` | Google News ativo; newsroom desligado | A lista do newsroom não tem data, e a matéria também não (sem `article:published_time`, JSON-LD, `<time>` nem data no texto). Os artigos do JTCVS chegam por `json-j-jtcvs`. |
+| AABIP | `rss-gnews-aabip` (Google News); `rss-aabip-conference`; congresso em `aabip-2026` na agenda | Google News ativo; feed desligado | O site (aabronchology.org, aabip.memberclicks.net) não tem notícias nem feed, só páginas de cursos e newsletters em PDF. O feed do site do congresso só tem os posts de demonstração do tema, de 2023. Os artigos do JBIP chegam por `json-j-jbip`. |
+| WABIP | `rss-wabip`, `rss-gnews-site-wabip`; WCBIP em `wcbip-2026` na agenda | ativa | O site às vezes recusa a conexão (aconteceu em várias tentativas de 23/10/2026); a coleta tenta de novo na rodada seguinte. O site multilíngue responde em chinês ao `accept-language` do coletor, por isso a fonte troca os links `/zh/` pelos em inglês (`itemUrlPrefixRewrite`). |
 | Society for Airway Management (SAM) | `rss-sam` | ativa | Publica pouco (último post em 05/06/2026). |
-| Global Tracheostomy Collaborative (GTC) | `rss-youtube-gtc` (canal oficial no YouTube) | ativa | O site não tem notícias, e o feed do calendário de eventos (JEvents) vem vazio. |
+| Global Tracheostomy Collaborative (GTC) | `rss-youtube-gtc` (canal oficial no YouTube); ITS em `its-2026` na agenda | ativa | O site não tem notícias, e o feed do calendário de eventos (JEvents) vem vazio. |
 
 ### Europa e Oceania
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
-| ESTS | `web-ests-news` (já existia) | ativa | |
+| ESTS | `web-ests-news` (já existia); congresso em `ests-2027` na agenda; `rss-ests-meeting` | ativa; feed do congresso desligado | O feed do site do congresso (estsmeeting.com) vem vazio, e a API do WordPress dele não tem posts; as notícias do congresso saem em `web-ests-news`. |
 | ERS: Guidelines Development | `rss-ers-guideline` (feed de busca do WordPress, "guideline"); `rss-ers-paediatric` e `rss-ers-airway` já existiam | ativa | |
 | European Laryngological Society (ELS) | `web-els-news` | ativa | Página inicial, com os 3 destaques e a data em `<time>`. |
-| Difficult Airway Society (DAS): Guidelines | `rss-das` | ativa | O feed da categoria de notícias traz os mesmos posts do feed geral. Último post em 31/03/2026. |
-| National Tracheostomy Safety Project (NTSP) | `rss-trachy-talk`, `rss-youtube-ntsp`; `web-ntsp-news` | podcast e YouTube ativos; notícias desligadas | A lista de notícias mostra a data como "18/09/2026" (dd/mm/aaaa), formato que o coletor não lê, e a matéria não tem data legível. |
-| SFORL | `rss-sforl-mediatheque`; `rss-sforl` | médiathèque ativa; feed do site desligado | O feed do sforl.org está parado desde 24/01/2025, e a página de produção científica é uma lista de PDFs sem data. A médiathèque (webinars, vídeos) tem feed com data. |
-| ANZCA Library: Airway Management | só aqui | | É um guia LibGuides: uma coletânea de links sem lista datada e sem feed. |
+| Difficult Airway Society (DAS): Guidelines | `rss-das`; congresso em `das-2026` na agenda | ativa | O feed da categoria de notícias traz os mesmos posts do feed geral. Último post em 31/03/2026. |
+| National Tracheostomy Safety Project (NTSP) | `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp` | ativa | A lista de notícias escreve a data como "18/09/2026"; a fonte declara a ordem dia/mês/ano. |
+| SFORL | `rss-sforl`, `rss-sforl-mediatheque` | ativa | O feed do sforl.org funciona, mas está quieto desde 24/01/2025. A página de produção científica é uma lista de PDFs sem data. A médiathèque (webinars, vídeos) publica com frequência. |
+| ANZCA Library: Airway Management | só aqui | | É um guia LibGuides: uma coletânea de links para artigos, diretrizes e vídeos de outras fontes, sem lista datada e sem feed. As fontes que ele reúne (DAS, NTSP, periódicos) entram pelos seus próprios caminhos. |
 
 ### Brasil e América Latina
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
-| SBCT: Pró-Ligas | `json-sbct` (API REST do WordPress, categoria Notícias), `rss-gnews-site-sbct`; `web-sbct` (já existia) e `rss-youtube-sbct` | notícias e Google News ativas; lista e YouTube desligados | A API traz as notícias com data; o título vem da página (`detail`, a tag `<title>`, que termina em " – SBCT"). A página de notícias, lida pela `web-sbct`, não tem data. As aulas do Pró-Ligas abrem em lightbox, sem link próprio, e a data só aparece no título ("Vídeo 41 - 08/08/2026"). O feed do canal da SBCT no YouTube não lista nenhum vídeo (as aulas não são públicas no canal). |
-| SBPT | `rss-sbpt` (já existia) | ativa | |
+| SBCT: Pró-Ligas | `json-sbct` (API REST do WordPress, categoria Notícias), `web-sbct-pro-ligas` (aulas em vídeo), `rss-gnews-site-sbct`; `web-sbct` (já existia) e `rss-youtube-sbct` | ativa; a lista antiga e o YouTube desligados | A API traz as notícias com data, e o título vem da `<title>` da página do post, que termina em " – SBCT". As aulas do Pró-Ligas abrem em lightbox e não têm página própria. Cada uma entra com o endereço do lightbox (a página com o vídeo no fragmento) e a data do título ("Vídeo 41 - 08/08/2026"). A página de notícias, lida pela `web-sbct`, não tem data, e o feed do canal da SBCT no YouTube não lista nenhum vídeo. |
+| SBPT | `rss-sbpt` (já existia); congresso em `cbpt-2026` na agenda | ativa | |
 | ABORL-CCF | `rss-aborl` (já existia) | ativa | |
-| ALAT | `web-alat-news` | ativa | A data da lista está em espanhol ("30 de mayo de 2026"), que o coletor não lê; ela vem do JSON-LD da matéria (`detail`). |
-| SAESP: via aérea | `web-saesp-news` | ativa | O feed do WordPress está desligado (redireciona para a página inicial), e a data da lista vem como "24/09/26". A data vem da matéria (`detail`). |
+| ALAT | `web-alat-news`; congressos em `alat-2026` e `alat-2027` na agenda | ativa | A data vem do JSON-LD da matéria (`detail`). |
+| SAESP: via aérea | `web-saesp-news` | ativa | O feed do WordPress está desligado (redireciona para a página inicial). A data vem da matéria (`detail`). |
 
 ### Ásia
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
 | Japan Society for Respiratory Endoscopy (JSRE) | `web-jsre-news` | ativa | Lista de avisos "学会から", com a data "2026年8月31日", fuso `+09:00`. |
-| Indian Association for Bronchology (IAB) | só aqui | | O site só tem páginas de eventos, sem data na lista e sem feed. |
-| APIPA | `rss-apipa` | desligada | O feed está abandonado: só um post "testing", de 2019. A página de reuniões é uma lista de PDFs sem data. |
+| Indian Association for Bronchology (IAB) | BRONCOCON em `broncocon-2026` na agenda; o site, só aqui | | O site só tem páginas de eventos, sem data na lista e sem feed. |
+| APIPA | `json-apipa-programs` (API REST do WordPress, os PDFs dos programas de reuniões); `rss-apipa` | ativa; feed desligado | O feed está abandonado: só um post "testing", de 2019. O site publica cada reunião como um PDF de programa, e a API de mídia do WordPress lista esses PDFs com data. |
 
 ### Sociedades que o diretório ainda não tinha validado
 
 | Fonte | Como entrou | Situação |
 |---|---|---|
-| ATS (catálogo de diretrizes) | `web-ats-press` (já existia); as diretrizes saem no AJRCCM e no *Annals ATS* e chegam pelas buscas do PubMed (`diretorio-diretrizes`, `periodicos-sem-feed`) | ativa |
-| STS | `web-sts-press` (já existia) | ativa |
+| ATS (catálogo de diretrizes) | `web-ats-press` (já existia), `json-j-ajrccm`; as diretrizes também chegam pelas buscas do PubMed (`diretorio-diretrizes`) | ativa |
+| STS | `web-sts-press` (já existia), `json-j-ann-thorac-surg` | ativa |
 | ESPO | só aqui: já tinha sido avaliada e deixada de fora por não ter feed (veja `docs/fontes.md`) | |
 | Outras sociedades nacionais | o diretório não nomeia nenhuma | |
 
 ## Centros de referência
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
 | Cincinnati Children's: Airway Reconstruction Research e Research Horizons | `rss-cincinnati-research-horizons`, `web-cincinnati-releases` (já existiam); `rss-gnews-site-cincinnati` | ativa | A página do programa é estática; o blog e os comunicados já eram coletados. |
 | Boston Children's: Esophageal and Airway Treatment Center e Answers | `rss-boston-childrens-answers` (já existia); `rss-gnews-site-boston-answers` | ativa | A página do centro é estática. |
 | CHOP: Neonatal Airway Program | `web-chop-news` (já existia); `rss-gnews-site-chop` | ativa | A página do programa é estática. |
 | SickKids: DREAMS e pesquisa de via aérea | `web-sickkids-news` (já existia) | ativa | A página da clínica é estática; a notícia citada está no newsroom. |
-| Children's Hospital Colorado: Advances & Answers | `web-childrens-colorado` | desligada | A data só aparece como "10/21/2026" (mm/dd/aaaa), na lista e na matéria, formato que o coletor não lê. |
-| Instituto Nacional del Tórax: Broncoscopía (Chile) | `rss-torax-cl` (feed de notícias do instituto) | ativa | A página de broncoscopia é operacional; o feed do site traz as notícias do instituto (último item em 07/08/2026). |
+| Children's Hospital Colorado: Advances & Answers | `web-childrens-colorado` | ativa | A data aparece como "10/21/2026"; a fonte declara a ordem mês/dia/ano. |
+| Instituto Nacional del Tórax: Broncoscopía (Chile) | `rss-torax-cl` (feed de notícias do instituto) | ativa | A página de broncoscopia é operacional; o feed do site traz as notícias do instituto. |
 | Great Ormond Street | `web-gosh-news` (já existia) | ativa | |
-| Mass General | só aqui | | O endereço de notícias leva a news.massgeneralbrigham.org, montado por JavaScript (a página chega sem as matérias) e sem feed (`/feed/` responde 404). |
-| Mayo Clinic | `rss-mayo-news-network` (já existia) | ativa | |
-| Centros europeus e latino-americanos adicionais | o diretório não nomeia nenhum; já são coletados Sant Joan de Déu, Pequeno Príncipe, HCPA e agora o Instituto Nacional del Tórax | | |
+| Mass General | `rss-gnews-site-mgb` (Google News, `site:massgeneralbrigham.org` com termos de via aérea) | ativa | O site de notícias (news.massgeneralbrigham.org) é montado por JavaScript, sem feed (`/feed/` e `query-index.json` respondem 404); só o sitemap é público, e o coletor não lê sitemaps. |
+| Mayo Clinic | `rss-mayo-news-network` (já existia), `rss-youtube-mayo-clinic` | ativa | |
+| Centros europeus e latino-americanos adicionais | o diretório não nomeia nenhum; são coletados Sant Joan de Déu, Pequeno Príncipe, HCPA, o Instituto Nacional del Tórax e, pelo YouTube, Cambridge University Hospitals e Narayana Health | | |
 
 ## Notícias e agregadores
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
-| Healio: Pulmonology | `rss-healio-pulmonology` | ativa | O feed da seção (`/sws/feed/news/pulmonology`) voltou a publicar; traz também matérias de outras seções marcadas com pneumologia. |
-| EurekAlert! | `web-eurekalert` | desligada | Os feeds RSS antigos (`/rss/*.xml`) respondem 404. Na lista e no comunicado a data vem como "23-Oct-2026", formato que o coletor não lê, e o `<time datetime>` do comunicado vem preenchido com "TODO". |
-| Medscape | `rss-medscape-pulmonary` | desligada | Os feeds por especialidade existem (`/cx/rssfeeds/<n>.xml`; os de notícias e de terapia intensiva responderam com RSS), mas o Medscape passou a responder 429 com a página de desafio do Cloudflare a este servidor, e não deu para confirmar o número do feed de pneumologia. Confira o título do feed antes de ligar. |
+| Healio: Pulmonology | `rss-healio-pulmonology` | ativa | Traz também matérias de outras seções marcadas com pneumologia. |
+| EurekAlert! | `web-eurekalert` | ativa | Os feeds RSS antigos (`/rss/*.xml`) respondem 404, e o filtro de assunto da lista é ignorado. Por isso a fonte lê a lista de todos os comunicados, de todas as áreas, de hora em hora; a pré-triagem descarta os de outros temas. A data vem como "23-Oct-2026". |
+| Medscape | `rss-medscape-pulmonary` (`/cx/rssfeeds/2694.xml`, "Medscape Pulmonary Medicine") | ativa | Depois de muitas leituras seguidas, o Medscape respondeu 429 por algum tempo; na leitura espaçada da coleta, o feed responde. |
 | ENTtoday | `rss-enttoday` (já existia) | ativa | |
-| MDedge | só aqui | | Não tem feed, e a página de pneumologia não mostra matéria posterior a 25/11/2025. |
+| MDedge | só aqui | | Não tem feed, e a página de pneumologia não mostra matéria posterior a 25/11/2025: não há o que coletar. |
 | Outros agregadores | o diretório não nomeia nenhum | | |
 
 ## Pacientes e familiares
@@ -120,69 +145,69 @@ Os feeds de sumário trazem todos os artigos do periódico, não só os de via a
 | Fonte | Como entrou | Situação |
 |---|---|---|
 | Global Tracheostomy Collaborative: People with a Tracheostomy / Membership | `rss-youtube-gtc` (veja Sociedades) | ativa |
-| National Tracheostomy Safety Project | `rss-trachy-talk`, `rss-youtube-ntsp` (veja Sociedades) | ativa |
+| National Tracheostomy Safety Project | `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp` (veja Sociedades) | ativa |
 
 ## Podcasts, vídeos e redes
 
 Episódios de podcast e vídeos entram como itens de notícia, com o título e a descrição do feed.
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
 | Trachy Talk (NTSP) | `rss-trachy-talk` (feed Buzzsprout, achado pela API pública de lookup do iTunes) | ativa | Alguns episódios não têm página; o link é o arquivo de áudio. |
-| ERS Respiratory Channel: Guidelines in Focus | `rss-ers-channel` | desligada | O RSS do canal tem títulos genéricos ("Replay", "Guidelines in Focus") e os links dos vídeos respondem 404 fora do login. A página do canal 38 mostra a data como "10.08.2026" (dd.mm.aaaa), que o coletor não lê. As diretrizes da ERS chegam por `rss-ers-guideline`. |
-| SBCT Pró-Ligas: aulas em vídeo | `rss-youtube-sbct` | desligada | Veja SBCT acima. |
+| ERS Respiratory Channel: Guidelines in Focus | `web-ers-guidelines-in-focus` (a página do canal 38); `rss-ers-channel` | ativa; RSS desligado | O RSS do canal tem títulos genéricos ("Replay", "Guidelines in Focus"), e seus links respondem 404 fora do login. A página do canal lista cada episódio com título, link e data ("15.07.2026", dia/mês/ano declarado). |
+| SBCT Pró-Ligas: aulas em vídeo | `web-sbct-pro-ligas` | ativa | Veja SBCT acima. |
 | La médiathèque de la SFORL | `rss-sforl-mediatheque` | ativa | |
 | ANZCA Library: Apps, Podcasts & Online Lectures | só aqui | | Guia LibGuides, sem lista datada e sem feed. |
-| Global Tracheostomy Collaborative no LinkedIn | só aqui | | O LinkedIn exige login para ler a página da empresa. O canal da GTC no YouTube entra no lugar. |
+| Global Tracheostomy Collaborative no LinkedIn | aguardando meio de acesso (veja Redes sociais) | | O LinkedIn exige login. O canal da GTC no YouTube já entra. |
 
 ## Registros e preprints
 
-Os preprints entram com o nome da fonte dizendo "sem revisão por pares", e as regras de redação já proíbem chamar preprint de publicado ou revisado (`industry/prompts/rules-anti-hallucination.md`).
+Os preprints entram com o nome da fonte dizendo "sem revisão por pares". As regras de redação já proíbem chamar preprint de publicado ou revisado (`industry/prompts/rules-anti-hallucination.md`).
 
-| Fonte | Como entrou | Situação | Motivo |
+| Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
-| ClinicalTrials.gov | as 10 buscas que já existiam e 10 novas: `rss-ctgov-tracheostomy-adult`, `-difficult-airway`, `-airway-management`, `-central-airway`, `-foreign-body`, `-tbm-edac`, `-vocal-cord-paralysis`, `-decannulation`, `-airway-trauma`, `-ecmo-airway` | ativa | Só estudos novos (`dateField=StudyFirstPostDate`). Em 12 meses, as novas somam cerca de 4 estudos por semana, quase todos de traqueostomia em adultos, via aérea difícil e manejo da via aérea. |
+| ClinicalTrials.gov | as 10 buscas que já existiam e 10 novas: `rss-ctgov-tracheostomy-adult`, `rss-ctgov-difficult-airway`, `rss-ctgov-airway-management`, `rss-ctgov-central-airway`, `rss-ctgov-foreign-body`, `rss-ctgov-tbm-edac`, `rss-ctgov-vocal-cord-paralysis`, `rss-ctgov-decannulation`, `rss-ctgov-airway-trauma`, `rss-ctgov-ecmo-airway` | ativa | Só estudos novos (`dateField=StudyFirstPostDate`). Em 12 meses, as buscas novas somam cerca de 4 estudos por semana. |
 | arXiv | `rss-arxiv-airway` (API pública do arXiv, Atom, por data de envio) | ativa | Engenharia, imagem e acústica; não é evidência clínica. |
 | medRxiv | `json-medrxiv-airway` (API REST do Europe PMC, preprints do medRxiv com termos de via aérea) | ativa | |
 | bioRxiv | `json-biorxiv-airway` (Europe PMC, preprints do bioRxiv) | ativa | |
-| CTIS (UE) | `json-ctis-airway` (API pública de busca do CTIS, POST) | desligada | A API responde, mas todas as datas vêm como "31/08/2026" (dd/mm/aaaa), e a página do estudo é montada por JavaScript. |
-| ISRCTN | só aqui | | O site pede cookies e JavaScript, e a API (`/api/query/format/default`) devolve um XML próprio, que não é RSS, Atom nem JSON. |
-| WHO ICTRP | só aqui | | trialsearch.who.int respondeu 502, e o ICTRP não tem API pública de busca. |
-| ReBEC | só aqui | | Sem feed; `/api/` responde 403 e a busca (`/rg/?q=`) responde 404. Veja também `docs/fontes.md`. |
+| CTIS (UE) | `json-ctis-airway`, `json-ctis-tracheostomy` (API pública de busca do CTIS, POST) | ativa | A busca lê várias palavras como uma expressão só, então há uma fonte por termo. As datas vêm como "31/08/2026" (dia/mês/ano declarado). O link abre a página do estudo no portal do CTIS. |
+| ISRCTN | `xml-isrctn-airway` (API de busca do ISRCTN, em XML) | ativa | O site pede cookies e JavaScript; a API devolve um XML próprio, agora lido pelo `json_list` com `mode: "xml"`, já do mais novo para o mais antigo. |
+| WHO ICTRP | só aqui | | O portal de busca (trialsearch.who.int) respondeu 502 em todos os endereços, inclusive no de um estudo, e o ICTRP não tem API pública. Os registros primários que ele agrega e que o diretório cita (ClinicalTrials.gov, ISRCTN, CTIS, ReBEC) entram direto. |
+| ReBEC | `web-rebec` (a lista de ensaios novos da página inicial) | ativa | Sem feed (`/api/` responde 403, e a busca responde 404). A página inicial lista os ensaios registrados mais recentes, de todos os temas, com a data em mm/dd/aaaa declarada na própria página; a pré-triagem descarta os de outros temas. |
 
 ## Congressos e encontros
 
-O jornal não tem uma agenda de eventos. As notícias dos congressos chegam pelas fontes das sociedades; as datas anunciadas no diretório ficam registradas aqui.
+Os congressos estão em `industry/congressos.json` e aparecem na página `/agenda` do site (módulo `agenda`). A edição semanal ganha um bloco "Agenda" com os congressos em andamento ou que começam nos 30 dias seguintes a ela. As notícias de cada congresso continuam chegando pelas fontes das sociedades.
 
-| Congresso | Data anunciada | Como entrou | Situação |
+| Congresso | Data | Na agenda | Notícias |
 |---|---|---|---|
-| AATS Annual Meeting | 2 a 5/05/2026 | página do congresso estática; `web-aats-newsroom` desligada (veja AATS) | só aqui |
-| ESTS Annual Meeting | portal de 2027 | `web-ests-news`; `rss-ests-meeting` desligada (o feed do estsmeeting.com vem vazio) | ativa pela ESTS |
-| ASPO-HNS Annual Meeting | anual | `rss-youtube-aspo` | ativa |
-| DAS Annual Scientific Meeting | 11 a 13/11/2026 | `rss-das` (a categoria de notícias citada no diretório) | ativa |
-| AABIP Annual Conference | 20 a 22/08/2026 | `rss-aabip-conference` | desligada (veja AABIP) |
-| WCBIP | 3 a 6/12/2026, Melbourne | `rss-wabip`, `rss-gnews-site-wabip` | ativa |
-| International Tracheostomy Symposium (ITS) | 10ª edição, 1/10/2026 | `rss-youtube-gtc`; a página de congressos anteriores é estática | ativa pela GTC |
-| Congresso Brasileiro de Pneumologia e Tisiologia / Endoscopia Respiratória | 13 a 17/10/2026 | `rss-sbpt` (as notícias do congresso saem no feed da SBPT) | ativa |
-| BRONCOCON (Índia) | 26 a 28/06/2026 | só aqui: site do evento estático, e a IAB não tem feed | |
-| Congreso ALAT | 2026 | `web-alat-news` (as notícias do congresso saem nas novidades da ALAT) | ativa |
+| AATS Annual Meeting | 2 a 5/05/2026 | `aats-2026` | `rss-gnews-site-aats` |
+| ESTS Annual Meeting | 30/05 a 1/06/2027, Zurique (o diretório citava o portal de 2027; a data é a do site do congresso) | `ests-2027` | `web-ests-news` |
+| ASPO-HNS Annual Meeting | 9/04/2027, no COSM (início, como o calendário da ASPO publica) | `aspo-2027` | `rss-youtube-aspo` |
+| DAS Annual Scientific Meeting | 11 a 13/11/2026, País de Gales | `das-2026` | `rss-das` |
+| AABIP Annual Conference | 20 a 22/08/2026 | `aabip-2026` | `rss-gnews-aabip` |
+| WCBIP | 3 a 6/12/2026, Melbourne | `wcbip-2026` | `rss-wabip`, `rss-gnews-site-wabip` |
+| International Tracheostomy Symposium (ITS) | 10ª edição, 1/10/2026 | `its-2026` | `rss-youtube-gtc` |
+| Congresso Brasileiro de Pneumologia e Tisiologia / Endoscopia Respiratória | 13 a 17/10/2026, Natal | `cbpt-2026` | `rss-sbpt` |
+| BRONCOCON (Índia) | 26 a 28/06/2026, Pune | `broncocon-2026` | |
+| Congreso ALAT | 19º, aberto em 7/07/2026, Cartagena; o 20º, de 7 a 10/07/2027, na Costa Rica | `alat-2026`, `alat-2027` | `web-alat-news` |
 
 ## As quinze fontes essenciais
 
 | # | Fonte | Destino |
 |---|---|---|
 | 1 | PubMed (buscas temáticas salvas) | as 25 buscas que já existiam e as 25 novas, abaixo |
-| 2 | AATS | `web-aats-newsroom` (desligada) e JTCVS por `periodicos-sem-feed` |
-| 3 | ESTS | `web-ests-news` |
-| 4 | SBCT | `json-sbct`, `rss-gnews-site-sbct`; `web-sbct` e `rss-youtube-sbct` desligadas |
-| 5 | WABIP | `rss-wabip`, `rss-gnews-site-wabip` |
-| 6 | AABIP | `rss-aabip-conference` (desligada) e JBIP por `periodicos-sem-feed` |
-| 7 | ASPO-HNS | `rss-youtube-aspo` |
+| 2 | AATS | `rss-gnews-site-aats`, `json-j-jtcvs`, `aats-2026` na agenda |
+| 3 | ESTS | `web-ests-news`, `ests-2027` na agenda |
+| 4 | SBCT | `json-sbct`, `web-sbct-pro-ligas`, `rss-gnews-site-sbct` |
+| 5 | WABIP | `rss-wabip`, `rss-gnews-site-wabip`, `wcbip-2026` na agenda |
+| 6 | AABIP | `rss-gnews-aabip`, `json-j-jbip`, `aabip-2026` na agenda |
+| 7 | ASPO-HNS | `rss-youtube-aspo`, `aspo-2027` na agenda |
 | 8 | ELS | `web-els-news` |
-| 9 | ERS | `rss-ers-guideline`, `rss-ers-paediatric`, `rss-ers-airway` |
-| 10 | DAS | `rss-das` |
-| 11 | Global Tracheostomy Collaborative | `rss-youtube-gtc` |
-| 12 | NTSP / Trachy Talk | `rss-trachy-talk`, `rss-youtube-ntsp` |
+| 9 | ERS | `rss-ers-guideline`, `rss-ers-paediatric`, `rss-ers-airway`, `web-ers-guidelines-in-focus`, `json-j-erj` |
+| 10 | DAS | `rss-das`, `das-2026` na agenda |
+| 11 | Global Tracheostomy Collaborative | `rss-youtube-gtc`, `its-2026` na agenda |
+| 12 | NTSP / Trachy Talk | `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp` |
 | 13 | Cincinnati Children's | `rss-cincinnati-research-horizons`, `web-cincinnati-releases`, `rss-gnews-site-cincinnati` |
 | 14 | Boston Children's EAT Center | `rss-boston-childrens-answers`, `rss-gnews-site-boston-answers` |
 | 15 | CHOP Airway Programs | `web-chop-news`, `rss-gnews-site-chop` |
@@ -202,13 +227,15 @@ As quatro buscas prontas do diretório entram exatamente como estão, só passad
 | Ajuste: manejo anestésico, separado (MeSH de manejo e intubação, via aérea e intubação difíceis, videolaringoscopia, dispositivo supraglótico, extubação, acesso cervical) | `diretorio-manejo-anestesico` | 67,2 | 50,3 |
 | Ajuste: doença e cirurgia estrutural, separada (o bloco temático sem os quatro termos de manejo anestésico) | `diretorio-doenca-estrutural` | 59,2 | 31,5 |
 | Ajuste: diretrizes por termos livres e tipos de publicação (bloco temático com guideline, consensus, recommendation, position statement, expert panel, Delphi e os tipos Guideline, Practice Guideline e Consensus Development Conference) | `diretorio-diretrizes` | 10,2 | 6,7 |
-| Periódicos sem feed utilizável (veja Periódicos) | `periodicos-sem-feed` | 2,7 | 1,0 |
+| Periódicos do diretório nos temas de via aérea (veja Periódicos) | `periodicos-sem-feed` | 2,7 | 1,0 |
 
-Medição: esearch por data de entrada no PubMed (EDAT) em seis janelas de 7 dias, de 10/09 a 21/10/2026, com o filtro de idioma do módulo. As colunas não somam: as buscas se sobrepõem muito (a temática sem idade contém quase todas as outras). Juntas, as 25 buscas novas trazem 78,5 artigos por semana que as 25 antigas não traziam.
+Medição: esearch por data de entrada no PubMed (EDAT) em seis janelas de 7 dias, de 10/09 a 21/10/2026, com o filtro de idioma do módulo. As colunas não somam, porque as buscas se sobrepõem muito: a temática sem idade contém quase todas as outras. Juntas, as 25 buscas novas trazem 78,5 artigos por semana que as 25 antigas não traziam.
 
 ## Google Scholar
 
-O Google Scholar não tem feed nem API pública. Cada consulta entrou como a busca equivalente mais próxima no PubMed, com os mesmos termos ligados por AND e as frases entre aspas (o PubMed procura em todos os campos do registro, e não no texto completo como o Scholar). Foi escolhido o PubMed, e não o Europe PMC, para que os artigos sigam o mesmo caminho dos outros (matéria do Fôlego, sem duplicar o artigo que outra busca já trouxe). Os preprints, que o Scholar também cobre, chegam por `json-medrxiv-airway` e `json-biorxiv-airway`.
+O Google Scholar não tem feed nem API pública. Cada consulta entrou como a busca equivalente mais próxima no PubMed, com os mesmos termos ligados por AND e as frases entre aspas. A diferença é que o PubMed procura em todos os campos do registro, e não no texto completo, como o Scholar.
+
+Foi escolhido o PubMed, e não o Europe PMC, para que os artigos sigam o mesmo caminho dos outros: viram matéria do Fôlego, sem duplicar o artigo que outra busca já trouxe. Os preprints, que o Scholar também cobre, chegam por `json-medrxiv-airway` e `json-biorxiv-airway`.
 
 | Tema | Consulta no Scholar | Busca no PubMed |
 |---|---|---|
@@ -264,11 +291,133 @@ Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-g
 | Pendência | Destino |
 |---|---|
 | URLs sem teste HTTP individual | todas foram lidas do servidor nesta verificação; o resultado está nas tabelas acima |
-| Datas editoriais por fonte | a data de cada item vem do feed, da lista ou da matéria; as fontes sem data legível estão desligadas, com o motivo |
+| Datas editoriais por fonte | a data de cada item vem do feed, da lista ou da matéria; o coletor passou a ler as datas por extenso e numéricas que essas fontes usam |
 | Páginas e alertas dos periódicos essenciais | seção Periódicos |
 | Inspeção de RSS reais | cada feed cadastrado foi lido pela pré-visualização |
 | Organizações independentes de pacientes | o diretório não nomeia nenhuma além da GTC e do NTSP; `rss-unidos-pela-vida` já existia |
-| Redes sociais | LinkedIn da GTC só aqui (exige login); os canais oficiais no YouTube entraram |
-| Centros europeus, latino-americanos, asiáticos e australianos | os que já eram coletados, mais o Instituto Nacional del Tórax |
+| Redes sociais | os canais do YouTube entraram; os perfis de X, Instagram e LinkedIn aguardam o meio de acesso (seção Redes sociais) |
+| Centros europeus, latino-americanos, asiáticos e australianos | os que já eram coletados, mais o Instituto Nacional del Tórax e, pelo YouTube, Cambridge University Hospitals e Narayana Health |
 | Corpo estranho, trauma laringotraqueal e ECMO com cirurgia de via aérea | buscas do PubMed que já existiam (`corpo-estranho`, `trauma-laringotraqueal`, `ecmo-via-aerea`), as do Scholar, os alertas do Google News e as buscas novas do ClinicalTrials.gov |
 | WHO ICTRP, CTIS, ReBEC, ISRCTN, medRxiv e bioRxiv | seção Registros e preprints |
+
+## Redes sociais
+
+Segundo diretório do dono: perfis, canais, pesquisas e hashtags para garimpar notícias, artigos, cursos, casos e congressos de via aérea.
+
+Os vídeos do YouTube e o podcast entram já, pelo RSS do canal de cada vídeo listado e pelo feed do podcast. Os perfis de X, Instagram e LinkedIn e as pesquisas e hashtags ficam registrados aqui como "aguardando meio de acesso": as três redes exigem login ou uma API paga para ler, e o meio de acesso está sendo avaliado à parte. Os perfis comerciais servem só para descobrir tecnologia, nunca como fonte primária de eficácia.
+
+### YouTube e podcast
+
+O diretório lista vídeos avulsos, de 2014 a 2023. Entrou o canal de cada um, confirmado pelo oEmbed do YouTube, com o título do canal no próprio feed.
+
+| Vídeo do diretório | Canal | Fonte | Situação |
+|---|---|---|---|
+| https://www.youtube.com/watch?v=3Oxe2Q6DZ_Y (corpo estranho pediátrico, broncoscopia rígida) | Mayo Clinic | `rss-youtube-mayo-clinic` | ativa |
+| https://www.youtube.com/watch?v=nHKze9KkeTU (corpo estranho pediátrico e anestesia) | AirwayOnDemand from Dr. Will Rosenblatt | `rss-youtube-airway-on-demand` | ativa |
+| https://www.youtube.com/watch?v=u0cBIFHwAAc (broncoscopia pediátrica e neonatal) | Cambridge University Hospitals NHS (CUHNHS) | `rss-youtube-cuh-nhs` | ativa |
+| https://www.youtube.com/watch?v=0wJrjaj5_0s (broncoscopia de emergência, corpo estranho) | Chesterfield Royal Hospital | `rss-youtube-chesterfield-royal` | ativa |
+| https://www.youtube.com/watch?v=ubFqPe8OluY (reconstrução pediátrica, traqueomalácia, estenose) | Narayana Health | `rss-youtube-narayana-health` | ativa |
+| https://www.youtube.com/watch?v=yhGcuTHSnXk (via aérea pediátrica normal) | Romaine Johnson | `rss-youtube-romaine-johnson` | ativa (último vídeo em 21/07/2025) |
+| NTSP — Trachy Talk (podcast) | | `rss-trachy-talk` | ativa |
+
+Os canais dos hospitais são gerais (Mayo Clinic, CUH, Chesterfield e Narayana publicam de tudo), por isso nível T2; a pré-triagem descarta os vídeos de outros temas.
+
+### Sites citados no diretório de redes
+
+| Site | Destino |
+|---|---|
+| WABIP (https://www.wabip.com/) | `rss-wabip` |
+| AABIP (https://www.aabronchology.org/) | sem feed nem notícias; `rss-gnews-aabip` |
+| CHOP, Cincinnati Children's, Boston Children's | as fontes desses centros (seção Centros de referência) |
+
+### Perfis no X
+
+| Perfil | Foco | Situação |
+|---|---|---|
+| Difficult Airway Society, https://x.com/dasairway (publicações de exemplo: https://x.com/dasairway/status/2074120130640900458 e https://x.com/dasairway/status/1993238096993763446) | via aérea difícil, intubação, diretrizes, webinars | aguardando meio de acesso (a DAS já entra por `rss-das`) |
+| Difficult Airway Society Residents, https://x.com/dasresidents | educação, congressos, pesquisa | aguardando meio de acesso |
+| Journal of Bronchology & Interventional Pulmonology, https://x.com/JBronchOnline | broncoscopia intervencionista, próteses, obstrução central | aguardando meio de acesso (os artigos já entram por `json-j-jbip`) |
+| Karthik Balakrishnan, MD, https://x.com/KBalakrishnanMD | reconstrução de laringe, traqueia e via aérea pediátrica | aguardando meio de acesso |
+| Eric Levi, MD, https://x.com/DrEricLevi | ORL pediátrica, traqueostomia | aguardando meio de acesso |
+| Abdullah Sindi, https://x.com/3bdallahSindi | estenose subglótica, dilatação, reconstrução | aguardando meio de acesso |
+| ENT Papers, https://x.com/ENT_Papers | curadoria de artigos de ORL e via aérea | aguardando meio de acesso |
+| Suveer Singh / Respitudoc, https://x.com/respitudoc | broncoscopia, pneumologia intervencionista | aguardando meio de acesso |
+| Ali Abedi, MD, https://x.com/DocAbedi | pneumologia intervencionista, próteses, traqueostomia | aguardando meio de acesso |
+| ANZ Society of Paediatric Otorhinolaryngology, https://x.com/ANZSPO | ORL pediátrica, broncoscopia, congressos | aguardando meio de acesso |
+| VisionAir Solutions (comercial), https://x.com/VisionAirStents | próteses de silicone personalizadas | aguardando meio de acesso; só para descobrir tecnologia |
+
+Listas temáticas do diretório, que entram junto com os perfis:
+- **Airway guidelines:** @dasairway, @dasresidents, @ENT_Papers, @JBronchOnline;
+- **Pediatric airway:** @KBalakrishnanMD, @DrEricLevi, @3bdallahSindi, @ANZSPO;
+- **Bronchoscopy / devices:** @respitudoc, @DocAbedi, @VisionAirStents, @JBronchOnline.
+
+### Perfis no LinkedIn
+
+| Perfil | Foco | Situação |
+|---|---|---|
+| Global Tracheostomy Collaborative, https://www.linkedin.com/company/the-global-tracheostomy-collaborative | segurança, qualidade, desfechos | aguardando meio de acesso (a GTC já entra por `rss-youtube-gtc`) |
+| National Tracheostomy Safety Project, https://www.linkedin.com/company/national-tracheostomy-safety-project | emergências, algoritmos, treinamento | aguardando meio de acesso (o NTSP já entra por `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp`) |
+| Atos Medical US (comercial), https://www.linkedin.com/company/atos-medical-us | laringectomia, estoma, dispositivos | aguardando meio de acesso; só para descobrir tecnologia |
+| Boston Medical Products (comercial), https://www.linkedin.com/company/boston-medical-products-inc- | produtos e educação em traqueostomia | aguardando meio de acesso; só para descobrir tecnologia |
+| Stening (comercial), https://www.linkedin.com/company/stening | próteses traqueobrônquicas, tubos em T | aguardando meio de acesso; só para descobrir tecnologia |
+| I:Emedics (comercial), https://www.linkedin.com/company/i-emedics-pte-ltd | broncoscopia e via aérea, Ásia | aguardando meio de acesso; só para descobrir tecnologia |
+
+### Publicações no Instagram
+
+O diretório lista publicações avulsas, com o autor a conferir. Cada uma fica aqui até haver o meio de acesso, que permita também confirmar a conta de origem.
+
+| Publicação | Tema | Situação |
+|---|---|---|
+| https://www.instagram.com/p/DOQuGhsjuax/ | Bronchoscopy and Interventional Pulmonology: prótese de silicone, broncoscopia rígida | aguardando meio de acesso |
+| https://www.instagram.com/p/CXJm4UkvpMi/ | equipe de Stanford: reconstrução pediátrica complexa | aguardando meio de acesso |
+| https://www.instagram.com/p/DCZQZgDq3-O/ | children's airway / complex airway | aguardando meio de acesso |
+| https://www.instagram.com/p/DZNjhn3kRYb/ | pediatric airway research | aguardando meio de acesso |
+| https://www.instagram.com/p/C4BB-o_xWh6/ | tracheostomy education | aguardando meio de acesso |
+| https://www.instagram.com/reel/DbcuJcOO0s0/ | airway stent case (reel) | aguardando meio de acesso |
+| https://www.instagram.com/reel/Ddi2nNoOp-v/ | pediatric tracheostomy education (reel) | aguardando meio de acesso |
+| https://www.instagram.com/p/DBYwzXVMVe_/ | laryngotracheal reconstruction patient story | aguardando meio de acesso |
+
+### Pesquisas no X
+
+Todas aguardam meio de acesso.
+
+| Pesquisa |
+|---|
+| ("airway stenosis" OR "subglottic stenosis") -crypto -fitness |
+| ("laryngotracheal reconstruction" OR "cricotracheal resection") |
+| ("pediatric airway" OR "paediatric airway") (surgery OR reconstruction) |
+| (tracheostomy OR tracheotomy) (decannulation OR guideline) |
+| (tracheobronchomalacia OR bronchomalacia) (tracheopexy OR bronchoscopy) |
+| ("central airway obstruction" OR "airway stent") bronchoscopy |
+| ("foreign body aspiration" OR "rigid bronchoscopy") pediatric |
+| ("difficult airway" OR "awake intubation") guideline |
+| (airway OR tracheal) (ECMO OR extracorporeal) |
+
+### Hashtags no Instagram e no LinkedIn
+
+Aguardando meio de acesso: #AirwayManagement, #DifficultAirway, #PediatricAirway, #PaediatricAirway, #AirwayReconstruction, #LaryngotrachealReconstruction, #SubglotticStenosis, #TrachealStenosis, #Tracheostomy, #TracheostomyCare, #Decannulation, #Tracheomalacia, #Bronchomalacia, #InterventionalPulmonology, #RigidBronchoscopy, #AirwayStent, #Laryngology, #PediatricENT, #ThoracicSurgery, #ECMO.
+
+### Filtro de ruído e ordem sugeridos pelo diretório
+
+O checklist do diretório para separar ruído:
+1. Há DOI, PMID, diretriz ou link para congresso?
+2. O perfil é de sociedade, periódico, hospital, pesquisador ou fabricante?
+3. A publicação informa data, população, técnica e desfecho?
+4. Há conflito comercial explícito?
+5. É adulto, pediátrico ou misto?
+6. É demonstração técnica ou recomendação clínica?
+7. Está dentro dos últimos 12 meses?
+8. O artigo original está indexado no PubMed ou num periódico com avaliação editorial verificável?
+
+Esses critérios já são os da pré-triagem e das notas (`industry/prompts/`). Valem para as redes quando o meio de acesso entrar.
+
+A ordem de prioridade do diretório:
+1. DAS;
+2. ENT Papers e JBronchOnline;
+3. KBalakrishnanMD, DrEricLevi e 3bdallahSindi;
+4. WABIP, AABIP e Respitudoc;
+5. GTC e NTSP;
+6. CHOP, Cincinnati, Boston e SickKids;
+7. fabricantes, só para detectar tecnologia.
+
+Fica registrada para quando os perfis puderem ser lidos.

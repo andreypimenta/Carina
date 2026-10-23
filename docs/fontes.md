@@ -56,7 +56,7 @@ Ficaram de fora:
 | Pacientes e imprensa | Unidos pela Vida (fibrose cística), Respiratory Therapy | Nível T2: só entram com nota alta. |
 | Imprensa | ENTtoday | Nível T2. |
 | Google News | buscas "traqueostomia", "cirurgia torácica" criança, "hérnia diafragmática", "fibrose cística" (pt-BR) e "pediatric airway" OR "subglottic stenosis" OR "tracheal stenosis" (en), e as 22 consultas de Google Alerts do diretório | Nível T2. O link do item é o redirecionamento do Google, então em geral só entram título e resumo. |
-| Diretório de fontes (23/10/2026) | sociedades de via aérea (AAO-HNS, SAM, DAS, ELS, JSRE, ALAT, SAESP e outras), feeds de sumário de periódicos, podcast e canais no YouTube, preprints (medRxiv, bioRxiv, arXiv), Healio e o Instituto Nacional del Tórax | O destino de cada item do diretório, inclusive os que ficaram desligados e o motivo, está em [diretorio-fontes.md](diretorio-fontes.md). |
+| Diretórios de fontes e de redes sociais (23/10/2026) | sociedades de via aérea (AAO-HNS, SAM, DAS, ELS, JSRE, ALAT, SAESP, NTSP e outras), periódicos (feeds de sumário e o Crossref), registros (CTIS, ISRCTN, ReBEC), preprints (medRxiv, bioRxiv, arXiv), podcast e canais no YouTube, Healio, Medscape, EurekAlert! e o Instituto Nacional del Tórax | O destino de cada item dos dois diretórios, inclusive os perfis de redes que aguardam meio de acesso, está em [diretorio-fontes.md](diretorio-fontes.md). Os congressos estão na agenda (`industry/congressos.json`, página `/agenda`). |
 
 Fontes avaliadas e deixadas de fora por estarem paradas ou sem feed: Healio (pediatria), AARC, APSA, AABIP, ESPO. O feed de pneumologia do Healio voltou a publicar e entrou em 23/10/2026. A ANVISA não tem feed de alertas de tecnovigilância.
 
@@ -72,10 +72,10 @@ Em 22/10/2026 também foram avaliados consensos, revistas, órgãos e centros de
 - **BJORL e Jornal de Pediatria (SciELO):** os feeds Atom funcionam (`https://www.scielo.br/journal/bjorl/feed/`), mas trazem o sumário do número inteiro de uma vez, com atraso (o último número da BJORL no SciELO é de março de 2026). Dos 99 artigos da BJORL, 2 eram de via aérea pediátrica, e o resto era otologia, rinologia e câncer de laringe. As duas revistas estão no PubMed, e os artigos de via aérea já entram pelas buscas.
 - **CONITEC:** a página de notícias no gov.br não traz os itens no HTML e não tem RSS. Uma busca do Google News por "Conitec incorporação SUS" trouxe só temas de fora (canetas emagrecedoras, PrEP, mieloma). As incorporações de via aérea chegam pela SBPT, como a da criobiópsia no rol da ANS.
 - **Jornal da Unicamp:** é um feed geral da universidade, com cerca de 20 itens por semana, como o Jornal da USP. Os feeds de busca respondem HTTP 404 e trouxeram um item do tema desde 2025.
-- **HC-UFMG (HU Brasil/Ebserh):** a lista mostra a data como "21/10/2026", formato que o coletor não lê, e as matérias respondem HTTP 500 ao coletor. Sem data, o coletor segura os itens.
-- **CHUV (Lausanne):** a lista de comunicados mostra a data como "23.04.2026" (e "04.23.2026" na versão em inglês), e o comunicado a escreve em francês ("3 septembre 2026"). O coletor não lê nenhum desses formatos. Além disso, são cerca de 11 comunicados em 10 meses, e gerais.
+- **HC-UFMG (HU Brasil/Ebserh):** a lista mostra a data como "21/10/2026", e as matérias respondem HTTP 500 ao coletor. Desde 23/10/2026 o coletor lê essa data, mas a fonte não foi reavaliada: só chegariam o título e a data de cada notícia.
+- **CHUV (Lausanne):** a lista de comunicados mostra a data como "23.04.2026" (e "04.23.2026" na versão em inglês), e o comunicado a escreve em francês ("3 septembre 2026"). Desde 23/10/2026 o coletor lê esses formatos, mas a fonte continua de fora: são cerca de 11 comunicados em 10 meses, e gerais.
 - **Iowa (UI Health Care, Stead Family Children's):** a lista de notícias é montada por JavaScript (Algolia), e o feed de `medicine.uiowa.edu` é da faculdade (alunos, prêmios).
-- **ReBEC:** não tem feed. A lista de ensaios novos não filtra por tema (a busca é ignorada) e usa datas no formato americano (mm/dd/aaaa), que o coletor não lê.
+- **ReBEC:** não tem feed, e a lista de ensaios novos não filtra por tema (a busca é ignorada). Desde 23/10/2026 a lista entra como `web-rebec`, com as datas em mm/dd/aaaa declaradas na fonte; a pré-triagem descarta os ensaios de outros temas.
 - **ClinicalTrials.gov, hemangioma infantil:** nos últimos 12 meses foram 10 estudos, todos de pele (laser, propranolol tópico). Nenhum estudo registrado cita hemangioma de via aérea.
 
 ### Páginas de lista
