@@ -35,6 +35,612 @@
       "syndicate_fulltext": true
     },
     {
+      "id": "instagram-hashtags",
+      "name": "Instagram · hashtags de via aérea",
+      "kind": "external",
+      "config": {},
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 1440,
+      "tags": [
+        "Instagram",
+        "rede social",
+        "hashtag"
+      ]
+    },
+    {
+      "id": "instagram-aspohns",
+      "name": "Instagram · ASPO-HNS（@aspohns）",
+      "kind": "external",
+      "config": {
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": "aspo",
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 1440,
+      "tags": [
+        "Instagram",
+        "rede social",
+        "sociedade"
+      ]
+    },
+    {
+      "id": "instagram-interventionalbronchoscopy",
+      "name": "Instagram · Bronchoscopy and Interventional Pulmonology（@interventionalbronchoscopy）",
+      "kind": "external",
+      "config": {},
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 1440,
+      "tags": [
+        "Instagram",
+        "rede social",
+        "curadoria"
+      ]
+    },
+    {
+      "id": "instagram-stanfordohns",
+      "name": "Instagram · Stanford OHNS（@stanfordohns）",
+      "kind": "external",
+      "config": {},
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 1440,
+      "tags": [
+        "Instagram",
+        "rede social",
+        "centro de referência"
+      ]
+    },
+    {
+      "id": "instagram-cincychildrens",
+      "name": "Instagram · Cincinnati Children's（@cincychildrens）",
+      "kind": "external",
+      "config": {},
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 1440,
+      "tags": [
+        "Instagram",
+        "rede social",
+        "centro de referência"
+      ]
+    },
+    {
+      "id": "x-dasairway",
+      "name": "X: Difficult Airway Society (@dasairway)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:dasairway -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "sociedade"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-dasresidents",
+      "name": "X: DAS Residents (@dasresidents)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:dasresidents -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "sociedade"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-jbronchonline",
+      "name": "X: Journal of Bronchology & Interventional Pulmonology (@JBronchOnline)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:JBronchOnline -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "periódico"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-anzspo",
+      "name": "X: ANZ Society of Paediatric Otorhinolaryngology (@ANZSPO)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:ANZSPO -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "sociedade"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-kbalakrishnanmd",
+      "name": "X: Karthik Balakrishnan (@KBalakrishnanMD)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:KBalakrishnanMD -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "pesquisador"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-drericlevi",
+      "name": "X: Eric Levi (@DrEricLevi)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:DrEricLevi -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "pesquisador"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-3bdallahsindi",
+      "name": "X: Abdullah Sindi (@3bdallahSindi)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:3bdallahSindi -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "pesquisador"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-respitudoc",
+      "name": "X: Suveer Singh (@respitudoc)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:respitudoc -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "pesquisador"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-docabedi",
+      "name": "X: Ali Abedi (@DocAbedi)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:DocAbedi -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "pesquisador"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-ent-papers",
+      "name": "X: ENT Papers (@ENT_Papers)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:ENT_Papers -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "curadoria"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-visionairstents",
+      "name": "X: VisionAir Solutions（comercial） (@VisionAirStents)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:VisionAirStents -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "comercial"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-estenose",
+      "name": "X · estenose de via aérea（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(\"airway stenosis\" OR \"subglottic stenosis\") -crypto -fitness -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-reconstrucao-laringotraqueal",
+      "name": "X · reconstrução laringotraqueal（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(\"laryngotracheal reconstruction\" OR \"cricotracheal resection\") -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-via-aerea-pediatrica",
+      "name": "X · cirurgia da via aérea pediátrica（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(\"pediatric airway\" OR \"paediatric airway\") (surgery OR reconstruction) -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-traqueostomia",
+      "name": "X · traqueostomia e decanulação（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(tracheostomy OR tracheotomy) (decannulation OR guideline) -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-malacia",
+      "name": "X · traqueobroncomalácia（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(tracheobronchomalacia OR bronchomalacia) (tracheopexy OR bronchoscopy) -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-obstrucao-central",
+      "name": "X · obstrução central e stents（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(\"central airway obstruction\" OR \"airway stent\") bronchoscopy -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-corpo-estranho",
+      "name": "X · corpo estranho na criança（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(\"foreign body aspiration\" OR \"rigid bronchoscopy\") pediatric -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-via-aerea-dificil",
+      "name": "X · via aérea difícil（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(\"difficult airway\" OR \"awake intubation\") guideline -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-busca-ecmo",
+      "name": "X · ECMO e via aérea（busca）",
+      "kind": "x_search",
+      "config": {
+        "query": "(airway OR tracheal) (ECMO OR extracorporeal) -filter:replies",
+        "searchType": "Latest"
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "busca"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "web-atos-medical-us",
+      "name": "Atos Medical US（comercial）",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.atosmedical.us/blogs-and-news",
+        "parseMode": "html",
+        "itemSelector": "a[href^=\"/news/\"]",
+        "linkSelector": "a",
+        "titleSelector": "h3",
+        "allowUrlPrefixes": [
+          "https://www.atosmedical.us/news/"
+        ],
+        "detail": {
+          "maxFetches": 10,
+          "publishedAtUtcOffset": "-05:00"
+        },
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 720,
+      "tags": [
+        "empresa",
+        "comercial"
+      ]
+    },
+    {
+      "id": "rss-gnews-boston-medical-products",
+      "name": "Google News · Boston Medical Products（comercial）",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22Boston+Medical+Products%22+(tracheostomy+OR+airway+OR+stent+OR+%22Montgomery%22)&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "Google News",
+        "comercial"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-stening",
+      "name": "Google News · Stening（comercial）",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=%22Stening%22+(stent+OR+airway+OR+tracheal+OR+bronchoscopy)&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "Google News",
+        "comercial"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
+      "id": "rss-gnews-iemedics",
+      "name": "Google News · I:Emedics（comercial）",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=(%22I%3AEmedics%22+OR+iemedics)+(airway+OR+bronchoscopy+OR+stent)&hl=en-US&gl=US&ceid=US:en",
+        "_aihot": {
+          "initialBackfillLimit": 8
+        }
+      },
+      "tier": "T2",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 360,
+      "tags": [
+        "Google News",
+        "comercial"
+      ],
+      "site_fulltext": false,
+      "syndicate_fulltext": false
+    },
+    {
       "id": "rss-sbp-pneumologia",
       "name": "SBP · pneumologia",
       "kind": "rss",

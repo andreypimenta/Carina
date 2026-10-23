@@ -15,6 +15,7 @@
   "dependencies": {
     "@aihot/literatura": "*",
     "@aihot/assinatura": "*",
-    "@aihot/agenda": "*"
+    "@aihot/agenda": "*",
+    "@aihot/instagram": "*"
   }
 }

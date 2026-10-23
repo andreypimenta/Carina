@@ -1,0 +1,32 @@
+{
+  "$comment": "Instagram do Fôlego (módulo instagram, ScrapeCreators): as hashtags entram pela fonte hashtagSource e cada perfil pela sua fonte external de industry/sources.json. Só coleta com COLLECT_ENABLED=true, INSTAGRAM_COLLECT_ENABLED=true e SCRAPECREATORS_API_KEY. Guia em docs/fontes.md (Redes sociais).",
+  "hashtagSource": "instagram-hashtags",
+  "hashtags": [
+    "AirwayManagement",
+    "DifficultAirway",
+    "PediatricAirway",
+    "PaediatricAirway",
+    "AirwayReconstruction",
+    "LaryngotrachealReconstruction",
+    "SubglotticStenosis",
+    "TrachealStenosis",
+    "Tracheostomy",
+    "TracheostomyCare",
+    "Decannulation",
+    "Tracheomalacia",
+    "Bronchomalacia",
+    "InterventionalPulmonology",
+    "RigidBronchoscopy",
+    "AirwayStent",
+    "Laryngology",
+    "PediatricENT",
+    "ThoracicSurgery",
+    "ECMO"
+  ],
+  "profiles": [
+    { "handle": "aspohns", "sourceId": "instagram-aspohns" },
+    { "handle": "interventionalbronchoscopy", "sourceId": "instagram-interventionalbronchoscopy" },
+    { "handle": "stanfordohns", "sourceId": "instagram-stanfordohns" },
+    { "handle": "cincychildrens", "sourceId": "instagram-cincychildrens" }
+  ]
+}

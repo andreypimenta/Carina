@@ -1,0 +1,11 @@
+{
+  "name": "@aihot/instagram",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./server": "./server.ts"
+  },
+  "dependencies": {
+    "@aihot/backend": "*"
+  }
+}
