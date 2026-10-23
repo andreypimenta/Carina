@@ -314,21 +314,21 @@
     },
     {
       "slug": "casos",
-      "name": "Relatos de caso",
+      "name": "Casos curiosos",
       "group": "genre",
       "tags": [
         "Relato de caso"
       ],
-      "definition": "Casos instrutivos, doenças raras e complicações inesperadas."
+      "definition": "Relatos de caso, imagens clínicas, doenças raras e complicações inesperadas."
     },
     {
       "slug": "revisoes",
-      "name": "Revisões e ensino",
+      "name": "Fundamentos",
       "group": "genre",
       "tags": [
         "Revisão narrativa"
       ],
-      "definition": "Revisões narrativas e textos de atualização."
+      "definition": "Revisões narrativas e textos de atualização para nivelar o conhecimento."
     },
     {
       "slug": "opiniao",
