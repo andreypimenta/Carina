@@ -1,5 +1,6 @@
 // The specials over HTTP: the admin's (/api/admin/especiais, behind the admin's session and CSRF guard) and
-// the site's (/api/site/especiais), which answer only what is published.
+// the site's (/api/site/especiais), which answer only what is published; and the admin's papers added by
+// PMID or DOI (/api/admin/literatura/adicionar, backend/adicionar.ts).
 import type { FastifyInstance } from "fastify";
 import { actorOf } from "@aihot/backend/admin/auth";
 import { adminHandler } from "@aihot/api/routes/admin-auth";
@@ -10,6 +11,7 @@ import {
   approveEspecial, createEspecial, discardEspecial, editEspecial, especialDetail, listEspeciais, publishedEspecial, publishedEspeciais,
   publishEspecial, reopenEspecial, rewriteEspecial,
 } from "../backend/especiais.ts";
+import { listAdded, requestAdd } from "../backend/adicionar.ts";
 
 const id = (req: Parameters<typeof param>[0]) => Number(param(req, "id")) || 0;
 
@@ -23,6 +25,9 @@ export function registerEspeciais(app: FastifyInstance) {
   ] as const) {
     app.post(`/api/admin/especiais/:id/${action}`, adminHandler(async (req, reply, admin) => orNotFound(req, reply, await run(id(req), body(req), actorOf(admin)))));
   }
+
+  app.get("/api/admin/literatura/adicionados", adminHandler(async () => ({ rows: await listAdded() })));
+  app.post("/api/admin/literatura/adicionar", adminHandler(async (req, _reply, admin) => requestAdd(body(req), actorOf(admin))));
 
   app.get("/api/site/especiais", siteHandler(async (req, reply) => {
     return sendJsonWithEtag(req, reply, { items: await publishedEspeciais() }, { etagPrefix: "especiais", cacheControl: "public, max-age=120, s-maxage=120" });

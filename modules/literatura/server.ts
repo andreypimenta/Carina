@@ -1,9 +1,11 @@
 // The literature module's backend: the run every six hours (backend/collect.ts) and the model step that
 // writes the site's articles about papers (backend/materia.ts), chosen like the engine's steps; and the
 // specials written from PubMed references (backend/especiais.ts): their writing queue, their admin and site
-// routes (api/especiais.ts), their pages in the sitemap and their place in the weekly issue.
+// routes (api/especiais.ts), their pages in the sitemap and their place in the weekly issue; and the papers the
+// editor adds by PMID or DOI (backend/adicionar.ts), taken by the worker.
 import type { ServerModule } from "@aihot/backend/modules";
 import { registerEspeciais } from "./api/especiais.ts";
+import { ADICIONAR_QUEUE } from "./backend/adicionar.ts";
 import { collectLiterature } from "./backend/collect.ts";
 import { draftsToReview, ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE, especiaisSitemap, weeklyCard, weeklyPart } from "./backend/especiais.ts";
 import { LINHA_PURPOSE, LINHA_STEP } from "./backend/linha-do-tempo.ts";
@@ -33,7 +35,7 @@ const server: ServerModule = {
       when: () => process.env.COLLECT_ENABLED === "true",
     },
   ],
-  queues: [ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE],
+  queues: [ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE, ADICIONAR_QUEUE],
   admin: { counts: { especiais: draftsToReview } },
   sitemap: { pages: [{ loc: "/especiais", changefreq: "weekly", priority: 0.7 }], entries: especiaisSitemap },
   reports: { compose: weeklyPart, read: weeklyCard },

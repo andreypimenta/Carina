@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./adicionar": "./backend/adicionar.ts",
     "./module": "./module.ts",
     "./server": "./server.ts",
     "./web": "./web.tsx"

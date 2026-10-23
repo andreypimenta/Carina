@@ -221,6 +221,15 @@ docker compose exec worker node scripts/estreia-reclassificar.ts <id> … [--ids
 docker compose exec worker node scripts/estreia-reclassificar.ts … --apply --reason="<原因>"
 ```
 
+### 按 PMID 或 DOI 加一篇论文
+
+文献模块的检索只看最近 7 天。`scripts/literatura-adicionar.ts` 和后台“Adicionar artigo”页做的是同一件事，只是立即执行：按 PMID 或 DOI（经 E-utilities 换成 PMID）取出论文，走检索到的论文同样的路（许可允许时用全文，否则写站内报道，经回执和预算熔断），`literatura_papers` 里已有的 PMID 不再写；论文作为新闻进入，时间线为加入的时刻，进下一期日报和周报。`--select` 与后台“人工修正”的“精选 = 是”相同（同样写审计）。不加 `--apply` 只显示论文和会做什么。
+
+```bash
+docker compose exec worker node scripts/literatura-adicionar.ts <pmid|doi> [--select]               # 预览
+docker compose exec worker node scripts/literatura-adicionar.ts <pmid|doi> --select --apply [--reason="<原因>"]
+```
+
 ### 管理员会话与配置变更
 
 会话绑定登录方式、登录时的管理员凭据或飞书身份。修改管理员密码、飞书管理员名单或会话密钥后，应重启所有 API 进程，使它们加载相同的新配置；只编辑配置文件不代表正在运行的进程已生效，混用旧代码或旧配置的进程不能提供统一撤权。
