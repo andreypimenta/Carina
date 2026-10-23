@@ -4,12 +4,15 @@
   "type": "module",
   "exports": {
     "./module": "./module.ts",
-    "./server": "./server.ts"
+    "./server": "./server.ts",
+    "./web": "./web.tsx"
   },
   "dependencies": {
+    "@aihot/api": "*",
     "@aihot/backend": "*",
     "@aihot/contracts": "*",
     "cheerio": "1.2.0",
+    "fastify": "5.12.5",
     "zod": "4.6.5",
     "@aihot/site": "*"
   }

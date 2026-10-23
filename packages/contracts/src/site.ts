@@ -308,6 +308,8 @@ export interface ReportDetail {
   readingMinutes: number;
   prev: string | null;
   next: string | null;
+  /** The site's modules' parts of the issue, under their names; each module's web part draws its own. */
+  modules: Record<string, unknown>;
 }
 
 export interface ReportIndexEntry {

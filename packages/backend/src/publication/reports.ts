@@ -4,6 +4,7 @@ import type { ReportCitation, ReportDetail, ReportIndexEntry, ReportNavigationEn
 import { REPORTS, SITE } from "@aihot/site";
 import { sql } from "../db.ts";
 import { cached, type Cached } from "../lib/cache.ts";
+import { serverModules } from "../modules.ts";
 import { proxiedImage, proxiedImageSet } from "../media/imgproxy.ts";
 import { isoWeekRange, monthRange } from "@aihot/contracts/time";
 import { dailyUrl, itemUrl, periodUrl, siteUrl } from "./links.ts";
@@ -320,6 +321,16 @@ function readingMinutes(text: string): number {
   return Math.max(1, Math.round([...text].length / 450));
 }
 
+/** The modules' parts of an issue as it shows now, from what each saved with it (ServerModule.reports). */
+async function issueParts(kind: ReportKind, key: string, saved: Record<string, unknown> | undefined): Promise<Record<string, unknown>> {
+  const parts: Record<string, unknown> = {};
+  for (const m of serverModules()) {
+    const part = await m.reports?.read?.(saved?.[m.name] ?? null, { kind, key });
+    if (part !== undefined && part !== null) parts[m.name] = part;
+  }
+  return parts;
+}
+
 async function neighbors(kind: ReportKind, key: string): Promise<{ prev: string | null; next: string | null }> {
   const [row] = await sql<{ prev: string | null; next: string | null }[]>`
     SELECT (SELECT key FROM reports WHERE kind = ${kind} AND key < ${key} ORDER BY key DESC LIMIT 1) AS prev,
@@ -362,7 +373,9 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
   const leadItem = hasCitedLead
     ? all.find((x) => x.itemId === named?.itemId)
     : kind === "daily" ? leadItemOf(c.lead?.title, highlights, all) : (highlights.find((x) => x.available) ?? all.find((x) => x.available));
-  const [{ prev, next }, picture] = await Promise.all([neighbors(kind, key), leadItem?.itemId && leadItem.available ? leadCover(leadItem.itemId) : null]);
+  const [{ prev, next }, picture, modules] = await Promise.all([
+    neighbors(kind, key), leadItem?.itemId && leadItem.available ? leadCover(leadItem.itemId) : null, issueParts(kind, key, c.modules),
+  ]);
   const cover = picture && leadItem ? { ...picture, caption: kind === "daily" || c.leadItemId ? null : leadItem.title } : null;
   const headline = kind === "daily" ? null : periodicHeadline(c);
   const title = kind === "daily" ? `${DAILY_ISSUE_NAME} · ${key}`
@@ -391,6 +404,7 @@ export async function loadReport(kind: ReportKind, key: string): Promise<ReportD
     readingMinutes: readingMinutes(text),
     prev,
     next,
+    modules,
   };
 }
 

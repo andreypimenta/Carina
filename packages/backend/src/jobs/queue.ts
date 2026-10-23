@@ -118,6 +118,8 @@ export async function stopBoss(): Promise<void> {
 
 export async function ensureQueue(name: string, options: QueueOptions = QUEUE_OPTIONS[name as QueueName] ?? {}): Promise<void> {
   if (ensured.has(name)) return;
+  // The dead letter queue must exist first; a module's is created with its own options.
+  if (options.deadLetter) await ensureQueue(options.deadLetter, serverModules().flatMap((m) => m.queues ?? []).find((q) => q.name === options.deadLetter)?.options);
   const b = await getBoss();
   const existing = await b.getQueue(name);
   if (!existing) await b.createQueue(name, options);

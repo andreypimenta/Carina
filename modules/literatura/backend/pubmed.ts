@@ -40,15 +40,28 @@ function common(): string {
   return params.toString();
 }
 
+/** One esearch: the PMIDs it returns and how many records the search finds in all. */
+async function esearch(params: Record<string, string>): Promise<{ count: number; pmids: string[] }> {
+  const query = new URLSearchParams({ db: "pubmed", retmode: "json", ...params });
+  await turn();
+  const res = await guardedFetch(`${BASE()}/esearch.fcgi?${query}&${common()}`, { timeoutMs: 30_000 });
+  if (res.status !== 200) throw new Error(`PubMed esearch HTTP ${res.status}`);
+  const data = JSON.parse(res.text()) as { esearchresult?: { count?: string; idlist?: string[]; ERROR?: string } };
+  if (data.esearchresult?.ERROR) throw new Error(`PubMed esearch: ${data.esearchresult.ERROR}`);
+  return { count: Number(data.esearchresult?.count ?? 0) || 0, pmids: (data.esearchresult?.idlist ?? []).filter((id) => /^\d+$/.test(id)) };
+}
+
 /** PMIDs a search found among the records that entered PubMed in the last `days` days. */
 export async function searchPmids(term: string, days: number, max = 500): Promise<string[]> {
-  const params = new URLSearchParams({ db: "pubmed", term, datetype: "edat", reldate: String(days), retmax: String(max), retmode: "json", sort: "pub_date" });
-  await turn();
-  const res = await guardedFetch(`${BASE()}/esearch.fcgi?${params}&${common()}`, { timeoutMs: 30_000 });
-  if (res.status !== 200) throw new Error(`PubMed esearch HTTP ${res.status}`);
-  const data = JSON.parse(res.text()) as { esearchresult?: { idlist?: string[]; ERROR?: string } };
-  if (data.esearchresult?.ERROR) throw new Error(`PubMed esearch: ${data.esearchresult.ERROR}`);
-  return (data.esearchresult?.idlist ?? []).filter((id) => /^\d+$/.test(id));
+  return (await esearch({ term, datetype: "edat", reldate: String(days), retmax: String(max), sort: "pub_date" })).pmids;
+}
+
+/**
+ * Up to `max` PMIDs of a search over all of PubMed from position `start`, best match first ("relevance") or
+ * newest first ("pub_date"), with how many records it finds in all.
+ */
+export async function searchAll(term: string, sort: "relevance" | "pub_date", max: number, start = 0): Promise<{ count: number; pmids: string[] }> {
+  return esearch({ term, sort, retmax: String(max), retstart: String(start) });
 }
 
 /** The records of up to 200 PMIDs. */

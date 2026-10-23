@@ -19,7 +19,10 @@ import { Halftone } from "./Halftone";
 import { Nameplate } from "./Nameplate";
 import { IssueDots } from "./IssueDots";
 import { monthDay } from "../../lib/format";
+import { loadParts } from "../../site-modules";
 import { EDITION, KIND_LABEL, MOTTO, dateLine, dateMark, headline, metricItems, neighbourLabel, reportPath, shortDay } from "./format";
+
+const PARTS = await loadParts((m) => m.reportPage);
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const keyOf = (c: ReportCitation) => c.itemId ?? c.title;
@@ -482,6 +485,8 @@ export function ReportPaper({ report, index }: { report: ReportDetail; index: Re
           <FrontPage report={report} pages={pages} leadStory={leadStory} count={count} />
         </>
       )}
+      {/* An issue kept in this tab's history from before the modules' parts were added has none. */}
+      {PARTS.map(({ name, part: { Block } }) => (report.modules?.[name] === undefined ? null : <Block key={name} data={report.modules[name]} report={report} />))}
 
       {pages.map((p, i) => (
         <SectionPage key={p.id} id={p.id} no={i + 1} label={p.label}>
