@@ -48,7 +48,8 @@ const ARTICLES = new Map([
   ["6000004", article("6000004", "1980", "Anterior cricoid split as an alternative to tracheotomy", ["Cotton RT", "Seid AB"], "The anterior cricoid split avoided tracheotomy in premature infants.", "Journal Article")],
   ["6000005", article("6000005", "1981", "Erratum: Anterior cricoid split", ["Cotton RT"], "", "Published Erratum")],
 ]);
-const CITATIONS: Record<string, number> = { "5000001": 31, "7000002": 662, "9000003": 63, "6000004": 166 };
+// iCite does not know 9000003 yet.
+const CITATIONS: Record<string, number> = { "5000001": 31, "7000002": 662, "6000004": 166 };
 
 const timeline = {
   titulo: "Estenose subglótica pediátrica: de 1965 à metanálise de 2020",
@@ -138,6 +139,7 @@ test("a special reaches the site only through the editor's approval and publicat
   assert.deepEqual(written.refs.map((r) => [r.n, r.pmid, r.year]), [[1, "5000001", "1965"], [2, "7000002", "1994"], [3, "9000003", "2020"]], "the studies are numbered oldest first");
   assert.match(modelInputs.at(-1)!, /\[1\] 1965 · Primeiras descrições · .* · citado 31 vezes/);
   assert.match(modelInputs.at(-1)!, /\[2\] 1994 · .* · citado 662 vezes/, "the model reads how often each study is cited");
+  assert.match(modelInputs.at(-1)!, /^\[3\] 2020 · [^\n]*Silva A$/m, "a study iCite does not know is not called never cited");
   assert.match(written.body!, /^## 1994 · A classificação\n\nMyer e Cotton propuseram quatro graus \[2\]\.$/m);
   assert.match(written.body!, /^## Onde estamos hoje\n\nUma metanálise/m);
   assert.doesNotMatch(written.body!, /Boston|Sem fonte/);
@@ -214,7 +216,7 @@ test("the PMIDs the editor requires join the list even when the search does not 
   assert.deepEqual((await especialDetail(id))!.pmids, ["6000004"]);
   assert.equal((await write(id)).result, "escrito");
   const written = (await especialDetail(id))!;
-  assert.deepEqual(written.refs.map((r) => [r.n, r.pmid, r.year, r.citations]), [[1, "5000001", "1965", 31], [2, "6000004", "1980", 166], [3, "7000002", "1994", 662], [4, "9000003", "2020", 63]]);
+  assert.deepEqual(written.refs.map((r) => [r.n, r.pmid, r.year, r.citations]), [[1, "5000001", "1965", 31], [2, "6000004", "1980", 166], [3, "7000002", "1994", 662], [4, "9000003", "2020", undefined]]);
 
   await rewriteEspecial(id, { version: written.version, theme: written.theme, query: written.query, pmids: ["6000004", "8888888"] }, EDITOR);
   assert.equal((await write(id)).result, "falhou");

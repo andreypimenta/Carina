@@ -141,7 +141,7 @@ export async function gatherReferences(query: string, required: string[] = []): 
       year: p.year,
       kind: kindOf(p, found.get(p.pmid)!),
       abstract: p.abstract.map((s) => (s.label ? `${s.label}: ${s.text}` : s.text)).join(" "),
-      citations: known ? known.get(p.pmid)?.citations ?? 0 : undefined,
+      citations: known?.get(p.pmid)?.citations,
     }));
   return { refs, notices };
 }
