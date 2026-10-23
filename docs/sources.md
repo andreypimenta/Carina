@@ -117,6 +117,7 @@
 }
 ```
 
+- 返回 XML 的接口设 `mode: "xml"`：XML 先转成对象再按同样的路径读，属性写成 `@属性名`，元素自身的文字写成 `#text`（例如 `trial.isrctn.@dateAssigned`、`trial.isrctn.#text`），值一律保留为字符串；只有一个重复元素时也当作一项的数组。
 - 接口本身返回数组时，省略 `itemsPath`。`titlePaths`、`summaryPaths`、`authorPaths` 是候选路径数组，按顺序取第一个非空值，例如 `["title", "name"]`。
 - 已有完整网址时用 `{raw:url}`；只有 slug 时可用 `https://example.com/posts/{slug}`。`{字段路径}` 会编码字段值，`{raw:字段路径}` 原样插入。JSON 列表不会自动把相对网址补成绝对网址，模板应产出完整的 HTTP(S) 地址。
 - `summaryIsBody`：确认接口里的摘要就是全文时设为 `true`，把 `summaryPaths` 取到的文字当正文，不再去抓原文页。

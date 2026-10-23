@@ -1,4 +1,5 @@
-// JSON sources: plain JSON APIs, JSON embedded in HTML (script tags, window variables).
+// JSON sources: plain JSON APIs, JSON embedded in HTML (script tags, window variables), and XML APIs read as JSON.
+import { XMLParser } from "fast-xml-parser";
 import { credential } from "../config.ts";
 import { fetchListing } from "./listing-fetch.ts";
 import { collapseWhitespace, stripTags } from "../lib/text.ts";
@@ -83,6 +84,9 @@ function findKey(obj: unknown, key: string, depth = 0): unknown {
   return undefined;
 }
 
+/** An XML answer as the paths read it: attributes as "@name", an element's text beside them as "#text". Values stay strings. */
+const xml = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@", textNodeName: "#text", parseTagValue: false, parseAttributeValue: false, trimValues: true });
+
 function embeddedJson(html: string, source: SourceRow): unknown {
   const mode = source.config.mode;
   if (mode === "html_window_var") {
@@ -163,7 +167,13 @@ export async function fetchJsonList(source: SourceRow): Promise<Candidate[]> {
   if (res.status !== 200) throw new FetchError(`HTTP ${res.status}`, res.status);
   let data: unknown;
   if (c.mode === "html_json_key" || c.mode === "html_window_var") data = embeddedJson(res.text(), source);
-  else {
+  else if (c.mode === "xml") {
+    try {
+      data = xml.parse(res.text(), true);
+    } catch {
+      throw new FetchError("response is not XML");
+    }
+  } else {
     try {
       data = JSON.parse(res.text());
     } catch {
@@ -172,6 +182,8 @@ export async function fetchJsonList(source: SourceRow): Promise<Candidate[]> {
   }
   let items = c.itemsPath ? getPath(data, c.itemsPath) : c.jsonKey ? getPath(data, c.jsonKey) : data;
   if (c.itemsObjectValues && items && typeof items === "object" && !Array.isArray(items)) items = Object.values(items);
+  // In XML a single repeated element is an object, not a list of one.
+  else if (c.mode === "xml" && items && typeof items === "object" && !Array.isArray(items)) items = [items];
   if (!Array.isArray(items)) throw new FetchError("items path did not resolve to an array");
 
   const out: Candidate[] = [];
