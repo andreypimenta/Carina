@@ -37,6 +37,14 @@ test("a written date's whole time is kept: a dotted meridiem and a GMT offset ar
   assert.equal(iso("5 October 2026 10:00 p.m. GMT+0200", "-07:00"), "2026-10-05T20:00:00.000Z");
 });
 
+test("a written date's time in a zone not read here is dropped, never read in the source's offset", () => {
+  assert.equal(iso("Sat, 05 Oct 2026 10:00:00 BST", "-03:00"), "2026-10-05T03:00:00.000Z");
+  assert.equal(iso("5 October 2026 10:00 CEST", "-03:00"), "2026-10-05T03:00:00.000Z");
+  assert.equal(iso("5 October 2026 10:00 AEST", "-03:00"), "2026-10-05T03:00:00.000Z");
+  assert.equal(iso("5 October 2026 10:00 AM AEST", "-03:00"), "2026-10-05T03:00:00.000Z");
+  assert.equal(iso("5 October 2026 10:00 · 4 min read", "-03:00"), "2026-10-05T13:00:00.000Z");
+});
+
 test("a numeric date with the year last is read when a number above 12 says which is the day", () => {
   assert.equal(iso("18/09/2026"), "2026-09-18T03:00:00.000Z");
   assert.equal(iso("10/21/2026"), "2026-10-21T03:00:00.000Z");

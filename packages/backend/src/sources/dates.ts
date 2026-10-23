@@ -47,8 +47,9 @@ function normalized(v: string, dateOrder?: DateOrder): string {
   const written = WRITTEN_DAY_MONTH.exec(v);
   if (written) {
     // Only a time right after the date is kept: the words around it ("segunda-feira,", "· 4 min de leitura") are no date.
-    const time = WRITTEN_TIME.exec(v.slice(written.index + written[0].length));
-    const clock = time ? ` ${time[1]}${time[2] ? ` ${time[2].toUpperCase()}M` : ""}${time[3] ?? ""}` : "";
+    const after = v.slice(written.index + written[0].length);
+    const time = WRITTEN_TIME.exec(after);
+    const clock = time && !/^\s*[A-Z]{2,5}\b/.test(after.slice(time[0].length)) ? ` ${time[1]}${time[2] ? ` ${time[2].toUpperCase()}M` : ""}${time[3] ?? ""}` : "";
     return `${written[1]} ${MONTHS[written[2]!.toLowerCase()]} ${written[3]}${clock}`;
   }
   const m = DAY_MONTH_YEAR.exec(v);

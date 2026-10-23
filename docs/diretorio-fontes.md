@@ -84,7 +84,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 | Difficult Airway Society (DAS): Guidelines | `rss-das`; congresso em `das-2026` na agenda | ativa | O feed da categoria de notícias traz os mesmos posts do feed geral. Último post em 31/03/2026. |
 | National Tracheostomy Safety Project (NTSP) | `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp` | ativa | A lista de notícias escreve a data como "18/09/2026"; a fonte declara a ordem dia/mês/ano. |
 | SFORL | `rss-sforl`, `rss-sforl-mediatheque` | ativa | O feed do sforl.org funciona, mas está quieto desde 24/01/2025. A página de produção científica é uma lista de PDFs sem data. A médiathèque (webinars, vídeos) publica com frequência. |
-| ANZCA Library: Airway Management | `rss-gnews-site-anzca-airway` (Google News, `site:libguides.anzca.edu.au airway`) | ativa | É um guia LibGuides: uma coletânea de links para artigos, diretrizes e vídeos de outras fontes, sem lista datada e sem feed; por isso entra pela busca do Google News no domínio. As fontes que ele reúne (DAS, NTSP, periódicos) entram pelos seus próprios caminhos. |
+| ANZCA Library: Airway Management | `rss-gnews-site-anzca-airway` (Google News, `site:libguides.anzca.edu.au airway`) | ativa | É um guia LibGuides: uma coletânea de links para artigos, diretrizes e vídeos de outras fontes, sem lista datada e sem feed; por isso entra pela busca do Google News no domínio. As fontes que ele reúne (DAS, NTSP, periódicos) entram pelos seus próprios caminhos. Na pré-visualização de 23/10/2026, a busca trouxe 30 itens com data. |
 
 ### Brasil e América Latina
 
@@ -101,7 +101,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 | Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
 | Japan Society for Respiratory Endoscopy (JSRE) | `web-jsre-news` | ativa | Lista de avisos "学会から", com a data "2026年8月31日", fuso `+09:00`. |
-| Indian Association for Bronchology (IAB) | `rss-gnews-site-iab` (Google News, `site:iabronchology.org`); BRONCOCON em `broncocon-2026` na agenda | ativa | O site só tem páginas de eventos, sem data na lista e sem feed; por isso entra pela busca do Google News no domínio. |
+| Indian Association for Bronchology (IAB) | `rss-gnews-site-iab` (Google News, `site:iabronchology.org`); BRONCOCON em `broncocon-2026` na agenda | ativa | O site só tem páginas de eventos, sem data na lista e sem feed; por isso entra pela busca do Google News no domínio. Na pré-visualização de 23/10/2026, a busca trouxe 6 itens com data. |
 | APIPA | `json-apipa-programs` (API REST do WordPress, os PDFs dos programas de reuniões); `rss-apipa` | ativa; feed desligado | O feed está abandonado: só um post "testing", de 2019. O site publica cada reunião como um PDF de programa, e a API de mídia do WordPress lista esses PDFs com data. |
 
 ### Sociedades que o diretório ainda não tinha validado
@@ -110,7 +110,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 |---|---|---|
 | ATS (catálogo de diretrizes) | `web-ats-press` (já existia), `json-j-ajrccm`; as diretrizes também chegam pelas buscas do PubMed (`diretorio-diretrizes`) | ativa |
 | STS | `web-sts-press` (já existia), `json-j-ann-thorac-surg` | ativa |
-| ESPO | `rss-gnews-site-espo` (Google News, `site:espo.eu.com OR "European Society of Pediatric Otorhinolaryngology"`) | ativa | Não tem feed (veja `docs/fontes.md`); entra pela busca do Google News. |
+| ESPO | `rss-gnews-site-espo` (Google News, `site:espo.eu.com OR "European Society of Pediatric Otorhinolaryngology"`) | ativa | Não tem feed (veja `docs/fontes.md`); entra pela busca do Google News. Na pré-visualização de 23/10/2026, a busca trouxe 25 itens com data. |
 | Outras sociedades nacionais | o diretório não nomeia nenhuma | |
 
 ## Centros de referência
@@ -136,7 +136,7 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 | EurekAlert! | `web-eurekalert` | ativa | Os feeds RSS antigos (`/rss/*.xml`) respondem 404, e o filtro de assunto da lista é ignorado. Por isso a fonte lê a lista de todos os comunicados, de todas as áreas, de hora em hora; a pré-triagem descarta os de outros temas. A data vem como "23-Oct-2026". |
 | Medscape | `rss-medscape-pulmonary` (`/cx/rssfeeds/2694.xml`, "Medscape Pulmonary Medicine") | ativa | Depois de muitas leituras seguidas, o Medscape respondeu 429 por algum tempo; na leitura espaçada da coleta, o feed responde. |
 | ENTtoday | `rss-enttoday` (já existia) | ativa | |
-| MDedge | `rss-gnews-site-mdedge` (Google News, `site:mdedge.com airway OR tracheostomy OR bronchoscopy OR intubation`) | ativa | Não tem feed, e a página de pneumologia não mostra matéria posterior a 25/11/2025; a busca do Google News no domínio traz o que o MDedge publicar sobre via aérea. |
+| MDedge | `rss-gnews-site-mdedge` (Google News, `site:mdedge.com airway OR tracheostomy OR bronchoscopy OR intubation`) | ativa | Não tem feed, e a página de pneumologia não mostra matéria posterior a 25/11/2025; a busca do Google News no domínio traz o que o MDedge publicar sobre via aérea. Na pré-visualização de 23/10/2026, a busca trouxe 53 itens com data. |
 | Outros agregadores | o diretório não nomeia nenhum | | |
 
 ## Pacientes e familiares
@@ -156,7 +156,7 @@ Episódios de podcast e vídeos entram como itens de notícia, com o título e a
 | ERS Respiratory Channel: Guidelines in Focus | `web-ers-guidelines-in-focus` (a página do canal 38); `rss-ers-channel` | ativa; RSS desligado | O RSS do canal tem títulos genéricos ("Replay", "Guidelines in Focus"), e seus links respondem 404 fora do login. A página do canal lista cada episódio com título, link e data ("15.07.2026", dia/mês/ano declarado). |
 | SBCT Pró-Ligas: aulas em vídeo | `web-sbct-pro-ligas` | ativa | Veja SBCT acima. |
 | La médiathèque de la SFORL | `rss-sforl-mediatheque` | ativa | |
-| ANZCA Library: Apps, Podcasts & Online Lectures | `rss-gnews-site-anzca-media` (Google News, `site:libguides.anzca.edu.au podcast OR lecture OR app`) | ativa | Guia LibGuides, sem lista datada e sem feed; entra pela busca do Google News no domínio. |
+| ANZCA Library: Apps, Podcasts & Online Lectures | `rss-gnews-site-anzca-media` (Google News, `site:libguides.anzca.edu.au podcast OR lecture OR app`) | ativa | Guia LibGuides, sem lista datada e sem feed; entra pela busca do Google News no domínio. Na pré-visualização de 23/10/2026, a busca trouxe 25 itens com data. |
 | Global Tracheostomy Collaborative no LinkedIn | integração das redes (veja Redes sociais) | | O LinkedIn exige login; entra pelos sites, na tarefa à parte de integração das redes. O canal da GTC no YouTube já entra. |
 
 ## Registros e preprints
