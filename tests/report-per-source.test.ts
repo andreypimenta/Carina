@@ -20,14 +20,14 @@ test("a news source leads at most two main entries; the PubMed sources lead as m
   assert.deepEqual([...UNCAPPED_SOURCES].sort(), ["literatura-integral", "literatura-materia"]);
   const entries = [
     ...[1, 2, 3, 4].map((i) => entry(`news-${i}`, "rss-news", 100 - i)),
-    ...[1, 2, 3, 4, 5, 6, 7].map((i) => entry(`materia-${i}`, "literatura-materia", 90 - i)),
+    ...[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => entry(`materia-${i}`, "literatura-materia", 90 - i)),
     ...[1, 2, 3].map((i) => entry(`integral-${i}`, "literatura-integral", 80 - i)),
   ];
   const { main, flashes } = arrangeDaily(entries);
   const ids = main.map((e) => e.entry.itemId);
   assert.equal(main.length, MAIN_ENTRIES);
   assert.deepEqual(ids.filter((id) => id.startsWith("news-")), ["news-1", "news-2"]);
-  assert.equal(ids.filter((id) => id.startsWith("materia-")).length, 7);
+  assert.equal(ids.filter((id) => id.startsWith("materia-")).length, 11);
   assert.equal(ids.filter((id) => id.startsWith("integral-")).length, 3);
   assert.deepEqual(flashes.map((e) => e.entry.itemId).filter((id) => id.startsWith("news-")), ["news-3", "news-4"]);
 });

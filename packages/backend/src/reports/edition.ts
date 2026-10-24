@@ -25,7 +25,7 @@ export const sectionOf = (category: string | null, tags: readonly string[]) =>
   TAG_SECTIONS.find((t) => tags.includes(t.tag))?.section ?? SECTION_OF[category ?? ""] ?? DEFAULT_SECTION;
 
 /** A daily's size: the entries readers get in full, and the one-line flashes after them. */
-export const MAIN_ENTRIES = 12;
+export const MAIN_ENTRIES = 16;
 export const FLASH_ENTRIES = 10;
 /** No source fills a daily: at most this many main entries lead with the same source, except the pack's uncapped sources. */
 const PER_SOURCE = 2;
