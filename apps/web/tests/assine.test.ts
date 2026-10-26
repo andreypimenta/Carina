@@ -30,6 +30,10 @@ const item: SiteItemDetail = {
   markdownAvailable: true, group: null, hasTranslation: false, bodyLanguage: "zh",
   body: { zh: "<p>Texto completo da matéria.</p>", original: null, zhKind: "original", complete: true },
 } as SiteItemDetail;
+const translated: SiteItemDetail = {
+  ...item, id: "tr-1", hasTranslation: true,
+  body: { zh: "<p>Começo traduzido.</p>", original: "<p>Full original text.</p>", zhKind: "translation", complete: false },
+} as SiteItemDetail;
 
 const api = createServer((req, res) => {
   const path = new URL(req.url!, "http://api.local").pathname;
@@ -42,6 +46,7 @@ const api = createServer((req, res) => {
   if (path === "/api/site/reports/daily/2026-10-20") return res.end(JSON.stringify(report("daily", "2026-10-20")));
   if (/^\/api\/site\/reports\/(weekly|daily)\/navigation\//.test(path)) return res.end(JSON.stringify({ items: [] }));
   if (path === "/api/site/items/sec-1") return res.end(JSON.stringify(item));
+  if (path === "/api/site/items/tr-1") return res.end(JSON.stringify(translated));
   res.statusCode = 404;
   res.end(JSON.stringify({ code: "not_found" }));
 });
@@ -90,6 +95,14 @@ test("an article opened from /assine shows its text, the original and the form, 
   const site = links.filter((href) => href.startsWith("/") && !href.startsWith("/assine/") && href !== "/privacy" && href !== "/terms");
   assert.deepEqual(site, [], "nothing else leads into the site");
   assert.doesNotMatch(html, /Edição semanal<\/a>|\/weekly/);
+});
+
+test("an article opened from /assine says when its text is an incomplete AI translation", async () => {
+  const html = await page(`/assine/${WEEK}/tr-1`);
+  assert.match(html, /Começo traduzido\./);
+  assert.match(html, /Texto · tradução por IA/);
+  assert.match(html, /A tradução ainda está incompleta; veja o texto completo no original\./);
+  assert.doesNotMatch(await page(`/assine/${WEEK}/sec-1`), /tradução por IA|tradução ainda está incompleta/);
 });
 
 test("an article page under /assine needs a week in its address", async () => {

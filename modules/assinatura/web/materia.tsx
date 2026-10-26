@@ -35,7 +35,9 @@ export function meta({ loaderData, location }: MetaArgs<typeof loader>) {
 export default function AssineMateria() {
   const { key, item, channels } = useLoaderData<typeof loader>();
   const isX = item.channel === "x" && !!item.x;
-  const bodyHtml = item.bodyLanguage === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
+  const lang = item.bodyLanguage;
+  const bodyHtml = lang === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
+  const bodyLabel = !item.body ? null : lang === "zh" && item.body.zhKind === "translation" ? "Texto · tradução por IA" : lang === "original" && item.hasTranslation ? "Texto · original" : "Texto";
   const shownAt = item.publishedAt ?? item.discoveredAt;
   return (
     <div className="report-shell min-h-dvh">
@@ -62,8 +64,12 @@ export default function AssineMateria() {
               <p className="text-[18px] leading-[1.7] text-ink">{item.summary}</p>
             </section>
           )}
-          {bodyHtml && (
-            <section className="mt-9 border-t border-line pt-6">
+          {item.body && bodyHtml && (
+            <section className="mt-9 border-t border-line pt-4">
+              <div className="mb-6 text-[12px] text-ink-4">{bodyLabel}</div>
+              {item.hasTranslation && lang === "zh" && !item.body.complete && (
+                <p className="mb-5 rounded-control bg-bg-sunk px-3 py-2 text-[13px] text-ink-3">A tradução ainda está incompleta; veja o texto completo no original.</p>
+              )}
               <ArticleBody html={bodyHtml} />
             </section>
           )}
