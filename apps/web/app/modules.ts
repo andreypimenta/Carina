@@ -164,9 +164,10 @@ export interface WebModule {
   };
   /**
    * A call to the reader of its own (to subscribe, say), drawn where a reader who came by a shared link meets
-   * it (CalloutPlace). A module's standalone issue (ReportPaper `standalone`) draws none.
+   * it (CalloutPlace), given the issue at an issue's places. A module's standalone issue (ReportPaper
+   * `standalone`) draws none.
    */
-  Callout?: ComponentType<{ at: CalloutPlace }>;
+  Callout?: ComponentType<{ at: CalloutPlace; report?: ReportDetail }>;
   agent?: Part<AgentPart>;
   topicPage?: Part<TopicPagePart>;
   reportPage?: Part<ReportPagePart>;

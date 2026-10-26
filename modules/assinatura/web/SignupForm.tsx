@@ -31,7 +31,7 @@ function WhatsappJoin({ number }: { number: string }) {
   );
 }
 
-export function SignupForm({ channels, title, compact = false }: { channels: SignupChannels; title: string; compact?: boolean }) {
+export function SignupForm({ channels, title }: { channels: SignupChannels; title: string }) {
   const id = useId();
   const [email, setEmail] = useState("");
   const [trap, setTrap] = useState("");
@@ -87,11 +87,9 @@ export function SignupForm({ channels, title, compact = false }: { channels: Sig
   return (
     <section className="card px-5 py-6 sm:px-7 sm:py-7">
       <h2 className="text-[20px] font-bold leading-snug text-ink sm:text-[22px]">{title}</h2>
-      {!compact && (
-        <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-3">
-          Grátis, {EDITION_WHEN.weekly} (horário de Brasília). {channels.email && channels.whatsapp ? "No e-mail, no WhatsApp ou nos dois." : channels.email ? "No seu e-mail." : "No seu WhatsApp."}
-        </p>
-      )}
+      <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-3">
+        Grátis, {EDITION_WHEN.weekly} (horário de Brasília). {channels.email && channels.whatsapp ? "No e-mail, no WhatsApp ou nos dois." : channels.email ? "No seu e-mail." : "No seu WhatsApp."}
+      </p>
       {channels.email && (
         <form onSubmit={submit} noValidate className="mt-5 space-y-4">
           <div>

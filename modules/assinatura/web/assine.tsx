@@ -1,7 +1,7 @@
 // The page to share in WhatsApp groups: the newest weekly edition (or the one in its address, the link each
-// message carries) set in the site's own edition, with the sign-up form above and below it, and nothing of
-// the rest of the site (WebModule.ownChrome). With no edition yet, a short presentation and the form. The
-// links in the messages have a page of their own (link.tsx).
+// message carries) set in the site's own edition, with the sign-up form at its end, and nothing of the rest
+// of the site (WebModule.ownChrome): its articles open on lean pages under its address (materia.tsx). With no
+// edition yet, a short presentation and the form. The links in the messages have a page of their own (link.tsx).
 import { data, Link, useLoaderData, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import type { ReportDetail, ReportLatestPage } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
@@ -44,13 +44,15 @@ export default function AssinePage() {
         <span className="text-[12px] tracking-[0.12em] text-ink-4">EDIÇÃO SEMANAL · GRÁTIS</span>
       </header>
       <main className="mx-auto w-full max-w-[1160px] px-[var(--gutter-l)] pb-12 lg:px-10">
-        <SignupForm channels={channels} title={`Receba ${SITE.name} toda semana`} />
         {report ? (
-          <div className="mt-6">
-            <ReportPaper report={report} index={[{ key: report.key, issueNumber: report.issueNumber, title: report.title, count: 0 }]} standalone />
-          </div>
+          <ReportPaper
+            report={report}
+            index={[{ key: report.key, issueNumber: report.issueNumber, title: report.title, count: 0 }]}
+            standalone
+            itemPath={(id) => `/assine/${report.key}/${id}`}
+          />
         ) : (
-          <section className="mt-8 max-w-[46em]">
+          <section className="mt-4 max-w-[46em]">
             <h1 className="text-[26px] font-black leading-[1.25] tracking-[-0.02em] text-ink sm:text-[32px]">{SITE.homeTitle}</h1>
             <p className="mt-4 text-[16px] leading-[1.85] text-ink-2">{SITE.description}</p>
             <p className="mt-3 text-[16px] leading-[1.85] text-ink-2">
@@ -58,7 +60,9 @@ export default function AssinePage() {
             </p>
           </section>
         )}
-        {report && <SignupForm channels={channels} title="Gostou? Receba a próxima edição" compact />}
+        <div className={report ? "" : "mt-8"}>
+          <SignupForm channels={channels} title={report ? "Gostou? Receba a próxima edição" : `Receba ${SITE.name} toda semana`} />
+        </div>
         <footer className="mt-10 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12.5px] text-ink-4">
           <Link to="/privacy" className="hover:text-accent">Política de privacidade</Link>
           <Link to="/terms" className="hover:text-accent">Termos de uso</Link>
