@@ -14,7 +14,7 @@ O código fica no módulo `modules/caso`: `caso.ts` (tipos e as semanas de cada 
 - **Pergunta**: em branco, fica "Qual a sua conduta?". **Alternativas** são opcionais (de 2 a 5); a marcada como certa aparece destacada só na resposta.
 - **Resposta e discussão**: pode ficar para depois. Enquanto estiver em branco, a edição seguinte sai sem a resposta.
 
-O caso nasce como **rascunho**. **Publicar** o põe na sua edição; um caso publicado continua editável, e o que for salvo aparece nas edições em um ou dois minutos (as páginas públicas ficam um minuto em cache; no site, em `/assine/<semana>` e nos e-mails enviados depois), por isso a resposta pode ser escrita durante a semana. **Retirar do ar** volta a rascunho e tira o caso da sua edição e a resposta da seguinte. Só um rascunho pode ser **apagado**, com a imagem. **Ver como sai na edição** mostra a prévia. Cada passo fica no registro de auditoria. O menu do painel mostra quantas coisas faltam para a próxima edição: o caso dela publicado e a resposta do caso da edição anterior.
+O caso nasce como **rascunho**. **Publicar** o põe na sua edição; um caso publicado continua editável, e o que for salvo aparece nas edições em um ou dois minutos (as páginas públicas ficam um minuto em cache; no site, em `/assine/<semana>` e nos e-mails enviados depois), por isso a resposta pode ser escrita durante a semana. **Retirar do ar** volta a rascunho e tira o caso da sua edição e a resposta da seguinte. Só um rascunho pode ser **apagado**, com a imagem. **Ver como sai na edição** mostra a prévia. Cada passo fica no registro de auditoria.
 
 ## A imagem e a privacidade do paciente
 

@@ -261,18 +261,6 @@ export async function casoDetail(id: number, now = new Date()): Promise<BeforeJs
   };
 }
 
-/**
- * What the editor still has to do for the next edition: its case to publish, and the answer to the case
- * before it, which that edition shows. The admin navigation's badge.
- */
-export async function pending(now = new Date()): Promise<number> {
-  const week = upcomingWeek(now);
-  const rows = await sql<Pick<Row, "week" | "answer">[]>`SELECT week, answer FROM caso_semana WHERE status = 'publicado' AND week IN (${week}, ${previousWeek(week)!})`;
-  const own = rows.find((r) => r.week === week);
-  const before = rows.find((r) => r.week !== week);
-  return (own ? 0 : 1) + (before && !before.answer?.trim() ? 1 : 0);
-}
-
 /** Whether a picture belongs to a case (`published`: to a published one), for the routes that send it. */
 export async function imageShown(file: string, published: boolean): Promise<boolean> {
   const [row] = await sql`SELECT 1 FROM caso_semana WHERE image = ${file} AND (${!published} OR status = 'publicado') LIMIT 1`;

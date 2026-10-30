@@ -20,7 +20,7 @@ import { buildApp } from "../../../apps/api/src/app.ts";
 import { editionEmail } from "../../assinatura/backend/messages.ts";
 import server from "../server.ts";
 import {
-  casoDetail, createCaso, deleteCaso, editCaso, IMAGE_DIR, listCasos, pending, publishCaso, upcomingWeek, withdrawCaso,
+  casoDetail, createCaso, deleteCaso, editCaso, IMAGE_DIR, listCasos, publishCaso, upcomingWeek, withdrawCaso,
 } from "../backend/casos.ts";
 import type { CasoPart } from "../caso.ts";
 
@@ -189,20 +189,16 @@ test("the e-mailed edition carries the answer and the case, the editor's text es
   assert.match(mail.text, /Imagem: https:\/\/folego\.example\/caso\/imagens\//);
 });
 
-test("the next edition is this week's, or last week's on a Monday before it comes out; the badge counts what it still lacks", async () => {
+test("the next edition is this week's, or last week's on a Monday before it comes out, and a new case is offered the editions without one", async () => {
   assert.equal(upcomingWeek(new Date("2026-11-02T09:59:00Z")), "2026-W44", "Monday before 07:00 (-03:00): last week's edition is still to come");
   assert.equal(upcomingWeek(new Date("2026-11-02T10:00:00Z")), "2026-W45");
   assert.equal(upcomingWeek(new Date("2026-11-07T12:00:00Z")), "2026-W45");
 
   const now = new Date("2026-11-04T12:00:00Z");
-  assert.equal(await pending(now), 1, "no case for the next edition");
   const before = await createCaso(fields("2026-W44"), EDITOR);
   await publishCaso(before.id, { version: await version(before.id) }, EDITOR);
-  assert.equal(await pending(now), 2, "and last week's case still without its answer");
   const own = await createCaso(fields("2026-W45"), EDITOR);
-  assert.equal(await pending(now), 2, "a draft is still to publish");
   await publishCaso(own.id, { version: await version(own.id) }, EDITOR);
   await editCaso(before.id, { ...fields("2026-W44"), answer: "Resposta.", version: await version(before.id) }, EDITOR);
-  assert.equal(await pending(now), 0);
   assert.deepEqual((await listCasos(now)).weeks.slice(0, 2), ["2026-W46", "2026-W47"], "a new case is offered the editions without one");
 });
