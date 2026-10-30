@@ -31,6 +31,25 @@ export async function loadItemOgCard(id: string): Promise<OgCard | null> {
     title: item.title,
     subtitle: item.summary,
     meta: `${item.source.name} · ${beijingDate(item.timelineAt)}`,
-    badge: item.selected && item.score !== null && ITEM_COPY.showScore ? { value: String(Math.round(item.score)), label: 'Nota da Seleção' } : null,
+    badge: item.selected && item.score !== null && ITEM_COPY.showScore
+      ? { value: String(Math.round(item.score)), label: 'Nota da Seleção' }
+      : keyNumberBadge(item.title, item.summary),
   };
+}
+
+const PERCENT = String.raw`\d+(?:[.,]\d+)?\s?%`;
+
+/**
+ * The article's key number: the result of a change ("de 44,1% para 70,8%" gives 70,8%) in the title or
+ * else the summary, or the title's first percentage on its own. A summary's other percentages, ranges
+ * ("de 63% a 98%") and confidence levels ("IC 95%") say too little alone; without one the card has no badge.
+ */
+export function keyNumberBadge(title: string, summary: string | null): OgCard['badge'] {
+  const change = (text: string) => new RegExp(`${PERCENT}\\s+para\\s+(${PERCENT})`).exec(text)?.[1];
+  const alone = title
+    .replace(new RegExp(`${PERCENT}?\\s*(?:a|até|to|–|-)\\s*${PERCENT}`, 'g'), ' ')
+    .replace(new RegExp(`\\b(?:IC|CI)\\s*(?:de\\s*)?${PERCENT}|${PERCENT}\\s*(?:IC|CI)\\b`, 'g'), ' ')
+    .match(new RegExp(PERCENT))?.[0];
+  const found = change(title) ?? alone ?? (summary ? change(summary) : undefined);
+  return found ? { value: found.replace(/\s/g, '') } : null;
 }

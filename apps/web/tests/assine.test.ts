@@ -1,7 +1,8 @@
 // Run after `npm run build -w @aihot/web`. Real production server/router, synthetic HTTP API only.
 // Failure cases: /assine/<week> opening its stories on the site's article pages, or with a sign-up form above
 // the edition; its article page leading into the rest of the site; the weekly issue's page without the
-// button that copies the /assine link, or the button on a daily issue or on /assine itself.
+// button that copies the /assine link, or the button on a daily issue or on /assine itself; an article, on the
+// site, on its lean page or in a weekly issue, without the WhatsApp button that sends its lean page.
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { after, before, test } from "node:test";
@@ -27,7 +28,7 @@ const item: SiteItemDetail = {
   publishedAt: at, timelineAt: at, discoveredAt: at, category: "reviews", tags: ["tag"], score: 80, selected: true,
   channel: "news", x: null, originalTitle: null, links: { original: "https://doi.org/10.1000/xyz" },
   story: null, readingMode: "full", author: null, outline: [], relatedStories: [], topics: [{ slug: "topico", name: "Tópico" }], indexable: true,
-  markdownAvailable: true, group: null, hasTranslation: false, bodyLanguage: "zh",
+  markdownAvailable: true, group: null, hasTranslation: false, bodyLanguage: "zh", weekly: WEEK,
   body: { zh: "<p>Texto completo da matéria.</p>", original: null, zhKind: "original", complete: true },
 } as SiteItemDetail;
 const translated: SiteItemDetail = {
@@ -135,4 +136,27 @@ test("where the browser refuses to copy, the button shows the address to select"
   await tab.getByRole("button", { name: "Copiar link para grupos" }).click();
   assert.equal(await tab.getByLabel("Link para grupos").inputValue(), `${web.origin}/assine/${WEEK}`);
   await context.close();
+});
+
+const whatsapp = (html: string) => hrefs(html).filter((href) => href.startsWith("https://wa.me/?text="))
+  .map((href) => decodeURIComponent(href.slice("https://wa.me/?text=".length).replace(/&amp;/g, "&")));
+
+test("an article goes to WhatsApp as its title and its lean page under the weekly issue that cites it", async () => {
+  const lean = `${web.origin}/assine/${WEEK}/sec-1`;
+  for (const path of ["/items/sec-1", `/assine/${WEEK}/sec-1`]) {
+    const html = await page(path);
+    assert.deepEqual(whatsapp(html), [`Matéria da seção\n${lean}`], path);
+    assert.match(html, /Mandar no WhatsApp/, path);
+    assert.match(html, />Copiar link</, path);
+  }
+});
+
+test("each story of a weekly issue can be sent to WhatsApp, and a daily's cannot", async () => {
+  for (const path of [`/weekly/${WEEK}`, `/assine/${WEEK}`]) {
+    const sent = whatsapp(await page(path));
+    for (const [id, title] of [["lead-1", "Manchete da semana"], ["sec-1", "Matéria da seção"]]) {
+      assert.ok(sent.includes(`${title}\n${web.origin}/assine/${WEEK}/${id}`), `${path}: ${id}`);
+    }
+  }
+  assert.deepEqual(whatsapp(await page("/daily/2026-10-20")), []);
 });

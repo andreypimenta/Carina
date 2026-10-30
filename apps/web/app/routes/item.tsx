@@ -574,7 +574,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
               </ul>
             </section>
           )}
-          <Callouts at="item-end" />
+          <Callouts at="item-end" item={item} />
         </article>
       </ArticleLayout>
 

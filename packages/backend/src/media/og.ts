@@ -8,7 +8,7 @@ import sharp from "sharp";
 import { config, REPO_ROOT } from "../config.ts";
 import { SITE } from "@aihot/site";
 
-export const OG_TEMPLATE_VERSION = "og-2026-09-29.1";
+export const OG_TEMPLATE_VERSION = "og-2026-10-30.1";
 const WIDTH = 1200;
 const HEIGHT = 630;
 const CACHE_DIR = path.join(config.dataDir, "ogcache");
@@ -18,8 +18,8 @@ export interface OgCard {
   title: string;
   subtitle?: string | null;
   meta?: string | null;
-  /** Small emphasised figure on the right (e.g. an item score). */
-  badge?: { value: string; label: string } | null;
+  /** Small emphasised figure on the right (e.g. an item score, or its key number without a label). */
+  badge?: { value: string; label?: string } | null;
   accent?: "teal" | "hot" | "amber";
 }
 
@@ -119,9 +119,10 @@ async function tree(card: OgCard): Promise<Node> {
         ].filter(Boolean)),
         card.badge
           ? h("div", { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: 170, height: 170, borderRadius: 999, border: `6px solid ${accent}` }, [
-              h("div", { display: "flex", fontSize: 58, fontWeight: 700, color: "#ffffff" }, card.badge.value),
-              h("div", { display: "flex", fontSize: 22, color: "#82939a" }, card.badge.label),
-            ])
+              // A figure longer than a score (70,8%) is set smaller to stay inside the ring.
+              h("div", { display: "flex", fontSize: card.badge.value.length > 5 ? 38 : card.badge.value.length > 4 ? 44 : 58, fontWeight: 700, color: "#ffffff" }, card.badge.value),
+              card.badge.label ? h("div", { display: "flex", fontSize: 22, color: "#82939a" }, card.badge.label) : null,
+            ].filter(Boolean))
           : null,
       ].filter(Boolean)),
       card.meta ? h("div", { display: "flex", fontSize: 24, color: "#82939a", borderTop: "1px solid rgba(230,237,237,0.12)", paddingTop: 22 }, clamp(card.meta, 70)) : null,

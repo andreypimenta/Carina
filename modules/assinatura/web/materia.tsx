@@ -1,6 +1,6 @@
 // An article opened from /assine: as lean as the edition it came from (WebModule.ownChrome), with the text,
-// the link to the original and the sign-up form at the end. Its only way back is to that edition; nothing
-// leads into the rest of the site.
+// the link to the original, the buttons that send this page to WhatsApp or copy it, and the sign-up form at the
+// end. Its only way back is to that edition; nothing leads into the rest of the site.
 import { data, Link, useLoaderData, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import type { SiteItemDetail } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
@@ -11,6 +11,7 @@ import { apiGet, cachedPage, loadOr404 } from "@aihot/web/lib/api.server";
 import { fullDateTime } from "@aihot/web/lib/format";
 import { pageMeta, titled } from "@aihot/web/lib/seo";
 import type { SignupChannels } from "../types.ts";
+import { materiaUrl, ShareLink } from "./ShareLink.tsx";
 import { SignupForm } from "./SignupForm.tsx";
 
 export { pageHeaders as headers } from "@aihot/web/lib/api.server";
@@ -81,6 +82,7 @@ export default function AssineMateria() {
           >
             {isX ? "Ver o post no X" : `Ler o original em ${item.source.name}`} <IconExternal size={14} />
           </a>
+          <ShareLink url={materiaUrl(key, item.id)} label="Copiar link" whatsapp={item.title} className="mt-6" />
         </article>
         <SignupForm channels={channels} title={`Gostou? Receba ${SITE.name} toda semana`} />
         <footer className="mt-10 flex flex-wrap justify-center gap-x-5 gap-y-2 text-[12.5px] text-ink-4">
