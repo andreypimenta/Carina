@@ -1,13 +1,15 @@
 // The way to /assine from the site's own pages, for the reader who came by a shared link: one line under an
-// issue's masthead and at the foot of every page, and a short card where an issue or an article ends. Nothing
-// pops up or covers the reading. Under a weekly issue's line, the button that copies its link for the groups;
-// at an article's end, above the card, the buttons that send its lean /assine page to WhatsApp or copy it.
+// issue's masthead and at the foot of every page, and a short card where an issue or an article ends, with
+// "Indique a um colega" after it at an issue's end. Nothing pops up or covers the reading. Under a weekly
+// issue's line, the button that copies its link for the groups; at an article's end, above the card, the
+// buttons that send its lean /assine page to WhatsApp or copy it.
 import { Link } from "react-router";
 import { EDITION_WHEN, SITE } from "@aihot/site";
 import type { ReportDetail, SiteItemDetail } from "@aihot/contracts/site";
 import type { CalloutPlace } from "@aihot/web/modules";
 import { IconArrowRight, IconMail } from "@aihot/web/components/icons";
 import { siteUrl } from "@aihot/web/lib/seo";
+import { Indique } from "./Indique.tsx";
 import { materiaUrl, ShareLink } from "./ShareLink.tsx";
 
 const LINE = `Receba a edição semanal ${EDITION_WHEN.weekly}, de graça.`;
@@ -32,7 +34,14 @@ export function Callout({ at, report, item }: { at: CalloutPlace; report?: Repor
         </Link>
       </aside>
     );
-    if (!item) return card;
+    if (!item) {
+      return (
+        <>
+          {card}
+          {at === "report-end" && <Indique className="mt-4" />}
+        </>
+      );
+    }
     // Before the first weekly issue there is no lean page to send, and the article's own goes instead.
     return (
       <>

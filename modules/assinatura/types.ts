@@ -13,6 +13,8 @@ export interface AdminSubscriber {
   channel: Channel;
   address: string;
   status: "pending" | "confirmed" | "unsubscribed";
+  /** The group whose link brought it (/assine?g=), if any. */
+  group_tag: string | null;
   created_at: string;
   confirmed_at: string | null;
   unsubscribed_at: string | null;
@@ -37,6 +39,8 @@ export interface AdminOverview {
   /** What is wrong with NEWSLETTER_WHATSAPP_NUMBER, which keeps the WhatsApp channel closed; null when it is fine. */
   whatsappNumberProblem: string | null;
   counts: Array<{ channel: Channel; status: string; n: number }>;
+  /** Addresses by the group whose link brought them (null: none) and status. */
+  groups: Array<{ group: string | null; status: string; n: number }>;
   editions: AdminEdition[];
   subscribers: AdminSubscriber[];
   /** The list's filters, as read. */

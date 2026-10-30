@@ -1,5 +1,5 @@
 // The admin's view of the readers: whether each channel can send, how many addresses there are by channel
-// and status, each edition's sends (with a way to send again those that failed or may not have arrived,
+// and status and by the group whose link brought them (with the link to send a group), each edition's sends (with a way to send again those that failed or may not have arrived,
 // after checking), the latest addresses and the whole list as CSV.
 import { useState } from "react";
 import { useLoaderData, type LoaderFunctionArgs } from "react-router";
@@ -7,8 +7,10 @@ import { SITE } from "@aihot/site";
 import { adminGet } from "@aihot/web/lib/admin.server";
 import { useAdminAction } from "@aihot/web/features/admin/action";
 import { bj } from "@aihot/web/features/admin/format";
-import { AdminPage, Badge, Button, Card, DataTable, FilterChips, ReasonDialog, Stat } from "@aihot/web/features/admin/ui";
+import { copyText } from "@aihot/web/lib/clipboard";
+import { AdminPage, Badge, Button, Card, DataTable, Field, FilterChips, Input, ReasonDialog, Stat } from "@aihot/web/features/admin/ui";
 import { formatPhone, type Channel } from "../address.ts";
+import { groupTag, INDIQUE_GROUP, signupPath } from "../group.ts";
 import type { AdminEdition, AdminOverview } from "../types.ts";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -46,6 +48,56 @@ function EditionRow({ e }: { e: AdminEdition }) {
   );
 }
 
+const groupName = (tag: string | null) => (tag === INDIQUE_GROUP ? "indique (Indique a um colega)" : tag ?? "sem marcação");
+
+/** Sign-ups by the group whose link brought them, most confirmed first, and the link to send a new group. */
+function Groups({ rows }: { rows: AdminOverview["groups"] }) {
+  const [name, setName] = useState("");
+  const [copied, setCopied] = useState(false);
+  const tag = groupTag(name);
+  const link = tag ? `${window.location.origin}${signupPath(tag)}` : null;
+  const by = new Map<string | null, Record<string, number>>();
+  for (const r of rows) by.set(r.group, { ...by.get(r.group), [r.status]: r.n });
+  const groups = [...by].sort(([, a], [, b]) => (b.confirmed ?? 0) - (a.confirmed ?? 0));
+  return (
+    <Card title="Por grupo" className="mt-5">
+      <p className="text-[13px] text-ink-3">
+        Mande a cada grupo de WhatsApp o link com a marcação dele: quem se inscreve por ele fica com essa marcação, e a contagem aparece aqui. A marcação nomeia o grupo, não a pessoa, e não aparece no site.
+      </p>
+      <div className="mt-3 flex flex-wrap items-end gap-3">
+        <div className="w-[260px] max-w-full">
+          <Field label="Nome do grupo">
+            <Input value={name} onChange={(e) => { setName(e.target.value); setCopied(false); }} placeholder="residentes SP" maxLength={80} />
+          </Field>
+        </div>
+        {link && (
+          <>
+            <code className="mb-2 break-all font-mono text-[12.5px] text-ink">{link}</code>
+            <Button size="sm" onClick={async () => { await copyText(link); setCopied(true); }}>{copied ? "Copiado" : "Copiar link"}</Button>
+          </>
+        )}
+      </div>
+      {groups.length > 0 && (
+        <table className="mt-4 w-full text-[13px]">
+          <thead>
+            <tr className="text-left text-ink-4"><th className="py-1.5 font-medium">Grupo</th><th className="py-1.5 text-right font-medium">Confirmados</th><th className="py-1.5 text-right font-medium">Aguardando</th><th className="py-1.5 text-right font-medium">Saíram</th></tr>
+          </thead>
+          <tbody>
+            {groups.map(([group, n]) => (
+              <tr key={group ?? ""} className="border-t border-line">
+                <td className={`py-1.5 ${group ? "font-mono text-ink" : "text-ink-4"}`}>{groupName(group)}</td>
+                <td className="num py-1.5 text-right font-semibold text-ink">{n.confirmed ?? 0}</td>
+                <td className="num py-1.5 text-right text-ink-3">{n.pending ?? 0}</td>
+                <td className="num py-1.5 text-right text-ink-3">{n.unsubscribed ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Card>
+  );
+}
+
 export default function AssinaturaAdmin() {
   const d = useLoaderData<typeof loader>();
   const total = (channel: Channel, status?: string) => d.counts.filter((c) => c.channel === channel && (!status || c.status === status)).reduce((n, c) => n + c.n, 0);
@@ -65,6 +117,8 @@ export default function AssinaturaAdmin() {
         ))}
       </div>
 
+      <Groups rows={d.groups} />
+
       <Card title="Edições enviadas" className="mt-5" pad={false}>
         {d.editions.length ? d.editions.map((e) => <EditionRow key={`${e.edition_key}-${e.channel}`} e={e} />) : <p className="px-4 py-5 text-[13px] text-ink-4">Nenhuma edição enviada ainda.</p>}
       </Card>
@@ -81,6 +135,7 @@ export default function AssinaturaAdmin() {
           columns={[
             { key: "a", label: "Endereço", render: (r) => <span className="font-mono text-[12.5px] text-ink">{r.channel === "whatsapp" ? formatPhone(r.address) : r.address}</span> },
             { key: "c", label: "Canal", render: (r) => CHANNEL[r.channel] },
+            { key: "g", label: "Grupo", render: (r) => (r.group_tag ? <span className="font-mono text-[12.5px]">{r.group_tag}</span> : null) },
             { key: "s", label: "Status", render: (r) => <Badge tone={TONE[r.status] ?? "muted"} title={r.confirm_error ?? undefined}>{STATUS[r.status] ?? r.status}</Badge> },
             { key: "t", label: "Inscrição", render: (r) => <span className="num whitespace-nowrap">{bj(r.created_at, true)}</span> },
             { key: "ok", label: "Confirmação", render: (r) => (r.confirmed_at ? <span className="num whitespace-nowrap">{bj(r.confirmed_at, true)}</span> : r.confirm_error ? <span className="text-[12px] text-ink-4" title={r.confirm_error}>falhou</span> : null) },

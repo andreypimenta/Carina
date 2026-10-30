@@ -44,7 +44,7 @@ export function registerAssinatura(app: FastifyInstance) {
     const text = (v: unknown) => (typeof v === "string" ? v : null);
     try {
       const sent = await subscribe({
-        email: text(b.email), consent: b.consent, trap: text(b.website),
+        email: text(b.email), consent: b.consent, trap: text(b.website), group: b.group,
         ip: String(req.headers["x-real-ip"] ?? req.ip ?? ""), userAgent: String(req.headers["user-agent"] ?? ""),
       });
       return reply.code(202).send({ sent });

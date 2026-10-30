@@ -17,6 +17,7 @@
     "@aihot/assinatura": "*",
     "@aihot/agenda": "*",
     "@aihot/caso": "*",
-    "@aihot/instagram": "*"
+    "@aihot/instagram": "*",
+    "@aihot/expediente": "*"
   }
 }

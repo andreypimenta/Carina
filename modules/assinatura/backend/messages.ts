@@ -1,17 +1,20 @@
 // What each message says: the e-mail confirmation, the WhatsApp welcome, the weekly edition as an e-mail
-// (tables and inline styles, which mail clients keep) and as a WhatsApp text. The edition is the one the site shows, read from the
+// (tables and inline styles, which mail clients keep; it ends with "Indique a um colega") and as a WhatsApp text. The edition is the one the site shows, read from the
 // public read layer (publication/reports.ts loadReport): withdrawn items are left out, as on the page.
 import type { ReportCitation, ReportDetail } from "@aihot/contracts/site";
 import { isoWeekRange } from "@aihot/contracts/time";
 import { config } from "@aihot/backend/config";
 import { serverModules } from "@aihot/backend/modules";
 import { EDITION_WHEN, SITE } from "@aihot/site";
+import { INDIQUE_GROUP, signupPath } from "../group.ts";
 
 export const links = {
   confirm: (token: string) => `${config.siteUrl}/assine/confirmar?t=${token}`,
   leave: (token: string) => `${config.siteUrl}/assine/sair?t=${token}`,
   edition: (key: string) => `${config.siteUrl}/assine/${key}`,
   page: () => `${config.siteUrl}/assine`,
+  /** The sign-up link a reader passes on, tagged so the admin counts what it brought. */
+  indique: () => `${config.siteUrl}${signupPath(INDIQUE_GROUP)}`,
 };
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -113,6 +116,20 @@ ${c.summary ? `<p style="margin:6px 0 0;font-size:15px;line-height:1.7;color:#3b
 </td></tr>`;
 }
 
+/**
+ * "Indique a um colega" at the end of the edition: the sign-up link, and a button that opens a new e-mail with it.
+ * The reader's own e-mail is not the thing to forward: it carries their link to leave the list.
+ */
+function indiqueHtml(): string {
+  const link = links.indique();
+  const mail = `mailto:?${new URLSearchParams({ subject: `${SITE.name}: a edição semanal de ${SITE.subject}`, body: `Recebo toda semana e acho que você vai gostar. É grátis; para se inscrever: ${link}` }).toString().replace(/\+/g, "%20")}`;
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:30px;background:#f4f2ec;border-radius:10px"><tr><td style="padding:18px 20px;font-family:Arial,Helvetica,sans-serif">
+<div style="font-size:16px;font-weight:bold;color:#1f2a2e">Indique a um colega</div>
+<p style="margin:6px 0 0;font-size:14px;line-height:1.6;color:#3b4649">Conhece alguém que gostaria de receber o ${esc(SITE.bareName)}? Mande o link da inscrição: <a href="${esc(link)}" style="color:#0f766e">${esc(link.replace(/^https?:\/\//, ""))}</a></p>
+<p style="margin:12px 0 0"><a href="${esc(mail)}" style="display:inline-block;border:1px solid #0f766e;color:#0f766e;text-decoration:none;font-weight:bold;font-size:14px;padding:9px 18px;border-radius:999px">Indicar por e-mail</a></p>
+</td></tr></table>`;
+}
+
 /** The weekly edition for one reader: the page's arrangement, each story linked to its page on the site. */
 export function editionEmail(report: ReportDetail, token: string) {
   const parts = editionParts(report);
@@ -139,6 +156,7 @@ export function editionEmail(report: ReportDetail, token: string) {
 ${s.summary ? `<p style="margin:10px 0 0;font-size:15px;line-height:1.7;color:#3b4649"><b style="color:#0f766e">Nesta seção</b> ${esc(s.summary)}</p>` : ""}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${s.items.map((c) => storyHtml(c, 320)).join("")}</table>`),
     `<p style="margin:30px 0 0;text-align:center"><a href="${esc(url)}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:15px;padding:12px 22px;border-radius:999px">Ler a edição no site</a></p>`,
+    indiqueHtml(),
   ].join("\n");
   const footer = `Você recebe esta edição porque se inscreveu em <a href="${esc(links.page())}" style="color:#6b7478">${esc(links.page().replace(/^https?:\/\//, ""))}</a>. Ela sai ${esc(EDITION_WHEN.weekly)} (horário de Brasília).<br><a href="${esc(leave)}" style="color:#6b7478">Não quero mais receber</a>`;
   const text = [
@@ -153,6 +171,8 @@ ${s.summary ? `<p style="margin:10px 0 0;font-size:15px;line-height:1.7;color:#3
     ...extra.flatMap((p) => [p.text, ""]),
     ...parts.sections.flatMap((s) => [s.label.toUpperCase(), ...s.items.map((c) => `- ${c.title} (${c.sourceName}) — ${itemUrl(c)}`), ""]),
     `Ler a edição no site: ${url}`,
+    "",
+    `INDIQUE A UM COLEGA: conhece alguém que gostaria de receber o ${SITE.bareName}? Mande o link da inscrição: ${links.indique()}`,
     "",
     `Não quero mais receber: ${leave}`,
   ].join("\n");

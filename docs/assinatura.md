@@ -16,6 +16,18 @@ A prévia desse link é o cartão da matéria (`/og/items/<id>.png`): marca do j
 
 Para pegar o link, abra a edição semanal no site (`/weekly` ou `/weekly/2026-W43`): embaixo do cabeçalho, o botão **Copiar link para grupos** copia o endereço completo da `/assine` daquela semana (`https://ofolego.com/assine/2026-W43`). Se o navegador não deixar copiar, o endereço aparece num campo para selecionar e copiar à mão.
 
+Depois da edição e do formulário vêm o quadro **Indique a um colega** (abaixo) e, no rodapé, o link para o **Expediente** (`/expediente`, módulo `modules/expediente`: quem edita o jornal e como as matérias são escolhidas e escritas).
+
+## Link por grupo
+
+Para saber qual grupo de WhatsApp trouxe cada inscrito, mande a cada grupo o link com a marcação dele: `https://ofolego.com/assine?g=residentes-sp` (vale também em `/assine/2026-W43?g=…`). No Painel → **Inscritos**, o quadro **Por grupo** monta esse link a partir do nome que você digitar e mostra, para cada marcação, quantos estão confirmados, aguardando confirmação e quantos saíram. A marcação vira letras minúsculas, números e hífens, com até 40 caracteres (“Residentes SP 2026” vira `residentes-sp-2026`).
+
+A inscrição por e-mail guarda a marcação do link em que o leitor estava. Um endereço fica com a marcação que o trouxe primeiro; se ele não tinha nenhuma, fica com a da nova inscrição. A marcação nomeia um grupo, nunca uma pessoa: aparece só no painel, na lista e no CSV, e não em páginas públicas. Inscrições pelo WhatsApp não têm marcação.
+
+## Indique a um colega
+
+No fim de cada edição no site (depois de **Quero receber**), na página `/assine` e no fim do e-mail da edição há um **Indique a um colega** com o link de inscrição marcado `?g=indique`, para que o painel conte quantos vieram por indicação. No site, o botão abre o compartilhamento do celular ou, no computador, copia o link. No e-mail, o link vem escrito e um botão **Indicar por e-mail** abre um e-mail novo com ele; o texto não sugere encaminhar a edição, porque ela leva o link de saída de quem a recebeu. O site não manda nada a ninguém.
+
 O resto do site leva a `/assine`, para quem chega pelo jornal compartilhado: **Assine grátis** no menu lateral, **Assine** na barra inferior do celular e uma linha na página **Meu**; uma faixa “Receba a edição semanal toda segunda-feira às 07:00, de graça” (dia e hora de `EDITION_WHEN.weekly`, em `site/site.ts`) embaixo do cabeçalho de cada edição (semanal, mensal e nota diária) e no pé de todas as páginas; e um quadro **Quero receber** no fim de cada edição e de cada matéria. Nada abre por cima da leitura. Esses textos não citam canal: quem escolhe e-mail ou WhatsApp é a página `/assine`, que só mostra os canais ligados.
 
 A inscrição só mostra os canais que estão ligados (abaixo): o formulário de e-mail e o botão **Receber pelo WhatsApp**. Com os dois desligados, a página diz que as inscrições abrem em breve.
@@ -40,7 +52,7 @@ O worker roda `assinatura.send` a cada minuto (só existe com algum canal ligado
 - Ritmo no WhatsApp: uma mensagem a cada 12 a 18 segundos (cerca de 4 por minuto). Antes de cada rodada o worker confere se a instância está conectada; se não estiver, não manda nada e tenta no minuto seguinte.
 - O e-mail é a edição em HTML próprio para e-mail (manchete, destaques, as partes dos módulos que têm forma de e-mail, como o caso da semana, seções, link de cada matéria para o site e para o original), com o link da página e o de saída. A mensagem de WhatsApp traz a manchete, os destaques, o link da edição e como sair.
 
-O Painel → **Inscritos** mostra a contagem por canal e status, as edições enviadas com o resultado de cada uma, a lista (os 500 mais recentes) e o botão **Exportar CSV** com a lista inteira.
+O Painel → **Inscritos** mostra a contagem por canal e status, a contagem por grupo (acima), as edições enviadas com o resultado de cada uma, a lista (os 500 mais recentes) e o botão **Exportar CSV** com a lista inteira.
 
 ## Configuração
 
@@ -79,4 +91,4 @@ curl -X POST "$EVOLUTION_API_URL/webhook/set/$EVOLUTION_INSTANCE" \
 
 ## Tabelas
 
-`assinatura_subscribers` (um endereço por canal, com status, consentimento e token), `assinatura_editions` (cada edição planejada por canal) e `assinatura_sends` (cada envio). Nenhum teste nem o desenvolvimento local manda e-mail ou WhatsApp de verdade: os testes usam servidores locais no lugar do Resend e da Evolution.
+`assinatura_subscribers` (um endereço por canal, com status, consentimento, token e a marcação do grupo), `assinatura_editions` (cada edição planejada por canal) e `assinatura_sends` (cada envio). Nenhum teste nem o desenvolvimento local manda e-mail ou WhatsApp de verdade: os testes usam servidores locais no lugar do Resend e da Evolution.

@@ -1,0 +1,13 @@
+{
+  "name": "@aihot/expediente",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./module": "./module.ts",
+    "./web": "./web.tsx"
+  },
+  "dependencies": {
+    "@aihot/contracts": "*",
+    "@aihot/site": "*"
+  }
+}
