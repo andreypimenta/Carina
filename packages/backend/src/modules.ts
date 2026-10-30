@@ -116,8 +116,6 @@ export function defineQueue<T>(queue: ModuleQueue<T>): ModuleQueue<T> {
 
 export interface SitemapEntry {
   loc: string;
-  /** Stable public-content identity for update notifications (IndexNow); never rendered into the sitemap. */
-  revision?: string;
   lastmod?: Date | null;
   changefreq?: string;
   priority?: number;
