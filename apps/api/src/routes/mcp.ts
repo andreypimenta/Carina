@@ -14,7 +14,7 @@ import { isValidDate } from "@aihot/contracts/time";
 import { config } from "@aihot/backend/config";
 import { cachedByKey } from "@aihot/backend/lib/cache";
 import { logError } from "@aihot/backend/lib/log-error";
-import { dailyAnswer, hotAnswer, latestAnswer, periodAnswer, searchAnswer, searchItems, storyAnswer } from "@aihot/backend/publication/agent";
+import { dailyAnswer, hotAnswer, journals, latestAnswer, periodAnswer, searchAnswer, searchItems, storyAnswer } from "@aihot/backend/publication/agent";
 import { v1Items } from "@aihot/backend/publication/v1";
 import { SearchBusyError } from "@aihot/backend/publication/pool";
 import { resolveStory, v1HotTopics, v1Story } from "@aihot/backend/publication/stories";
@@ -137,7 +137,7 @@ function registerTools(server: McpServer, say: typeof ok) {
     safe(T.latest, async (args) => {
       const query = { mode: args.mode, window: args.window, by: "timeline", category: args.category ?? null, q: null, limit: args.limit, cursor: null } as const;
       const res = await recent(`items:${JSON.stringify(query)}`, () => v1Items(query));
-      return say(latestAnswer(res, { window: args.window, mode: args.mode, category: args.category ?? null, limit: args.limit }), { schemaVersion: 1, query: res.query, items: res.items });
+      return say(latestAnswer(res, { window: args.window, mode: args.mode, category: args.category ?? null, limit: args.limit }, await journals(res.items.map((it) => it.id))), { schemaVersion: 1, query: res.query, items: res.items });
     }),
   );
 

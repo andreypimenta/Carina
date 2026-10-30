@@ -13,7 +13,7 @@ import { loadReport } from "@aihot/backend/publication/reports";
 import { loadItemDetail } from "@aihot/backend/publication/detail";
 import { itemAvailability } from "@aihot/backend/publication/availability";
 import { journalName } from "@aihot/backend/publication/rules";
-import { searchAnswer, searchItems } from "@aihot/backend/publication/agent";
+import { journals, latestAnswer, searchAnswer, searchItems } from "@aihot/backend/publication/agent";
 
 const T = tag();
 const SOURCE = `journal-source-${T}`;
@@ -72,11 +72,13 @@ test("the article page and the availability read name the journal", async () => 
   assert.deepEqual([availability[withJournal]?.sourceName, availability[withoutJournal]?.sourceName], ["The New England Journal of Medicine", SEARCH]);
 });
 
-test("agent search results name the journal, and the source when there is none", async () => {
+test("agent search and latest results name the journal, and the source when there is none", async () => {
   const found = await searchItems(T, "7d", null, 10);
-  const text = searchAnswer(found, { q: T, window: "7d", category: null });
-  const line = (n: number) => text.split("\n")[text.split("\n").findIndex((l) => l.includes(`Matéria ${n} ${T}`)) + 1] ?? "";
-  assert.match(line(1), /^ {3}The New England Journal of Medicine · /);
-  assert.match(line(2), new RegExp(`^ {3}${SEARCH} · `));
+  const latest = latestAnswer(found.res, { window: "7d", mode: "selected", category: null, limit: 10 }, await journals(found.res.items.map((it) => it.id)));
+  for (const text of [searchAnswer(found, { q: T, window: "7d", category: null }), latest]) {
+    const line = (n: number) => text.split("\n")[text.split("\n").findIndex((l) => l.includes(`Matéria ${n} ${T}`)) + 1] ?? "";
+    assert.match(line(1), /^ {3}The New England Journal of Medicine · /);
+    assert.match(line(2), new RegExp(`^ {3}${SEARCH} · `));
+  }
   assert.deepEqual(found.res.items.map((it) => it.source.name), [SEARCH, SEARCH]);
 });
