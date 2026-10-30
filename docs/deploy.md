@@ -79,6 +79,8 @@ docker compose run --rm setup && docker compose up -d
 
 下面按时间从新到旧列出每次更新要注意的事。
 
+后台登录和飞书登录的 cookie 是否带 Secure，改为按请求实际的协议判断（`TRUST_PROXY=true` 时读 `X-Forwarded-Proto`），不再看 `SITE_URL` 是不是 https。自带的 Caddy 默认会转发这个头，不用改；自己用 Nginx 或 CDN 反向代理的站，升级前在代理配置里补上 `proxy_set_header X-Forwarded-Proto $scheme;`（CDN 按其文档转发同名请求头），否则 HTTPS 下仍能登录，但 cookie 会丢掉 Secure。无需数据库迁移。
+
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
 #### 原帖展示与引擎同步（2026 年 10 月 6 日）
