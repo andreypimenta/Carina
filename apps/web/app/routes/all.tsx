@@ -6,7 +6,7 @@ import { SITE } from "@aihot/site";
 import { beijingTime } from "@aihot/contracts/time";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
-import { filterParams, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
+import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
 import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
 import { PillTabs } from "../components/ui/Tabs";
 import { DayList, Pagination } from "../features/feed/DayList";
@@ -43,13 +43,16 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const f = loaderData?.data.filters;
   const q = f?.q;
   const page = loaderData?.data.page ?? 1;
-  const path = listPath("/all", { ...(f && filterParams(f)), q, tab: f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null });
+  const path = listPath("/all", { ...(f && filterParams(f)), q, tab: q && f?.tab === "relevance" ? "relevance" : null, page: page > 1 ? page : null });
+  const title = `${q ? `Busca: ${q}` : ALL_TITLE}${page > 1 ? ` · Página ${page}` : ""}`;
+  // Searches and filter combinations are browsing views: only the plain list and its pages compete in search.
+  const noindex = !!q || hasFeedFilters(f);
   return pageMeta({
-    title: q ? `Busca: ${q}` : ALL_TITLE,
+    title,
     description: `Todas as notícias de ${SITE.subject} coletadas pelo ${SITE.bareName}, com filtros por canal, categoria e tag e busca em português e inglês.`,
     path,
-    noindex: !!q,
-    jsonLd: q ? undefined : itemListLd(path, ALL_TITLE, loaderData?.data.items.map((i) => i.title) ?? []),
+    noindex,
+    jsonLd: noindex ? undefined : itemListLd(path, title, loaderData?.data.items.map((i) => i.title) ?? []),
   });
 }
 

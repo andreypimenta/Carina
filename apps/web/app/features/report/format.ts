@@ -155,6 +155,17 @@ function dm(date: string): string {
   return `${date.slice(8, 10)}/${date.slice(5, 7)}`;
 }
 
+/** An issue's dates as readers write them: "30/10/2026", "26/10 a 01/11/2026", "outubro de 2026". */
+export function reportDateLabel(kind: ReportKind, key: string): string {
+  if (kind === "daily") return `${dm(key)}/${key.slice(0, 4)}`;
+  if (kind === "weekly") {
+    const { start, end } = isoWeekRange(key)!;
+    const from = start.slice(0, 4) === end.slice(0, 4) ? dm(start) : `${dm(start)}/${start.slice(0, 4)}`;
+    return `${from} a ${dm(end)}/${end.slice(0, 4)}`;
+  }
+  return `${monthName(Number(key.slice(5, 7)))} de ${key.slice(0, 4)}`;
+}
+
 /** The line above the nameplate: "sábado, 26 de setembro de 2026", "semana 38 de 2026 · 14/09 — 20/09", "agosto de 2026". */
 export function dateLine(kind: ReportKind, key: string): string {
   const m = dateMark(kind, key);

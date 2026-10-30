@@ -6,7 +6,7 @@ import type { StoryDetail, StoryReportView } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
-import { breadcrumbLd, pageMeta, titled } from "../lib/seo";
+import { breadcrumbLd, pageMeta, storyLd, titled } from "../lib/seo";
 import { beijingDate, beijingTime } from "@aihot/contracts/time";
 import { monthDay, monthDayTime, relativeTime } from "../lib/format";
 import { HeatChart } from "../features/story/HeatChart";
@@ -35,11 +35,14 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const s = loaderData.story;
   return pageMeta({
     title: s.title,
-    description: (s.digest ?? s.summary)?.slice(0, 150) ?? `${s.reportCount} notícias de ${s.sourceCount} fontes: linha do tempo completa e últimas atualizações.`,
+    description: (s.digest ?? s.summary ?? s.excerpt?.text)?.slice(0, 150) ?? `${s.reportCount} notícias de ${s.sourceCount} fontes: linha do tempo completa e últimas atualizações.`,
     path: `/story/${s.publicId}`,
     image: `/og/stories/${s.publicId}.png`,
     type: "article",
-    jsonLd: breadcrumbLd([{ name: SITE.name, path: "/" }, ...UP.crumbs, { name: s.title, path: `/story/${s.publicId}` }]),
+    jsonLd: [
+      storyLd(s),
+      breadcrumbLd([{ name: SITE.name, path: "/" }, ...UP.crumbs, { name: s.title, path: `/story/${s.publicId}` }]),
+    ],
   });
 }
 
