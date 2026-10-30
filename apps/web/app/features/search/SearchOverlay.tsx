@@ -202,7 +202,7 @@ export function SearchOverlay() {
             </section>
           )}
 
-          {(more?.hot.length ?? 0) > 0 && (
+          {inNav("/hot") && (more?.hot.length ?? 0) > 0 && (
             <section className="pt-6">
               <h2 className="text-[13px] font-semibold text-ink-3">Em alta agora</h2>
               <ol className="mt-1 divide-y divide-line-soft">
