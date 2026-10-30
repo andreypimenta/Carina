@@ -107,7 +107,9 @@ export function registerSite(app: FastifyInstance) {
   }));
 
   app.get("/api/site/groups/:factId/reports", siteHandler(async (req, reply) => {
-    const data = await loadGroupReports({ factPublicId: (req.params as { factId: string }).factId, ...parseFilters(looseQuery(req)) });
+    const factId = (req.params as { factId: string }).factId;
+    if (!/^[a-zA-Z0-9_-]{1,80}$/.test(factId)) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "reading group unavailable" });
+    const data = await loadGroupReports({ factPublicId: factId, ...parseFilters(looseQuery(req)) });
     if (!data) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "reading group unavailable" });
     return reply.header("Cache-Control", "no-store").send(data);
   }));

@@ -23,6 +23,12 @@ for (const url of [
   assert.equal(response.headers['retry-after'], undefined);
 });
 
+test('a NUL in a public path id is not found without a server error', async () => {
+  const response = await app.inject('/api/site/groups/fAI%00/reports');
+  assert.equal(response.statusCode, 404, response.body);
+  assert.equal(response.headers['retry-after'], undefined);
+});
+
 test('the image proxy refuses a NUL query as malformed', async () => {
   const response = await app.inject('/api/img-proxy?u=AI%00');
   assert.equal(response.statusCode, 400, response.body);
