@@ -5,6 +5,8 @@ import { COMMUNITY_FEEDS } from "@aihot/site";
 import { sql, type Db } from "../db.ts";
 import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "../publication/representative.ts";
 import { evidenceCondition, listedCondition } from "../publication/scope.ts";
+import { JOURNAL } from "../publication/items.ts";
+import { journalName } from "../publication/rules.ts";
 
 /** One entry of a stored ranking; the public read layer (publication/hot.ts) re-checks it before showing it. */
 export interface HotEntry {
@@ -189,8 +191,8 @@ export async function computeHotRanking(at = new Date()): Promise<{ id: number; 
   const entries: HotEntry[] = [];
   for (const r of rows) {
     if (entries.length >= 10) break;
-    const reports = await sql<Array<RepresentativeIdentity & { id: string; url: string; title: string; source_id: string; source_name: string; selected: boolean; score: number | null; at: Date; timeline_at: Date; body_mode: "full" | "summary"; fact_id: number }>>`
-      SELECT DISTINCT ON (p.article_id) p.article_id AS id, p.url, p.title, s.id AS source_id, s.name AS source_name, p.selected, p.score, p.timeline_at, p.body_mode,
+    const reports = await sql<Array<RepresentativeIdentity & { id: string; url: string; title: string; source_id: string; source_name: string; journal: string | null; selected: boolean; score: number | null; at: Date; timeline_at: Date; body_mode: "full" | "summary"; fact_id: number }>>`
+      SELECT DISTINCT ON (p.article_id) p.article_id AS id, p.url, p.title, s.id AS source_id, s.name AS source_name, ${JOURNAL}, p.selected, p.score, p.timeline_at, p.body_mode,
              f.id AS fact_id, ${REPRESENTATIVE_COLUMNS}, coalesce(p.published_at, p.discovered_at) AS at
       FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
       JOIN sources s ON s.id = p.source_id
@@ -208,8 +210,9 @@ export async function computeHotRanking(at = new Date()): Promise<{ id: number; 
     const members = [...byFact.values()].sort((a, b) => sourceCount(b) - sourceCount(a) || firstSeen(a) - firstSeen(b) || a[0]!.fact_id - b[0]!.fact_id)[0]!;
     const selected = members.filter((report) => report.selected);
     const rep = pickRepresentative(selected.length ? selected : members);
-    const participants = await sql<{ name: string; kind: "editorial" | "signal"; tier: string; at: Date }[]>`
-      SELECT DISTINCT ON (cs.participant_key) s.name, cs.kind, s.tier, cs.observed_at AS at
+    const participants = await sql<{ name: string; journal: string | null; kind: "editorial" | "signal"; tier: string; at: Date }[]>`
+      SELECT DISTINCT ON (cs.participant_key) s.name, (SELECT nullif(btrim(j.raw->>'journal'), '') FROM articles j WHERE j.id = cs.article_id) AS journal,
+        cs.kind, s.tier, cs.observed_at AS at
       FROM ${currentSignals()} cs JOIN sources s ON s.id = cs.source_id
       WHERE cs.story_id = ${r.story_id} AND cs.observed_at > ${at}::timestamptz - make_interval(hours => ${WINDOW_HOURS}) AND cs.observed_at <= ${at}
       ORDER BY cs.participant_key, (cs.kind = 'editorial') DESC, cs.observed_at DESC`;
@@ -228,7 +231,8 @@ export async function computeHotRanking(at = new Date()): Promise<{ id: number; 
     if (surge) badges.push("surge");
     if (isNew) badges.push("new");
     if (!surge && pct !== null && pct > 0.15) badges.push("rising");
-    const sourceNames = [...new Set(reporting.map((x) => x.name))].slice(0, 8);
+    // A paper is named by the journal that published it (publication/rules.ts publicSourceName).
+    const sourceNames = [...new Set(reporting.map((x) => (x.journal ? journalName(x.journal) : x.name)))].slice(0, 8);
     entries.push({
       rank: entries.length + 1,
       storyId: r.story_id,
@@ -247,7 +251,7 @@ export async function computeHotRanking(at = new Date()): Promise<{ id: number; 
       firstReportAt: firstAt.toISOString(),
       representativeItemId: rep.id,
       representativeUrl: rep.url,
-      representativeSource: rep.source_name,
+      representativeSource: rep.journal ? journalName(rep.journal) : rep.source_name,
       // Faces go to the 精选组 by tier, the most recently active first within a tier (ordered before the cap).
       participants: participants
         .sort((x, y) => Number(y.kind === "editorial") - Number(x.kind === "editorial") || tierRank(x.tier) - tierRank(y.tier) || y.at.getTime() - x.at.getTime())

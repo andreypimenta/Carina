@@ -14,7 +14,7 @@ Licenças CC BY-ND e CC BY-NC-ND nunca são republicadas, porque uma tradução 
 
 Depois disso, os artigos seguem o mesmo caminho de qualquer material: pré-triagem, duas notas, seleção, agrupamento e entrada na edição semanal.
 
-Para o leitor, a fonte de cada artigo é a revista que o publicou (o título do periódico no registro do PubMed, como “The New England Journal of Medicine”), nas edições (inclusive as já publicadas), no e-mail, na página da matéria, nas listas, no RSS, no quadro **Seleção recente** da página Sobre e nas respostas de Agent e MCP; a busca também acha o artigo pelo nome da revista. Quando o registro não traz a revista, aparece o nome da fonte acima. As listas de fontes de **Em alta** e o Painel continuam com o nome da fonte.
+Para o leitor, a fonte de cada artigo é a revista que o publicou (o título do periódico no registro do PubMed, como “The New England Journal of Medicine”), nas edições (inclusive as já publicadas), no e-mail, na página da matéria, nas listas, no RSS, no quadro **Seleção recente** da página Sobre e nas respostas de Agent e MCP; a busca também acha o artigo pelo nome da revista. As listas de fontes de **Em alta** também, a partir do cálculo seguinte da lista. Quando o registro não traz a revista, aparece o nome da fonte acima; o Painel continua com o nome da fonte.
 
 ### Configuração
 
