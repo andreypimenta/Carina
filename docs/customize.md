@@ -24,7 +24,7 @@
 - `interfaceVersion`：公开接口（MCP、OpenAPI、`llms.txt`）的版本号，只升不降；改了接口里已有的字段或含义时升主版本。
 - `crawlerName`：抓取信源时报的名字，别用别人的站名。
 - `contactEmail`：对外联系邮箱（选填），填了就在 `llms.txt` 和给 Agent 的使用说明里写成授权联系方式。
-- `footerNote`：关于页底部的一行小字。默认是一行框架署名“由 AIHOT 开源框架驱动”，可以留也可以删（设成 `null`）。
+- `footerNote`：关于页底部的一行小字。默认是 `null`（不显示），想加一行署名就填上。
 - `icp`：中国大陆网站的备案号，填了就显示在页脚。
 - `github`：源码仓库的地址（选填），填了就在侧栏和“我的”页底部显示“GitHub 开源”。
 - `llmsIntro`：`llms.txt` 里一句话介绍下面的一段详细介绍（选填）。
