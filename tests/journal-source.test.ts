@@ -13,6 +13,7 @@ import { loadReport } from "@aihot/backend/publication/reports";
 import { loadItemDetail } from "@aihot/backend/publication/detail";
 import { itemAvailability } from "@aihot/backend/publication/availability";
 import { journalName } from "@aihot/backend/publication/rules";
+import { searchAnswer, searchItems } from "@aihot/backend/publication/agent";
 
 const T = tag();
 const SOURCE = `journal-source-${T}`;
@@ -69,4 +70,13 @@ test("the article page and the availability read name the journal", async () => 
   assert.equal(other.kind === "found" ? other.item.source.name : other.kind, SEARCH);
   const availability = await itemAvailability([withJournal, withoutJournal]);
   assert.deepEqual([availability[withJournal]?.sourceName, availability[withoutJournal]?.sourceName], ["The New England Journal of Medicine", SEARCH]);
+});
+
+test("agent search results name the journal, and the source when there is none", async () => {
+  const found = await searchItems(T, "7d", null, 10);
+  const text = searchAnswer(found, { q: T, window: "7d", category: null });
+  const line = (n: number) => text.split("\n")[text.split("\n").findIndex((l) => l.includes(`Matéria ${n} ${T}`)) + 1] ?? "";
+  assert.match(line(1), /^ {3}The New England Journal of Medicine · /);
+  assert.match(line(2), new RegExp(`^ {3}${SEARCH} · `));
+  assert.deepEqual(found.res.items.map((it) => it.source.name), [SEARCH, SEARCH]);
 });

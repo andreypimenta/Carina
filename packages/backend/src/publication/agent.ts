@@ -7,6 +7,7 @@ import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { MCP_TOOL_NAMES as T } from "@aihot/contracts/mcp";
 import { CATEGORY_LABELS, isCategoryKey, PUBLIC_API_CATEGORY_KEYS, toPublicApiCategory, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
 import { beijingDate, beijingTime, beijingWeekday } from "@aihot/contracts/time";
+import { sql } from "../db.ts";
 import { serverModules } from "../modules.ts";
 import { siteUrl } from "./links.ts";
 import type { V1ItemPayload } from "./publish.ts";
@@ -42,10 +43,10 @@ export function stamp(at: string | Date, now = Date.now()): string {
 const linkText = (title: string) => title.replace(/([[\]])/g, "\\$1");
 const category = (key: string | null) => (key && isCategoryKey(key) ? CATEGORY_LABELS[key] : null);
 
-function itemLines(items: V1ItemPayload[]): string[] {
+function itemLines(items: V1ItemPayload[], journals = new Map<string, string>()): string[] {
   return items.flatMap((it, i) => [
     `${i + 1}. [${linkText(it.title)}](${it.links.aihot})`,
-    `   ${[publicSourceName(it.source.name), it.publishedAt ? `publicado em ${stamp(it.publishedAt)}` : `coletado pelo ${SITE.bareName} em ${stamp(it.discoveredAt)}`, category(it.category)].filter(Boolean).join(" · ")}`,
+    `   ${[publicSourceName(it.source.name, journals.get(it.id)), it.publishedAt ? `publicado em ${stamp(it.publishedAt)}` : `coletado pelo ${SITE.bareName} em ${stamp(it.discoveredAt)}`, category(it.category)].filter(Boolean).join(" · ")}`,
     ...(it.summary ? [`   Resumo: ${it.summary}`] : []),
     ...(it.reason ? [`   ${ITEM_COPY.reasonLabel}: ${it.reason}`] : []),
     `   Original: ${it.links.original}`,
@@ -79,11 +80,19 @@ export function latestAnswer(res: V1ItemsResult, q: LatestQuery): string {
 export async function searchItems(q: string, window: AgentWindow, cat: PublicApiCategoryKey | null, limit: number, load = v1Items) {
   const query = (mode: "selected" | "all") => ({ mode, window, by: "timeline" as const, category: cat, q, limit, cursor: null });
   const picks = await load(query("selected"));
-  if (picks.items.length) return { res: picks, expanded: false };
-  return { res: await load(query("all")), expanded: true };
+  const found = picks.items.length ? { res: picks, expanded: false } : { res: await load(query("all")), expanded: true };
+  return { ...found, journals: await journals(found.res.items.map((it) => it.id)) };
 }
 
-export function searchAnswer(found: { res: V1ItemsResult; expanded: boolean }, q: { q: string; window: AgentWindow; category: PublicApiCategoryKey | null }): string {
+/** The journals that published these items (items.ts JOURNAL), named as their source like on the site; v1 JSON keeps the source's own name. */
+async function journals(ids: string[]): Promise<Map<string, string>> {
+  if (!ids.length) return new Map();
+  const rows = await sql<{ id: string; journal: string }[]>`
+    SELECT id, btrim(raw->>'journal') AS journal FROM articles WHERE id = ANY(${ids}::text[]) AND nullif(btrim(raw->>'journal'), '') IS NOT NULL`;
+  return new Map(rows.map((r) => [r.id, r.journal]));
+}
+
+export function searchAnswer(found: { res: V1ItemsResult; expanded: boolean; journals: Map<string, string> }, q: { q: string; window: AgentWindow; category: PublicApiCategoryKey | null }): string {
   const title = [`${SITE.name}: busca por "${q.q}"`, category(q.category), WINDOW_ZH[q.window]].filter(Boolean).join(" · ");
   const { res, expanded } = found;
   if (!res.items.length) {
@@ -94,7 +103,7 @@ export function searchAnswer(found: { res: V1ItemsResult; expanded: boolean }, q
     ]);
   }
   const scope = expanded ? "Nada na Seleção; os itens abaixo vêm de todas as notícias públicas (não entraram na Seleção). " : `Abaixo, as matérias relacionadas na Seleção do ${SITE.bareName}. `;
-  return answer([`# ${title}`, "", `${scope}${res.items.length} ${res.items.length === 1 ? "item" : "itens"}, do mais recente para o mais antigo, em horário de Brasília.`], itemLines(res.items), [
+  return answer([`# ${title}`, "", `${scope}${res.items.length} ${res.items.length === 1 ? "item" : "itens"}, do mais recente para o mais antigo, em horário de Brasília.`], itemLines(res.items, found.journals), [
     `Responda só com base nestes resultados: são as matérias relacionadas que ${SITE.name} coletou, não uma busca na internet inteira; não diga que "só existe isto".`,
     ...(expanded ? [`Avise o usuário que estes itens não entraram na Seleção do ${SITE.bareName}.`] : []),
     ...BRIEF_HINTS.slice(1),
