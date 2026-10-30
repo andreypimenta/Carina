@@ -8,6 +8,7 @@ O Fôlego acompanha a literatura (buscas salvas no PubMed) e as notícias de soc
 
 - **Artigos científicos**: módulo `modules/literatura`, configurado em `industry/literatura.json`. Detalhes em [docs/fontes.md](docs/fontes.md).
 - **Especiais**: textos do jornal escritos a partir de estudos do PubMed (o primeiro formato é a Linha do tempo), que ficam como rascunho no painel e só vão ao ar depois de aprovados e publicados pelo editor. Detalhes em [docs/especiais.md](docs/especiais.md).
+- **Caso da semana**: um caso clínico curto que o editor escreve no painel para cada edição semanal, com imagem opcional e uma pergunta ao leitor (“Qual a sua conduta?”, com ou sem alternativas); a resposta e a discussão saem na edição seguinte. No módulo `modules/caso`, sem chamada a modelo. Detalhes em [docs/caso.md](docs/caso.md).
 - **Agenda**: os congressos de `industry/congressos.json` na página `/agenda` e, quando um congresso está em andamento ou começa nos 30 dias seguintes, num bloco da edição semanal, no módulo `modules/agenda`.
 - **Critério editorial**: prompts em `industry/prompts/` (pré-triagem, nota, matéria, estrutura), taxonomia em `industry/taxonomy.ts` e tópicos em `industry/topics.json`.
 - **Redes sociais**: perfis e pesquisas do X (fontes `x_search`, pela SocialData) e hashtags e perfis do Instagram (módulo `modules/instagram`, pela ScrapeCreators, configurado em `industry/instagram.json`); o LinkedIn é acompanhado pelos sites das organizações. Detalhes em [docs/fontes.md](docs/fontes.md#redes-sociais-x-instagram-e-linkedin).

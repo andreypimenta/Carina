@@ -273,6 +273,12 @@ export interface ServerModule {
      * when nothing): what is no longer public is left out. Null shows nothing.
      */
     read?: (saved: unknown, issue: ReportIssue) => Promise<unknown>;
+    /**
+     * Its part of an issue sent by e-mail, from what `read` returned: HTML with inline styles (mail clients
+     * drop style sheets) and the same as plain text. Read by a module that mails the issues; without it, the
+     * part is left out of the e-mail.
+     */
+    mail?: (part: unknown, issue: ReportIssue) => { html: string; text: string } | null;
   };
   /**
    * Source kinds it collects in its own way (admin/sources.ts), by kind: `resumed` runs in the transaction
