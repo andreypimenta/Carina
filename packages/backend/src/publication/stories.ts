@@ -9,6 +9,7 @@ import { behindSources, currentSignals, heatSeries, sourceClocks, type HotRankin
 import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "./representative.ts";
 import { compositeCondition, evidenceCondition, listedCondition, storyReportCondition } from "./scope.ts";
 import { publicSourceName } from "./rules.ts";
+import { JOURNAL } from "./items.ts";
 import { latestHotRanking, rankingExtras } from "./hot.ts";
 import { storyTexts } from "./story-text.ts";
 import { topicsOfStory } from "./topics.ts";
@@ -60,6 +61,7 @@ interface ReportRow extends RepresentativeIdentity {
   at: Date;
   source_id: string;
   source_name: string;
+  journal: string | null;
   first_party: boolean;
   fact_id: number;
 }
@@ -73,7 +75,7 @@ interface ReportRow extends RepresentativeIdentity {
 async function storyReports(storyId: number, now: Date): Promise<ReportRow[]> {
   return sql<ReportRow[]>`
     SELECT DISTINCT ON (p.article_id) p.article_id AS id, p.title, p.summary, p.url, p.selected,
-      coalesce(p.published_at, p.discovered_at) AS at, s.id AS source_id, s.name AS source_name,
+      coalesce(p.published_at, p.discovered_at) AS at, s.id AS source_id, s.name AS source_name, ${JOURNAL},
       (s.tier = 'T1') AS first_party, f.id AS fact_id,
       CASE WHEN ${compositeCondition()} THEN 'mention' ELSE fa.role END AS role, p.body_mode, p.score, p.timeline_at, ${REPRESENTATIVE_COLUMNS}
     FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
@@ -87,7 +89,7 @@ function reportView(r: ReportRow): StoryReportView {
     id: r.id,
     title: r.title,
     summary: r.summary,
-    source: { name: publicSourceName(r.source_name), firstParty: r.first_party },
+    source: { name: publicSourceName(r.source_name, r.journal), firstParty: r.first_party },
     publishedAt: r.at.toISOString(),
     selected: r.selected,
   };
@@ -172,7 +174,7 @@ export async function loadStoryDetail(storyId: number, now = new Date()): Promis
     digest: text.digest,
     digestUpdatedAt: text.digestUpdatedAt?.toISOString() ?? null,
     summary: text.summary,
-    excerpt: !text.digest && !text.summary && origin?.summary ? { text: origin.summary, sourceName: publicSourceName(origin.source_name) } : null,
+    excerpt: !text.digest && !text.summary && origin?.summary ? { text: origin.summary, sourceName: publicSourceName(origin.source_name, origin.journal) } : null,
     latest: latest.title,
     latestReport: { id: latest.id },
     whyHot: {
@@ -263,7 +265,7 @@ export async function loadHot(): Promise<HotResponse> {
         badges: e.badges,
         participantCount: e.participantCount,
         sourceCount: e.sourceCount,
-        sourceNames: [...new Set(e.sourceNames.map(publicSourceName))],
+        sourceNames: [...new Set(e.sourceNames.map((n) => publicSourceName(n)))],
         participants: extras.participants(e),
         spark: sparks.get(e.storyId) ?? [],
         summary: summary && summary.length > 480 ? summary.slice(0, 480).join('') + '…' : text.summary,

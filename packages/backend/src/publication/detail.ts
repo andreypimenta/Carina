@@ -185,7 +185,7 @@ export async function exportMarkdown(id: string): Promise<{ filename: string; bo
   const lines: string[] = [];
   lines.push(`# ${row.title}`, "");
   if (row.original_title) lines.push(`> Título original: ${row.original_title}`, "");
-  lines.push(`- Fonte: ${publicSourceName(row.source_name)}`);
+  lines.push(`- Fonte: ${publicSourceName(row.source_name, row.journal)}`);
   // Without a reliable date from the original, the time it was collected says so.
   lines.push(row.published_at ? `- Publicado em: ${row.published_at.toISOString()}` : `- Coletado em: ${row.discovered_at.toISOString()}`);
   lines.push(`- ${SITE.name}: ${itemUrl(row.id)}`);

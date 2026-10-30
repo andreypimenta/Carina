@@ -108,7 +108,7 @@ export function hotAnswer(res: HotTopics, limit: number, via: Via): string {
   if (!items.length) return answer([`# ${SITE.name}: Em alta agora`, "", "A lista Em alta está vazia no momento."], null, ["Diga ao usuário, com franqueza, que no momento nada está em alta; ele pode ver a Seleção mais recente."]);
   const data = items.flatMap((t) => {
     const publicId = t.links.story.split("/").pop()!;
-    const sources = [...new Set(t.sourceNames.map(publicSourceName))];
+    const sources = [...new Set(t.sourceNames.map((n) => publicSourceName(n)))];
     const names = sources.length > 6 ? `${sources.slice(0, 6).join(", ")} e outras` : sources.join(", ");
     return [
       `${t.rank}º lugar: [${linkText(t.title)}](${t.links.aihot})`,

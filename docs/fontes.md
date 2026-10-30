@@ -14,6 +14,8 @@ Licenças CC BY-ND e CC BY-NC-ND nunca são republicadas, porque uma tradução 
 
 Depois disso, os artigos seguem o mesmo caminho de qualquer material: pré-triagem, duas notas, seleção, agrupamento e entrada na edição semanal.
 
+Para o leitor, a fonte de cada artigo é a revista que o publicou (o título do periódico no registro do PubMed, como “The New England Journal of Medicine”), nas edições (inclusive as já publicadas), no e-mail, na página da matéria e nas listas. Os nomes das duas fontes acima só aparecem quando o registro não traz a revista e no Painel.
+
 ### Configuração
 
 - `LITERATURA_EMAIL`: e-mail de contato exigido pelo Unpaywall e recomendado pelo NCBI. Sem ele, só o PubMed Central é consultado.
