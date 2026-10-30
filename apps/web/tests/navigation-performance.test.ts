@@ -42,7 +42,7 @@ const api=createServer((req,res)=>{
   hits.push(req.url!);
   if(p===failing){res.statusCode=503;return res.end(JSON.stringify({code:'unavailable'}));}
   if(p==='/api/health')return res.end('{}');
-  if(p==='/api/site/search/suggestions')return res.end(JSON.stringify({topics:[{slug:'openai',name:'OpenAI',group:'company'}],hot:[{rank:1,title:'Sugestão versão '+suggestionsVersion,to:'/story/fixture'}]}));
+  if(p==='/api/site/search/suggestions')return res.end(JSON.stringify({topics:[{slug:'openai',name:'Sugestão versão '+suggestionsVersion,group:'company'}],hot:[{rank:1,title:'Sugestão versão '+suggestionsVersion,to:'/story/fixture'}]}));
   if(p==='/api/site/topics')return res.end(JSON.stringify({groups:[],topics:[{slug:'openai',name:'OpenAI',group:'company',definition:'Fixture',brand:null,total:0,recent:0,indexable:false,latest:null}]}));
   if(p==='/api/site/hot')return res.end(JSON.stringify({computedAt:at,windowHours:48,entries:[{rank:1,story:{publicId:'fixture',title:'Sugestão versão '+suggestionsVersion},heat:10,trend:'flat',trendPct:0,badges:[],participantCount:0,sourceCount:0,sourceNames:[],participants:[],spark:[],summary:null,latest:null,cover:null}]}));
   if(p==='/api/site/timeline'){
@@ -233,19 +233,19 @@ test('phone suggestions load only on opening, use one small read, retry failures
     assert.equal(hits.filter(x=>x==='/api/site/search/suggestions').length,0);
     let start=hits.length;
     await page.getByRole('button',{name:'Buscar',exact:true}).click();
-    await expect(page.getByRole('link',{name:'1 Sugestão versão 1',exact:true})).toBeVisible();
+    await expect(page.getByRole('link',{name:'Sugestão versão 1',exact:true})).toBeVisible();
     assert.deepEqual(hits.slice(start),['/api/site/search/suggestions']);
     await page.getByRole('button',{name:'Cancelar',exact:true}).click();
     suggestionsVersion=2;start=hits.length;
     await page.getByRole('button',{name:'Buscar',exact:true}).click();
-    await expect(page.getByRole('link',{name:'1 Sugestão versão 2',exact:true})).toBeVisible();
+    await expect(page.getByRole('link',{name:'Sugestão versão 2',exact:true})).toBeVisible();
     assert.deepEqual(hits.slice(start),['/api/site/search/suggestions']);
     await page.getByRole('button',{name:'Cancelar',exact:true}).click();
     failing='/api/site/search/suggestions';await page.getByRole('button',{name:'Buscar',exact:true}).click();
-    await expect(page.getByRole('link',{name:'1 Sugestão versão 2',exact:true})).not.toBeVisible();
+    await expect(page.getByRole('link',{name:'Sugestão versão 2',exact:true})).not.toBeVisible();
     await page.getByRole('button',{name:'Cancelar',exact:true}).click();failing='';suggestionsVersion=3;
     await page.getByRole('button',{name:'Buscar',exact:true}).click();
-    await expect(page.getByRole('link',{name:'1 Sugestão versão 3',exact:true})).toBeVisible();
+    await expect(page.getByRole('link',{name:'Sugestão versão 3',exact:true})).toBeVisible();
   }finally{failing='';await context.close();}
 });
 
