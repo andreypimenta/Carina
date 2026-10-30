@@ -88,9 +88,10 @@ const JOURNAL_MINOR = new Set(["a", "an", "and", "at", "for", "in", "of", "on", 
 /**
  * A journal's title as PubMed records it, for readers: without the place or edition PubMed adds in brackets
  * ("Lancet (London, England)", "BMJ (Clinical research ed.)") and with its words capitalised ("The New
- * England journal of medicine" as "The New England Journal of Medicine"); words already in capitals stay.
+ * England journal of medicine" as "The New England Journal of Medicine"); a word with a capital letter of its
+ * own ("BMJ", "eLife", "mBio") stays as written.
  */
 export function journalName(title: string): string {
   const bare = title.trim().replace(/\s*\([^()]*\)$/, "") || title.trim();
-  return bare.split(/\s+/).map((w, i) => (i > 0 && JOURNAL_MINOR.has(w.toLowerCase()) ? w.toLowerCase() : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
+  return bare.split(/\s+/).map((w, i) => (i > 0 && JOURNAL_MINOR.has(w.toLowerCase()) ? w.toLowerCase() : w === w.toLowerCase() ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(" ");
 }

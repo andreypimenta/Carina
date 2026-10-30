@@ -34,6 +34,7 @@ interface ArticleRow {
   grouped_at: Date | null;
   grouping_status: "pending" | "complete" | "failed";
   selection_adds_value: boolean | null;
+  journal: string | null;
 }
 
 interface AnalysisRow {
@@ -234,7 +235,8 @@ export async function publishArticle(articleId: string, options: PublishOptions 
 export async function publishArticleTx(tx: Tx, articleId: string, options: PublishOptions = {}): Promise<PublishResult | null> {
   const [article] = await tx<ArticleRow[]>`
     SELECT id, source_id, url, title, language, published_at, discovered_at, timeline_at, backfill, body_status,
-           body_text, x_post, x_article, grouped_at, grouping_status, selection_adds_value
+           body_text, x_post, x_article, grouped_at, grouping_status, selection_adds_value,
+           nullif(btrim(raw->>'journal'), '') AS journal
     FROM articles WHERE id = ${articleId} FOR UPDATE`;
   if (!article) return null;
   // Explicit imports carry an already-public editorial decision, not a new pending judgement.
@@ -306,7 +308,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     visibility, sourceMode: source.participation_mode, hasSummary: !!summary, selected, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
   });
   const searchText = collapseWhitespace(
-    [title, originalTitle, summary, publicSourceName(source.name), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
+    [title, originalTitle, summary, publicSourceName(source.name, article.journal), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
   ).toLowerCase();
 
   // A selected item sits at its reading group's anchor: the earliest public pool member of its fact.
