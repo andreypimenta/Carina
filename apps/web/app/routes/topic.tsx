@@ -12,11 +12,13 @@ import { IconArrowLeft } from "../components/icons";
 import { beijingDate } from "@aihot/contracts/time";
 import { monthDay, monthDayTime } from "../lib/format";
 import { PhoneBar } from "../components/shell/PhoneBar";
+import { navUp } from "../components/shell/nav";
 import type { Screen } from "../components/shell/screens";
 import type { TopicPagePart } from "../modules";
 import { loadParts } from "../site-modules";
 
-export const handle: Screen = { home: "me" };
+const UP = navUp("/topics");
+export const handle: Screen = { home: UP.tab };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
@@ -59,7 +61,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const parts = partsOf(data);
   const path = page > 1 ? `/topics/${topic.slug}/page/${page}` : `/topics/${topic.slug}`;
   const text = page > 1 ? `Arquivo da seleção de ${topic.name}, página ${page}. ${topic.definition}` : description(data, parts);
-  const crumbs = breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "Tópicos", path: "/topics" }, { name: topic.name, path: `/topics/${topic.slug}` }]);
+  const crumbs = breadcrumbLd([{ name: SITE.name, path: "/" }, ...UP.crumbs, { name: topic.name, path: `/topics/${topic.slug}` }]);
   return pageMeta({
     title: page > 1
       ? `${topic.name} · seleção · página ${page}`
@@ -92,9 +94,9 @@ export default function TopicRoute() {
   const last = first + items.length - 1;
   return (
     <div className="pb-6">
-      <PhoneBar back={{ to: "/topics", label: "Tópicos" }} title={topic.name} />
-      <Link to="/topics" className="hidden items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:inline-flex">
-        <IconArrowLeft size={14} /> Voltar aos tópicos
+      <PhoneBar back={{ to: UP.to, label: UP.back }} title={topic.name} />
+      <Link to={UP.to} className="hidden items-center gap-1.5 py-2 text-[13px] text-ink-3 transition-colors hover:text-accent lg:inline-flex">
+        <IconArrowLeft size={14} /> {UP.returnTo}
       </Link>
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2 pb-5 pt-3 lg:pt-1">
         <div className="min-w-0 max-w-[760px]">

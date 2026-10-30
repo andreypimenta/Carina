@@ -17,9 +17,11 @@ import { PillTabs } from "../components/ui/Tabs";
 import { Select } from "../components/ui/Controls";
 import { IconArrowLeft, IconChevronRight, IconClock, IconDoc, IconUsers } from "../components/icons";
 import { PhoneBar } from "../components/shell/PhoneBar";
+import { inNav, navUp } from "../components/shell/nav";
 import type { Screen } from "../components/shell/screens";
 
-export const handle: Screen = { home: "hot" };
+const UP = navUp("/hot");
+export const handle: Screen = { home: UP.tab };
 export { pageHeaders as headers } from "../lib/api.server";
 export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
@@ -37,7 +39,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
     path: `/story/${s.publicId}`,
     image: `/og/stories/${s.publicId}.png`,
     type: "article",
-    jsonLd: breadcrumbLd([{ name: SITE.name, path: "/" }, { name: "Em alta", path: "/hot" }, { name: s.title, path: `/story/${s.publicId}` }]),
+    jsonLd: breadcrumbLd([{ name: SITE.name, path: "/" }, ...UP.crumbs, { name: s.title, path: `/story/${s.publicId}` }]),
   });
 }
 
@@ -209,10 +211,10 @@ export default function StoryPage() {
 
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-10">
-      <PhoneBar back={{ to: "/hot", label: "Em alta" }} title={story.title} />
+      <PhoneBar back={{ to: UP.to, label: UP.back }} title={story.title} />
       <nav aria-label="Você está em" className="hidden items-center gap-2.5 pb-5 pt-4 text-[12px] text-ink-4 lg:flex">
-        <Link to="/hot" className="inline-flex items-center gap-1.5 transition-colors hover:text-ink">
-          <IconArrowLeft size={15} /> Em alta
+        <Link to={UP.to} className="inline-flex items-center gap-1.5 transition-colors hover:text-ink">
+          <IconArrowLeft size={15} /> {UP.name}
         </Link>
         <span className="h-3 w-px bg-line-strong" aria-hidden="true" />
         <span>Detalhes do evento</span>
@@ -395,7 +397,7 @@ export default function StoryPage() {
               {!story.whyHot.observationComplete && <p className="mt-2 text-[12px] leading-relaxed text-ink-4">A observação de algumas fontes está incompleta; os números acima são só o que foi observado.</p>}
               <p className="mt-2 text-[12px] text-ink-4">
                 <span className="num">{story.whyHot.recentReports24h}</span> {story.whyHot.recentReports24h === 1 ? "notícia recente" : "notícias recentes"}
-                {story.whyHot.rank && (
+                {story.whyHot.rank && inNav("/hot") && (
                   <>
                     <span className="mx-1">·</span>
                     <Link to="/hot" className="text-accent hover:underline">
