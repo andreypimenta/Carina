@@ -10,9 +10,13 @@ export function monthName(month: number): string {
   return MONTHS[month - 1] ?? String(month);
 }
 
-/** "28 de set." of a calendar date (YYYY-MM-DD). */
-export function monthDay(date: string): string {
-  return `${Number(date.slice(8, 10))} de ${MONTHS_SHORT[Number(date.slice(5, 7)) - 1]}`;
+/**
+ * "28 de set." of a calendar date (YYYY-MM-DD). A day of another year than `today` (YYYY-MM-DD, Brasília) carries
+ * its year, so an archived item is not read as this year's: "19 de fev. de 2019".
+ */
+export function monthDay(date: string, today: string = beijingDate(Date.now())): string {
+  const year = date.slice(0, 4) !== today.slice(0, 4) ? ` de ${date.slice(0, 4)}` : "";
+  return `${Number(date.slice(8, 10))} de ${MONTHS_SHORT[Number(date.slice(5, 7)) - 1]}${year}`;
 }
 
 /** "sáb." of a calendar date (YYYY-MM-DD). */
@@ -42,10 +46,11 @@ export function fullDateTime(iso: string): string {
   return `${dayMonthYear(beijingDate(iso))} ${beijingTime(iso)}`;
 }
 
-/** "24/09 10:51" (Brasília time), for lists that span days. */
-export function monthDayTime(iso: string): string {
+/** "24/09 10:51" (Brasília time), for lists that span days; "19/02/2019 12:00" in another year than `now`'s. */
+export function monthDayTime(iso: string, now: number = Date.now()): string {
   const date = beijingDate(iso);
-  return `${date.slice(8, 10)}/${date.slice(5, 7)} ${beijingTime(iso)}`;
+  const year = date.slice(0, 4) !== beijingDate(now).slice(0, 4) ? `/${date.slice(0, 4)}` : "";
+  return `${date.slice(8, 10)}/${date.slice(5, 7)}${year} ${beijingTime(iso)}`;
 }
 
 export function sourceInitial(name: string): string {

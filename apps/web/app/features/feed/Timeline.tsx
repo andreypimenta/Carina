@@ -33,7 +33,7 @@ function fromResponse(r: TimelineResponse): ListState {
 
 /** Sticky day header under the phone bar: a quiet row on desktop, a grey full-width bar on phones. */
 export function DayHeader({ day, today, count, collapsed, onToggle, aside }: { day: string; today: string; count: number | null; collapsed?: boolean; onToggle?: () => void; aside?: React.ReactNode }) {
-  const date = monthDay(day);
+  const date = monthDay(day, today);
   const weekday = beijingWeekday(day);
   const short = weekdayShort(day);
   const phoneRow = (

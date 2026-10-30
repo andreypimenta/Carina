@@ -87,12 +87,13 @@ function atOffset(y: string | number, mo: string | number, d: string | number, h
  */
 export function parseLooseDate(value: string | null | undefined, utcOffset = SITE_UTC_OFFSET, dateOrder?: DateOrder): Date | null {
   if (!value) return null;
-  const v = normalized(value.trim(), dateOrder);
+  // "Sep 26, 2026 at 10:30": "at" joins a date and its time like a space.
+  const v = normalized(value.trim().replace(/(\d),?\s+at\s+(?=\d{1,2}:\d{2})/gi, "$1 "), dateOrder);
   if (!v) return null;
   const numeric = /(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})日?(?:(?:T|\s*)(\d{1,2}):(\d{2})(?::(\d{2}))?)?/.exec(v);
   if (numeric && !calendarDay(numeric[1]!, numeric[2]!, numeric[3]!)) return null;
-  const english = /\b([a-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})\b/i.exec(v)
-    ?? /\b(\d{1,2})\s+([a-z]{3,9})\s+(\d{4})\b/i.exec(v)?.map((part, i, match) => i === 1 ? match[2]! : i === 2 ? match[1]! : part);
+  const english = /\b([a-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?[,]?\s+(\d{4})\b/i.exec(v)
+    ?? /\b(\d{1,2})\s+([a-z]{3,9})\.?\s+(\d{4})\b/i.exec(v)?.map((part, i, match) => i === 1 ? match[2]! : i === 2 ? match[1]! : part);
   if (english) {
     const month = Date.parse(`${english[1]} 1, ${english[3]} 00:00:00 GMT`);
     if (!Number.isFinite(month) || !calendarDay(english[3]!, new Date(month).getUTCMonth() + 1, english[2]!)) return null;
