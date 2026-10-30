@@ -156,7 +156,9 @@ function decodeBody(body: Buffer, contentType: string | null): string {
   } catch {
     text = body.toString("utf8");
   }
+  // NUL cannot be represented in PostgreSQL text or JSONB, including received paid responses.
+  // Keep the original body bytes; decoded text uses the same replacement as malformed bytes.
   // A character lost on the way reads as one U+FFFD however many of its bytes were garbled (some
   // feeds send two or three for one character), so text cut to a length keeps the same cut.
-  return text.replace(/\uFFFD+/g, "\uFFFD");
+  return text.replace(/\u0000/g, "\uFFFD").replace(/\uFFFD+/g, "\uFFFD");
 }

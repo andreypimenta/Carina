@@ -220,3 +220,52 @@ test("local retention keeps three dump/archive pairs without deleting source att
   assert.deepEqual((await readdir(path.join(config.dataDir, "backups"))).sort(), [2, 3, 4].flatMap(day => [`${stem}-2026110${day}0400.dump`, `${stem}-files-2026110${day}0400.tar.gz`]).sort());
   assert.deepEqual(await readFile(path.join(config.dataDir, "feedback-screenshots/retained.png")), PNG);
 });
+
+test("a failed database dump keeps connection credentials out of argv and the reported error", async () => {
+  const bin = path.join(config.dataDir, "dump-bin");
+  await mkdir(bin);
+  const captured = path.join(bin, "invocation.json");
+  await writeFile(path.join(bin, "pg_dump"), `#!${process.execPath}
+import { writeFileSync } from "node:fs";
+writeFileSync(${JSON.stringify(captured)}, JSON.stringify({ args: process.argv.slice(2), user: process.env.PGUSER, password: process.env.PGPASSWORD }));
+console.error("fictional dump refusal");
+process.exit(2);
+`, { mode: 0o755 });
+  const originalUrl = config.databaseUrl;
+  const originalPath = process.env.PATH;
+  const connection = new URL(originalUrl);
+  connection.username = "fictional-backup-user";
+  connection.password = "fictional-p@ss:word";
+  config.databaseUrl = connection.href;
+  process.env.PATH = `${bin}:${originalPath}`;
+  try {
+    for (const queryCredentials of [false, true]) {
+      if (queryCredentials) {
+        connection.username = connection.password = "";
+        connection.searchParams.set("user", "fictional-backup-user");
+        connection.searchParams.set("password", "fictional-p@ss:word");
+        config.databaseUrl = connection.href;
+      }
+      await assert.rejects(runBackup(NOW), (error: Error) => {
+        assert.match(error.message, /fictional dump refusal/);
+        assert.doesNotMatch(error.message, /fictional-backup-user|fictional-p|p%40ss|word@/);
+        return true;
+      });
+      const invocation = JSON.parse(await readFile(captured, "utf8"));
+      assert.doesNotMatch(JSON.stringify(invocation.args), /fictional-backup-user|fictional-p|p%40ss|word@/);
+      assert.equal(invocation.user, "fictional-backup-user");
+      assert.equal(invocation.password, "fictional-p@ss:word");
+    }
+    assert.equal(objects.size, 0);
+  } finally {
+    config.databaseUrl = originalUrl;
+    process.env.PATH = originalPath;
+  }
+});
+
+test("a real dump preserves libpq query parameter escaping", async () => {
+  const originalUrl = config.databaseUrl;
+  config.databaseUrl = `${originalUrl}${originalUrl.includes("?") ? "&" : "?"}options=-c%20statement_timeout%3D0&application_name=fictional%2Bbackup`;
+  try { assert.equal((await runBackup(NOW)).uploaded, true); }
+  finally { config.databaseUrl = originalUrl; }
+});

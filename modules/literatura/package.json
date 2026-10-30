@@ -13,7 +13,7 @@
     "@aihot/backend": "*",
     "@aihot/contracts": "*",
     "cheerio": "1.2.0",
-    "fastify": "5.12.5",
+    "fastify": "5.12.7",
     "zod": "4.6.5",
     "@aihot/site": "*"
   }
