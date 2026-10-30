@@ -82,16 +82,16 @@ export function publicSourceName(name: string, journal?: string | null): string 
   return (x ? x[1]! : bare).replace(/\s+/g, " ").trim() || /@\w+/.exec(name)?.[0] || name.trim();
 }
 
-/** Words a journal's title keeps in lower case after its first word. */
+/** Words a journal's title keeps in lower case after its first word, when PubMed wrote them so. */
 const JOURNAL_MINOR = new Set(["a", "an", "and", "at", "for", "in", "of", "on", "or", "the", "to", "de", "da", "das", "do", "dos", "e", "em", "y", "la", "el", "del", "und", "für"]);
 
 /**
  * A journal's title as PubMed records it, for readers: without the place or edition PubMed adds in brackets
  * ("Lancet (London, England)", "BMJ (Clinical research ed.)") and with its words capitalised ("The New
  * England journal of medicine" as "The New England Journal of Medicine"); a word with a capital letter of its
- * own ("BMJ", "eLife", "mBio") stays as written.
+ * own ("BMJ", "eLife", "mBio", "In practice", "Part A") stays as written.
  */
 export function journalName(title: string): string {
   const bare = title.trim().replace(/\s*\([^()]*\)$/, "") || title.trim();
-  return bare.split(/\s+/).map((w, i) => (i > 0 && JOURNAL_MINOR.has(w.toLowerCase()) ? w.toLowerCase() : w === w.toLowerCase() ? w.charAt(0).toUpperCase() + w.slice(1) : w)).join(" ");
+  return bare.split(/\s+/).map((w, i) => (w !== w.toLowerCase() || (i > 0 && JOURNAL_MINOR.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
 }
