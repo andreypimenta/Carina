@@ -1,5 +1,5 @@
-// 1200×630 share images. satori lays out text with Noto Sans SC (assets/og-fonts) and emits glyphs
-// as paths, so rasterising with sharp needs no system fonts. Output is cached on disk by content.
+// 1200×630 share images. satori lays out text with Noto Sans, and Noto Sans SC for the glyphs it lacks
+// (assets/og-fonts), and emits glyphs as paths, so rasterising with sharp needs no system fonts. Output is cached on disk by content.
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
@@ -8,7 +8,7 @@ import sharp from "sharp";
 import { config, REPO_ROOT } from "../config.ts";
 import { SITE } from "@aihot/site";
 
-export const OG_TEMPLATE_VERSION = "og-2026-10-30.1";
+export const OG_TEMPLATE_VERSION = "og-2026-10-30.2";
 const WIDTH = 1200;
 const HEIGHT = 630;
 const CACHE_DIR = path.join(config.dataDir, "ogcache");
@@ -26,12 +26,13 @@ export interface OgCard {
 let fontsPromise: Promise<Array<{ name: string; data: Buffer; weight: 400 | 700; style: "normal" }>> | null = null;
 
 function fonts() {
-  fontsPromise ??= Promise.all([
-    readFile(path.join(REPO_ROOT, "assets/og-fonts/noto-sans-sc-400.ttf")),
-    readFile(path.join(REPO_ROOT, "assets/og-fonts/noto-sans-sc-700.ttf")),
-  ]).then(([regular, bold]) => [
-    { name: "Noto Sans SC", data: regular, weight: 400, style: "normal" },
-    { name: "Noto Sans SC", data: bold, weight: 700, style: "normal" },
+  fontsPromise ??= Promise.all(
+    ["noto-sans-400", "noto-sans-700", "noto-sans-sc-400", "noto-sans-sc-700"].map((file) => readFile(path.join(REPO_ROOT, `assets/og-fonts/${file}.ttf`))),
+  ).then(([regular, bold, scRegular, scBold]) => [
+    { name: "Noto Sans", data: regular!, weight: 400, style: "normal" },
+    { name: "Noto Sans", data: bold!, weight: 700, style: "normal" },
+    { name: "Noto Sans SC", data: scRegular!, weight: 400, style: "normal" },
+    { name: "Noto Sans SC", data: scBold!, weight: 700, style: "normal" },
   ]);
   return fontsPromise;
 }
@@ -97,7 +98,7 @@ async function tree(card: OgCard): Promise<Node> {
       display: "flex",
       flexDirection: "column",
       padding: "64px 72px",
-      fontFamily: "Noto Sans SC",
+      fontFamily: "Noto Sans, Noto Sans SC",
       color: "#e6eded",
       backgroundColor: "#0a1012",
       backgroundImage: "radial-gradient(circle at 88% 8%, rgba(44,226,232,0.28), rgba(10,16,18,0) 46%), radial-gradient(circle at 0% 100%, rgba(23,107,117,0.35), rgba(10,16,18,0) 50%)",
