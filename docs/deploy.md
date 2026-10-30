@@ -252,7 +252,7 @@ docker compose exec worker node scripts/literatura-adicionar.ts <pmid|doi> --sel
 
 ## 不用 Docker
 
-需要 Node.js 24.22.1 以上和 PostgreSQL 16 或 17，系统用 Linux 或 macOS；Windows 上请在 WSL2 里运行，或者用上面的 Docker 方式。
+需要 Node.js 24.11 以上和 PostgreSQL 16 或 17，系统用 Linux 或 macOS；Windows 上请在 WSL2 里运行，或者用上面的 Docker 方式。
 
 ```bash
 npm ci

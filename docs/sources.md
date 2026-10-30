@@ -128,7 +128,7 @@
 
 仓库提供两份虚构示例：[news.html](examples/sources/news.html) 和 [news.json](examples/sources/news.json)，各有两条新闻。它们用于核对选择器和字段映射，不是运营信源；示例文章链接不提供正文。
 
-在仓库根目录、Node.js 24.22.1 以上运行以下命令。服务只监听本机，只提供这两份文件；用 `Ctrl+C` 停止。
+在仓库根目录、Node.js 24.11 以上运行以下命令。服务只监听本机，只提供这两份文件；用 `Ctrl+C` 停止。
 
 ```bash
 node --input-type=module -e '
