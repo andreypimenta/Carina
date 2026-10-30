@@ -48,6 +48,7 @@ test("PubMed's journal titles read as the journal's name", () => {
   assert.equal(journalName("JAMA pediatrics"), "JAMA Pediatrics");
   assert.equal(journalName("eLife"), "eLife");
   assert.equal(journalName("eClinicalMedicine"), "eClinicalMedicine");
+  assert.equal(journalName("npj Primary Care Respiratory Medicine"), "npj Primary Care Respiratory Medicine");
   assert.equal(journalName("The journal of allergy and clinical immunology. In practice"),
     "The Journal of Allergy and Clinical Immunology. In Practice");
   assert.equal(journalName("Jornal brasileiro de pneumologia : publicacao oficial da Sociedade Brasileira de Pneumologia"),

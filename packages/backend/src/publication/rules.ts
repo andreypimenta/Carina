@@ -85,13 +85,16 @@ export function publicSourceName(name: string, journal?: string | null): string 
 /** Words a journal's title keeps in lower case after its first word, when PubMed wrote them so. */
 const JOURNAL_MINOR = new Set(["a", "an", "and", "at", "for", "in", "of", "on", "or", "the", "to", "de", "da", "das", "do", "dos", "e", "em", "y", "la", "el", "del", "und", "für"]);
 
+/** Journal brands written in lower case on purpose, kept as written even as a title's first word. */
+const JOURNAL_LOWER_BRANDS = new Set(["npj"]);
+
 /**
  * A journal's title as PubMed records it, for readers: without the place or edition PubMed adds in brackets
  * ("Lancet (London, England)", "BMJ (Clinical research ed.)") and with its words capitalised ("The New
  * England journal of medicine" as "The New England Journal of Medicine"); a word with a capital letter of its
- * own ("BMJ", "eLife", "mBio", "In practice", "Part A") stays as written.
+ * own ("BMJ", "eLife", "mBio", "In practice", "Part A") or a lower-case brand ("npj") stays as written.
  */
 export function journalName(title: string): string {
   const bare = title.trim().replace(/\s*\([^()]*\)$/, "") || title.trim();
-  return bare.split(/\s+/).map((w, i) => (w !== w.toLowerCase() || (i > 0 && JOURNAL_MINOR.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
+  return bare.split(/\s+/).map((w, i) => (w !== w.toLowerCase() || JOURNAL_LOWER_BRANDS.has(w) || (i > 0 && JOURNAL_MINOR.has(w)) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(" ");
 }
