@@ -1,7 +1,8 @@
 // The literature run: the saved PubMed searches, each new paper once. A paper whose licence URL lets the site
 // republish a translation enters as its full text (source literatura-integral, translated by the engine once
 // it is selected); every other paper enters as the site's own article about it (source literatura-materia),
-// written from the full text when a legal open copy is readable, else from the abstract. Both sources show
+// written from the full text when a legal open copy is readable (PMC's, else the free copy Unpaywall points
+// to at the publisher or a repository), else from the abstract. Both sources show
 // their full text on the site; the engine judges, selects and groups them like any other material. A paper
 // found days after entering PubMed is still news for the week's edition: the engine's 48-hour rule
 // (content/materials.ts) that archives late material as history does not apply to these two sources.
@@ -16,7 +17,7 @@ import { queueProcessing } from "@aihot/backend/jobs/content";
 import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { SITE_UTC_OFFSET } from "@aihot/contracts/time";
 import { fetchPapers, searchPmids, skippable, authorLine, type Paper } from "./pubmed.ts";
-import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, republishable, type Access, type FullText } from "./access.ts";
+import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
 import { referenceBlock, renderMateria, writeMateria } from "./materia.ts";
 
 export const INTEGRAL_SOURCE = "literatura-integral";
@@ -30,6 +31,12 @@ export const MAX_ATTEMPTS = 3;
  * after entering PubMed for PMC to have it before it is written up instead.
  */
 export const PMC_WAIT_DAYS = 1.5;
+/**
+ * Unpaywall takes in a new DOI a day or two after it is registered and answers 404 until then: a paper whose
+ * DOI it does not know yet is asked about again on later runs for this many days after entering PubMed,
+ * before it is written up without knowing whether a free copy exists.
+ */
+export const UNPAYWALL_WAIT_DAYS = 3;
 /** The engine translates about this much of a body (editorial/translate.ts); longer texts are only partly translated. */
 const TRANSLATED_CHARS = 55_000;
 
@@ -116,18 +123,25 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   if (sources.integral && !isFull && access.kind === "open" && republishable(access.copy.license) && entered < PMC_WAIT_DAYS) {
     return { pmid: paper.pmid, status: "aguardando-pmc" };
   }
+  // A DOI Unpaywall has not taken in yet: ask it again on later runs.
+  if (!isFull && paper.doi && process.env.LITERATURA_EMAIL && access.kind === "unknown" && entered < UNPAYWALL_WAIT_DAYS) {
+    return { pmid: paper.pmid, status: "aguardando-unpaywall" };
+  }
 
   if (!sources.materia) return { pmid: paper.pmid, status: "fonte-pausada" };
-  const basis = isFull ? "full" : "abstract";
-  if (basis === "abstract" && !paper.abstract.length) return record(paper, "sem-texto");
   if (!config.modelCallsEnabled) return { pmid: paper.pmid, status: "aguardando-modelo" };
-  const { materia, receiptId } = await writeMateria(paper, basis === "full" ? full!.text : null);
+  const abstractChars = paper.abstract.reduce((n, s) => n + s.text.length, 0);
+  const copy = !isFull && access.kind === "open" ? await readOpenCopy(access.copy.url, abstractChars) : null;
+  const fullText = isFull ? full!.text : copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
+  const basis = fullText ? "full" : "abstract";
+  if (basis === "abstract" && !paper.abstract.length) return record(paper, "sem-texto");
+  const { materia, receiptId } = await writeMateria(paper, fullText);
   const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null, basis), url);
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url, title: materia.titulo.trim(), author: authorLine(paper.authors) || null, language: "pt",
       publishedAt, excerpt: materia.linhaFina.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
-      raw: { ...raw, originalTitle: paper.title, basis }, via: "literatura", staleOnDiscovery: false,
+      raw: { ...raw, originalTitle: paper.title, basis, ...(fullText ? { fullTextFrom: isFull ? "pmc" : "copy" } : {}) }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
     await tx`INSERT INTO literatura_papers (pmid, status, article_id) VALUES (${paper.pmid}, ${`materia-${basis}`}, ${res.articleId})

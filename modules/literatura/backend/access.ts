@@ -6,8 +6,11 @@
 // by the licence URL the article declares, never by its licence sentence alone (a sentence can also cover
 // the data or third-party material). Anything else is read to write the site's own article about the
 // paper, and linked. Only a 404 means "none": any other failure is thrown, so the paper is tried again.
+// When PMC has no full text, the free copy Unpaywall points to (the publisher's page or a repository's) is
+// read instead, only to write the site's own article.
 import * as cheerio from "cheerio";
 import type { AnyNode, Element } from "domhandler";
+import { readable } from "@aihot/backend/content/extract";
 import { guardedFetch } from "@aihot/backend/lib/http-fetch";
 
 export type License = "cc-by" | "cc-by-sa" | "cc-by-nc" | "cc-by-nc-sa" | "cc-by-nd" | "cc-by-nc-nd" | "cc0" | "pd";
@@ -120,6 +123,31 @@ export async function fetchFullText(pmcid: string): Promise<FullText | null> {
   const xml = res.text();
   if (!/<article[\s>]/.test(xml)) return null;
   return jatsToHtml(xml, pmcid);
+}
+
+/** The heading where a publisher's page stops being the article: its reference list or acknowledgements. */
+const BACK_MATTER = /<h[1-6][^>]*>\s*(?:[\d.]+\s*)?(?:references|bibliography|literature cited|refer[êe]ncias|bibliograf[íi]a|acknowledge?ments?|agradecimentos|agradecimientos)\b/i;
+
+/**
+ * The text of a free copy at the publisher or a repository, read to write the site's own article; never
+ * republished. The page is asked for once, as the site's crawler (no login, no way around a refusal). A page
+ * that refuses it (a bot challenge, a login wall), that is not HTML (a PDF) or that has no more than the
+ * abstract gives null, and so does a failure: the article is then written from the abstract. bodyChars is
+ * what the page has beyond the abstract.
+ */
+export async function readOpenCopy(url: string, abstractChars: number): Promise<{ text: string; bodyChars: number } | null> {
+  try {
+    const res = await guardedFetch(url, { timeoutMs: 30_000, maxBytes: 6 * 1024 * 1024 });
+    if (res.status !== 200 || !/html/.test(res.headers.get("content-type") ?? "")) return null;
+    const page = readable(res.text(), res.url);
+    if (!page) return null;
+    const end = BACK_MATTER.exec(page.html)?.index;
+    const text = blockText(end === undefined ? page.html : page.html.slice(0, end));
+    return { text, bodyChars: Math.max(0, text.length - abstractChars) };
+  } catch (error) {
+    console.error(`literatura: cópia aberta ${url}: ${(error as Error).message}`);
+    return null;
+  }
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

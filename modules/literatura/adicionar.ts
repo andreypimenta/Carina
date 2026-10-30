@@ -29,6 +29,7 @@ export interface AdminAdicionados {
 /** Why the paper was not included, for an outcome takePaper leaves unrecorded: nothing takes it later on its own. */
 const NOT_INCLUDED: Record<string, string> = {
   "aguardando-pmc": "o texto integral ainda não chegou ao PMC",
+  "aguardando-unpaywall": "o Unpaywall ainda não conhece o DOI",
   "aguardando-modelo": "as chamadas de modelo estão desligadas",
   "fonte-pausada": "a fonte da literatura está pausada",
 };

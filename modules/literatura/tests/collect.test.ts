@@ -1,8 +1,10 @@
 // The literature run against local stand-ins for PubMed, Unpaywall, Europe PMC and the model. Failure cases:
 // a paper whose licence allows it is not republished in full, or one whose licence does not is republished;
-// the site's article is written from the abstract when a readable full text exists; a paper is written twice
+// the site's article is written from the abstract when a readable full text exists (in PMC or at the free copy
+// Unpaywall points to), or from a publisher's page that holds no more than the abstract; a paper is written twice
 // (paying twice) on the next run; an erratum becomes an article; the article lands outside today; a paper found
-// days after entering PubMed is archived as history and never reaches an edition.
+// days after entering PubMed is archived as history and never reaches an edition; a paper is written up before
+// Unpaywall knows its DOI.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -32,8 +34,15 @@ const stubServer = http.createServer((req, res) => {
     const url = req.url ?? "/";
     hits.push(url.split("?")[0]!);
     const send = (status: number, type: string, body: string) => { res.writeHead(status, { "content-type": type }); res.end(body); };
+    // The free copy Unpaywall points to, served here: the article, a page with only the abstract, a bot challenge.
+    const copyAt = (page: string) => fixture("unpaywall-oa.json").replace(/https:\/\/bmcpulmmed\.biomedcentral\.com\/articles\/[^"]+/g, `http://${req.headers.host}/publisher/${page}`);
     if (url.startsWith("/unpaywall/10.5555%2Fdown")) return send(503, "text/plain", "busy");
-    if (url.startsWith("/unpaywall/10.5555%2Fopen")) return send(200, "application/json", fixture("unpaywall-oa.json"));
+    if (url.startsWith("/unpaywall/10.5555%2Fnew")) return send(404, "application/json", JSON.stringify({ error: true, message: "not in our database" }));
+    const copy = /^\/unpaywall\/10\.5555%2F(open|stub|blocked)\b/.exec(url)?.[1];
+    if (copy) return send(200, "application/json", copyAt(copy));
+    if (url === "/publisher/open") return send(200, "text/html; charset=utf-8", fixture("publisher-article.html"));
+    if (url === "/publisher/stub") return send(200, "text/html; charset=utf-8", fixture("publisher-abstract-only.html"));
+    if (url === "/publisher/blocked") return send(403, "text/html", "<html><head><title>Just a moment...</title></head><body>Checking your browser</body></html>");
     if (url.startsWith("/eutils/esearch.fcgi")) return send(200, "application/json", JSON.stringify({ esearchresult: { idlist: ["41000001", "41000002", "41000003"] } }));
     if (url.startsWith("/eutils/efetch.fcgi")) return send(200, "text/xml", fixture("pubmed.xml"));
     if (url.startsWith("/unpaywall/10.1186")) return send(200, "application/json", fixture("unpaywall-oa.json"));
@@ -66,7 +75,7 @@ before(async () => {
     await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at)
       VALUES (${id}, ${id}, 'external', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
   }
-  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004', '41000005', '41000006')`;
+  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004', '41000005', '41000006', '41000007', '41000008', '41000009', '41000010')`;
 });
 
 after(async () => {
@@ -149,13 +158,59 @@ test("a service that fails is tried again on later runs, never written up from l
   assert.equal(row!.attempts, MAX_ATTEMPTS);
 });
 
-test("an open paper under a republishable licence waits for PMC for a while, then is written up", async () => {
+test("an open paper under a republishable licence waits for PMC for a while, then is written up from the publisher's free copy, not republished", async () => {
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const fresh = { ...paper!, pmid: "41000006", doi: "10.5555/open", pmcid: null };
   const entered = new Date("2026-10-19T03:00:00Z");
   assert.equal((await takePaper(fresh, new Date(entered.getTime() + 12 * 3600_000))).status, "aguardando-pmc");
   const later = await takePaper(fresh, new Date(entered.getTime() + 40 * 3600_000));
+  assert.equal(later.status, "materia-full");
+  const input = modelInputs.at(-1)!;
+  assert.match(input, /Texto disponível: texto completo/);
+  assert.match(input, /Single-stage patients left hospital a median of four days earlier/);
+  assert.doesNotMatch(input, /Monnier P|thank the families/, "the reference list and what follows it are not the article");
+  assert.doesNotMatch(input, /Journal home/);
+  const [row] = await sql<{ source_id: string; body_html: string; raw: { basis: string; fullTextFrom: string } }[]>`SELECT source_id, body_html, raw FROM articles WHERE id = ${later.articleId!}`;
+  assert.equal(row!.source_id, MATERIA_SOURCE);
+  assert.equal(row!.raw.basis, "full");
+  assert.equal(row!.raw.fullTextFrom, "copy");
+  assert.match(row!.body_html, /a partir do texto completo em acesso aberto/);
+  assert.match(row!.body_html, /Texto completo gratuito:<\/strong> <a href="http:\/\/127\.0\.0\.1:\d+\/publisher\/open"/);
+  assert.doesNotMatch(row!.body_html, /four days earlier/, "the copy is read, not republished");
+});
+
+test("a free copy that shows only the abstract or refuses the site's crawler leaves the article written from the abstract", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const old = new Date("2026-10-30T03:00:00Z");
+  for (const [pmid, doi] of [["41000007", "10.5555/stub"], ["41000008", "10.5555/blocked"]] as const) {
+    const out = await takePaper({ ...paper!, pmid, doi, pmcid: null }, old);
+    assert.equal(out.status, "materia-abstract", doi);
+    assert.ok(hits.includes(`/publisher/${doi.split("/")[1]}`), "the copy was asked for");
+    const [row] = await sql<{ body_html: string; raw: { basis: string; fullTextFrom?: string } }[]>`SELECT body_html, raw FROM articles WHERE id = ${out.articleId!}`;
+    assert.equal(row!.raw.basis, "abstract");
+    assert.equal(row!.raw.fullTextFrom, undefined);
+    assert.match(row!.body_html, /a partir do resumo publicado/);
+  }
+});
+
+test("a DOI Unpaywall does not know yet is asked about again on later runs for a few days, then the paper is written up", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const fresh = { ...paper!, pmid: "41000009", doi: "10.5555/new", pmcid: null };
+  const entered = new Date("2026-10-19T03:00:00Z");
+  const calls = modelInputs.length;
+  assert.equal((await takePaper(fresh, new Date(entered.getTime() + 30 * 3600_000))).status, "aguardando-unpaywall");
+  assert.equal(modelInputs.length, calls, "nothing is written while waiting");
+  const [row] = await sql`SELECT 1 FROM literatura_papers WHERE pmid = '41000009'`;
+  assert.equal(row, undefined, "a waiting paper is not recorded, so the next run takes it again");
+  const later = await takePaper(fresh, new Date(entered.getTime() + 4 * 86_400_000));
   assert.equal(later.status, "materia-abstract");
-  const [row] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE id = ${later.articleId!}`;
-  assert.match(row!.body_html, /Texto completo gratuito:<\/strong> <a href="https:\/\/bmcpulmmed.biomedcentral.com/);
+  // Without a contact address Unpaywall is never asked, so there is nothing to wait for.
+  const email = process.env.LITERATURA_EMAIL;
+  delete process.env.LITERATURA_EMAIL;
+  try {
+    const out = await takePaper({ ...fresh, pmid: "41000010", doi: `10.5555/new-${T}` }, new Date(entered.getTime() + 30 * 3600_000));
+    assert.equal(out.status, "materia-abstract");
+  } finally {
+    process.env.LITERATURA_EMAIL = email;
+  }
 });
