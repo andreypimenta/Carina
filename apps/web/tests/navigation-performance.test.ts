@@ -153,7 +153,15 @@ test('SSR all-pages and report kinds return offline with their own content',asyn
     await expect(page.getByRole('link',{name:'Todas, página 2',exact:true})).toBeVisible();
     await context.setOffline(true);await page.goBack();
     await expect(page.getByRole('link',{name:'Todas, página 1',exact:true})).toBeVisible({timeout:1500});
-    await context.setOffline(false);await page.goto(origin+'/daily');
+    await context.setOffline(false);
+    // Reached inside the site, the front page is still the weekly edition.
+    await page.getByRole('link',{name:/primeira página$/}).click();
+    await expect(page.locator('#report-start')).toContainText('Edição semanal');
+    // So does an old link to the front page with the Seleção feed's filters, followed inside the site.
+    await page.evaluate(()=>(window as unknown as {__reactRouterDataRouter:{navigate:(to:string)=>Promise<void>}}).__reactRouterDataRouter.navigate('/?category=reviews'));
+    await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible();
+    assert.equal(new URL(page.url()).pathname+new URL(page.url()).search,'/selecao?category=reviews');
+    await page.goto(origin+'/daily');
     await page.getByRole('link',{name:'Semanal',exact:true}).click();
     await expect(page.locator('#report-start')).toContainText('Edição semanal');
     await context.setOffline(true);await page.getByRole('link',{name:'Diário',exact:true}).click();

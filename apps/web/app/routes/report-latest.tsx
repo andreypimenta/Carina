@@ -21,9 +21,11 @@ const FEED_PARAMS = ["channel", "category", "area", "tag", "q"];
 
 export async function loader({ request }: Route.LoaderArgs) {
   const url = new URL(request.url);
+  // In-app navigation asks for the page's data at "/_.data" (the front page) or "/weekly.data": read the page's own path.
+  const pathname = url.pathname.replace(/(\/_)?\.data$/, "") || "/";
   // Links to the front page from when it was the Seleção feed still land on that feed.
-  if (isFrontPath(url.pathname) && FEED_PARAMS.some((p) => url.searchParams.has(p))) throw redirect(`/selecao${url.search}`);
-  const kind = kindFromPath(url.pathname);
+  if (isFrontPath(pathname) && FEED_PARAMS.some((p) => url.searchParams.has(p))) throw redirect(`/selecao${url.search}`);
+  const kind = kindFromPath(pathname);
   const { index, report } = await loadOr404<ReportLatestPage>(`/api/site/reports/${kind}/latest-page`, { signal: request.signal });
   return cachedPage(600, { kind, report, index, today: beijingDate(Date.now()) });
 }
