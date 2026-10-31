@@ -327,6 +327,17 @@ test("past the window, a post whose paper waits (Unpaywall) is still taken again
   assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: "41000002" });
 });
 
+test("past the window, a post with a found paper that fails is retried up to the attempts allowed, not given up at once", async () => {
+  const { id } = await post("waiting-flaky", `Early view ${base}/journal/flaky`);
+  await sql`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${id}, 'aguardando-unpaywall', '49999999')`;
+  await sql`UPDATE articles SET discovered_at = now() - make_interval(days => ${X_WINDOW_DAYS + 1}) WHERE id = ${id}`;
+  await researchXPosts();
+  assert.deepEqual([...await sql`SELECT status, pmid, attempts FROM literatura_x_posts WHERE article_id = ${id}`], [{ status: "erro", pmid: "49999999", attempts: 1 }]);
+  await researchXPosts();
+  await researchXPosts();
+  assert.deepEqual([...await sql`SELECT status, attempts FROM literatura_x_posts WHERE article_id = ${id}`], [{ status: "falhou", attempts: 3 }]);
+});
+
 test("a society page linking one paper PubMed does not have is written up from the page, not left waiting", async () => {
   const { id } = await post("ers", `New ERS guideline statement on paediatric airway malacia ${base}/society/ers`);
   const before = modelInputs.length;

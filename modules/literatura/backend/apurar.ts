@@ -439,7 +439,7 @@ async function recordPost(articleId: string, status: string, pmid: string | null
   return { articleId, status, pmid, materiaId };
 }
 
-/** A failed attempt; the last one allowed, or one past the post's window (no later run takes it), gives the post up. */
+/** A failed attempt; the last one allowed, or one past the post's window with no paper found (no later run takes it), gives the post up. */
 async function recordPostFailure(articleId: string, last: boolean): Promise<XOutcome> {
   const [row] = await sql<{ attempts: number }[]>`
     INSERT INTO literatura_x_posts (article_id, status, attempts) VALUES (${articleId}, 'erro', 1)
@@ -468,7 +468,7 @@ export async function researchXPosts(opts: { now?: Date; budgetMs?: number } = {
     JOIN sources s ON s.id = a.source_id
     LEFT JOIN literatura_x_posts x ON x.article_id = a.id
     WHERE s.kind = 'x_search' AND s.participation_mode = 'editorial' AND a.x_post IS NOT NULL AND NOT a.backfill
-      AND (a.discovered_at > ${now}::timestamptz - make_interval(days => ${X_WINDOW_DAYS}) OR x.status = 'aguardando-pubmed' OR (x.status = 'erro' AND x.doi IS NOT NULL)
+      AND (a.discovered_at > ${now}::timestamptz - make_interval(days => ${X_WINDOW_DAYS}) OR x.status = 'aguardando-pubmed' OR (x.status = 'erro' AND (x.doi IS NOT NULL OR x.pmid IS NOT NULL))
         OR (x.pmid IS NOT NULL AND x.status = ANY(${PAPER_WAITS})))
       AND (x.article_id IS NULL OR x.status = ANY(${RETRY}))
       AND (SELECT an.relevance FROM analyses an WHERE an.article_id = a.id ORDER BY an.input_revision DESC, an.id DESC LIMIT 1) = 'pass'
@@ -480,7 +480,7 @@ export async function researchXPosts(opts: { now?: Date; budgetMs?: number } = {
     try {
       out = await researchPost(row, now, sources);
     } catch (error) {
-      out = await recordPostFailure(row.id, !inWindow(row, now));
+      out = await recordPostFailure(row.id, !inWindow(row, now) && !row.pmid);
       console.error(`literatura: post do X ${row.url}: ${(error as Error).message}`);
     }
     counts[out.status] = (counts[out.status] ?? 0) + 1;
