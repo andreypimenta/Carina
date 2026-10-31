@@ -4,9 +4,13 @@
 // specials written from PubMed references (backend/especiais.ts): their writing queue, their admin and site
 // routes (api/especiais.ts), their pages in the sitemap and their place in the weekly issue; and the papers the
 // editor adds by PMID or DOI (backend/adicionar.ts), taken by the worker; and the papers X posts point to
-// (backend/apurar.ts), every half hour, written up instead of the posts.
+// (backend/apurar.ts), every half hour, written up instead of the posts; and why each matéria can be trusted
+// (its trust record and its public corrections, backend/confianca.ts and backend/correcoes.ts) on its page and
+// in the weekly e-mail, with a preprint's label on its title.
 import type { ServerModule } from "@aihot/backend/modules";
+import { registerCorrecoes } from "./api/correcoes.ts";
 import { registerEspeciais } from "./api/especiais.ts";
+import { materiaMail, materiaParts, titleLabel } from "./backend/confianca.ts";
 import { ADICIONAR_QUEUE } from "./backend/adicionar.ts";
 import { APURACAO_PURPOSE, researchXPosts } from "./backend/apurar.ts";
 import { collectLiterature } from "./backend/collect.ts";
@@ -19,7 +23,12 @@ import { revistas } from "./backend/revistas.ts";
 const server: ServerModule = {
   name: "literatura",
   takesXPosts: true,
-  http: registerEspeciais,
+  http: (app) => {
+    registerEspeciais(app);
+    registerCorrecoes(app);
+  },
+  titleLabel,
+  items: { parts: materiaParts, mail: materiaMail },
   models: {
     [MATERIA_STEP]: {
       label: "Matéria sobre artigo científico (texto próprio do site a partir do resumo ou do texto completo em acesso aberto) e apuração dos posts do X (assunto, busca no PubMed, matéria a partir da página oficial)",

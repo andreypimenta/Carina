@@ -12,6 +12,7 @@ import { itemUrl, siteUrl } from "./links.ts";
 import { hasItemPage, publicSourceName } from "./rules.ts";
 import { topicLinks, topicMembership } from "./topics.ts";
 import { weeklyOf } from "./reports.ts";
+import { serverModules } from "../modules.ts";
 
 interface DetailRow extends ItemRow {
   body_html: string | null;
@@ -74,6 +75,20 @@ function readingBody(
 }
 
 /**
+ * The installed modules' parts of these articles as they are now (ServerModule.items), by article id and then
+ * by module name: on the article's page and under the article in an e-mail. Articles none has a part of are left out.
+ */
+export async function itemParts(ids: readonly string[]): Promise<Map<string, Record<string, unknown>>> {
+  const out = new Map<string, Record<string, unknown>>();
+  if (!ids.length) return out;
+  for (const m of serverModules()) {
+    if (!m.items) continue;
+    for (const [id, part] of await m.items.parts(ids)) out.set(id, { ...out.get(id), [m.name]: part });
+  }
+  return out;
+}
+
+/**
  * Public detail (rules.hasItemPage) in one language, the site's unless the original is asked for: items the
  * lists leave out (low relevance, merged duplicates, no summary yet) keep a noindex page;
  * withdrawn and hot_signal items are a 404.
@@ -105,6 +120,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
       hasTranslation: false,
       bodyLanguage: "original",
       weekly: await weeklyOf(id),
+      ...(await modulesOf(id)),
     };
     return { kind: "found", item, row };
   }
@@ -167,8 +183,14 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     hasTranslation: reading.hasTranslation,
     bodyLanguage: reading.bodyLanguage,
     weekly: await weeklyOf(id),
+    ...(await modulesOf(id)),
   };
   return { kind: "found", item, row };
+}
+
+async function modulesOf(id: string): Promise<Pick<SiteItemDetail, "modules">> {
+  const parts = (await itemParts([id])).get(id);
+  return parts ? { modules: parts } : {};
 }
 
 /**

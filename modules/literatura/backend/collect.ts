@@ -1,6 +1,6 @@
 // The literature run: the saved PubMed searches, each new paper once. A paper whose licence URL lets the site
 // republish a translation enters as its full text (source literatura-integral, translated by the engine once
-// it is selected); every other paper enters as the site's own article about it (source literatura-materia),
+// it is selected, with the trust record the matéria's model reads from that text); every other paper enters as the site's own article about it (source literatura-materia),
 // written from the full text when a legal open copy is readable (PMC's, else the free copy Unpaywall points
 // to at the publisher or a repository), else from the abstract. Both sources show
 // their full text on the site; the engine judges, selects and groups them like any other material. A paper
@@ -18,11 +18,12 @@ import { sanitizeBody } from "@aihot/backend/content/sanitize";
 import { queueProcessing } from "@aihot/backend/jobs/content";
 import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { SITE_UTC_OFFSET } from "@aihot/contracts/time";
-import { fetchPapers, pmidsForDoi, searchPmids, skippable, authorLine, type Paper } from "./pubmed.ts";
+import { fetchPapers, pmidsForDoi, searchPmids, skippable, authorLine, isPreprint, type Paper } from "./pubmed.ts";
 import { onSubject, paperFromItem, pubmedTerm, readSumario, type Revistas } from "./revistas.ts";
 import { papersOfPost, readPosts, type Pista, type Post } from "./pistas.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
-import { creditBlock, referenceBlock, renderMateria, writeMateria, type XCredit } from "./materia.ts";
+import { confiancaDaMateria, confiancaDaTraducao, creditBlock, preprintNote, referenceBlock, renderMateria, readTrust, textoLido, writeMateria, type XCredit } from "./materia.ts";
+import { saveConfianca } from "./confianca.ts";
 
 export const INTEGRAL_SOURCE = "literatura-integral";
 export const MATERIA_SOURCE = "literatura-materia";
@@ -83,7 +84,7 @@ export function integralBody(paper: Paper, full: FullText, access: Access, pmcid
     full.html.length > TRANSLATED_CHARS ? " Por causa do tamanho, só a parte inicial do texto é traduzida; o restante aparece no original." : "",
     " Em caso de divergência, vale o original.",
   ].join("");
-  return `<p><em>${credit}</em></p>${full.html}${referenceBlock(paper, access, pmcid, "integral")}`;
+  return `${isPreprint(paper) ? preprintNote() : ""}<p><em>${credit}</em></p>${full.html}${referenceBlock(paper, access, pmcid, "integral")}`;
 }
 
 /**
@@ -120,14 +121,21 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   const credited = credit ? creditBlock(credit) : "";
 
   if (sources.integral && isFull && republishable(full!.license)) {
+    if (!config.modelCallsEnabled) return { pmid: keyOf(paper), status: "aguardando-modelo" };
+    const { trust, receiptId } = await readTrust(paper, full!.text);
     const html = sanitizeBody(integralBody(paper, full!, access, pmcid!) + credited, url);
-    const res = await upsertMaterial({
-      sourceId: INTEGRAL_SOURCE, url, title: paper.title, author: authorLine(paper.authors) || null, language,
-      publishedAt, excerpt: paper.abstract.map((s) => s.text).join(" ").slice(0, 1000) || null,
-      bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok", raw, via: "literatura", staleOnDiscovery: false,
+    const articleId = await sql.begin(async (tx) => {
+      const res = await upsertMaterial({
+        sourceId: INTEGRAL_SOURCE, url, title: paper.title, author: authorLine(paper.authors) || null, language,
+        publishedAt, excerpt: paper.abstract.map((s) => s.text).join(" ").slice(0, 1000) || null,
+        bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok", raw, via: "literatura", staleOnDiscovery: false,
+      }, tx);
+      await completeReceipt(tx, receiptId);
+      await saveConfianca(tx, res.articleId, confiancaDaTraducao(trust, paper, now));
+      if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });
+      return res.articleId;
     });
-    if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId);
-    return record(paper, "integral", res.articleId);
+    return record(paper, "integral", articleId);
   }
 
   // An open copy under a licence that allows republishing, not in PMC yet: give PMC a few days.
@@ -146,6 +154,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   const copy = !isFull && access.kind === "open" ? await readOpenCopy(access.copy.url, abstractChars) : null;
   const fullText = isFull ? full!.text : copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
   const basis = fullText ? "full" : "abstract";
+  const from = fullText ? (isFull ? "pmc" : "copy") : null;
   if (basis === "abstract" && !paper.abstract.length) return record(paper, "sem-texto");
   const { materia, receiptId } = await writeMateria(paper, fullText);
   const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null, basis) + credited, url);
@@ -153,9 +162,10 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url, title: materia.titulo.trim(), author: authorLine(paper.authors) || null, language: "pt",
       publishedAt, excerpt: materia.linhaFina.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
-      raw: { ...raw, originalTitle: paper.title, basis, ...(fullText ? { fullTextFrom: isFull ? "pmc" : "copy" } : {}) }, via: "literatura", staleOnDiscovery: false,
+      raw: { ...raw, originalTitle: paper.title, basis, ...(from ? { fullTextFrom: from } : {}) }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
+    await saveConfianca(tx, res.articleId, confiancaDaMateria(materia, paper, textoLido(from, access), now));
     await tx`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${keyOf(paper)}, ${paper.doi}, ${`materia-${basis}`}, ${res.articleId})
       ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
     if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });

@@ -6,8 +6,10 @@ import { SITE } from "@aihot/site";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { modelFor } from "@aihot/backend/editorial/models";
 import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
-import { authorLine, type Paper } from "./pubmed.ts";
+import { beijingDate } from "@aihot/contracts/time";
+import { authorLine, isGuideline, isPreprint, type Paper } from "./pubmed.ts";
 import { LICENSE_NAMES, type Access } from "./access.ts";
+import { DESENHOS, IMPLICACOES, PREPRINT_LABEL, type Confianca, type Desenho, type EmUmMinuto, type Implicacao, type TextoLido } from "../confianca.ts";
 
 export const MATERIA_STEP = "materia";
 export const MATERIA_PURPOSE = "materia_article";
@@ -17,6 +19,24 @@ const MAX_INPUT = 60_000;
 
 /** Optional sections: models often answer null or leave them out when the paper does not support them. */
 const optional = z.string().nullish().transform((v) => v ?? "");
+/** An answer outside the list counts as the most cautious grade, "nao". */
+const grade = z.string().nullish().transform((v): Implicacao => ((IMPLICACOES as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Implicacao) : "nao"));
+/** An answer outside the list, or none, counts as "outro": every matéria shows a design. */
+const design = z.string().nullish().transform((v): Desenho => ((DESENHOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Desenho) : "outro"));
+/** "Em um minuto" (industry/prompts/materia.md, materia-fonte.md). */
+const minuto = { achado: optional, paraQuem: optional, mudaAlgo: grade, diretriz: optional };
+/** Why the piece can be trusted: what a matéria and a translated full text both store (confiancaDaMateria). */
+const trust = {
+  ...minuto,
+  populacaoIdade: optional,
+  populacaoDoenca: optional,
+  populacaoCenario: optional,
+  desenho: design,
+  desenhoDetalhe: optional,
+  limitacaoPrincipal: optional,
+};
+const TrustOutput = z.object(trust);
+export type Trust = z.infer<typeof TrustOutput>;
 const Output = z.object({
   titulo: z.string().min(10),
   linhaFina: optional,
@@ -27,8 +47,66 @@ const Output = z.object({
   limitacoes: optional,
   paraOPediatra: optional,
   paraOEspecialista: optional,
+  ...trust,
 });
 export type Materia = z.infer<typeof Output>;
+
+/**
+ * The grade the site shows: a preprint never changes anything yet, and "alinhado a diretriz" needs the guideline
+ * the material names; without it the grade drops to "pode informar a discussão".
+ */
+export function emUmMinuto(m: { achado: string; paraQuem: string; mudaAlgo: Implicacao; diretriz: string }, preprint: boolean): EmUmMinuto | null {
+  const achado = m.achado.trim();
+  const paraQuem = m.paraQuem.trim();
+  if (!achado || !paraQuem) return null;
+  const diretriz = m.diretriz.trim() || null;
+  const mudaAlgo: Implicacao = preprint ? "nao" : m.mudaAlgo === "alinhado-a-diretriz" && !diretriz ? "pode-informar-discussao" : m.mudaAlgo;
+  return { achado, paraQuem, mudaAlgo, diretriz: mudaAlgo === "alinhado-a-diretriz" ? diretriz : null };
+}
+
+/** Where the full text the model read came from: PMC, the free copy Unpaywall points to, or the publisher's page that is that copy. */
+export type FullTextFrom = "pmc" | "copy" | "publisher";
+
+/**
+ * What the pipeline gave the model: the abstract (no full text), or a full text, which is the authors' accepted
+ * manuscript only when it was read from the open copy Unpaywall says is that version (never PMC's text).
+ */
+export function textoLido(from: FullTextFrom | null, access: Access): TextoLido {
+  if (!from) return "resumo";
+  return from !== "pmc" && access.kind === "open" && access.copy.version === "acceptedVersion" ? "manuscrito-aceito" : "texto-completo";
+}
+
+/** A guideline's dates: published as its record says, revised when the source gives it, checked today. */
+function datas(publicado: string | null, revisado: string | null, now: Date): Confianca["datas"] {
+  return { publicado, revisado, conferido: beijingDate(now) };
+}
+
+/** Why the matéria about a paper can be trusted, as stored for its page (backend/confianca.ts). */
+export function confiancaDaMateria(m: Trust, paper: Paper, lido: TextoLido, now: Date): Confianca {
+  const preprint = isPreprint(paper);
+  const field = (v: string, missing: string) => v.trim() || missing;
+  return {
+    feitura: "materia",
+    minuto: emUmMinuto(m, preprint),
+    populacao: { idade: field(m.populacaoIdade, "não informada"), doenca: field(m.populacaoDoenca, "não informada"), cenario: field(m.populacaoCenario, "não informado") },
+    desenho: m.desenho,
+    desenhoDetalhe: m.desenhoDetalhe.trim() || null,
+    limitacao: field(m.limitacaoPrincipal, "não informada"),
+    textoLido: lido,
+    preprint,
+    datas: isGuideline(paper) || m.desenho === "diretriz" || m.desenho === "consenso" ? datas(paper.publishedOn ?? paper.year, null, now) : null,
+  };
+}
+
+/** A paper's text republished in full and translated: the same record as a matéria's, from the full text the model read. */
+export function confiancaDaTraducao(m: Trust, paper: Paper, now: Date): Confianca {
+  return { ...confiancaDaMateria(m, paper, "texto-completo", now), feitura: "traducao" };
+}
+
+/** The line that opens a preprint's body, in every exit that carries the body. */
+export function preprintNote(): string {
+  return `<p><strong>${esc(PREPRINT_LABEL)}.</strong> Este estudo ainda não passou pela revisão por pares de uma revista: os resultados são preliminares, podem mudar e não devem orientar a prática.</p>`;
+}
 
 /** What the model reads: the record's data and the text, the full one when there is one, and whether it was cut. */
 export function materiaInput(paper: Paper, fullText: string | null): string {
@@ -41,6 +119,7 @@ export function materiaInput(paper: Paper, fullText: string | null): string {
     `Título original: ${paper.title}`,
     `Revista: ${paper.journal}${paper.year ? ` (${paper.year})` : ""}`,
     `Tipo de publicação: ${paper.publicationTypes.join(", ") || "não informado"}`,
+    `Preprint: ${isPreprint(paper) ? "sim (ainda não revisado por pares)" : "não"}`,
     `Autores: ${authorLine(paper.authors, 6) || "não informado"}`,
     `Texto disponível: ${available}`,
     "",
@@ -49,20 +128,33 @@ export function materiaInput(paper: Paper, fullText: string | null): string {
 }
 
 export async function writeMateria(paper: Paper, fullText: string | null): Promise<{ materia: Materia; receiptId: number }> {
-  const res = await chatJson({
+  const res = await askMateria(paper, fullText, Output);
+  return { materia: res.data, receiptId: res.receiptId };
+}
+
+/**
+ * The same call as writeMateria on a full text republished in full, kept only for its trust fields: an answer
+ * without the matéria's own sections still gives the translation its record.
+ */
+export async function readTrust(paper: Paper, fullText: string): Promise<{ trust: Trust; receiptId: number }> {
+  const res = await askMateria(paper, fullText, TrustOutput);
+  return { trust: res.data, receiptId: res.receiptId };
+}
+
+async function askMateria<S extends z.ZodType>(paper: Paper, fullText: string | null, schema: S) {
+  return chatJson({
     model: await modelFor(MATERIA_STEP),
     purpose: MATERIA_PURPOSE,
     subject: `${paper.pmid ? `pubmed:${paper.pmid}` : paper.doi ? `doi:${paper.doi}` : `url:${paper.url}`}${fullText ? ":full" : ":abstract"}`,
     promptVersion: VERSION(),
     system: promptText("materia"),
     user: materiaInput(paper, fullText),
-    schema: Output,
+    schema,
     temperature: 0.3,
     maxTokens: 4000,
     // Inside the worker's shutdown drain (jobs/queue.ts), so a stop never leaves the receipt unknown.
     timeoutMs: 180_000,
   });
-  return { materia: res.data, receiptId: res.receiptId };
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -114,6 +206,7 @@ export const FONTE_PURPOSE = "materia_fonte_article";
 /** Page texts longer than this reach the model cut at a word. */
 const MAX_PAGE_INPUT = 30_000;
 
+const FONTE_TIPOS = ["diretriz", "consenso", "congresso", "anuncio", "outro"] as const;
 const FonteOutput = z.object({
   fontePrimaria: z.boolean(),
   organizacao: optional,
@@ -121,6 +214,8 @@ const FonteOutput = z.object({
   linhaFina: optional,
   lide: optional,
   corpo: optional,
+  tipo: z.string().nullish().transform((v) => ((FONTE_TIPOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as (typeof FONTE_TIPOS)[number]) : "outro")),
+  ...minuto,
 });
 export type FonteMateria = z.infer<typeof FonteOutput>;
 
@@ -129,6 +224,18 @@ export interface PrimaryPage {
   url: string;
   title: string;
   text: string;
+  /** When the page says it was published and last revised (its metadata), YYYY-MM-DD; null when it does not. */
+  publishedOn?: string | null;
+  modifiedOn?: string | null;
+}
+
+/** Why the matéria from an official page can be trusted: its "Em um minuto", the page as what was read, a guideline's dates. */
+export function confiancaDaPagina(m: FonteMateria, page: PrimaryPage, now: Date): Confianca {
+  const guideline = m.tipo === "diretriz" || m.tipo === "consenso";
+  return {
+    feitura: "pagina", minuto: emUmMinuto(m, false), populacao: null, desenho: guideline ? m.tipo as Desenho : null, desenhoDetalhe: null, limitacao: null,
+    textoLido: "pagina-oficial", preprint: false, datas: guideline ? datas(page.publishedOn ?? null, page.modifiedOn ?? null, now) : null,
+  };
 }
 
 export function fonteInput(page: PrimaryPage, post: string): string {
@@ -171,8 +278,9 @@ export function renderFonteMateria(m: FonteMateria, page: PrimaryPage, credit: X
   ].join("");
 }
 
-export function renderMateria(m: Materia, paper: Paper, access: Access, pmcid: string | null, basis: "full" | "abstract"): string {
+export function renderMateria(m: Pick<Materia, "titulo" | "linhaFina" | "lide" | "contexto" | "metodos" | "resultados" | "limitacoes" | "paraOPediatra" | "paraOEspecialista">, paper: Paper, access: Access, pmcid: string | null, basis: "full" | "abstract"): string {
   return [
+    isPreprint(paper) ? preprintNote() : "",
     m.linhaFina.trim() ? `<p><strong>${esc(m.linhaFina.trim())}</strong></p>` : "",
     paragraphs(m.lide),
     section("Contexto", m.contexto),

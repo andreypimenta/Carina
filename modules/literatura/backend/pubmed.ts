@@ -21,6 +21,8 @@ export interface Paper {
   languages: string[];
   /** The day the record entered PubMed (PubStatus "entrez"), YYYY-MM-DD. */
   enteredOn: string | null;
+  /** When the journal published it, as precise as the record says (YYYY-MM-DD, YYYY-MM or YYYY): the electronic date, else the issue's. */
+  publishedOn?: string | null;
   /** The paper's page, for a table-of-contents paper with neither PMID nor DOI. */
   url?: string;
 }
@@ -102,6 +104,17 @@ function plain($: cheerio.CheerioAPI, el: cheerio.Cheerio<AnyNode>): string {
 }
 
 const pad = (n: string | undefined) => (n ? n.padStart(2, "0") : "");
+const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+
+/** A PubMed date element (Year, Month as a number or a name, Day) as YYYY-MM-DD, YYYY-MM or YYYY; null without a year. */
+function pubmedDate(el: cheerio.Cheerio<AnyNode>): string | null {
+  const year = el.children("Year").text().trim();
+  if (!/^\d{4}$/.test(year)) return null;
+  const m = el.children("Month").text().trim();
+  const month = /^\d{1,2}$/.test(m) ? pad(m) : MONTHS.indexOf(m.slice(0, 3).toLowerCase()) >= 0 ? pad(String(MONTHS.indexOf(m.slice(0, 3).toLowerCase()) + 1)) : "";
+  const d = el.children("Day").text().trim();
+  return month ? (/^\d{1,2}$/.test(d) ? `${year}-${month}-${pad(d)}` : `${year}-${month}`) : year;
+}
 
 export function parsePubmedXml(xml: string): PubmedPaper[] {
   const $ = cheerio.load(xml, { xml: true });
@@ -138,6 +151,7 @@ export function parsePubmedXml(xml: string): PubmedPaper[] {
     const enteredOn = year ? `${year}-${pad(entrez.children("Month").text().trim())}-${pad(entrez.children("Day").text().trim())}` : null;
     const pubDate = article.find("Journal > JournalIssue > PubDate").first();
     const pubYear = pubDate.children("Year").text().trim() || (pubDate.children("MedlineDate").text().match(/\d{4}/)?.[0] ?? "");
+    const publishedOn = pubmedDate(article.children("ArticleDate[DateType='Electronic']").first()) ?? pubmedDate(pubDate) ?? (pubYear || null);
     papers.push({
       pmid,
       doi: doi ? doi.toLowerCase() : null,
@@ -151,6 +165,7 @@ export function parsePubmedXml(xml: string): PubmedPaper[] {
       publicationTypes: article.find("PublicationTypeList > PublicationType").toArray().map((t: Element) => plain($, $(t))),
       languages: article.children("Language").toArray().map((t: Element) => plain($, $(t))),
       enteredOn: /^\d{4}-\d{2}-\d{2}$/.test(enteredOn ?? "") ? enteredOn : null,
+      publishedOn,
     });
   });
   return papers;
@@ -168,4 +183,21 @@ export function skippable(paper: Paper): string | null {
   if (types.includes("published erratum")) return "erratum";
   if (!paper.title) return "sem título";
   return null;
+}
+
+/**
+ * DOIs of preprint servers: medRxiv and bioRxiv (10.1101 with a dated or bare-number suffix; Cold Spring Harbor's
+ * journals share the prefix), Research Square, SSRN, Preprints.org, arXiv.
+ */
+const PREPRINT_DOI = /^10\.(?:1101\/(?:\d{4}\.\d{2}\.\d{2}\.|\d{6,}$)|21203\/rs\.|2139\/ssrn|20944\/preprints|48550\/arxiv)/i;
+const PREPRINT_SERVER = /\b(?:medrxiv|biorxiv|research square|ssrn|preprints\.org|arxiv)\b/i;
+
+/** A preprint: PubMed's "Preprint" type, a preprint server's DOI, or a server as the journal. */
+export function isPreprint(paper: Pick<Paper, "doi" | "journal" | "publicationTypes">): boolean {
+  return paper.publicationTypes.some((t) => /^preprint$/i.test(t.trim())) || (!!paper.doi && PREPRINT_DOI.test(paper.doi)) || PREPRINT_SERVER.test(paper.journal);
+}
+
+/** A guideline or a consensus, by PubMed's publication types. */
+export function isGuideline(paper: Pick<Paper, "publicationTypes">): boolean {
+  return paper.publicationTypes.some((t) => /guideline|consensus/i.test(t));
 }

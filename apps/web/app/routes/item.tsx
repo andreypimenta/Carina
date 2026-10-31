@@ -19,6 +19,7 @@ import { StoryFollowups } from "../features/item/StoryFollowups";
 import { MediaGallery } from "../features/item/MediaGallery";
 import { QuotedPost } from "../features/item/QuotedPost";
 import { ArticleBody } from "../features/item/ArticleBody";
+import { ItemModuleParts } from "../features/item/ModuleParts";
 import { ActionsSheet, ReaderToolbar, type ActionRow } from "../features/item/ReaderTools";
 import { OutlineSheet, scrollToAnchor } from "../components/ui/OutlineSheet";
 import { takePreview } from "../features/item/preview";
@@ -483,6 +484,8 @@ function ItemView({ item }: { item: SiteItemDetail }) {
             </section>
           )}
 
+          <ItemModuleParts at="top" item={item} />
+
           {item.reason && !summaryOnly && (
             <section className="mt-6 border-t border-line pt-4 lg:hidden">
               <div className="mb-1 text-[12px] font-semibold text-ink-3">{ITEM_COPY.reasonLabel}</div>
@@ -542,6 +545,8 @@ function ItemView({ item }: { item: SiteItemDetail }) {
             </a>
             <span> · {hostOf(item.links.original)}</span>
           </p>
+
+          <ItemModuleParts at="end" item={item} />
 
           {(item.topics.length > 0 || item.tags.length > 0) && (
             <div className="mt-4 flex flex-wrap gap-1.5 lg:hidden">
