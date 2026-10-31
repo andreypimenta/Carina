@@ -24,6 +24,8 @@ test("the share card's key number is a change's result or the title's first perc
   assert.equal(key("Redução com IC 95% estreito"), null);
   assert.equal(key("Sucesso de 63 a 98% com fibrinólise"), null);
   assert.equal(key("Sucesso em 63–98% dos casos"), null);
+  assert.equal(key("De 63 a 98% de sucesso com fibrinólise"), null);
+  assert.equal(key("Sucesso entre 63% e 98% com VATS"), null);
   assert.equal(key("Mortalidade cai para 5% com ECMO"), "5%");
   assert.equal(key("Taxa chega a 85% após VATS"), "85%");
   assert.equal(key("Aumento 30% na sobrevida"), "30%");

@@ -43,12 +43,12 @@ const PERCENT = String.raw`${NUMBER}\s?%`;
 /**
  * The article's key number: the result of a change ("de 44,1% para 70,8%" gives 70,8%) in the title or
  * else the summary, or the title's first percentage on its own. A summary's other percentages, ranges
- * ("de 63% a 98%") and confidence levels ("IC 95%") say too little alone; without one the card has no badge.
+ * ("de 63% a 98%", "entre 63% e 98%") and confidence levels ("IC 95%") say too little alone; without one the card has no badge.
  */
 export function keyNumberBadge(title: string, summary: string | null): OgCard['badge'] {
   const change = (text: string) => new RegExp(`${PERCENT}\\s+para\\s+(${PERCENT})`).exec(text)?.[1];
   const alone = title
-    .replace(new RegExp(`(?:(?:${PERCENT}|(?<!\\p{L})de\\s+${NUMBER})\\s*(?<!\\p{L})(?:a|até|to)|${NUMBER}\\s?%?\\s*[–-])\\s*${PERCENT}`, 'gu'), ' ')
+    .replace(new RegExp(`(?:(?:${PERCENT}|(?<!\\p{L})[Dd]e\\s+${NUMBER})\\s*(?<!\\p{L})(?:a|até|to)|(?<!\\p{L})[Ee]ntre\\s+${NUMBER}\\s?%?\\s+e|${NUMBER}\\s?%?\\s*[–-])\\s*${PERCENT}`, 'gu'), ' ')
     .replace(new RegExp(`\\b(?:IC|CI)\\s*(?:de\\s*)?${PERCENT}|${PERCENT}\\s*(?:IC|CI)\\b`, 'g'), ' ')
     .match(new RegExp(PERCENT))?.[0];
   const found = change(title) ?? alone ?? (summary ? change(summary) : undefined);
