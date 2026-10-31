@@ -295,7 +295,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
 
   const back = () => {
     if (window.history.state?.idx > 0) navigate(-1);
-    else navigate(item.selected ? "/" : "/all");
+    else navigate(item.selected ? "/selecao" : "/all");
   };
   const backButton = (
     <button type="button" onClick={back} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink">
