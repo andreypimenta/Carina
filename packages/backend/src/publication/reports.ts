@@ -341,6 +341,15 @@ async function neighbors(kind: ReportKind, key: string): Promise<{ prev: string 
   return { prev: row?.prev ?? null, next: row?.next ?? null };
 }
 
+/** The weekly issue an item is read in (SiteItemDetail.weekly): the newest citing it, else the newest one. */
+export async function weeklyOf(itemId: string): Promise<string | null> {
+  const [r] = await sql<{ key: string }[]>`
+    SELECT key FROM reports WHERE kind = 'weekly'
+    ORDER BY jsonb_path_exists(content, '$.themes.** ? (@.itemId == $id)', jsonb_build_object('id', ${itemId}::text)) DESC, key DESC
+    LIMIT 1`;
+  return r?.key ?? null;
+}
+
 export async function loadReport(kind: ReportKind, key: string): Promise<ReportDetail | null> {
   // Its number counts every issue of the kind up to it, as the index numbers them (reportIndexRows).
   const [r] = await sql<(Pick<ReportRow, "content" | "generated_at"> & { issue_number: number })[]>`

@@ -1,13 +1,20 @@
-// On a weekly issue's page: the button that copies the issue's /assine address, the link to send to WhatsApp
-// groups. Where the browser refuses to copy, the address is shown to be selected by hand.
+// The links to send to WhatsApp groups: on a weekly issue's page, the button that copies the issue's /assine
+// address; on an article, a button that opens WhatsApp with its title and lean /assine page ready to send
+// (wa.me picks the chat; nothing goes through the site) and one that copies that page. Where the browser
+// refuses to copy, the address is shown to be selected by hand.
 import { useEffect, useState } from "react";
 import { copyText } from "@aihot/web/lib/clipboard";
 import { siteUrl } from "@aihot/web/lib/seo";
-import { IconCheck, IconCopy } from "@aihot/web/components/icons";
+import { IconCheck, IconCopy, IconMessage } from "@aihot/web/components/icons";
 
-export function ShareLink({ week }: { week: string }) {
+/** An article's lean page under its weekly issue (materia.tsx), the address its share buttons send. */
+export const materiaUrl = (week: string, id: string) => `${siteUrl()}/assine/${week}/${id}`;
+
+/** WhatsApp's own share link: it asks for the chat and fills in the title and the address. */
+export const whatsappShare = (title: string, url: string) => `https://wa.me/?text=${encodeURIComponent(`${title}\n${url}`)}`;
+
+export function ShareLink({ url, label = "Copiar link para grupos", whatsapp, className = "mt-3" }: { url: string; label?: string; whatsapp?: string; className?: string }) {
   const [state, setState] = useState<"idle" | "copied" | "refused">("idle");
-  const url = `${siteUrl()}/assine/${week}`;
   useEffect(() => {
     if (state !== "copied") return;
     const t = setTimeout(() => setState("idle"), 2500);
@@ -22,14 +29,25 @@ export function ShareLink({ week }: { week: string }) {
     }
   };
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-ink-3">
+    <div className={`flex flex-wrap items-center gap-x-3 gap-y-2 text-[13px] text-ink-3 ${className}`}>
+      {whatsapp !== undefined && (
+        <a
+          href={whatsappShare(whatsapp, url)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#25d366] px-4 text-[13px] font-semibold text-[#06301a] transition-opacity hover:opacity-90"
+        >
+          <IconMessage size={15} />
+          Mandar no WhatsApp
+        </a>
+      )}
       <button
         type="button"
         onClick={() => void copy()}
         className="inline-flex h-9 items-center gap-1.5 rounded-full border border-line-strong bg-surface px-4 text-[13px] font-medium text-ink-2 transition-colors hover:border-ink-4 hover:text-ink"
       >
         {state === "copied" ? <IconCheck size={15} className="text-accent" /> : <IconCopy size={15} />}
-        Copiar link para grupos
+        {label}
       </button>
       <span role="status">{state === "copied" ? "Link copiado. É só colar no grupo." : state === "refused" ? "Não deu para copiar. Selecione o link:" : ""}</span>
       {state === "refused" && (
@@ -43,5 +61,21 @@ export function ShareLink({ week }: { week: string }) {
         />
       )}
     </div>
+  );
+}
+
+/** Beside each story of a weekly issue (WebModule.StoryTool): WhatsApp with the story's lean page. */
+export function StoryShare({ report, itemId, title }: { report: { kind: string; key: string }; itemId: string; title: string }) {
+  if (report.kind !== "weekly") return null;
+  return (
+    <a
+      href={whatsappShare(title, materiaUrl(report.key, itemId))}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`Mandar no WhatsApp: ${title} (abre o WhatsApp)`}
+      className="inline-flex min-h-7 items-center gap-1 text-[12.5px] font-medium text-ink-3 transition-colors hover:text-accent"
+    >
+      <IconMessage size={13} /> WhatsApp
+    </a>
   );
 }

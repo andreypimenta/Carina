@@ -1,19 +1,21 @@
 // The way to /assine from the site's own pages, for the reader who came by a shared link: one line under an
 // issue's masthead and at the foot of every page, and a short card where an issue or an article ends. Nothing
-// pops up or covers the reading. Under a weekly issue's line, the button that copies its link for the groups.
+// pops up or covers the reading. Under a weekly issue's line, the button that copies its link for the groups;
+// at an article's end, above the card, the buttons that send its lean /assine page to WhatsApp or copy it.
 import { Link } from "react-router";
 import { EDITION_WHEN, SITE } from "@aihot/site";
-import type { ReportDetail } from "@aihot/contracts/site";
+import type { ReportDetail, SiteItemDetail } from "@aihot/contracts/site";
 import type { CalloutPlace } from "@aihot/web/modules";
 import { IconArrowRight, IconMail } from "@aihot/web/components/icons";
-import { ShareLink } from "./ShareLink.tsx";
+import { siteUrl } from "@aihot/web/lib/seo";
+import { materiaUrl, ShareLink } from "./ShareLink.tsx";
 
 const LINE = `Receba a edição semanal ${EDITION_WHEN.weekly}, de graça.`;
 
-export function Callout({ at, report }: { at: CalloutPlace; report?: ReportDetail }) {
+export function Callout({ at, report, item }: { at: CalloutPlace; report?: ReportDetail; item?: SiteItemDetail }) {
   if (at === "report-end" || at === "item-end") {
-    return (
-      <aside aria-label="Assine a edição semanal" className="card mt-12 flex flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7">
+    const card = (
+      <aside aria-label="Assine a edição semanal" className={`card ${item ? "mt-8" : "mt-12"} flex flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7`}>
         <div className="min-w-0">
           <h2 className="text-[18px] font-bold leading-snug text-ink">{at === "report-end" ? "Gostou desta edição?" : "Gostou desta matéria?"}</h2>
           <p className="mt-1.5 text-[14.5px] leading-relaxed text-ink-3">
@@ -29,6 +31,17 @@ export function Callout({ at, report }: { at: CalloutPlace; report?: ReportDetai
           Quero receber
         </Link>
       </aside>
+    );
+    if (!item) return card;
+    // Before the first weekly issue there is no lean page to send, and the article's own goes instead.
+    return (
+      <>
+        <section aria-label="Mandar esta matéria" className="mt-12">
+          <h2 className="text-[14px] font-semibold text-ink">Mande para quem vai gostar</h2>
+          <ShareLink url={item.weekly ? materiaUrl(item.weekly, item.id) : `${siteUrl()}/items/${item.id}`} label="Copiar link" whatsapp={item.title} className="mt-2.5" />
+        </section>
+        {card}
+      </>
     );
   }
   const more = (
@@ -52,7 +65,7 @@ export function Callout({ at, report }: { at: CalloutPlace; report?: ReportDetai
           {LINE} {more}
         </span>
       </Link>
-      {report?.kind === "weekly" && <ShareLink week={report.key} />}
+      {report?.kind === "weekly" && <ShareLink url={`${siteUrl()}/assine/${report.key}`} />}
     </>
   );
 }

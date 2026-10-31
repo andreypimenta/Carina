@@ -37,7 +37,7 @@ const api = createServer((req, res) => {
       publishedAt: at, timelineAt: at, discoveredAt: at, category: "reviews", tags: [], score: 80, selected: true,
       channel: "news", x: null, originalTitle: "Video fixture", links: { original: "https://example.org/article" },
       story: null, readingMode: "full", author: null, outline: [], relatedStories: [], topics: [], indexable: true,
-      markdownAvailable: true, group: null, hasTranslation: true, bodyLanguage: "zh",
+      markdownAvailable: true, group: null, hasTranslation: true, bodyLanguage: "zh", weekly: null,
       body: { zh: `<p>Use o botão nativo do navegador para tocar o vídeo.</p><video controls playsinline preload="none" width="320" height="320"><source src="${url.origin}/video/unsupported" type="video/not-supported"><source src="${url.origin}/video/clip.webm" type="video/webm"></video>`, original: null, zhKind: "translation", complete: true },
     };
     return res.end(JSON.stringify(detail));

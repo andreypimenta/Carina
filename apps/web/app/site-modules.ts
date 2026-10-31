@@ -2,7 +2,7 @@
 // not when they are imported, so a module's code may import any engine file.
 import { createElement } from "react";
 import { WEB_MODULES } from "@aihot/site/modules/web";
-import type { ReportDetail } from "@aihot/contracts/site";
+import type { ReportDetail, SiteItemDetail } from "@aihot/contracts/site";
 import type { CalloutPlace, Part, WebModule } from "./modules";
 
 export function webModules(): readonly WebModule[] {
@@ -18,6 +18,11 @@ export async function loadParts<T>(pick: (m: WebModule) => Part<T> | undefined):
 }
 
 /** The modules' calls to the reader at one place of a page (WebModule.Callout). */
-export function Callouts({ at, report }: { at: CalloutPlace; report?: ReportDetail }) {
-  return WEB_MODULES.map((m) => m.Callout && createElement(m.Callout, { key: m.name, at, report }));
+export function Callouts({ at, report, item }: { at: CalloutPlace; report?: ReportDetail; item?: SiteItemDetail }) {
+  return WEB_MODULES.map((m) => m.Callout && createElement(m.Callout, { key: m.name, at, report, item }));
+}
+
+/** The modules' tools beside a story's Original in an issue (WebModule.StoryTool). */
+export function StoryTools({ report, itemId, title }: { report: ReportDetail; itemId: string; title: string }) {
+  return WEB_MODULES.map((m) => m.StoryTool && createElement(m.StoryTool, { key: m.name, report, itemId, title }));
 }

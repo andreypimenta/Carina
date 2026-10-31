@@ -146,6 +146,8 @@ export interface SiteItemDetail extends ItemSummary {
   group: GroupInfo | null;
   hasTranslation: boolean;
   bodyLanguage: "zh" | "original";
+  /** The weekly issue to read it in: the newest that cites it, else the newest one; null before the first. */
+  weekly: string | null;
 }
 
 /** A fact's public reports under the list's filters: what "另有 N 家信源报道" opens. */

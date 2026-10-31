@@ -6,7 +6,7 @@
 // page's code: the page waits for its parts while its own code loads (site-modules.ts `loadParts`) and then
 // renders them like any import.
 import type { ComponentType, ReactNode } from "react";
-import type { ReportDetail, TopicSummary } from "@aihot/contracts/site";
+import type { ReportDetail, SiteItemDetail, TopicSummary } from "@aihot/contracts/site";
 import type { NavItem, Tab } from "./components/shell/nav";
 
 export interface AdminNavEntry {
@@ -164,10 +164,12 @@ export interface WebModule {
   };
   /**
    * A call to the reader of its own (to subscribe, say), drawn where a reader who came by a shared link meets
-   * it (CalloutPlace), given the issue at an issue's places. A module's standalone issue (ReportPaper
-   * `standalone`) draws none.
+   * it (CalloutPlace), given the issue at an issue's places and the article at its end. A module's
+   * standalone issue (ReportPaper `standalone`) draws none.
    */
-  Callout?: ComponentType<{ at: CalloutPlace; report?: ReportDetail }>;
+  Callout?: ComponentType<{ at: CalloutPlace; report?: ReportDetail; item?: SiteItemDetail }>;
+  /** Beside the Original of each story in an issue, standalone ones included (features/report/ReportPaper.tsx). */
+  StoryTool?: ComponentType<{ report: ReportDetail; itemId: string; title: string }>;
   agent?: Part<AgentPart>;
   topicPage?: Part<TopicPagePart>;
   reportPage?: Part<ReportPagePart>;

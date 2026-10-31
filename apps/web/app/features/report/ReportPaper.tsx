@@ -19,7 +19,7 @@ import { Halftone } from "./Halftone";
 import { Nameplate } from "./Nameplate";
 import { IssueDots } from "./IssueDots";
 import { monthDay } from "../../lib/format";
-import { Callouts, loadParts } from "../../site-modules";
+import { Callouts, loadParts, StoryTools } from "../../site-modules";
 import { EDITION, KIND_LABEL, MOTTO, dateLine, dateMark, headline, metricItems, neighbourLabel, reportPath, shortDay } from "./format";
 
 const PARTS = await loadParts((m) => m.reportPage);
@@ -147,7 +147,7 @@ function Coverage({ c }: { c: ReportCitation }) {
 }
 
 /** One story: source, headline, at most four lines of summary, and the original at the foot. */
-function Story({ c, dated, itemPath, className = "" }: { c: ReportCitation; dated: boolean; itemPath: ItemPath; className?: string }) {
+function Story({ c, report, dated, itemPath, className = "" }: { c: ReportCitation; report: ReportDetail; dated: boolean; itemPath: ItemPath; className?: string }) {
   return (
     <article id={anchorOf(c) ?? undefined} className={`flex min-w-0 scroll-mt-[calc(var(--bar-h)+1.5rem)] flex-col py-6 ${className}`}>
       <div className="flex items-center gap-2 text-[12px] text-ink-3">
@@ -168,8 +168,9 @@ function Story({ c, dated, itemPath, className = "" }: { c: ReportCitation; date
           </h3>
           {c.summary && <p className="mt-2 line-clamp-4 text-[15px] leading-[1.85] text-ink-2 [overflow-wrap:anywhere] @[560px]:text-justify">{c.summary}</p>}
           {!!c.related?.length && <Related items={c.related} itemPath={itemPath} className="mt-3" />}
-          <div className="mt-auto pt-3">
+          <div className="mt-auto flex flex-wrap items-center gap-x-4 pt-3">
             <Original c={c} />
+            {c.itemId && <StoryTools report={report} itemId={c.itemId} title={c.title} />}
           </div>
         </>
       ) : (
@@ -315,6 +316,7 @@ function FrontPage({ report, pages, leadStory, count, itemPath }: { report: Repo
             <Source c={leadStory} size={18} />
             <Coverage c={leadStory} />
             <Original c={leadStory} />
+            {leadStory.itemId && <StoryTools report={report} itemId={leadStory.itemId} title={leadStory.title} />}
           </div>
         )}
         {!!leadStory?.related?.length && <Related items={leadStory.related} itemPath={itemPath} className="order-5 mt-5 border-t border-line pt-4" />}
@@ -506,7 +508,7 @@ export function ReportPaper({ report, index, standalone = false, itemPath = ITEM
               {p.summary}
             </p>
           )}
-          <Rows items={p.items}>{(c, cell) => <Story key={`${p.id}-${keyOf(c)}`} c={c} dated={!daily} itemPath={itemPath} className={cell} />}</Rows>
+          <Rows items={p.items}>{(c, cell) => <Story key={`${p.id}-${keyOf(c)}`} c={c} report={report} dated={!daily} itemPath={itemPath} className={cell} />}</Rows>
         </SectionPage>
       ))}
 
