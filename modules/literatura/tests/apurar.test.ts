@@ -6,7 +6,8 @@
 // a page linking several papers is pinned to one of them by guess; a post naming a study without an
 // identifier is matched to a record by guess, or not searched at all; a guideline or congress post with an
 // official page is dropped, or written from a page that is not the primary source; a post waiting for its
-// paper has its pages asked for again.
+// paper has its pages asked for again; a paper PubMed does not have yet is dropped, or written up from its
+// publisher's page; a page the site already holds is paid for and thrown away.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -40,6 +41,8 @@ const fonte = { fontePrimaria: true, organizacao: "American Academy of Otolaryng
 const modelInputs: string[] = [];
 const subjectInputs: string[] = [];
 const searches: string[] = [];
+/** DOIs PubMed does not have yet. */
+const lagging = new Set<string>();
 const hits: string[] = [];
 let base = "";
 
@@ -57,6 +60,8 @@ const stubServer = http.createServer((req, res) => {
     if (url === "/news/release") return html("<title>Press release</title>", `<p>Read the study: <a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">J Pediatr Surg</a></p>`);
     if (url === "/news/two") return html("<title>Roundup</title>", `<a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">one</a> <a href="https://doi.org/10.1186/s12890-026-01234-5">two</a>`);
     if (url === "/news/blocked") return send(403, "text/html", "<html><head><title>Just a moment...</title><meta name=\"citation_doi\" content=\"10.1016/j.jpedsurg.2026.161999\"></head></html>");
+    if (url === "/journal/unindexed") return html(`<title>Early view</title><meta name="citation_title" content="Airway stenting in infants with severe tracheomalacia: a prospective series"><meta name="citation_doi" content="10.1002/lary.77777">`, guideline);
+    if (url === "/society/press") return html("<title>Society statement on tracheostomy care</title>", `<article><h1>Society statement</h1>${guideline}</article>`);
     if (url === "/news/congress") return html("<title>Congress</title>", "<p>See you in Lisbon.</p>");
     if (url === "/news/same") return html("<title>Press release</title>", `<a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">doi</a> <a href="https://pubmed.ncbi.nlm.nih.gov/41000001/">PubMed</a> <a href="https://onlinelibrary.wiley.com/doi/full/10.1016/j.jpedsurg.2026.161999">journal</a>`);
     if (url === "/news/journal-link") return html("<title>Press release</title>", `<p>Read it at <a href="https://www.sciencedirect.com/science/article/doi/10.1016/j.jpedsurg.2026.161999">the journal</a>.</p>`);
@@ -66,7 +71,7 @@ const stubServer = http.createServer((req, res) => {
       const term = new URL(url, "http://stub").searchParams.get("term") ?? "";
       searches.push(term);
       const idlist = /"10\.1016\/j\.jpedsurg\.2026\.161999"\[aid\]/.test(term) ? ["41000001"]
-        : /"10\.1186\/s12890-026-01234-5"\[aid\]/.test(term) ? ["41000002"]
+        : /"10\.1186\/s12890-026-01234-5"\[aid\]/.test(term) && !lagging.has("10.1186/s12890-026-01234-5") ? ["41000002"]
         : /"laryngotracheal reconstruction"\[tiab\]/.test(term) ? ["41000001"]
         : /^"single-stage versus double-stage laryngotracheal reconstruction for grade iii/i.test(term) ? ["41000001"] : [];
       return send(200, "application/json", JSON.stringify({ esearchresult: { idlist } }));
@@ -257,11 +262,49 @@ test("a guideline post is written up from the official page it links, naming the
   assert.equal(none!.n, 0);
 });
 
+test("a paper PubMed does not have yet waits by its DOI and is written from the paper once PubMed has it; its publisher's page is never written up", async () => {
+  lagging.add("10.1186/s12890-026-01234-5");
+  const { id } = await post("early", "Out today: bronchoscopy in persistent wheeze https://doi.org/10.1186/s12890-026-01234-5");
+  const publisher = await post("early-page", `Early view ${base}/journal/unindexed`);
+  const before = modelInputs.length;
+  const subjectsBefore = subjectInputs.length;
+  await researchXPosts();
+  assert.deepEqual(await sql`SELECT status, pmid, doi FROM literatura_x_posts WHERE article_id = ${id}`, [{ status: "aguardando-pubmed", pmid: null, doi: "10.1186/s12890-026-01234-5" }]);
+  assert.deepEqual(await sql`SELECT status, pmid, doi FROM literatura_x_posts WHERE article_id = ${publisher.id}`, [{ status: "aguardando-pubmed", pmid: null, doi: "10.1002/lary.77777" }]);
+  assert.equal(modelInputs.length, before, "nothing is written from the post or the publisher's page");
+  assert.equal(subjectInputs.length, subjectsBefore);
+
+  const read = hits.length;
+  lagging.clear();
+  await researchXPosts();
+  assert.equal(hits.slice(read).filter((h) => h === "/journal/unindexed").length, 0, "the page is not asked for again");
+  assert.deepEqual(await xStatus(id), { status: "materia-abstract", pmid: "41000002" });
+  assert.equal(modelInputs.length, before + 1);
+  assert.match(modelInputs.at(-1)!, /Título original: Flexible bronchoscopy findings/);
+  const [article] = await sql<{ url: string; body_html: string }[]>`SELECT a.url, a.body_html FROM literatura_papers p JOIN articles a ON a.id = p.article_id WHERE p.pmid = '41000002'`;
+  assert.equal(article!.url, "https://doi.org/10.1186/s12890-026-01234-5");
+  assert.match(article!.body_html, /<h2>Referência<\/h2>/);
+  assert.equal((await xStatus(publisher.id))!.status, "aguardando-pubmed", "still waiting while the post is in its window");
+});
+
+test("an official page the site already holds from another source is not written again", async () => {
+  const society = `society-${T}`;
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, next_fetch_at) VALUES (${society}, 'Society', 'rss', 'T1', 'editorial', '2100-01-01')`;
+  const held = await upsertMaterial({ sourceId: society, url: `${base}/society/press`, title: "Society statement", bodyText: guideline, bodyStatus: "ok", via: "fetch", publishedAt: new Date() });
+  const { id } = await post("guideline-held", `New guideline statement from the society ${base}/society/press`);
+  const before = modelInputs.length;
+  await researchXPosts();
+  assert.equal(modelInputs.length, before, "no article is paid for");
+  assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: null });
+  const [x] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM articles WHERE id = ${held.articleId} AND source_id = ${society}`;
+  assert.equal(x!.n, 1);
+});
+
 test("a post waiting for its paper is taken again from the paper found, without asking for its pages again", async () => {
   const { id } = await post("waiting", `Bronchoscopy in wheezy kids ${base}/news/release`);
   await sql`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${id}, 'aguardando-unpaywall', '41000002')`;
   const read = hits.length;
   await researchXPosts();
   assert.equal(hits.slice(read).filter((h) => h === "/news/release").length, 0, "the linked page is not asked for again");
-  assert.deepEqual(await xStatus(id), { status: "materia-abstract", pmid: "41000002" });
+  assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: "41000002" }, "the paper written before is not written again");
 });
