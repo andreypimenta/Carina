@@ -360,7 +360,7 @@ export async function researchPost(row: PostRow, now = new Date(), sources?: { i
 /**
  * The site's article about a paper PubMed never had, from its publisher's page (the page as served to the
  * site's crawler): written like any paper's (industry/prompts/materia.md), from the page's text up to its back
- * matter when Unpaywall finds the paper open and the page has more than the abstract (as for the free copies,
+ * matter when the page is the open copy Unpaywall points to and has more than the abstract (as for the free copies,
  * access.ts), else from the abstract its citation tags declare, with the reference block; null without a
  * title or with neither. A paper already written under its DOI is not written again.
  */
@@ -372,7 +372,8 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
   if (!paper) return null;
   const abstractChars = paper.abstract.reduce((n, a) => n + a.text.length, 0);
   const access = await findOpenCopy(doi);
-  const copy = access.kind === "open" ? articleText(page.html, page.url, abstractChars) : null;
+  const host = (u: string) => new URL(u).hostname.replace(/^www\./, "");
+  const copy = access.kind === "open" && host(access.copy.url) === host(page.url) ? articleText(page.html, page.url, abstractChars) : null;
   const fullText = copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
   if (!fullText && !abstractChars) return null;
   const basis = fullText ? "full" : "abstract";
@@ -460,7 +461,7 @@ export async function researchXPosts(opts: { now?: Date; budgetMs?: number } = {
     JOIN sources s ON s.id = a.source_id
     LEFT JOIN literatura_x_posts x ON x.article_id = a.id
     WHERE s.kind = 'x_search' AND s.participation_mode = 'editorial' AND a.x_post IS NOT NULL AND NOT a.backfill
-      AND (a.discovered_at > ${now}::timestamptz - make_interval(days => ${X_WINDOW_DAYS}) OR x.status = 'aguardando-pubmed')
+      AND (a.discovered_at > ${now}::timestamptz - make_interval(days => ${X_WINDOW_DAYS}) OR x.status = 'aguardando-pubmed' OR (x.status = 'erro' AND x.doi IS NOT NULL))
       AND (x.article_id IS NULL OR x.status = ANY(${RETRY}))
       AND (SELECT an.relevance FROM analyses an WHERE an.article_id = a.id ORDER BY an.input_revision DESC, an.id DESC LIMIT 1) = 'pass'
     ORDER BY x.article_id IS NOT NULL, coalesce(x.updated_at, a.discovered_at), a.id LIMIT ${PER_RUN}`;
