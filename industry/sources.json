@@ -188,6 +188,116 @@
       "enabled": false
     },
     {
+      "id": "x-annalsthorsurg",
+      "name": "X: The Annals of Thoracic Surgery (@annalsthorsurg)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:annalsthorsurg -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "periódico"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-atcs-journal",
+      "name": "X: Annals of Thoracic and Cardiovascular Surgery (@ATCS_journal)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:ATCS_journal -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "periódico"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-mmcts-manual",
+      "name": "X: Multimedia Manual of Cardio-Thoracic Surgery (@MMCTS_Manual)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:MMCTS_Manual -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "periódico"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-innovationsjour",
+      "name": "X: Innovations (@Innovationsjour)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:Innovationsjour -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "periódico"
+      ],
+      "enabled": false
+    },
+    {
+      "id": "x-jchestsurg",
+      "name": "X: Journal of Chest Surgery (@Jchestsurg)",
+      "kind": "x_search",
+      "config": {
+        "query": "from:Jchestsurg -filter:replies",
+        "searchType": "Latest",
+        "publisherRole": "organization"
+      },
+      "tier": "T1_5",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "site_fulltext": false,
+      "syndicate_fulltext": false,
+      "interval_minutes": 60,
+      "tags": [
+        "X",
+        "rede social",
+        "periódico"
+      ],
+      "enabled": false
+    },
+    {
       "id": "x-anzspo",
       "name": "X: ANZ Society of Paediatric Otorhinolaryngology (@ANZSPO)",
       "kind": "x_search",

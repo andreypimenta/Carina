@@ -15,7 +15,7 @@ import { defineQueue } from "@aihot/backend/modules";
 import type { Adicionado, AdicionarPedido } from "../adicionar.ts";
 export { notIncluded } from "../adicionar.ts";
 import { enabledSources, takePaper } from "./collect.ts";
-import { fetchPapers, pmidsForDoi, type Paper } from "./pubmed.ts";
+import { fetchPapers, pmidsForDoi, type PubmedPaper } from "./pubmed.ts";
 
 const AUDIT_ACTION = "literatura.adicionar";
 
@@ -34,7 +34,7 @@ export function parseId(input: string): { pmid: string } | { doi: string } | nul
 }
 
 /** The PubMed record of a PMID or a DOI. */
-export async function findPaper(input: string): Promise<Paper> {
+export async function findPaper(input: string): Promise<PubmedPaper> {
   const id = parseId(input);
   if (!id) throw invalid("Informe um PMID (só números) ou um DOI (10.xxxx/…)");
   if ("pmid" in id) {
@@ -60,7 +60,7 @@ async function select(articleId: string, reason: string, actor: string) {
 }
 
 /** Takes the paper (unless taken before) and, asked to, selects its article; the outcome is audited. */
-export async function addPaper(paper: Paper, opts: { select: boolean; reason: string; actor: string; now?: Date }): Promise<Omit<Adicionado, "at" | "actor">> {
+export async function addPaper(paper: PubmedPaper, opts: { select: boolean; reason: string; actor: string; now?: Date }): Promise<Omit<Adicionado, "at" | "actor">> {
   const before = await earlier(paper.pmid);
   const out = before ?? (await takePaper(paper, opts.now ?? new Date(), await enabledSources()));
   const articleId = out.articleId ?? null;

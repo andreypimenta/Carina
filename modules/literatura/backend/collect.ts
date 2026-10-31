@@ -7,6 +7,7 @@
 // found days after entering PubMed is still news for the week's edition: the engine's 48-hour rule
 // (content/materials.ts) that archives late material as history does not apply to these two sources.
 // A paper that fails (a service down, an unusable answer) is tried again on later runs, up to MAX_ATTEMPTS.
+// The watched journals (backend/revistas.ts) add their PubMed search and their tables of contents to the run.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { sql } from "@aihot/backend/db";
@@ -16,7 +17,8 @@ import { sanitizeBody } from "@aihot/backend/content/sanitize";
 import { queueProcessing } from "@aihot/backend/jobs/content";
 import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { SITE_UTC_OFFSET } from "@aihot/contracts/time";
-import { fetchPapers, searchPmids, skippable, authorLine, type Paper } from "./pubmed.ts";
+import { fetchPapers, pmidsForDoi, searchPmids, skippable, authorLine, type Paper } from "./pubmed.ts";
+import { onSubject, paperFromItem, pubmedTerm, readSumario, type Revistas } from "./revistas.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
 import { referenceBlock, renderMateria, writeMateria } from "./materia.ts";
 
@@ -82,6 +84,12 @@ export function integralBody(paper: Paper, full: FullText, access: Access, pmcid
   return `<p><em>${credit}</em></p>${full.html}${referenceBlock(paper, access, pmcid, "integral")}`;
 }
 
+/**
+ * A paper's row in literatura_papers: its PMID, or its DOI while PubMed does not have it, or the address of
+ * a table-of-contents paper that has no DOI.
+ */
+const keyOf = (paper: Paper) => paper.pmid ?? (paper.doi ? `doi:${paper.doi}` : `url:${paper.url}`);
+
 interface Outcome { pmid: string; status: string; articleId?: string }
 
 /** Which of the two sources take material now: one paused in the admin takes none. */
@@ -99,10 +107,10 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   const skip = skippable(paper);
   if (skip) return record(paper, skip);
   const access: Access = paper.doi ? await findOpenCopy(paper.doi) : { kind: "unknown" };
-  const pmcid = paper.pmcid ?? (await lookupPmcid(paper.pmid));
+  const pmcid = paper.pmcid ?? (paper.pmid ? await lookupPmcid(paper.pmid) : null);
   const full = pmcid ? await fetchFullText(pmcid) : null;
   const isFull = !!full && full.bodyChars >= MIN_FULL_TEXT;
-  const url = paper.doi ? `https://doi.org/${paper.doi}` : `https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/`;
+  const url = paper.doi ? `https://doi.org/${paper.doi}` : paper.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/` : paper.url!;
   const publishedAt = entryTime(paper.enteredOn, now);
   const language = LANGUAGES[paper.languages[0] ?? "eng"] ?? null;
   const raw = { pmid: paper.pmid, doi: paper.doi, pmcid, journal: paper.journal, publicationTypes: paper.publicationTypes, access, license: full?.license ?? null };
@@ -121,15 +129,15 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   // An open copy under a licence that allows republishing, not in PMC yet: give PMC a few days.
   const entered = publishedAt ? (now.getTime() - publishedAt.getTime()) / 86_400_000 : Infinity;
   if (sources.integral && !isFull && access.kind === "open" && republishable(access.copy.license) && entered < PMC_WAIT_DAYS) {
-    return { pmid: paper.pmid, status: "aguardando-pmc" };
+    return { pmid: keyOf(paper), status: "aguardando-pmc" };
   }
   // A DOI Unpaywall has not taken in yet: ask it again on later runs.
   if (!isFull && paper.doi && process.env.LITERATURA_EMAIL && access.kind === "unknown" && entered < UNPAYWALL_WAIT_DAYS) {
-    return { pmid: paper.pmid, status: "aguardando-unpaywall" };
+    return { pmid: keyOf(paper), status: "aguardando-unpaywall" };
   }
 
-  if (!sources.materia) return { pmid: paper.pmid, status: "fonte-pausada" };
-  if (!config.modelCallsEnabled) return { pmid: paper.pmid, status: "aguardando-modelo" };
+  if (!sources.materia) return { pmid: keyOf(paper), status: "fonte-pausada" };
+  if (!config.modelCallsEnabled) return { pmid: keyOf(paper), status: "aguardando-modelo" };
   const abstractChars = paper.abstract.reduce((n, s) => n + s.text.length, 0);
   const copy = !isFull && access.kind === "open" ? await readOpenCopy(access.copy.url, abstractChars) : null;
   const fullText = isFull ? full!.text : copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
@@ -144,23 +152,23 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
       raw: { ...raw, originalTitle: paper.title, basis, ...(fullText ? { fullTextFrom: isFull ? "pmc" : "copy" } : {}) }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
-    await tx`INSERT INTO literatura_papers (pmid, status, article_id) VALUES (${paper.pmid}, ${`materia-${basis}`}, ${res.articleId})
-      ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, article_id = EXCLUDED.article_id, updated_at = now()`;
+    await tx`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${keyOf(paper)}, ${paper.doi}, ${`materia-${basis}`}, ${res.articleId})
+      ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
     if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });
-    return { pmid: paper.pmid, status: `materia-${basis}`, articleId: res.articleId };
+    return { pmid: keyOf(paper), status: `materia-${basis}`, articleId: res.articleId };
   });
 }
 
 async function record(paper: Paper, status: string, articleId?: string): Promise<Outcome> {
-  await sql`INSERT INTO literatura_papers (pmid, status, article_id) VALUES (${paper.pmid}, ${status}, ${articleId ?? null})
-    ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, article_id = EXCLUDED.article_id, updated_at = now()`;
-  return { pmid: paper.pmid, status, articleId };
+  await sql`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${keyOf(paper)}, ${paper.doi}, ${status}, ${articleId ?? null})
+    ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
+  return { pmid: keyOf(paper), status, articleId };
 }
 
 /** A failed attempt; the last one allowed gives the paper up. */
-export async function recordFailure(pmid: string): Promise<Outcome> {
+export async function recordFailure(pmid: string, doi: string | null = null): Promise<Outcome> {
   const [row] = await sql<{ attempts: number }[]>`
-    INSERT INTO literatura_papers (pmid, status, attempts) VALUES (${pmid}, 'erro', 1)
+    INSERT INTO literatura_papers (pmid, doi, status, attempts) VALUES (${pmid}, ${doi}, 'erro', 1)
     ON CONFLICT (pmid) DO UPDATE SET attempts = literatura_papers.attempts + 1, updated_at = now()
     RETURNING attempts`;
   if (row!.attempts >= MAX_ATTEMPTS) {
@@ -170,13 +178,53 @@ export async function recordFailure(pmid: string): Promise<Outcome> {
   return { pmid, status: "erro" };
 }
 
-/** Every saved search, then the papers not taken yet (and the failed ones still within their attempts), up to the run's share. */
-export async function collectLiterature(opts: { budgetMs?: number; now?: Date } = {}): Promise<Record<string, unknown>> {
+/**
+ * The watched journals' tables of contents: the papers on the site's subjects not taken yet, as PMIDs when
+ * PubMed already has their DOI, else as papers of their own. A paper of a journal PubMed indexes whose table
+ * of contents gives no abstract is left to the journal's PubMed search, which brings the abstract.
+ */
+async function readSumarios(cfg: Revistas, since: Date): Promise<{ pmids: string[]; papers: Paper[]; read: number; failed: string[] }> {
+  const out = { pmids: [] as string[], papers: [] as Paper[], read: 0, failed: [] as string[] };
+  const candidates = new Map<string, Paper>();
+  for (const revista of cfg.revistas.filter((r) => r.sumario)) {
+    try {
+      for (const item of await readSumario(revista, since)) {
+        if (!/^https?:\/\//.test(item.url) || !onSubject(cfg, `${item.title} ${item.abstract}`)) continue;
+        const paper = paperFromItem(revista, item);
+        if (!candidates.has(keyOf(paper))) candidates.set(keyOf(paper), paper);
+      }
+      out.read++;
+    } catch (error) {
+      out.failed.push(revista.id);
+      console.error(`literatura: sumário ${revista.id}: ${(error as Error).message}`);
+    }
+  }
+  if (!candidates.size) return out;
+  const dois = [...candidates.values()].flatMap((p) => (p.doi ? [p.doi] : []));
+  const taken = new Set((await sql<{ pmid: string; doi: string | null }[]>`
+    SELECT pmid, doi FROM literatura_papers WHERE (pmid = ANY(${[...candidates.keys()]}) OR doi = ANY(${dois})) AND status <> 'erro'`).flatMap((r) => [r.pmid, r.doi]));
+  for (const [key, paper] of candidates) {
+    if (taken.has(key) || (paper.doi && taken.has(paper.doi))) continue;
+    const [pmid] = paper.doi ? await pmidsForDoi(paper.doi) : [];
+    if (pmid) out.pmids.push(pmid);
+    else if (paper.abstract.length || !paper.journalAbbrev) out.papers.push(paper);
+  }
+  return out;
+}
+
+/**
+ * Every saved search (with the watched journals' search and tables of contents when `revistas` is given), then
+ * the papers not taken yet (and the failed ones still within their attempts), up to the run's share.
+ */
+export async function collectLiterature(opts: { budgetMs?: number; now?: Date; revistas?: Revistas } = {}): Promise<Record<string, unknown>> {
   const started = Date.now();
+  const now = opts.now ?? new Date();
   const s = settings();
+  const journalsTerm = opts.revistas ? pubmedTerm(opts.revistas) : null;
+  const queries = journalsTerm ? [...s.queries, { id: "revistas-vigiadas", name: "Revistas vigiadas", term: journalsTerm }] : s.queries;
   const found = new Set<string>();
   const failedQueries: string[] = [];
-  for (const q of s.queries) {
+  for (const q of queries) {
     try {
       for (const id of await searchPmids(q.term, s.days)) found.add(id);
     } catch (error) {
@@ -184,30 +232,49 @@ export async function collectLiterature(opts: { budgetMs?: number; now?: Date } 
       console.error(`literatura: busca ${q.id}: ${(error as Error).message}`);
     }
   }
+  const sumarios = opts.revistas ? await readSumarios(opts.revistas, new Date(now.getTime() - s.days * 86_400_000)) : null;
+  for (const id of sumarios?.pmids ?? []) found.add(id);
   const done = new Set((await sql<{ pmid: string }[]>`SELECT pmid FROM literatura_papers WHERE pmid = ANY(${[...found]}) AND status <> 'erro'`).map((r) => r.pmid));
   const retrying = new Set((await sql<{ pmid: string }[]>`SELECT pmid FROM literatura_papers WHERE pmid = ANY(${[...found]}) AND status = 'erro'`).map((r) => r.pmid));
-  // New papers first; papers that failed before take what is left of the run's share.
+  // New papers first; papers that failed before take what is left of the run's share; then the papers only a
+  // table of contents has.
   const pending = [...[...found].filter((id) => !done.has(id) && !retrying.has(id)), ...retrying].slice(0, s.perRun);
+  const fromSumarios = (sumarios?.papers ?? []).slice(0, Math.max(0, s.perRun - pending.length));
   const sources = await enabledSources();
   const langs = new Set(s.languages);
   const counts: Record<string, number> = {};
+  const take = async (paper: Paper) => {
+    try {
+      return await takePaper(paper, now, sources);
+    } catch (error) {
+      console.error(`literatura: ${keyOf(paper)}: ${(error as Error).message}`);
+      return recordFailure(keyOf(paper), paper.doi);
+    }
+  };
   outer: for (let i = 0; i < pending.length; i += 100) {
-    for (const paper of await fetchPapers(pending.slice(i, i + 100))) {
+    const papers = await fetchPapers(pending.slice(i, i + 100));
+    // A paper first taken from a journal's table of contents: its PubMed record joins that article.
+    const dois = papers.flatMap((p) => (p.doi ? [p.doi] : []));
+    const early = new Map((await sql<{ doi: string; article_id: string | null }[]>`
+      SELECT doi, article_id FROM literatura_papers WHERE doi = ANY(${dois}) AND pmid LIKE 'doi:%' AND status <> 'erro'`).map((r) => [r.doi, r.article_id]));
+    for (const paper of papers) {
       if (opts.budgetMs && Date.now() - started > opts.budgetMs) break outer;
       let out: Outcome;
-      if (langs.size && paper.languages.length && !paper.languages.some((l) => langs.has(l))) out = await record(paper, "idioma");
-      else {
-        try {
-          out = await takePaper(paper, opts.now ?? new Date(), sources);
-        } catch (error) {
-          out = await recordFailure(paper.pmid);
-          console.error(`literatura: PMID ${paper.pmid}: ${(error as Error).message}`);
-        }
-      }
+      if (paper.doi && early.has(paper.doi)) out = await record(paper, "sumario", early.get(paper.doi) ?? undefined);
+      else if (langs.size && paper.languages.length && !paper.languages.some((l) => langs.has(l))) out = await record(paper, "idioma");
+      else out = await take(paper);
       counts[out.status] = (counts[out.status] ?? 0) + 1;
     }
   }
+  for (const paper of fromSumarios) {
+    if (opts.budgetMs && Date.now() - started > opts.budgetMs) break;
+    const out = await take(paper);
+    counts[out.status] = (counts[out.status] ?? 0) + 1;
+  }
   // Like the ingest API: the two sources report in, so their health shows the run, not a missing fetch.
-  if (failedQueries.length < s.queries.length) await sql`UPDATE sources SET last_fetch_at = now(), last_ok_at = now() WHERE id IN (${INTEGRAL_SOURCE}, ${MATERIA_SOURCE})`;
-  return { searched: s.queries.length, failedQueries, found: found.size, new: pending.length, ...counts };
+  if (failedQueries.length < queries.length) await sql`UPDATE sources SET last_fetch_at = now(), last_ok_at = now() WHERE id IN (${INTEGRAL_SOURCE}, ${MATERIA_SOURCE})`;
+  return {
+    searched: queries.length, failedQueries, found: found.size, new: pending.length + fromSumarios.length,
+    ...(sumarios ? { revistasLidas: sumarios.read, revistasFalharam: sumarios.failed } : {}), ...counts,
+  };
 }

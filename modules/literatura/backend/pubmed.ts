@@ -6,7 +6,8 @@ import type { AnyNode, Element } from "domhandler";
 import { guardedFetch } from "@aihot/backend/lib/http-fetch";
 
 export interface Paper {
-  pmid: string;
+  /** Null for a paper read from a journal's table of contents before PubMed has it (backend/revistas.ts). */
+  pmid: string | null;
   doi: string | null;
   pmcid: string | null;
   title: string;
@@ -20,7 +21,12 @@ export interface Paper {
   languages: string[];
   /** The day the record entered PubMed (PubStatus "entrez"), YYYY-MM-DD. */
   enteredOn: string | null;
+  /** The paper's page, for a table-of-contents paper with neither PMID nor DOI. */
+  url?: string;
 }
+
+/** A paper as PubMed records it. */
+export type PubmedPaper = Paper & { pmid: string };
 
 const BASE = () => (process.env.PUBMED_BASE_URL ?? "https://eutils.ncbi.nlm.nih.gov/entrez/eutils").replace(/\/$/, "");
 
@@ -70,7 +76,7 @@ export async function pmidsForDoi(doi: string): Promise<string[]> {
 }
 
 /** The records of up to 200 PMIDs. */
-export async function fetchPapers(pmids: string[]): Promise<Paper[]> {
+export async function fetchPapers(pmids: string[]): Promise<PubmedPaper[]> {
   if (!pmids.length) return [];
   const params = new URLSearchParams({ db: "pubmed", id: pmids.join(","), retmode: "xml" });
   await turn();
@@ -92,9 +98,9 @@ function plain($: cheerio.CheerioAPI, el: cheerio.Cheerio<AnyNode>): string {
 
 const pad = (n: string | undefined) => (n ? n.padStart(2, "0") : "");
 
-export function parsePubmedXml(xml: string): Paper[] {
+export function parsePubmedXml(xml: string): PubmedPaper[] {
   const $ = cheerio.load(xml, { xml: true });
-  const papers: Paper[] = [];
+  const papers: PubmedPaper[] = [];
   $("PubmedArticle").each((_i, node) => {
     const a = $(node);
     const citation = a.children("MedlineCitation");
