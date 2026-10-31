@@ -17,6 +17,11 @@ import { installModules } from "@aihot/backend/modules";
 import server from "../server.ts";
 import { collectLiterature, INTEGRAL_SOURCE, MATERIA_SOURCE, MAX_ATTEMPTS, recordFailure, takePaper } from "../backend/collect.ts";
 import { parsePubmedXml } from "../backend/pubmed.ts";
+import { itemParts } from "@aihot/backend/publication/detail";
+import { publishArticle } from "@aihot/backend/publication/publish";
+import { addCorrection, deleteCorrection, listCorrections } from "../backend/correcoes.ts";
+import type { MateriaPart } from "../confianca.ts";
+
 
 const T = tag();
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
@@ -25,7 +30,13 @@ const ndJats = long(fixture("jats.xml")).replace("http://creativecommons.org/lic
 
 const modelInputs: string[] = [];
 const hits: string[] = [];
-const materia = { titulo: "Broncoscopia em sibilância persistente achou traqueomalácia em 31%", linhaFina: "Coorte de 120 crianças", lide: "Um estudo brasileiro avaliou 120 crianças com sibilância persistente.", contexto: "", metodos: "Coorte.", resultados: "Traqueomalácia em 31%.", limitacoes: "Centro único.", paraOPediatra: "Sibilância que não melhora merece avaliação.", paraOEspecialista: "Reforça a broncoscopia." };
+const materia = {
+  titulo: "Broncoscopia em sibilância persistente achou traqueomalácia em 31%", linhaFina: "Coorte de 120 crianças", lide: "Um estudo brasileiro avaliou 120 crianças com sibilância persistente.", contexto: "", metodos: "Coorte.", resultados: "Traqueomalácia em 31%.", limitacoes: "Centro único.", paraOPediatra: "Sibilância que não melhora merece avaliação.", paraOEspecialista: "Reforça a broncoscopia.",
+  achado: "Traqueomalácia apareceu em 31% das crianças com sibilância persistente.", paraQuem: "Pediatras e pneumologistas pediátricos", mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024",
+  populacaoIdade: "1 a 5 anos", populacaoDoenca: "Sibilância persistente", populacaoCenario: "Ambulatório de um centro terciário", desenho: "coorte", desenhoDetalhe: "coorte retrospectiva", limitacaoPrincipal: "Centro único.",
+  // Text read is never taken from the model.
+  textoLido: "texto-completo",
+};
 
 const stubServer = http.createServer((req, res) => {
   const chunks: Buffer[] = [];
@@ -75,7 +86,7 @@ before(async () => {
     await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at)
       VALUES (${id}, ${id}, 'external', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
   }
-  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004', '41000005', '41000006', '41000007', '41000008', '41000009', '41000010')`;
+  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004', '41000005', '41000006', '41000007', '41000008', '41000009', '41000010', '41000011', '41000012')`;
 });
 
 after(async () => {
@@ -213,4 +224,52 @@ test("a DOI Unpaywall does not know yet is asked about again on later runs for a
   } finally {
     process.env.LITERATURA_EMAIL = email;
   }
+});
+
+test("each new matéria stores why it can be trusted, with the text the pipeline read; its page and the e-mail read it with its corrections (itemParts)", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const out = await takePaper({ ...paper!, pmid: "41000011", doi: `10.9999/abs-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  assert.equal(out.status, "materia-abstract");
+  const parts = (await itemParts([out.articleId!, "nao-existe"]));
+  assert.deepEqual([...parts.keys()], [out.articleId]);
+  const part = parts.get(out.articleId!)!.literatura as MateriaPart;
+  assert.equal(part.confianca!.textoLido, "resumo", "the abstract was read, whatever the model says");
+  assert.equal(part.confianca!.feitura, "materia");
+  assert.deepEqual(part.confianca!.minuto, { achado: materia.achado, paraQuem: materia.paraQuem, mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024" });
+  assert.deepEqual(part.confianca!.populacao, { idade: "1 a 5 anos", doenca: "Sibilância persistente", cenario: "Ambulatório de um centro terciário" });
+  assert.deepEqual(part.correcoes, []);
+
+  await assert.rejects(() => addCorrection({ item: out.articleId, oQueMudou: "x", porque: "y" }, "editor"), /o que mudou e por quê/);
+  await assert.rejects(() => addCorrection({ item: "https://site/items/naoexiste1234567890", oQueMudou: "Número", porque: "Erro" }, "editor"), /não existe/);
+  await assert.rejects(() => addCorrection({ item: out.articleId, data: "2999-01-01", oQueMudou: "Número", porque: "Erro" }, "editor"), /futuro/);
+  const added = await addCorrection({ item: `https://site.example/items/${out.articleId}`, data: "2026-10-30", oQueMudou: "A coorte tinha 120 crianças, não 210.", porque: "Erro de transcrição do resumo." }, "editor");
+  const fixed = (await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart;
+  assert.deepEqual(fixed.correcoes, [{ id: added.id, data: "2026-10-30", oQueMudou: "A coorte tinha 120 crianças, não 210.", porque: "Erro de transcrição do resumo." }]);
+  assert.equal((await listCorrections()).find((c) => c.id === added.id)?.actor, "editor");
+  const [audited] = await sql`SELECT 1 FROM audit_log WHERE action = 'literatura.correcao' AND subject = ${`content:${out.articleId}`}`;
+  assert.ok(audited, "the correction is audited");
+  assert.deepEqual(await deleteCorrection(added.id, "editor"), { deleted: true });
+  assert.deepEqual(((await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart).correcoes, []);
+  assert.deepEqual(await deleteCorrection(added.id, "editor"), { deleted: false });
+
+  const full = await takePaper({ ...paper!, pmid: "41000012", doi: `10.9999/pmc-${T}`, pmcid: "PMC99" });
+  assert.equal(((await itemParts([full.articleId!])).get(full.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "texto-completo");
+});
+
+test("a preprint is labelled in its public title, whatever wrote the title, and in its body; it never changes practice", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const out = await takePaper({ ...paper!, pmid: null, doi: `10.1101/2026.10.01.${Date.now()}`, pmcid: null, url: undefined }, new Date("2026-10-30T03:00:00Z"));
+  assert.equal(out.status, "materia-abstract");
+  assert.match(modelInputs.at(-1)!, /Preprint: sim/);
+  const [row] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE id = ${out.articleId!}`;
+  assert.match(row!.body_html, /^<p><strong>Preprint – não revisado por pares\.<\/strong>/);
+  const part = (await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart;
+  assert.equal(part.confianca!.preprint, true);
+  assert.equal(part.confianca!.minuto!.mudaAlgo, "nao");
+  await publishArticle(out.articleId!);
+  const [pub] = await sql<{ title: string }[]>`SELECT title FROM publications WHERE article_id = ${out.articleId!}`;
+  assert.equal(pub!.title, `Preprint – não revisado por pares: ${materia.titulo}`);
+  await publishArticle(out.articleId!);
+  const [again] = await sql<{ title: string }[]>`SELECT title FROM publications WHERE article_id = ${out.articleId!}`;
+  assert.equal(again!.title, pub!.title, "labelled once");
 });

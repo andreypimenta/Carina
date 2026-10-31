@@ -7,11 +7,12 @@
 // reader's chosen section first and sends its links through the site, which counts the clicks (reads.ts).
 import { addDays, beijingDate, isoWeekRange } from "@aihot/contracts/time";
 import { sql } from "@aihot/backend/db";
+import { itemParts } from "@aihot/backend/publication/detail";
 import { listReports, loadReport } from "@aihot/backend/publication/reports";
 import type { ReportDetail } from "@aihot/contracts/site";
 import type { Channel } from "../address.ts";
 import { channelReady, sendEmail, sendWhatsapp, whatsappConnected, type Outcome } from "./channels.ts";
-import { editionEmail, editionWhatsapp, links } from "./messages.ts";
+import { editionEmail, editionParts, editionWhatsapp, links, type ItemParts } from "./messages.ts";
 import { trackLinks } from "./reads.ts";
 import { dueConfirmations, sendConfirmation } from "./subscribers.ts";
 
@@ -116,6 +117,16 @@ export async function runSends(options: RunOptions = {}): Promise<Record<string,
     if (!editions.has(k)) editions.set(k, await loadReport("weekly", k));
     return editions.get(k)!;
   };
+  // The modules' parts of the edition's stories (a matéria's "Em um minuto"), read once per edition.
+  const parts = new Map<string, ItemParts>();
+  const partsOf = async (report: ReportDetail) => {
+    if (!parts.has(report.key)) {
+      const p = editionParts(report);
+      const ids = [p.lead, ...p.sections.flatMap((s) => s.items)].flatMap((c) => (c?.itemId ? [c.itemId] : []));
+      parts.set(report.key, await itemParts(ids));
+    }
+    return parts.get(report.key)!;
+  };
   const counts: Record<string, number> = {};
   const count = (what: string) => { counts[what] = (counts[what] ?? 0) + 1; };
 
@@ -135,7 +146,7 @@ export async function runSends(options: RunOptions = {}): Promise<Record<string,
         count("email_skipped");
         continue;
       }
-      const mail = editionEmail(report, send.token, send.interest);
+      const mail = editionEmail(report, send.token, send.interest, await partsOf(report));
       mail.html = trackLinks(mail.html, send.id, links.indique());
       // Its readers were asked the case of the week: the admin counts the answers against them.
       if (mail.html.includes("data-answer") && !asked.has(send.edition_key)) {

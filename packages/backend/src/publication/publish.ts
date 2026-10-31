@@ -12,7 +12,7 @@ import { areaOf } from "../editorial/vocabulary.ts";
 import { itemUrl } from "./links.ts";
 import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "./representative.ts";
 import { enqueue, QUEUES, shutdownSignal } from "../jobs/queue.ts";
-import { emit } from "../modules.ts";
+import { emit, serverModules } from "../modules.ts";
 import {
   bodyModeOf, channelOf, displayTags, isIndexable, isPoolEligible, isSelectable, mayRedistribute, publicSourceName, type SourceFacts,
 } from "./rules.ts";
@@ -235,6 +235,15 @@ export async function publishArticle(articleId: string, options: PublishOptions 
   });
 }
 
+/** The title with the label a module requires it to start with (ServerModule.titleLabel), whatever wrote it. */
+async function labelledTitle(tx: Tx, articleId: string, title: string): Promise<string> {
+  for (const m of serverModules()) {
+    const label = await m.titleLabel?.(articleId, tx);
+    if (label && !title.startsWith(label)) return `${label}: ${title}`;
+  }
+  return title;
+}
+
 export async function publishArticleTx(tx: Tx, articleId: string, options: PublishOptions = {}): Promise<PublishResult | null> {
   const [article] = await tx<ArticleRow[]>`
     SELECT id, source_id, url, title, language, published_at, discovered_at, timeline_at, backfill, body_status,
@@ -303,6 +312,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const bodyMode = bodyModeOf(source, article.body_status, hasBody);
   const syndicate = mayRedistribute(source, bodyMode);
   const originalTitle = isChineseTitle && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
+  const shownTitle = await labelledTitle(tx, articleId, title ?? collapseWhitespace(article.title));
 
   // Waiting candidates are readable in the pool, with no selected seat, sync entry or push.
   // Completion stamps the actual release after lock waits, including across report cutoffs.
@@ -313,7 +323,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     visibility, sourceMode: source.participation_mode, hasSummary: !!summary, selected, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
   });
   const searchText = collapseWhitespace(
-    [title, originalTitle, summary, publicSourceName(source.name, article.journal), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
+    [shownTitle, originalTitle, summary, publicSourceName(source.name, article.journal), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
   ).toLowerCase();
 
   // A selected item sits at its reading group's anchor: the earliest public pool member of its fact.
@@ -327,7 +337,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
 
   const next = {
     source_id: source.id, first_party: source.tier === "T1",
-    visibility, eligible, selected, selection_candidate: selectionCandidate, title: title ?? collapseWhitespace(article.title), original_title: originalTitle, summary, reason,
+    visibility, eligible, selected, selection_candidate: selectionCandidate, title: shownTitle, original_title: originalTitle, summary, reason,
     category, area, tags, score: round1(score), body_mode: bodyMode, story_id: membership?.story_id ?? null, fact_id: membership?.fact_id ?? null,
     indexable, url: article.url, channel, syndicate, published_at: article.published_at, discovered_at: article.discovered_at,
     timeline_at: article.timeline_at, backfill: article.backfill, sort_at: sortAt, visible_after: visibleAfter,

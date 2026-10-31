@@ -306,6 +306,21 @@ export interface ServerModule {
    * the pool, the selection and the editions, keeping only their detail page (publication/rules.ts isPoolEligible).
    */
   takesXPosts?: boolean;
+  /**
+   * A label an article's public title must start with, whatever wrote the title (the model, the editor), or
+   * null: read each time the article is published (publication/publish.ts), so keep it to one indexed lookup.
+   */
+  titleLabel?: (articleId: string, tx: Db) => Promise<string | null>;
+  /**
+   * Its part of articles, by id, as they are now (publication/detail.ts itemParts): on the article's page
+   * (SiteItemDetail.modules, drawn by its web module's itemPage) and, through `mail`, under the article in
+   * an e-mail. Ids it has nothing for are left out.
+   */
+  items?: {
+    parts: (ids: readonly string[]) => Promise<Map<string, unknown>>;
+    /** Its part under an article in an e-mail, compact: HTML with inline styles and the same as plain text; null for nothing. */
+    mail?: (part: unknown) => { html: string; text: string } | null;
+  };
   /** More keys a feedback sender is known by; a ban under any of them holds (operations/feedback.ts). */
   feedbackKeys?: (ip: string) => string[];
 }

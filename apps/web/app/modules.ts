@@ -120,6 +120,18 @@ export interface ReportPagePart {
 }
 
 /**
+ * A module's part of an article's page (features/item/ModuleParts.tsx), from what its server module's
+ * items.parts returned for the article (SiteItemDetail.modules): drawn on the article's page and on the lean
+ * pages that show an article, such as the one a shared edition links to.
+ */
+export interface ItemPagePart {
+  /** Between the summary and the body. */
+  Top?: ComponentType<{ data: unknown; item: SiteItemDetail }>;
+  /** After the body and its source line. */
+  End?: ComponentType<{ data: unknown; item: SiteItemDetail }>;
+}
+
+/**
  * Where a module's Callout is drawn: under an issue's masthead ("report-top") and before its colophon
  * ("report-end"), at the end of an article ("item-end"), and at the foot of every public page ("foot").
  */
@@ -173,6 +185,7 @@ export interface WebModule {
   agent?: Part<AgentPart>;
   topicPage?: Part<TopicPagePart>;
   reportPage?: Part<ReportPagePart>;
+  itemPage?: Part<ItemPagePart>;
   /** Paths of the marks it serves that are drawn in white, for a dark tile (components/BrandMark.tsx). */
   darkMarks?: string[];
   /** The starred page (routes/starred.tsx): buttons ahead of 导入文件 that bring stars in from elsewhere, each resolving to the line it reports. */

@@ -102,6 +102,10 @@ docker compose run --rm setup && docker compose up -d
 
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
+#### 报道的可信度信息与公开更正（2026 年 10 月 31 日）
+
+新迁移 `modules/literatura/migrations/0067_literatura_confianca.sql`（新表 `literatura_confianca`：每篇新报道的“Em um minuto”、人群、研究设计、主要局限、实际读的文本、是否预印本、指南日期）、`0068_literatura_correcoes.sql` 和 `0069_literatura_correcoes_article_idx.sql`（新表 `literatura_correcoes`：管理员在 Painel → Conteúdo → **Correções** 加的公开更正）。没有新环境变量，不删任何数据；只有升级后写的报道有这些信息，旧报道照旧显示，不补写。写报道的模型多回答几个短字段（`industry/prompts/materia.md`、`materia-fonte.md`），每篇的输出 token 略增。引擎多了三个插口：`ServerModule.items`（文章页和周报邮件里模块的部分，`SiteItemDetail.modules`）、`WebModule.itemPage`（在文章页和 /assine 的文章页画出来）、`ServerModule.titleLabel`（发布时公开标题必须带的前缀：预印本标题前加“Preprint – não revisado por pares”，模型或编辑改标题都保留）。自己有模块的站不用改。说明见 [fontes.md](fontes.md#por-que-confiar-em-cada-matéria)。
+
 #### X 帖子改写成论文报道（2026 年 10 月 31 日）
 
 新迁移 `modules/literatura/migrations/0065_literatura_x_posts.sql`（新表 `literatura_x_posts`）和 `0066_literatura_x_posts_doi.sql`（新列 `doi`：PubMed 还没收录的 DOI，帖子等待期间按它重查），没有新环境变量。模块多了一个插口 `ServerModule.takesXPosts`：装了 literatura 模块的站，编辑信源的 X 帖子不再单独进入全部动态、精选和日报周报（详情页保留，不收录）；升级后重新发布时，已在列表里的 X 帖子会退出。worker 每半小时（`literatura.apurar-x`，需 `COLLECT_ENABLED=true`）查帖子指向的论文（没有标识符时用模型读出期刊、作者和主题去 PubMed 检索并核对），按论文写报道；指南、会议、活动类帖子按其链接的官方页面写报道；文末署名帖子。两次模型调用都用 `MATERIA_MODEL`，见 [fontes.md](fontes.md#redes-sociais-x-instagram-e-linkedin)。

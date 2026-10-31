@@ -36,7 +36,10 @@ import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { earlier } from "./adicionar.ts";
 import { articleText, blockText, findOpenCopy, lookupPmid } from "./access.ts";
 import { enabledSources, MATERIA_SOURCE, MAX_ATTEMPTS, MIN_FULL_TEXT, settings, takePaper } from "./collect.ts";
-import { creditBlock, MATERIA_STEP, renderFonteMateria, renderMateria, writeFonteMateria, writeMateria, type PrimaryPage, type XCredit } from "./materia.ts";
+import { saveConfianca } from "./confianca.ts";
+import {
+  confiancaDaMateria, confiancaDaPagina, creditBlock, MATERIA_STEP, renderFonteMateria, renderMateria, textoLido, writeFonteMateria, writeMateria, type PrimaryPage, type XCredit,
+} from "./materia.ts";
 import { authorLine, fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, type Paper, type PubmedPaper } from "./pubmed.ts";
 
 export const APURACAO_PURPOSE = "apuracao_x";
@@ -125,6 +128,32 @@ export function pageRefs(html: string, url: string): { own: Refs; links: Refs[];
     if (!empty(refs)) links.set(JSON.stringify(refs), refs);
   }
   return { own, links: [...links.values()], title };
+}
+
+/** A date a page's metadata gives ("2026-03-14T10:00:00Z", "2026-03-14") as YYYY-MM-DD; null for anything else. */
+const dayOf = (v: string | undefined) => /^(\d{4}-\d{2}-\d{2})(?:$|T|\s)/.exec(v?.trim() ?? "")?.[1] ?? null;
+
+/**
+ * When a page says it was published and last revised: its article and Dublin Core meta tags, else the
+ * schema.org datePublished and dateModified of its JSON-LD; null for what it does not say.
+ */
+export function pageDates(html: string): { publishedOn: string | null; modifiedOn: string | null } {
+  const $ = cheerio.load(html);
+  const meta = metaOf($);
+  const ld: Array<Record<string, unknown>> = [];
+  $('script[type="application/ld+json"]').each((_i, el) => {
+    try {
+      const data = JSON.parse($(el).text()) as unknown;
+      const nodes = Array.isArray(data) ? data : [data, ...((data as { "@graph"?: unknown[] })?.["@graph"] ?? [])];
+      for (const n of nodes) if (n && typeof n === "object") ld.push(n as Record<string, unknown>);
+    } catch { /* a page's broken JSON-LD says nothing */ }
+  });
+  const fromLd = (key: string) => ld.map((n) => (typeof n[key] === "string" ? dayOf(n[key] as string) : null)).find(Boolean) ?? null;
+  const first = (names: string[]) => meta(names).map(dayOf).find(Boolean) ?? null;
+  return {
+    publishedOn: first(["article:published_time", "dc.date.issued", "dcterms.issued", "dc.date", "citation_publication_date"]) ?? fromLd("datePublished"),
+    modifiedOn: first(["article:modified_time", "og:updated_time", "dc.date.modified", "dcterms.modified"]) ?? fromLd("dateModified"),
+  };
 }
 
 /** A linked page asked for once; null when it refuses the crawler, is not HTML or fails. */
@@ -391,6 +420,7 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
       raw: { doi, journal: paper.journal, access, originalTitle: paper.title, basis, ...(fullText ? { fullTextFrom: "publisher" } : {}), xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
+    await saveConfianca(tx, res.articleId, confiancaDaMateria(materia, paper, textoLido(basis, access), now));
     await tx`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${`doi:${doi}`}, ${doi}, ${`materia-${basis}`}, ${res.articleId})
       ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
     await tx`INSERT INTO literatura_x_posts (article_id, status, pmid, doi) VALUES (${articleId}, 'materia-editora', NULL, ${doi})
@@ -412,7 +442,7 @@ async function takePage(articleId: string, page: Page, post: string, credit: XCr
   const body = readable(page.html, page.url);
   const text = body ? blockText(body.html) : "";
   if (text.length < MIN_PAGE_TEXT) return null;
-  const primary: PrimaryPage = { url: page.url, title: cheerio.load(page.html)("title").first().text().replace(/\s+/g, " ").trim(), text };
+  const primary: PrimaryPage = { url: page.url, title: cheerio.load(page.html)("title").first().text().replace(/\s+/g, " ").trim(), text, ...pageDates(page.html) };
   const { materia, receiptId } = await writeFonteMateria(primary, post);
   if (!materia) {
     await completeReceipt(sql, receiptId);
@@ -426,6 +456,7 @@ async function takePage(articleId: string, page: Page, post: string, credit: XCr
       raw: { basis: "pagina", organization: materia.organizacao.trim(), pageTitle: primary.title, xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
+    await saveConfianca(tx, res.articleId, confiancaDaPagina(materia, primary, now));
     await tx`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${articleId}, 'materia-pagina', NULL)
       ON CONFLICT (article_id) DO UPDATE SET status = EXCLUDED.status, pmid = NULL, updated_at = now()`;
     if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });

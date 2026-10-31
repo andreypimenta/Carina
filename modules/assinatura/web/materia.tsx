@@ -1,4 +1,5 @@
-// An article opened from /assine: as lean as the edition it came from (WebModule.ownChrome), with the text,
+// An article opened from /assine: as lean as the edition it came from (WebModule.ownChrome), with the text and
+// the modules' parts of it (such as why a matéria can be trusted),
 // the link to the original, the buttons that send this page to WhatsApp or copy it, and the sign-up form at the
 // end. Its only way back is to that edition; nothing leads into the rest of the site.
 import { data, Link, useLoaderData, useSearchParams, type LoaderFunctionArgs, type MetaArgs } from "react-router";
@@ -7,6 +8,7 @@ import { SITE } from "@aihot/site";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { IconArrowLeft, IconExternal } from "@aihot/web/components/icons";
 import { ArticleBody } from "@aihot/web/features/item/ArticleBody";
+import { ItemModuleParts } from "@aihot/web/features/item/ModuleParts";
 import { apiGet, cachedPage, loadOr404 } from "@aihot/web/lib/api.server";
 import { fullDateTime } from "@aihot/web/lib/format";
 import { pageMeta, titled } from "@aihot/web/lib/seo";
@@ -67,6 +69,7 @@ export default function AssineMateria() {
               <p className="text-[18px] leading-[1.7] text-ink">{item.summary}</p>
             </section>
           )}
+          <ItemModuleParts at="top" item={item} />
           {item.body && bodyHtml && (
             <section className="mt-9 border-t border-line pt-4">
               <div className="mb-6 text-[12px] text-ink-4">{bodyLabel}</div>
@@ -76,6 +79,7 @@ export default function AssineMateria() {
               <ArticleBody html={bodyHtml} />
             </section>
           )}
+          <ItemModuleParts at="end" item={item} />
           <a
             href={item.links.original}
             target="_blank"
