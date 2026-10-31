@@ -261,8 +261,11 @@ test("each confirmed reader gets the edition once; a failure that may pass is tr
   assert.match(edition[0]!.html, /Traqueostomia &lt;em&gt;neonatal&lt;\/em&gt;/, "the edition's text is escaped");
   assert.match(edition[0]!.headers!["List-Unsubscribe"]!, new RegExp(`/assine/sair\\?t=${reader.token}`));
   assert.equal(edition[0]!.headers!["List-Unsubscribe-Post"], "List-Unsubscribe=One-Click");
-  assert.ok(edition[0]!.html.includes(`https://folego.example/assine/${WEEK}`), "it links the edition's page");
-  assert.match(edition[0]!.html, /Indique a um colega[^]*https:\/\/folego\.example\/assine\?g=indique[^]*mailto:\?subject=/, "it ends with the link to pass on, and a new e-mail carrying it");
+  // Its links go through the site's counted redirect (reads.ts), carrying the destination.
+  const destinations = [...edition[0]!.html.matchAll(/href="https:\/\/folego\.example\/assine\/l\?([^"]*)"/g)].map((m) => new URLSearchParams(m[1]!.replace(/&amp;/g, "&")).get("u"));
+  assert.ok(destinations.includes(`https://folego.example/assine/${WEEK}`), "it links the edition's page");
+  assert.match(edition[0]!.html, /Indique a um colega[^]*folego\.example\/assine\?g=indique[^]*mailto:\?subject=[^"]*https%3A%2F%2Ffolego\.example%2Fassine%3Fg%3Dindique/, "it ends with the link to pass on, and a new e-mail carrying it");
+  assert.ok(destinations.includes("https://folego.example/assine?g=indique"));
   assert.ok(!/mailto:[^"]*sair/.test(edition[0]!.html), "the e-mail to a colleague does not carry the reader's way out");
   assert.match(edition[0]!.text, /INDIQUE A UM COLEGA[^\n]*https:\/\/folego\.example\/assine\?g=indique/);
   assert.equal(mails.filter((m) => m.to === `pendente-${T}@example.com` || m.to === `saiu-${T}@example.com`).length, 0, "only confirmed addresses get it");

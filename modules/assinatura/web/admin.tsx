@@ -1,6 +1,8 @@
 // The admin's view of the readers: whether each channel can send, how many addresses there are by channel
-// and status and by the group whose link brought them (with the link to send a group), each edition's sends (with a way to send again those that failed or may not have arrived,
-// after checking), the latest addresses and the whole list as CSV.
+// and status and by the group whose link brought them (with the link to send a group and retention after 8 weeks),
+// how readers took each e-mailed edition (people's clicks, scanners filtered out; recurring readers; the case of
+// the week; leavings and complaints; share-button clicks; interest by section), each edition's sends (with a way
+// to send again those that failed or may not have arrived, after checking), the latest addresses and the whole list as CSV.
 import { useState } from "react";
 import { useLoaderData, type LoaderFunctionArgs } from "react-router";
 import { SITE } from "@aihot/site";
@@ -11,7 +13,8 @@ import { copyText } from "@aihot/web/lib/clipboard";
 import { AdminPage, Badge, Button, Card, DataTable, Field, FilterChips, Input, ReasonDialog, Stat } from "@aihot/web/features/admin/ui";
 import { formatPhone, type Channel } from "../address.ts";
 import { groupTag, INDIQUE_GROUP, signupPath } from "../group.ts";
-import type { AdminEdition, AdminOverview } from "../types.ts";
+import { INTERESTS } from "../interest.ts";
+import type { AdminEdition, AdminOverview, Reading } from "../types.ts";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   return adminGet<AdminOverview>(request, `/api/admin/assinatura${new URL(request.url).search}`);
@@ -51,7 +54,8 @@ function EditionRow({ e }: { e: AdminEdition }) {
 const groupName = (tag: string | null) => (tag === INDIQUE_GROUP ? "indique (Indique a um colega)" : tag ?? "sem marcação");
 
 /** Sign-ups by the group whose link brought them, most confirmed first, and the link to send a new group. */
-function Groups({ rows }: { rows: AdminOverview["groups"] }) {
+function Groups({ rows, retention }: { rows: AdminOverview["groups"]; retention: Reading["retention"] }) {
+  const kept = new Map(retention.map((r) => [r.group, r]));
   const [name, setName] = useState("");
   const [copied, setCopied] = useState(false);
   const tag = groupTag(name);
@@ -80,7 +84,7 @@ function Groups({ rows }: { rows: AdminOverview["groups"] }) {
       {groups.length > 0 && (
         <table className="mt-4 w-full text-[13px]">
           <thead>
-            <tr className="text-left text-ink-4"><th className="py-1.5 font-medium">Grupo</th><th className="py-1.5 text-right font-medium">Confirmados</th><th className="py-1.5 text-right font-medium">Aguardando</th><th className="py-1.5 text-right font-medium">Saíram</th></tr>
+            <tr className="text-left text-ink-4"><th className="py-1.5 font-medium">Grupo</th><th className="py-1.5 text-right font-medium">Confirmados</th><th className="py-1.5 text-right font-medium">Aguardando</th><th className="py-1.5 text-right font-medium">Saíram</th><th className="py-1.5 text-right font-medium" title="Dos que confirmaram há 8 semanas ou mais, quantos continuavam na lista 8 semanas depois">Retidos em 8 semanas</th></tr>
           </thead>
           <tbody>
             {groups.map(([group, n]) => (
@@ -89,11 +93,92 @@ function Groups({ rows }: { rows: AdminOverview["groups"] }) {
                 <td className="num py-1.5 text-right font-semibold text-ink">{n.confirmed ?? 0}</td>
                 <td className="num py-1.5 text-right text-ink-3">{n.pending ?? 0}</td>
                 <td className="num py-1.5 text-right text-ink-3">{n.unsubscribed ?? 0}</td>
+                <td className="num py-1.5 text-right text-ink-2">{share(kept.get(group)?.retained ?? 0, kept.get(group)?.cohort ?? 0)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
+    </Card>
+  );
+}
+
+/** "12 de 40 (30%)", or a dash with nothing to count. */
+const share = (n: number, of: number) => (of > 0 ? `${n} de ${of} (${Math.round((100 * n) / of)}%)` : "—");
+
+const BUTTON: Record<string, string> = { whatsapp: "Mandar no WhatsApp", copiar: "Copiar link", indique: "Indique a um colega" };
+const interestName = (key: string | null) => INTERESTS.find((o) => o.key === key)?.label ?? key ?? "Ambos";
+
+/** How readers took the e-mailed editions: clicks taken for a person's only, as backend/reads.ts tells them apart. */
+function ReadingCard({ r }: { r: Reading }) {
+  const th = "py-1.5 text-right font-medium";
+  const td = "num py-1.5 text-right";
+  return (
+    <Card title="Leitura do e-mail" className="mt-5">
+      <p className="text-[13px] text-ink-3">
+        Contamos cliques, não aberturas: o Apple Mail e outros abrem as imagens de todo e-mail sozinhos. Cada link do e-mail passa pelo site, que conta o clique e segue para o destino. Cliques de antivírus e filtros de e-mail ficam de fora: pedidos HEAD ou de pré-carregamento, navegadores de robôs, faixas de IP de filtros de e-mail (Microsoft, Proofpoint, Mimecast, Barracuda), cliques nos primeiros 30 segundos depois do envio e 5 ou mais cliques em 10 segundos no mesmo e-mail. Nada do leitor é guardado além da contagem.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <Stat label="Leitores recorrentes" value={r.recurring.readers}
+          hint={`clicaram em pelo menos 2 das últimas ${r.recurring.editions} edições · de ${r.recurring.eligible} que receberam 2 ou mais`} />
+        <Stat label="Botões de compartilhar · 30 dias" value={r.buttons.reduce((n, b) => n + b.clicks, 0)}
+          hint={`${r.buttons.map((b) => `${b.clicks} ${BUTTON[b.button] ?? b.button}`).join(" · ") || "nenhum clique"}. Cliques no botão, não encaminhamentos confirmados.`} />
+        <Stat label="Reclamações e devoluções" value={r.resendWebhook ? "Contadas" : "Sem webhook"} tone={r.resendWebhook ? "ok" : "warn"}
+          hint={r.resendWebhook ? "Webhook do Resend ligado" : "Defina RESEND_WEBHOOK_SECRET e aponte o webhook do Resend (docs/assinatura.md)"} />
+      </div>
+      {r.editions.length > 0 ? (
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full min-w-[720px] text-[13px]">
+            <thead>
+              <tr className="text-left text-ink-4">
+                <th className="py-1.5 font-medium">Edição</th>
+                <th className={th}>Entregues</th>
+                <th className={th} title="Leitores com ao menos um clique de pessoa, sobre os entregues">Clicaram</th>
+                <th className={th} title="E-mails clicados só por robôs, filtrados">Só robôs</th>
+                <th className={th} title="Respostas tocadas no e-mail, sobre os entregues da edição com caso">Caso: respostas</th>
+                <th className={th} title="Cliques no link do Indique a um colega no e-mail">Indique (cliques)</th>
+                <th className={th} title="Saíram tendo esta como a última edição recebida">Saídas</th>
+                <th className={th}>Reclamações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.editions.map((e) => (
+                <tr key={e.edition_key} className="border-t border-line">
+                  <td className="num py-1.5 font-semibold text-ink">{e.edition_key}</td>
+                  <td className={`${td} text-ink`}>{e.delivered}</td>
+                  <td className={`${td} font-semibold text-ink`}>{share(e.clicked, e.delivered)}</td>
+                  <td className={`${td} text-ink-4`}>{e.scanned}</td>
+                  <td className={`${td} text-ink-2`}>{e.caso ? share(e.answered, e.delivered) : "sem caso"}</td>
+                  <td className={`${td} text-ink-2`}>{e.indique}</td>
+                  <td className={`${td} text-ink-2`}>{share(e.left_after, e.delivered)}</td>
+                  <td className={`${td} text-ink-2`}>{r.resendWebhook ? share(e.complained, e.delivered) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <p className="mt-4 text-[13px] text-ink-4">Nenhuma edição enviada por e-mail ainda.</p>
+      )}
+      <h3 className="mt-6 text-[13.5px] font-semibold text-ink">Interesse por seção</h3>
+      <p className="mt-1 text-[12.5px] text-ink-4">A seção que cada leitor de e-mail escolheu para vir primeiro, e quanto clicou nas últimas 4 edições.</p>
+      <table className="mt-2 w-full text-[13px]">
+        <thead>
+          <tr className="text-left text-ink-4"><th className="py-1.5 font-medium">Primeiro</th><th className={th}>Confirmados</th><th className={th}>Clicaram nas últimas 4</th></tr>
+        </thead>
+        <tbody>
+          {INTERESTS.map((o) => {
+            const row = r.interests.find((i) => i.interest === o.key);
+            return (
+              <tr key={o.key ?? ""} className="border-t border-line">
+                <td className="py-1.5 text-ink">{interestName(o.key)}</td>
+                <td className={`${td} font-semibold text-ink`}>{row?.confirmed ?? 0}</td>
+                <td className={`${td} text-ink-2`}>{share(row?.clicked ?? 0, row?.delivered ?? 0)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </Card>
   );
 }
@@ -117,7 +202,9 @@ export default function AssinaturaAdmin() {
         ))}
       </div>
 
-      <Groups rows={d.groups} />
+      <Groups rows={d.groups} retention={d.reading.retention} />
+
+      <ReadingCard r={d.reading} />
 
       <Card title="Edições enviadas" className="mt-5" pad={false}>
         {d.editions.length ? d.editions.map((e) => <EditionRow key={`${e.edition_key}-${e.channel}`} e={e} />) : <p className="px-4 py-5 text-[13px] text-ink-4">Nenhuma edição enviada ainda.</p>}
@@ -136,6 +223,7 @@ export default function AssinaturaAdmin() {
             { key: "a", label: "Endereço", render: (r) => <span className="font-mono text-[12.5px] text-ink">{r.channel === "whatsapp" ? formatPhone(r.address) : r.address}</span> },
             { key: "c", label: "Canal", render: (r) => CHANNEL[r.channel] },
             { key: "g", label: "Grupo", render: (r) => (r.group_tag ? <span className="font-mono text-[12.5px]">{r.group_tag}</span> : null) },
+            { key: "i", label: "Primeiro", render: (r) => (r.channel === "email" && r.interest ? interestName(r.interest) : null) },
             { key: "s", label: "Status", render: (r) => <Badge tone={TONE[r.status] ?? "muted"} title={r.confirm_error ?? undefined}>{STATUS[r.status] ?? r.status}</Badge> },
             { key: "t", label: "Inscrição", render: (r) => <span className="num whitespace-nowrap">{bj(r.created_at, true)}</span> },
             { key: "ok", label: "Confirmação", render: (r) => (r.confirmed_at ? <span className="num whitespace-nowrap">{bj(r.confirmed_at, true)}</span> : r.confirm_error ? <span className="text-[12px] text-ink-4" title={r.confirm_error}>falhou</span> : null) },

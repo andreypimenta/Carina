@@ -1,16 +1,18 @@
 // "Indique a um colega", where an issue ends (the site, /assine): the sign-up link, with the tag that counts
 // what readers pass on (INDIQUE_GROUP), sent through the phone's share sheet or copied. Nothing is sent from
-// the site.
+// the site; the click is counted as a button click.
 import { useState } from "react";
 import { SITE } from "@aihot/site";
 import { copyText } from "@aihot/web/lib/clipboard";
 import { IconCheck, IconShare } from "@aihot/web/components/icons";
 import { INDIQUE_GROUP, signupPath } from "../group.ts";
+import { countButton } from "./ShareLink.tsx";
 
 export function Indique({ className = "mt-6" }: { className?: string }) {
   const [copied, setCopied] = useState(false);
   const [refused, setRefused] = useState<string | null>(null);
   const share = async () => {
+    countButton("indique");
     const url = `${window.location.origin}${signupPath(INDIQUE_GROUP)}`;
     const text = `${SITE.name}: a edição semanal de ${SITE.subject}, de graça. Inscreva-se:`;
     if (navigator.share) {

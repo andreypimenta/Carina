@@ -1,18 +1,21 @@
 // The case of the week as the edition shows it: last week's answer, then this week's case and its question.
-// The admin's preview draws the same.
+// The admin's preview draws the same. A reader who tapped a choice in the e-mail arrives with ?resposta=<letter>,
+// and the choice is marked.
+import { useSearchParams } from "react-router";
 import { Kicker } from "@aihot/web/components/ui/Kicker";
 import { optionLetter, paragraphs, type CasoPart } from "../caso.ts";
 
-function Choices({ options, correct }: { options: string[]; correct: number | null }) {
+function Choices({ options, correct, chosen = null }: { options: string[]; correct: number | null; chosen?: number | null }) {
   if (!options.length) return null;
   return (
     <ol className="mt-3 space-y-1.5">
       {options.map((o, i) => (
-        <li key={i} className={`flex gap-2.5 text-[15.5px] leading-[1.6] ${i === correct ? "font-semibold text-ink" : "text-ink-2"}`}>
+        <li key={i} className={`flex gap-2.5 text-[15.5px] leading-[1.6] ${i === correct || i === chosen ? "font-semibold text-ink" : "text-ink-2"}`}>
           <span className={`w-5 shrink-0 font-bold ${i === correct ? "text-accent" : "text-ink-4"}`}>{optionLetter(i)}</span>
           <span>
             {o}
             {i === correct && <span className="ml-1.5 text-accent" aria-label="alternativa correta">✓</span>}
+            {i === chosen && <span className="ml-1.5 text-[13px] font-semibold text-accent">← sua resposta</span>}
           </span>
         </li>
       ))}
@@ -28,6 +31,9 @@ const Prose = ({ text }: { text: string }) => (
 
 export function CasoView({ part }: { part: CasoPart }) {
   const { caso, resposta } = part;
+  const [params] = useSearchParams();
+  const letter = params.get("resposta");
+  const chosen = caso && letter ? caso.options.findIndex((_, i) => optionLetter(i) === letter) : -1;
   return (
     <section id="caso" aria-label="Caso da semana" className="scroll-mt-[calc(var(--bar-h)+1.5rem)] border-b border-line py-8 @[880px]:py-10">
       {resposta && (
@@ -52,8 +58,10 @@ export function CasoView({ part }: { part: CasoPart }) {
           )}
           <div className="mt-5 rounded-panel bg-accent-soft/60 p-5 ring-1 ring-accent/15 @[880px]:p-6">
             <p className="text-[17px] font-bold leading-[1.5] text-ink">{caso.question}</p>
-            <Choices options={caso.options} correct={null} />
-            <p className="mt-3 text-[13.5px] leading-[1.6] text-ink-3">{`Discuta no seu grupo. A resposta sai na próxima edição, ${caso.answerOn}.`}</p>
+            <Choices options={caso.options} correct={null} chosen={chosen >= 0 ? chosen : null} />
+            <p className="mt-3 text-[13.5px] leading-[1.6] text-ink-3">
+              {chosen >= 0 ? `Você escolheu ${letter}. A resposta sai na próxima edição, ${caso.answerOn}.` : `Discuta no seu grupo. A resposta sai na próxima edição, ${caso.answerOn}.`}
+            </p>
           </div>
         </div>
       )}

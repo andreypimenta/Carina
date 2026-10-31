@@ -7,10 +7,13 @@ import { config } from "@aihot/backend/config";
 import { serverModules } from "@aihot/backend/modules";
 import { EDITION_WHEN, SITE } from "@aihot/site";
 import { INDIQUE_GROUP, signupPath } from "../group.ts";
+import { orderSections } from "../interest.ts";
 
 export const links = {
   confirm: (token: string) => `${config.siteUrl}/assine/confirmar?t=${token}`,
   leave: (token: string) => `${config.siteUrl}/assine/sair?t=${token}`,
+  /** Where the reader picks the section the edition puts first. */
+  preferences: (token: string) => `${config.siteUrl}/assine/preferencias?t=${token}`,
   edition: (key: string) => `${config.siteUrl}/assine/${key}`,
   page: () => `${config.siteUrl}/assine`,
   /** The sign-up link a reader passes on, tagged so the admin counts what it brought. */
@@ -130,9 +133,13 @@ function indiqueHtml(): string {
 </td></tr></table>`;
 }
 
-/** The weekly edition for one reader: the page's arrangement, each story linked to its page on the site. */
-export function editionEmail(report: ReportDetail, token: string) {
+/**
+ * The weekly edition for one reader: the page's arrangement, each story linked to its page on the site, the
+ * section the reader chose first (interest.ts).
+ */
+export function editionEmail(report: ReportDetail, token: string, interest: string | null = null) {
   const parts = editionParts(report);
+  parts.sections = orderSections(parts.sections, interest);
   const extra = moduleParts(report);
   const span = weekSpan(report.key);
   const url = links.edition(report.key);
@@ -158,7 +165,7 @@ ${s.summary ? `<p style="margin:10px 0 0;font-size:15px;line-height:1.7;color:#3
     `<p style="margin:30px 0 0;text-align:center"><a href="${esc(url)}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:15px;padding:12px 22px;border-radius:999px">Ler a edição no site</a></p>`,
     indiqueHtml(),
   ].join("\n");
-  const footer = `Você recebe esta edição porque se inscreveu em <a href="${esc(links.page())}" style="color:#6b7478">${esc(links.page().replace(/^https?:\/\//, ""))}</a>. Ela sai ${esc(EDITION_WHEN.weekly)} (horário de Brasília).<br><a href="${esc(leave)}" style="color:#6b7478">Não quero mais receber</a>`;
+  const footer = `Você recebe esta edição porque se inscreveu em <a href="${esc(links.page())}" style="color:#6b7478">${esc(links.page().replace(/^https?:\/\//, ""))}</a>. Ela sai ${esc(EDITION_WHEN.weekly)} (horário de Brasília).<br><a href="${esc(links.preferences(token))}" style="color:#6b7478">Escolher a seção que vem primeiro</a> · <a href="${esc(leave)}" style="color:#6b7478">Não quero mais receber</a>`;
   const text = [
     `${SITE.name} · Edição semanal nº ${report.issueNumber} · ${span}`,
     "",
@@ -174,6 +181,7 @@ ${s.summary ? `<p style="margin:10px 0 0;font-size:15px;line-height:1.7;color:#3
     "",
     `INDIQUE A UM COLEGA: conhece alguém que gostaria de receber o ${SITE.bareName}? Mande o link da inscrição: ${links.indique()}`,
     "",
+    `Escolher a seção que vem primeiro: ${links.preferences(token)}`,
     `Não quero mais receber: ${leave}`,
   ].join("\n");
   return { subject, html: frame(subject, body, footer, parts.overview ?? parts.dek ?? ""), text };

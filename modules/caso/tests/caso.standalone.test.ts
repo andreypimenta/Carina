@@ -21,3 +21,16 @@ test("paragraphs are split by blank lines; choices are lettered", () => {
   assert.deepEqual(paragraphs("Um.\nainda um.\n\n  \nDois.\n\n"), ["Um.\nainda um.", "Dois."]);
   assert.deepEqual([0, 1, 4].map(optionLetter), ["A", "B", "E"]);
 });
+
+test("in the e-mail, each choice of this week's question is an answer link to the edition's page; last week's answer has none", async () => {
+  const { config } = await import("@aihot/backend/config");
+  const { casoMail } = await import("../backend/mail.ts");
+  config.siteUrl = "https://folego.example";
+  const caso = { week: "2026-W43", title: "Estridor", body: "Lactente.", image: null, question: "Conduta?", options: ["Observar", "Broncoscopia"], answerOn: "segunda, 02/11" };
+  const resposta = { ...caso, week: "2026-W42", correct: 1, answer: "Broncoscopia." };
+  const mail = casoMail({ caso, resposta }, { key: "2026-W43" })!;
+  const answers = [...mail.html.matchAll(/<a data-answer href="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(answers, ["https://folego.example/assine/2026-W43?resposta=A#caso", "https://folego.example/assine/2026-W43?resposta=B#caso"]);
+  assert.match(mail.html, /Toque na sua resposta/);
+  assert.ok(!mail.text.includes("resposta="), "the plain text lists the choices without links");
+});

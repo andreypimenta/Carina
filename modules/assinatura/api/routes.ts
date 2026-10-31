@@ -1,6 +1,7 @@
 // The module's addresses on the api: the sign-up the page posts, the links in the messages (which only open
 // their own page: its button posts to confirm, leave and undo, so a link scanner or a preview changes nothing), the
-// mail clients' one-click leave, Evolution's webhook for incoming WhatsApp messages and the admin's view.
+// mail clients' one-click leave, the reader's preferences, the e-mail's counted links (/assine/l), the share
+// buttons' count, Resend's and Evolution's webhooks and the admin's view.
 import { timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { credential } from "@aihot/backend/config";
@@ -9,8 +10,10 @@ import { actorOf } from "@aihot/backend/admin/auth";
 import { sendProblem } from "@aihot/api/http/respond";
 import { adminHandler } from "@aihot/api/routes/admin-auth";
 import { adminOverview, subscribersCsv } from "../backend/admin.ts";
+import { countButton, handleResendEvent, readLink, recordClick, webhookSigned } from "../backend/reads.ts";
 import { retrySends } from "../backend/send.ts";
-import { confirm, handleInbound, openChannels, resubscribe, SignupRejected, subscribe, unsubscribe } from "../backend/subscribers.ts";
+import { feedbackSourceHash } from "@aihot/backend/operations/feedback";
+import { confirm, handleInbound, openChannels, preferences, resubscribe, setInterest, SignupRejected, subscribe, unsubscribe } from "../backend/subscribers.ts";
 import type { SignupChannels } from "../types.ts";
 
 const tokenOf = (req: FastifyRequest) => {
@@ -44,7 +47,7 @@ export function registerAssinatura(app: FastifyInstance) {
     const text = (v: unknown) => (typeof v === "string" ? v : null);
     try {
       const sent = await subscribe({
-        email: text(b.email), consent: b.consent, trap: text(b.website), group: b.group,
+        email: text(b.email), consent: b.consent, trap: text(b.website), group: b.group, interest: b.interest,
         ip: String(req.headers["x-real-ip"] ?? req.ip ?? ""), userAgent: String(req.headers["user-agent"] ?? ""),
       });
       return reply.code(202).send({ sent });
@@ -56,16 +59,19 @@ export function registerAssinatura(app: FastifyInstance) {
   });
 
   // The page's buttons, with the token its link carried.
-  const tokenAction = <T>(path: string, act: (token: string) => Promise<T | null>) =>
+  const tokenAction = <T>(path: string, act: (token: string, body: Record<string, unknown>) => Promise<T | null>) =>
     app.post(path, async (req, reply) => {
       reply.header("Cache-Control", "no-store");
-      const t = (req.body as Record<string, unknown> | null)?.t;
-      const done = typeof t === "string" ? await act(t) : null;
+      const body = (req.body ?? {}) as Record<string, unknown>;
+      const done = typeof body.t === "string" ? await act(body.t, body) : null;
       if (!done) return sendProblem(req, reply, { status: 404, code: "not_found", detail: "Este link não serve mais; inscreva-se de novo pelo formulário." });
       return reply.send(done);
     });
   tokenAction("/api/assinatura/confirmar", confirm);
   tokenAction("/api/assinatura/sair", (t) => unsubscribe(t, "link"));
+  // The preferences page reads the address's choice with its token, then changes it.
+  tokenAction("/api/assinatura/preferencias/ler", (t) => preferences(t));
+  tokenAction("/api/assinatura/preferencias", (t, b) => setInterest(t, b.interest));
   tokenAction("/api/assinatura/voltar", async (t) => {
     const channel = await resubscribe(t);
     return channel ? { channel } : null;
@@ -81,6 +87,42 @@ export function registerAssinatura(app: FastifyInstance) {
       const token = tokenOf(req);
       const done = token ? await unsubscribe(token, "one-click") : null;
       return reply.header("Cache-Control", "no-store").code(done ? 200 : 404).type("text/plain; charset=utf-8").send(done ? "Inscrição cancelada." : "Link inválido.");
+    });
+  });
+
+  // The e-mail's links: the click is counted (a scanner's apart) and the reader goes on, whatever the count did.
+  // A link whose signature fails redirects nowhere.
+  app.get("/assine/l", async (req, reply) => {
+    reply.header("Cache-Control", "no-store").header("Referrer-Policy", "no-referrer");
+    const link = readLink(req.query as Record<string, unknown>);
+    if (!link) return reply.code(404).type("text/plain; charset=utf-8").send("Link inválido.");
+    const h = req.headers;
+    await recordClick(link.send, link.kind, {
+      method: req.method, userAgent: String(h["user-agent"] ?? ""), ip: String(h["x-real-ip"] ?? req.ip ?? ""), purpose: `${h["sec-purpose"] ?? ""} ${h.purpose ?? ""} ${h["x-purpose"] ?? ""}`,
+    }).catch((err) => req.log.error({ err }, "click not counted"));
+    return reply.redirect(link.url, 302);
+  });
+
+  // The site's share buttons say they were clicked (navigator.sendBeacon); nothing about the reader is kept.
+  app.post("/api/assinatura/botao", async (req, reply) => {
+    const b = (req.body ?? {}) as Record<string, unknown>;
+    await countButton(b.button, feedbackSourceHash(String(req.headers["x-real-ip"] ?? req.ip ?? ""), String(req.headers["user-agent"] ?? "")));
+    return reply.header("Cache-Control", "no-store").code(204).send();
+  });
+
+  // Resend's webhook (docs/assinatura.md): bounces and complaints, signed with RESEND_WEBHOOK_SECRET.
+  app.register(async (hook) => {
+    hook.addContentTypeParser("application/json", { parseAs: "string", bodyLimit: 256 * 1024 }, (_req, body, done) => done(null, body));
+    hook.post("/api/assinatura/resend", async (req, reply) => {
+      reply.header("Cache-Control", "no-store");
+      const secret = credential("integrations", "RESEND_WEBHOOK_SECRET");
+      const raw = typeof req.body === "string" ? req.body : "";
+      if (!secret || !webhookSigned(secret, req.headers as Record<string, unknown>, raw)) return sendProblem(req, reply, { status: 403, code: "forbidden", detail: "Missing or wrong webhook signature." });
+      let event: unknown;
+      try { event = JSON.parse(raw); } catch { return sendProblem(req, reply, { status: 400, code: "invalid_request", detail: "Not JSON." }); }
+      const result = await handleResendEvent(event);
+      req.log.info({ msg: "resend event", result }, "assinatura resend");
+      return reply.send({ result });
     });
   });
 
