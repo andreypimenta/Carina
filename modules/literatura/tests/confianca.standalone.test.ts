@@ -21,6 +21,7 @@ const materia: Materia = {
   achado: "Decanulação semelhante entre os dois tempos cirúrgicos.", paraQuem: "Cirurgiões de via aérea pediátrica", mudaAlgo: "alinhado-a-diretriz", diretriz: "",
   populacaoIdade: "", populacaoDoenca: "Estenose subglótica grau III", populacaoCenario: "Três centros terciários",
   desenho: "coorte", desenhoDetalhe: "coorte retrospectiva multicêntrica", limitacaoPrincipal: "Retrospectivo, sem randomização.",
+  conflitos: "Um autor é consultor do fabricante do balão.", aplicabilidadeBrasil: "Centros terciários dos EUA; depende de estrutura semelhante.",
 };
 
 test("preprints by PubMed type, server DOI or server name; a Cold Spring Harbor journal is not one; guidelines by type", () => {
@@ -67,6 +68,11 @@ test("a matéria's record: missing population fields say so, a guideline carries
   assert.equal(c.textoLido, "resumo");
   assert.equal(c.preprint, false);
   assert.equal(c.datas, null, "a cohort has no document dates");
+  assert.equal(c.conflitos, "Não informado", "an abstract alone declares no conflicts, whatever the model says");
+  assert.equal(c.aplicabilidade, "Centros terciários dos EUA; depende de estrutura semelhante.");
+  assert.equal(confiancaDaMateria(materia, paper!, "texto-completo", now).conflitos, "Um autor é consultor do fabricante do balão.");
+  assert.equal(confiancaDaMateria(materia, { ...paper!, coiStatement: "JL consults for X." }, "resumo", now).conflitos, "Um autor é consultor do fabricante do balão.", "the record's statement counts");
+  assert.equal(confiancaDaMateria({ ...materia, conflitos: " " }, paper!, "texto-completo", now).conflitos, "Não informado");
   const guideline = confiancaDaMateria(materia, { ...paper!, publicationTypes: ["Practice Guideline"], publishedOn: "2019-04-02" }, "texto-completo", now);
   assert.deepEqual(guideline.datas, { publicado: "2019-04-02", revisado: null, conferido: "2026-10-31" });
 
@@ -84,12 +90,16 @@ test("an official page's dates come from its metadata, else its JSON-LD; nothing
     { publishedOn: "2020-01-15", modifiedOn: "2023-07-30" });
   assert.deepEqual(pageDates(`<html><head><script type="application/ld+json">{broken</script><meta property="article:modified_time" content="ontem"></head></html>`), { publishedOn: null, modifiedOn: null });
   const page = { url: "https://sbp.com.br/diretriz", title: "Diretriz", text: "…", publishedOn: "2021-05-10", modifiedOn: null };
-  const fonte = { fontePrimaria: true, organizacao: "SBP", titulo: "", linhaFina: "", lide: "", corpo: "", tipo: "diretriz" as const, achado: "A sociedade publicou a diretriz.", paraQuem: "Pediatras", mudaAlgo: "alinhado-a-diretriz" as const, diretriz: "Diretriz SBP de asma" };
+  const fonte = { fontePrimaria: true, organizacao: "SBP", titulo: "", linhaFina: "", lide: "", corpo: "", tipo: "diretriz" as const, achado: "A sociedade publicou a diretriz.", paraQuem: "Pediatras", mudaAlgo: "alinhado-a-diretriz" as const, diretriz: "Diretriz SBP de asma", conflitos: "", aplicabilidadeBrasil: "Diretriz brasileira." };
   const c = confiancaDaPagina(fonte, page, now);
   assert.equal(c.textoLido, "pagina-oficial");
   assert.equal(c.desenho, "diretriz");
   assert.deepEqual(c.datas, { publicado: "2021-05-10", revisado: null, conferido: "2026-10-31" });
   assert.equal(confiancaDaPagina({ ...fonte, tipo: "congresso" }, page, now).datas, null);
+  assert.equal(c.conflitos, "Não informado");
+  assert.equal(c.aplicabilidade, "Diretriz brasileira.");
+  assert.equal(c.minuto!.mudaAlgo, "alinhado-a-diretriz");
+  assert.equal(confiancaDaPagina(fonte, { ...page, url: "https://clinicaltrials.gov/study/NCT01234567" }, now, true).minuto!.mudaAlgo, "nao", "a trial register's page never changes practice");
 });
 
 test("the review line names the editor only once the site does; the e-mail line only for a piece with Em um minuto", () => {
@@ -97,22 +107,26 @@ test("the review line names the editor only once the site does; the e-mail line 
   const c = confiancaDaMateria(materia, paper!, "resumo", now);
   assert.match(linhaRevisao(c, null), /^Matéria redigida com auxílio de inteligência artificial \(IA\) a partir da fonte original .* e selecionada automaticamente: .* O editor responsável acompanha o que vai ao ar e corrige quando necessário;/);
   assert.match(linhaRevisao(c, "Dra. Fulana"), /O editor responsável, Dra\. Fulana, acompanha o que vai ao ar/);
+  assert.match(linhaRevisao(c, null), /a IA resumiu o estudo, extraiu população, desenho, principal limitação e conflitos declarados, graduou se ele muda algo agora e apontou o que se transfere ao contexto brasileiro\./);
+  assert.match(linhaRevisao({ ...c, conflitos: undefined, aplicabilidade: undefined }, null), /a IA resumiu o estudo, extraiu população, desenho e principal limitação e graduou se ele muda algo agora\./, "an older record says what was done then");
+  assert.match(linhaRevisao({ ...c, feitura: "alerta" }, null), /não é evidência de eficácia/);
+  assert.match(linhaRevisao({ ...c, feitura: "aviso" }, null), /sem leitura do documento/);
   const traducao = confiancaDaTraducao(materia, paper!, now);
   assert.equal(traducao.feitura, "traducao");
   assert.equal(traducao.textoLido, "texto-completo");
   assert.equal(traducao.desenho, "coorte");
   assert.match(linhaRevisao(traducao, null), /^Artigo traduzido na íntegra com inteligência artificial \(IA\) e selecionado automaticamente: .* O editor responsável acompanha/);
-  for (const feitura of ["materia", "pagina", "traducao"] as const) assert.doesNotMatch(linhaRevisao({ ...c, feitura }, "Dra. Fulana"), /revisa|antes da publicação/, "nothing is reviewed before it goes live");
+  for (const feitura of ["materia", "pagina", "traducao", "alerta", "aviso"] as const) assert.doesNotMatch(linhaRevisao({ ...c, feitura }, "Dra. Fulana"), /revisa|antes da publicação/, "nothing is reviewed before it goes live");
 
-  const part: MateriaPart = { confianca: c, correcoes: [] };
+  const part: MateriaPart = { confianca: c, estado: null, versoes: [], correcoes: [] };
   assert.equal(minutoCompacto(part), "Em um minuto: Decanulação semelhante entre os dois tempos cirúrgicos. Para quem: Cirurgiões de via aérea pediátrica. Muda algo agora? Pode informar a discussão.");
   const mail = materiaMail(part)!;
   assert.match(mail.html, /Em um minuto<\/b> Decanulação semelhante/);
   assert.match(mail.html, /Coorte · Texto lido: somente o resumo/);
   assert.match(mail.text, /\(Coorte · Texto lido: somente o resumo\)$/);
-  assert.equal(materiaMail({ confianca: { ...c, minuto: null }, correcoes: [] }), null);
-  assert.equal(materiaMail({ confianca: null, correcoes: [{ id: 1, data: "2026-10-30", oQueMudou: "x", porque: "y" }] }), null);
-  assert.match(materiaMail({ confianca: { ...c, preprint: true }, correcoes: [] })!.text, /^Preprint – não revisado por pares\. Em um minuto/);
+  assert.equal(materiaMail({ ...part, confianca: { ...c, minuto: null } }), null);
+  assert.equal(materiaMail({ ...part, confianca: null, correcoes: [{ id: 1, data: "2026-10-30", oQueMudou: "x", porque: "y" }] }), null);
+  assert.match(materiaMail({ ...part, confianca: { ...c, preprint: true } })!.text, /^Preprint – não revisado por pares\. Em um minuto/);
 });
 
 test("a correction's matéria from its page's address or its id", () => {

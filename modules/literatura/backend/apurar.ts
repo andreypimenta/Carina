@@ -37,10 +37,11 @@ import { earlier } from "./adicionar.ts";
 import { articleText, blockText, findOpenCopy, lookupPmid } from "./access.ts";
 import { enabledSources, MATERIA_SOURCE, MAX_ATTEMPTS, MIN_FULL_TEXT, settings, takePaper } from "./collect.ts";
 import { saveConfianca } from "./confianca.ts";
+import { estudoDoPaper, saveEstudo, saveRegistroPage } from "./estudos.ts";
 import {
   confiancaDaMateria, confiancaDaPagina, creditBlock, MATERIA_STEP, renderFonteMateria, renderMateria, textoLido, writeFonteMateria, writeMateria, type PrimaryPage, type XCredit,
 } from "./materia.ts";
-import { authorLine, fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, type Paper, type PubmedPaper } from "./pubmed.ts";
+import { authorLine, fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, trialIdsIn, type Paper, type PubmedPaper } from "./pubmed.ts";
 
 export const APURACAO_PURPOSE = "apuracao_x";
 
@@ -411,7 +412,8 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
   const fullText = copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
   if (!fullText && !abstractChars) return null;
   const basis = fullText ? "full" : "abstract";
-  const { materia, receiptId } = await writeMateria(paper, fullText);
+  const estudo = await estudoDoPaper(paper);
+  const { materia, receiptId } = await writeMateria(paper, fullText, estudo.anteriores);
   const html = sanitizeBody(renderMateria(materia, paper, access, null, basis) + creditBlock(credit), url);
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
@@ -421,6 +423,7 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
     }, tx);
     await completeReceipt(tx, receiptId);
     await saveConfianca(tx, res.articleId, confiancaDaMateria(materia, paper, textoLido(fullText ? "publisher" : null, access), now));
+    await saveEstudo(tx, res.articleId, paper, estudo);
     await tx`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${`doi:${doi}`}, ${doi}, ${`materia-${basis}`}, ${res.articleId})
       ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
     await tx`INSERT INTO literatura_x_posts (article_id, status, pmid, doi) VALUES (${articleId}, 'materia-editora', NULL, ${doi})
@@ -456,7 +459,10 @@ async function takePage(articleId: string, page: Page, post: string, credit: XCr
       raw: { basis: "pagina", organization: materia.organizacao.trim(), pageTitle: primary.title, xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
-    await saveConfianca(tx, res.articleId, confiancaDaPagina(materia, primary, now));
+    // A trial register's page is the study's plan: registered, and never more than "não" for changing practice.
+    const registro = trialIdsIn(page.url).length > 0;
+    await saveConfianca(tx, res.articleId, confiancaDaPagina(materia, primary, now, registro));
+    if (registro) await saveRegistroPage(tx, res.articleId, page.url);
     await tx`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${articleId}, 'materia-pagina', NULL)
       ON CONFLICT (article_id) DO UPDATE SET status = EXCLUDED.status, pmid = NULL, updated_at = now()`;
     if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });

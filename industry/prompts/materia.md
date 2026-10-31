@@ -35,6 +35,8 @@ Estes campos abrem a matéria e ajudam o leitor a decidir quanto confiar nela. S
 - `desenho`: o desenho do estudo, só um destes valores: `"ensaio-clinico"`, `"meta-analise"`, `"revisao-sistematica"`, `"coorte"`, `"caso-controle"`, `"transversal"`, `"serie-de-casos"`, `"relato-de-caso"`, `"revisao-narrativa"`, `"diretriz"`, `"consenso"`, `"estudo-experimental"` (laboratório ou animais), `"outro"`.
 - `desenhoDetalhe`: o desenho em poucas palavras, como o material o descreve (por exemplo, "coorte retrospectiva de um centro", "ensaio randomizado multicêntrico, não cego").
 - `limitacaoPrincipal`: uma frase com a principal limitação para interpretar o achado (a que os autores reconhecem ou a que decorre do desenho).
+- `conflitos`: uma frase com os conflitos de interesse e o financiamento que os autores declaram (por exemplo, "Os autores declaram não ter conflitos; estudo financiado pelo NIH." ou "Um autor é consultor do fabricante do dispositivo estudado."), a partir do texto completo ou da declaração de conflitos da entrada. Se o material não traz declaração, "Não informado". Não deduza conflitos de nomes de instituições ou empresas.
+- `aplicabilidadeBrasil`: uma ou duas frases sobre o que se transfere ao contexto brasileiro, com cautela: compare só o que o próprio material informa sobre o cenário do estudo (país, nível de atenção, recursos, equipamentos, técnica e população) e diga de que isso depende para valer aqui (por exemplo, "Estudo de um centro terciário dos EUA com ECMO disponível; o resultado depende de estrutura semelhante."). Não afirme números, disponibilidade nem regras do Brasil ou do SUS, não recomende nada e não diga o que o leitor deve fazer. Se o material não permite essa comparação, diga que não permite.
 
 ## Regras
 
@@ -44,6 +46,7 @@ Estes campos abrem a matéria e ajudam o leitor a decidir quanto confiar nela. S
 - Não copie frases do artigo: reescreva com suas palavras. Citações literais, se houver, no máximo uma, curta e entre aspas.
 - Não dê recomendação clínica individual nem diga ao leitor o que fazer com um paciente específico.
 - Se o material é um preprint (a entrada diz "Preprint: sim"), diga no lide que o estudo ainda não foi revisado por pares e trate os resultados como preliminares.
+- Se a entrada lista "Outras versões deste estudo já publicadas pelo jornal" (o registro do ensaio, um resumo de congresso, o preprint ou outro artigo do mesmo estudo), esta matéria não é uma descoberta nova e independente: diga no lide que é uma nova versão ou etapa do mesmo estudo (por exemplo, a publicação revisada por pares do preprint noticiado em tal data) e, quando o material permite, o que mudou em relação à versão anterior. Não conte as versões como estudos diferentes.
 - Português do Brasil, frases claras, parágrafos de até 5 frases, sem marcadores, sem Markdown, sem emojis.
 
 {{> rules-domain}}
@@ -52,6 +55,6 @@ Estes campos abrem a matéria e ajudam o leitor a decidir quanto confiar nela. S
 
 Devolva só JSON válido, sem Markdown e sem explicação, com exatamente estes campos (todos strings):
 
-{"titulo":"","linhaFina":"","lide":"","contexto":"","metodos":"","resultados":"","limitacoes":"","paraOPediatra":"","paraOEspecialista":"","achado":"","paraQuem":"","mudaAlgo":"nao","diretriz":"","populacaoIdade":"","populacaoDoenca":"","populacaoCenario":"","desenho":"","desenhoDetalhe":"","limitacaoPrincipal":""}
+{"titulo":"","linhaFina":"","lide":"","contexto":"","metodos":"","resultados":"","limitacoes":"","paraOPediatra":"","paraOEspecialista":"","achado":"","paraQuem":"","mudaAlgo":"nao","diretriz":"","populacaoIdade":"","populacaoDoenca":"","populacaoCenario":"","desenho":"","desenhoDetalhe":"","limitacaoPrincipal":"","conflitos":"","aplicabilidadeBrasil":""}
 
 Parágrafos dentro de um campo são separados por uma linha em branco (\n\n).

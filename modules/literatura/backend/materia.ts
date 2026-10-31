@@ -9,7 +9,8 @@ import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
 import { beijingDate } from "@aihot/contracts/time";
 import { authorLine, isGuideline, isPreprint, type Paper } from "./pubmed.ts";
 import { LICENSE_NAMES, type Access } from "./access.ts";
-import { DESENHOS, IMPLICACOES, PREPRINT_LABEL, type Confianca, type Desenho, type EmUmMinuto, type Implicacao, type TextoLido } from "../confianca.ts";
+import { dataBr, DESENHOS, ESTADO_LABEL, IMPLICACOES, PREPRINT_LABEL, type Confianca, type Desenho, type EmUmMinuto, type Implicacao, type TextoLido } from "../confianca.ts";
+import type { Anterior } from "./estudos.ts";
 
 export const MATERIA_STEP = "materia";
 export const MATERIA_PURPOSE = "materia_article";
@@ -23,8 +24,8 @@ const optional = z.string().nullish().transform((v) => v ?? "");
 const grade = z.string().nullish().transform((v): Implicacao => ((IMPLICACOES as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Implicacao) : "nao"));
 /** An answer outside the list, or none, counts as "outro": every matéria shows a design. */
 const design = z.string().nullish().transform((v): Desenho => ((DESENHOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Desenho) : "outro"));
-/** "Em um minuto" (industry/prompts/materia.md, materia-fonte.md). */
-const minuto = { achado: optional, paraQuem: optional, mudaAlgo: grade, diretriz: optional };
+/** "Em um minuto" (industry/prompts/materia.md, materia-fonte.md), with the declared conflicts and what carries over to Brazil. */
+const minuto = { achado: optional, paraQuem: optional, mudaAlgo: grade, diretriz: optional, conflitos: optional, aplicabilidadeBrasil: optional };
 /** Why the piece can be trusted: what a matéria and a translated full text both store (confiancaDaMateria). */
 const trust = {
   ...minuto,
@@ -52,15 +53,15 @@ const Output = z.object({
 export type Materia = z.infer<typeof Output>;
 
 /**
- * The grade the site shows: a preprint never changes anything yet, and "alinhado a diretriz" needs the guideline
- * the material names; without it the grade drops to "pode informar a discussão".
+ * The grade the site shows: a preprint or a registry entry never changes anything yet (`naoMuda`), and
+ * "alinhado a diretriz" needs the guideline the material names; without it the grade drops to "pode informar a discussão".
  */
-export function emUmMinuto(m: { achado: string; paraQuem: string; mudaAlgo: Implicacao; diretriz: string }, preprint: boolean): EmUmMinuto | null {
+export function emUmMinuto(m: { achado: string; paraQuem: string; mudaAlgo: Implicacao; diretriz: string }, naoMuda: boolean): EmUmMinuto | null {
   const achado = m.achado.trim();
   const paraQuem = m.paraQuem.trim();
   if (!achado || !paraQuem) return null;
   const diretriz = m.diretriz.trim() || null;
-  const mudaAlgo: Implicacao = preprint ? "nao" : m.mudaAlgo === "alinhado-a-diretriz" && !diretriz ? "pode-informar-discussao" : m.mudaAlgo;
+  const mudaAlgo: Implicacao = naoMuda ? "nao" : m.mudaAlgo === "alinhado-a-diretriz" && !diretriz ? "pode-informar-discussao" : m.mudaAlgo;
   return { achado, paraQuem, mudaAlgo, diretriz: mudaAlgo === "alinhado-a-diretriz" ? diretriz : null };
 }
 
@@ -81,10 +82,17 @@ function datas(publicado: string | null, revisado: string | null, now: Date): Co
   return { publicado, revisado, conferido: beijingDate(now) };
 }
 
-/** Why the matéria about a paper can be trusted, as stored for its page (backend/confianca.ts). */
+const NAO_INFORMADO = "Não informado";
+
+/**
+ * Why the matéria about a paper can be trusted, as stored for its page (backend/confianca.ts). The declared
+ * conflicts come from a full text the model read or the conflicts statement of the paper's record; from an
+ * abstract alone they are "não informado", whatever the model says.
+ */
 export function confiancaDaMateria(m: Trust, paper: Paper, lido: TextoLido, now: Date): Confianca {
   const preprint = isPreprint(paper);
   const field = (v: string, missing: string) => v.trim() || missing;
+  const declared = lido !== "resumo" || !!paper.coiStatement;
   return {
     feitura: "materia",
     minuto: emUmMinuto(m, preprint),
@@ -92,6 +100,8 @@ export function confiancaDaMateria(m: Trust, paper: Paper, lido: TextoLido, now:
     desenho: m.desenho,
     desenhoDetalhe: m.desenhoDetalhe.trim() || null,
     limitacao: field(m.limitacaoPrincipal, "não informada"),
+    conflitos: declared ? field(m.conflitos, NAO_INFORMADO) : NAO_INFORMADO,
+    aplicabilidade: m.aplicabilidadeBrasil.trim() || null,
     textoLido: lido,
     preprint,
     datas: isGuideline(paper) || m.desenho === "diretriz" || m.desenho === "consenso" ? datas(paper.publishedOn ?? paper.year, null, now) : null,
@@ -108,8 +118,11 @@ export function preprintNote(): string {
   return `<p><strong>${esc(PREPRINT_LABEL)}.</strong> Este estudo ainda não passou pela revisão por pares de uma revista: os resultados são preliminares, podem mudar e não devem orientar a prática.</p>`;
 }
 
-/** What the model reads: the record's data and the text, the full one when there is one, and whether it was cut. */
-export function materiaInput(paper: Paper, fullText: string | null): string {
+/**
+ * What the model reads: the record's data (its conflicts statement included), the versions of the study the site
+ * already published, and the text, the full one when there is one, and whether it was cut.
+ */
+export function materiaInput(paper: Paper, fullText: string | null, anteriores: Anterior[] = []): string {
   const abstract = paper.abstract.map((s) => (s.label ? `${s.label}: ${s.text}` : s.text)).join("\n");
   let text = fullText ?? abstract;
   const cut = text.length > MAX_INPUT;
@@ -121,14 +134,16 @@ export function materiaInput(paper: Paper, fullText: string | null): string {
     `Tipo de publicação: ${paper.publicationTypes.join(", ") || "não informado"}`,
     `Preprint: ${isPreprint(paper) ? "sim (ainda não revisado por pares)" : "não"}`,
     `Autores: ${authorLine(paper.authors, 6) || "não informado"}`,
+    ...(paper.coiStatement ? [`Declaração de conflitos de interesse (registro do PubMed): ${paper.coiStatement}`] : []),
+    ...(anteriores.length ? [`Outras versões deste estudo já publicadas pelo jornal: ${anteriores.map((a) => `“${a.title}” (${a.estado ? ESTADO_LABEL[a.estado].toLowerCase() : "matéria"}, ${dataBr(a.data)})`).join("; ")}`] : []),
     `Texto disponível: ${available}`,
     "",
     text,
   ].join("\n");
 }
 
-export async function writeMateria(paper: Paper, fullText: string | null): Promise<{ materia: Materia; receiptId: number }> {
-  const res = await askMateria(paper, fullText, Output);
+export async function writeMateria(paper: Paper, fullText: string | null, anteriores: Anterior[] = []): Promise<{ materia: Materia; receiptId: number }> {
+  const res = await askMateria(paper, fullText, Output, anteriores);
   return { materia: res.data, receiptId: res.receiptId };
 }
 
@@ -136,19 +151,19 @@ export async function writeMateria(paper: Paper, fullText: string | null): Promi
  * The same call as writeMateria on a full text republished in full, kept only for its trust fields: an answer
  * without the matéria's own sections still gives the translation its record.
  */
-export async function readTrust(paper: Paper, fullText: string): Promise<{ trust: Trust; receiptId: number }> {
-  const res = await askMateria(paper, fullText, TrustOutput);
+export async function readTrust(paper: Paper, fullText: string, anteriores: Anterior[] = []): Promise<{ trust: Trust; receiptId: number }> {
+  const res = await askMateria(paper, fullText, TrustOutput, anteriores);
   return { trust: res.data, receiptId: res.receiptId };
 }
 
-async function askMateria<S extends z.ZodType>(paper: Paper, fullText: string | null, schema: S) {
+async function askMateria<S extends z.ZodType>(paper: Paper, fullText: string | null, schema: S, anteriores: Anterior[]) {
   return chatJson({
     model: await modelFor(MATERIA_STEP),
     purpose: MATERIA_PURPOSE,
     subject: `${paper.pmid ? `pubmed:${paper.pmid}` : paper.doi ? `doi:${paper.doi}` : `url:${paper.url}`}${fullText ? ":full" : ":abstract"}`,
     promptVersion: VERSION(),
     system: promptText("materia"),
-    user: materiaInput(paper, fullText),
+    user: materiaInput(paper, fullText, anteriores),
     schema,
     temperature: 0.3,
     maxTokens: 4000,
@@ -229,11 +244,16 @@ export interface PrimaryPage {
   modifiedOn?: string | null;
 }
 
-/** Why the matéria from an official page can be trusted: its "Em um minuto", the page as what was read, a guideline's dates. */
-export function confiancaDaPagina(m: FonteMateria, page: PrimaryPage, now: Date): Confianca {
+/**
+ * Why the matéria from an official page can be trusted: its "Em um minuto" (never more than "não" for a trial
+ * register's page), the conflicts the page declares, what carries over to Brazil, the page as what was read, a
+ * guideline's dates.
+ */
+export function confiancaDaPagina(m: FonteMateria, page: PrimaryPage, now: Date, registro = false): Confianca {
   const guideline = m.tipo === "diretriz" || m.tipo === "consenso";
   return {
-    feitura: "pagina", minuto: emUmMinuto(m, false), populacao: null, desenho: guideline ? m.tipo as Desenho : null, desenhoDetalhe: null, limitacao: null,
+    feitura: "pagina", minuto: emUmMinuto(m, registro), populacao: null, desenho: guideline ? m.tipo as Desenho : null, desenhoDetalhe: null, limitacao: null,
+    conflitos: m.conflitos.trim() || NAO_INFORMADO, aplicabilidade: m.aplicabilidadeBrasil.trim() || null,
     textoLido: "pagina-oficial", preprint: false, datas: guideline ? datas(page.publishedOn ?? null, page.modifiedOn ?? null, now) : null,
   };
 }
