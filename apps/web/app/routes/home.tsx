@@ -4,6 +4,7 @@ import type { TimelineResponse } from "@aihot/contracts/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, itemListLd, listPath, pageMeta, readFilters, siteLd } from "../lib/seo";
+import { inNav } from "../components/shell/nav";
 import type { Screen } from "../components/shell/screens";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
@@ -46,7 +47,7 @@ export default function Home() {
         </div>
       </div>
 
-      {data.hot && <HotTopics entries={data.hot} />}
+      {data.hot && inNav("/hot") && <HotTopics entries={data.hot} />}
 
       <Timeline initial={data} filters={data.filters} />
     </div>

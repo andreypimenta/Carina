@@ -112,6 +112,17 @@ export const POLICY = {
   xPostIsFullText: true,
 } as const;
 
+/** 导航（电脑侧栏、手机底栏、“我的”页）。 */
+export const NAV = {
+  /**
+   * 不放进导航的引擎入口，目前只支持热点榜（"/hot"）和主题（"/topics"）。页面照样能打开；原来回到它的返回按钮和链接改回精选，
+   * 写 "/hot" 时首页和搜索面板也不放当前热点。
+   * 本站两个都不放：热点榜按 48 小时内谈到同一件事的不同来源数排，这里的来源多是互相重叠的 ClinicalTrials.gov 检索，
+   * 榜单近一半时间是空的。
+   */
+  hidden: ["/hot", "/topics"] as Array<"/hot" | "/topics">,
+};
+
 /** 条目卡片和详情页上的几处说法和显示。 */
 export const ITEM_COPY = {
   /** 模型写的那句理由叫什么：卡片、详情页、Markdown 导出、给 Agent 的回答和群推送都用它。 */
