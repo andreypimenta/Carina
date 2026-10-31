@@ -66,6 +66,7 @@ const stubServer = http.createServer((req, res) => {
     if (url === "/journal/teaser") return html(`<title>Teaser</title><meta name="citation_title" content="Balloon dilation in infants with acquired subglottic stenosis"><meta name="citation_doi" content="10.1002/lary.44444"><meta name="description" content="Read the latest articles of The Laryngoscope at Wiley Online Library"><meta property="og:description" content="Balloon dilation in infants with acquired subglottic stenosis.">`, `<article>${guideline}<h2>References</h2><p>${"Smith J. A reference. Laryngoscope 2020. ".repeat(60)}</p></article>`);
     if (url === "/journal/flaky") return html(`<title>Flaky</title><meta name="citation_title" content="Cryotherapy for recurrent laryngeal papillomatosis in children"><meta name="citation_doi" content="10.1002/lary.55555"><meta name="citation_abstract" content="Eight children received cryotherapy; recurrences fell by half.">`);
     if (url === "/journal/green") return html(`<title>Green</title><meta name="citation_title" content="Laryngeal cleft repair outcomes in infants with aspiration"><meta name="citation_doi" content="10.1002/lary.22222"><meta name="citation_abstract" content="Forty infants had endoscopic cleft repair; aspiration resolved in thirty-two.">`, `<article>${guideline.repeat(3)}</article>`);
+    if (url === "/journal/gold") return html(`<title>Gold</title><meta name="citation_title" content="Tracheal resection in children with long-segment stenosis"><meta name="citation_doi" content="10.1002/lary.11111"><meta name="citation_abstract" content="Fifteen children had tracheal resection; all were extubated within a week.">`, `<article>${guideline.repeat(3)}<h2>References</h2><p>${"Ref. ".repeat(400)}</p></article>`);
     if (url === "/society/ers") return html("<title>ERS statement on paediatric airway malacia</title>", `<article><h1>ERS statement</h1>${guideline}<p>Full statement: <a href="https://doi.org/10.1183/13993003.99999-2026">ERJ</a></p></article>`);
     if (url === "/society/press") return html("<title>Society statement on tracheostomy care</title>", `<article><h1>Society statement</h1>${guideline}</article>`);
     if (url === "/news/congress") return html("<title>Congress</title>", "<p>See you in Lisbon.</p>");
@@ -84,6 +85,7 @@ const stubServer = http.createServer((req, res) => {
     }
     if (url.startsWith("/eutils/efetch.fcgi")) return send(200, "text/xml", fixture("pubmed.xml"));
     if (url.startsWith("/unpaywall/10.1002%2Flary.55555")) return send(500, "text/plain", "down");
+    if (url.startsWith("/unpaywall/10.1002%2Flary.11111")) return send(200, "application/json", JSON.stringify({ is_oa: true, best_oa_location: { url_for_landing_page: "https://doi.org/10.1002/lary.11111", host_type: "publisher", version: "publishedVersion", license: "cc-by-nc-nd" } }));
     if (url.startsWith("/unpaywall/10.1002%2Flary.22222")) return send(200, "application/json", JSON.stringify({ is_oa: true, best_oa_location: { url_for_landing_page: "https://repository.example.org/cleft", host_type: "repository", version: "acceptedVersion" } }));
     if (url.startsWith("/unpaywall/")) return send(200, "application/json", fixture("unpaywall-closed.json"));
     if (url.startsWith("/epmc/search")) {
@@ -373,4 +375,18 @@ test("a post whose last try inside the window failed still gets the window-end r
   const [article] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE url = 'https://doi.org/10.1002/lary.22222'`;
   assert.match(article!.body_html, /a partir do resumo publicado/);
   assert.match(article!.body_html, /repository\.example\.org/);
+});
+
+test("past the window, an open paper's own publisher page (Unpaywall gives its DOI address) is read as its full text, up to the references", async () => {
+  const gold = await post("early-gold", `Early view ${base}/journal/gold`);
+  await sql`INSERT INTO literatura_x_posts (article_id, status, doi) VALUES (${gold.id}, 'aguardando-pubmed', '10.1002/lary.11111')`;
+  const before = modelInputs.length;
+  await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
+  assert.deepEqual(await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${gold.id}`, [{ status: "materia-editora" }]);
+  assert.equal(modelInputs.length, before + 1);
+  assert.match(modelInputs.at(-1)!, /Texto disponível: texto completo\n/);
+  assert.match(modelInputs.at(-1)!, /capped trial of at least twelve hours/);
+  assert.doesNotMatch(modelInputs.at(-1)!, /Ref\. Ref\./, "the reference list is left out");
+  const [article] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE url = 'https://doi.org/10.1002/lary.11111'`;
+  assert.match(article!.body_html, /a partir do texto completo em acesso aberto/);
 });
