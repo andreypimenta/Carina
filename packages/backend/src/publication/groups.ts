@@ -1,9 +1,9 @@
 // Duplicate reports of one news fact ("另有 N 家信源报道"). Members must pass the same visibility, pool
 // eligibility and parent-page filters as the card they open under.
-import type { CategoryKey, ChannelKey } from "@aihot/contracts/taxonomy";
+import type { AreaKey, CategoryKey, ChannelKey } from "@aihot/contracts/taxonomy";
 import type { GroupReportsResponse } from "@aihot/contracts/site";
 import { sql } from "../db.ts";
-import { categoryCondition, channelCondition, JOURNAL, tagCondition } from "./items.ts";
+import { areaCondition, categoryCondition, channelCondition, JOURNAL, tagCondition } from "./items.ts";
 import { evidenceCondition, listedCondition } from "./scope.ts";
 import { publicSourceName } from "./rules.ts";
 
@@ -11,6 +11,7 @@ export interface GroupReportsQuery {
   factPublicId: string;
   channel: ChannelKey;
   category: CategoryKey | null;
+  area?: AreaKey | null;
   tag: string | null;
 }
 
@@ -24,7 +25,7 @@ export async function loadGroupReports(q: GroupReportsQuery, now = new Date()): 
     FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
     JOIN sources s ON s.id = p.source_id
     WHERE f.public_id = ${q.factPublicId} AND ${evidenceCondition()} AND ${listedCondition(now)}
-      ${channelCondition(q.channel)} ${categoryCondition(q.category)} ${tagCondition(q.tag)}
+      ${channelCondition(q.channel)} ${categoryCondition(q.category)} ${areaCondition(q.area)} ${tagCondition(q.tag)}
     ORDER BY p.timeline_at DESC, p.article_id ASC
     LIMIT ${MAX_REPORTS}`;
   if (members.length === 0) return null;

@@ -1,8 +1,8 @@
-// Feed filters: the channel and category choice (a row of tabs on desktop, a sheet behind the bar's filter
+// Feed filters: the section (aba) tabs, the channel and category choice (a row of tabs on desktop, a sheet behind the bar's filter
 // button on phones), the phone bar of 精选 and 全部, and search.
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
-import { CATEGORY_KEYS, CATEGORY_LABELS, CHANNEL_LABELS, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
+import { AREA_KEYS, AREA_LABELS, CATEGORY_KEYS, CATEGORY_LABELS, CHANNEL_LABELS, type AreaKey, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
 import { SITE } from "@aihot/site";
 import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
 import { PillTabs } from "../../components/ui/Tabs";
@@ -39,6 +39,19 @@ function filterOptions(base: string, params: URLSearchParams, noneLabel: string)
 
 function filterKey(category: CategoryKey | null, channel: ChannelKey): string {
   return channel === "firstParty" ? "firstParty" : (category ?? "all");
+}
+
+/**
+ * The site's sections (abas), on phones and desktop alike, above the other filters: every section, or one.
+ * The other filters in use carry over.
+ */
+export function AreaTabs({ base, area, layoutId, className = "" }: { base: string; area: AreaKey | null | undefined; layoutId: string; className?: string }) {
+  const [params] = useSearchParams();
+  const items = [
+    { key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), prefetch: "intent" as const },
+    ...AREA_KEYS.map((k) => ({ key: k, label: AREA_LABELS[k], to: hrefWith(base, params, { area: k }), prefetch: "intent" as const })),
+  ];
+  return <PillTabs items={items} active={area ?? "all"} layoutId={layoutId} label="Área" className={className} />;
 }
 
 /** Desktop: the filter as a row of tabs beside the search field. */

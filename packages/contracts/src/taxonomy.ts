@@ -1,7 +1,7 @@
 // Public vocabularies shared by the website, the API and the worker. The categories themselves belong to
 // the industry pack (industry/taxonomy.ts); their keys are external identities (URLs, API, RSS) and never change.
 // How the public API, RSS and MCP differ from the website is the site's (site/site.ts PUBLIC_CATEGORIES).
-import { CATEGORIES } from "@aihot/industry/taxonomy";
+import { AREAS, CATEGORIES } from "@aihot/industry/taxonomy";
 import { PUBLIC_CATEGORIES } from "@aihot/site";
 
 type Category = (typeof CATEGORIES)[number];
@@ -33,6 +33,17 @@ export function feedCategoryLabel(key: PublicApiCategoryKey): string {
 
 export function isCategoryKey(value: unknown): value is CategoryKey {
   return typeof value === "string" && (CATEGORY_KEYS as readonly string[]).includes(value);
+}
+
+type Area = (typeof AREAS)[number];
+
+/** The site's sections (abas, industry/taxonomy.ts AREAS): every item is in exactly one. Keys are URL identities. */
+export type AreaKey = Area["key"];
+export const AREA_KEYS = AREAS.map((a) => a.key) as unknown as readonly [AreaKey, ...AreaKey[]];
+export const AREA_LABELS = Object.fromEntries(AREAS.map((a) => [a.key, a.label])) as Record<AreaKey, string>;
+
+export function isAreaKey(value: unknown): value is AreaKey {
+  return typeof value === "string" && (AREA_KEYS as readonly string[]).includes(value);
 }
 
 export const CHANNEL_KEYS = ["all", "news", "x", "firstParty"] as const;

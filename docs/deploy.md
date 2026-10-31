@@ -234,6 +234,15 @@ docker compose logs -f --tail 100 api worker web
 
 后台的“运行”页能看到每个定时任务最近的结果，“信源”页能看到每个信源的抓取状况。
 
+### 给已有内容补上分区（一次性）
+
+分区（`industry/taxonomy.ts` 的 `AREAS`）上线后，新内容由结构化一步给出分区；之前发布的内容没有分区，在“精选”和“全部动态”的分区标签下看不到。迁移完成后运行 `scripts/abas-preencher.ts`：不调用模型，按每条的主题标签补上分区（规则见 [定制](customize.md) 的 `AREAS`），每批 500 条、每条一个事务，中断后重跑会从没补的继续。已出的日报、周报、月报保留出刊时的分节。不加 `--apply` 只按分区统计会补多少条。
+
+```bash
+docker compose exec worker node scripts/abas-preencher.ts            # 预览
+docker compose exec worker node scripts/abas-preencher.ts --apply
+```
+
 ### 首发批次重新归为新闻（一次性）
 
 首发时第一批采集大多被标成历史（新信源首次导入、发现时已超过 48 小时），历史内容不进日报和周报。`scripts/estreia-reclassificar.ts` 只处理明确列出的 id：去掉历史标记（`timeline_at` 改为发现时间）并重新发布；`--deselect`、`--select` 与后台“人工修正”的“精选”字段相同（同样写审计），`--select` 的内容按执行时间放出，进下一期日报；`--recompose-daily` 重写那天的日报，旧版本保留为修订。不加 `--apply` 只显示会改什么。

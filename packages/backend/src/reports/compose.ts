@@ -8,7 +8,7 @@ import { EDITION_TIMES, REPORTS, SITE } from "@aihot/site";
 import { PLAIN_TERMS, RELEASE } from "@aihot/industry/taxonomy";
 import { promptText, promptVersion } from "../editorial/prompts.ts";
 import { modelFor } from "../editorial/models.ts";
-import { ENTITIES, isRelease } from "../editorial/vocabulary.ts";
+import { areaOf, ENTITIES, isRelease } from "../editorial/vocabulary.ts";
 import { addDays, beijingAt, beijingDate, beijingTime, isoWeekLabel, isoWeekRange, monthRange } from "@aihot/contracts/time";
 import { sql } from "../db.ts";
 import { logError } from "../lib/log-error.ts";
@@ -17,7 +17,7 @@ import { completeReceipt } from "../providers/receipts.ts";
 import { shutdownSignal } from "../jobs/queue.ts";
 import { emit, serverModules } from "../modules.ts";
 import { PERIOD_ISSUE_NAMES } from "../publication/reports.ts";
-import { arrangeDaily, candidates, dailyEdition, periodEntries, sectionOf, SECTION_ORDER, type Candidate, type EditionEntry } from "./edition.ts";
+import { arrangeDaily, candidates, dailyEdition, periodEntries, sectionOf, SECTION_ORDER, takeBySection, type Candidate, type EditionEntry } from "./edition.ts";
 
 export const REPORT_VERSION = promptVersion("report-period", "report-period-sections", "report-period-no-sections");
 
@@ -114,7 +114,7 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
     leadItemId: lead?.entry.itemId ?? null,
     highlights: rest.slice(0, 3).map((e) => e.entry.itemId),
     sections: SECTION_ORDER
-      .map((label) => ({ label, items: issue.main.filter((e) => sectionOf(e.category, e.tags) === label).map((e) => e.entry) }))
+      .map((label) => ({ label, items: issue.main.filter((e) => sectionOf(e.area, e.tags) === label).map((e) => e.entry) }))
       .filter((s) => s.items.length > 0),
     flashes: issue.flashes.map((e) => e.entry),
     metrics: dailyMetrics(issue.main),
@@ -126,7 +126,7 @@ export async function composeDaily(date: string, reason?: string): Promise<{ key
   return { key: date, entries: issue.main.length };
 }
 
-/** A weekly's or monthly's size: the events it carries, chosen and ordered by rule. */
+/** A weekly's or monthly's size: the events it carries, chosen and ordered by rule, each section held to its share. */
 const PERIOD_EVENTS = { weekly: 20, monthly: 30 } as const;
 /** A section is introduced once it carries this many events; one or two are read faster than introduced. */
 const INTRO_EVENTS = 3;
@@ -224,7 +224,7 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
   const start = beijingAt(addDays(startDate, -1), EDITION_TIMES.daily);
   const end = beijingAt(endDateInclusive, EDITION_TIMES.daily);
   const { entries, issues, hasEntries } = await periodEntries(startDate, endDateInclusive);
-  const top = entries.slice(0, PERIOD_EVENTS[kind]);
+  const top = takeBySection(entries, PERIOD_EVENTS[kind], kind, (e) => areaOf(e.area, e.tags)).taken;
   if (!top.length) {
     if (reason === undefined && !hasEntries && issues > 0) {
       // Before the site's first daily there was nothing to publish; missing later dailies are still a failure.
@@ -237,7 +237,7 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
   }
   const selected = await candidates(start, end);
   const groups = SECTION_ORDER
-    .map((label) => ({ label, items: top.filter((e) => sectionOf(e.category, e.tags) === label) }))
+    .map((label) => ({ label, items: top.filter((e) => sectionOf(e.area, e.tags) === label) }))
     .filter((g) => g.items.length > 0);
   const corpus = [`${startDate} ${endDateInclusive}`, ...top.map((e) => `${e.title} ${e.summary}`)].join("\n");
   const model = await modelFor("report");
@@ -272,7 +272,7 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
     leadItemId: lead.itemId,
     highlights: top.slice(1, 4).map((e) => e.itemId),
     overview,
-    themes: groups.map((g) => ({ heading: g.label, summary: intro(g), storyRefs: g.items.map(({ category: _c, tags: _t, factKey: _f, ...e }) => e) })),
+    themes: groups.map((g) => ({ heading: g.label, summary: intro(g), storyRefs: g.items.map(({ category: _c, area: _a, tags: _t, factKey: _f, ...e }) => e) })),
     storyOrder: top.map((e) => e.itemId),
     metrics: { totalStories: top.length, selectedCount: selected.length, reportsCovered: issues },
     generator: { version: REPORT_VERSION, model, written: overview !== null },

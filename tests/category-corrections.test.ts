@@ -1,5 +1,6 @@
 // Failure cases: a device note, regulation note, technique or follow-up is counted as a guideline; a category
-// correction leaves frozen daily/weekly/monthly columns stale, rewrites the lead or selection, triggers
+// correction leaves a frozen daily's release figure stale, a tag correction that changes the section (aba)
+// leaves frozen daily/weekly/monthly sections stale, a correction rewrites the lead or selection, triggers
 // a paid digest, leaves an obsolete section introduction, or commits without its audit/revision.
 import { tag } from "./setup.ts";
 import assert from "node:assert/strict";
@@ -11,6 +12,9 @@ import { publishArticle } from "@aihot/backend/publication/publish";
 import { dailyMetrics } from "@aihot/backend/reports/compose";
 import type { EditionEntry } from "@aihot/backend/reports/edition";
 import { QUEUES, getBoss, stopBoss } from "@aihot/backend/jobs/queue";
+
+const SURGERY = "Cirurgia torácica pediátrica e via aérea";
+const PULMONOLOGY = "Pneumologia pediátrica";
 
 after(async () => { await stopBoss(); await closeDb(); });
 
@@ -37,8 +41,8 @@ test("category corrections revise every standard report atomically without selec
   await publishArticle(articleId, { releasedAt: new Date() });
   const entry = { itemId: articleId, title: "Título congelado", summary: "Resumo congelado", sourceId, firstParty: true, role: "Oficial" };
   const contents = [
-    { kind: "daily", key: "2097-01-02", content: { leadItemId: articleId, lead: { title: "Manchete congelada" }, highlights: [articleId], flashes: [], sections: [{ label: "Diretrizes e regulação", items: [entry] }], metrics: { totalEvents: 1, modelsReleased: 1 } } },
-    ...(["weekly", "monthly"] as const).map(kind => ({ kind, key: kind === "weekly" ? "2097-W01" : "2097-01", content: { headline: "Manchete congelada", leadItemId: articleId, storyOrder: [articleId], overview: "Panorama mantido", themes: [{ heading: "Diretrizes e regulação", summary: "Introdução antiga de regulação", storyRefs: [entry] }], metrics: { totalStories: 1 } } })),
+    { kind: "daily", key: "2097-01-02", content: { leadItemId: articleId, lead: { title: "Manchete congelada" }, highlights: [articleId], flashes: [], sections: [{ label: SURGERY, items: [entry] }], metrics: { totalEvents: 1, modelsReleased: 1 } } },
+    ...(["weekly", "monthly"] as const).map(kind => ({ kind, key: kind === "weekly" ? "2097-W01" : "2097-01", content: { headline: "Manchete congelada", leadItemId: articleId, storyOrder: [articleId], overview: "Panorama mantido", themes: [{ heading: SURGERY, summary: "Introdução antiga da cirurgia", storyRefs: [entry] }], metrics: { totalStories: 1 } } })),
   ];
   for (const r of contents) await sql`INSERT INTO reports (kind,key,window_start,window_end,content,generated_at,origin)
     VALUES (${r.kind},${r.key},now(),now(),${sql.json(r.content as never)},now(),'imported')`;
@@ -56,29 +60,38 @@ test("category corrections revise every standard report atomically without selec
   }
   const digestCount = (await sql`SELECT count(*)::int AS n FROM pgboss.job WHERE name=${QUEUES.digest}`)[0]!.n;
   await change("test-category");
+  // The section stays: only the daily's release figure follows the new category.
   for (const r of contents) {
     const [saved] = await sql`SELECT content,revision FROM reports WHERE kind=${r.kind} AND key=${r.key}`;
-    assert.equal(saved!.revision, 2);
     const c = saved!.content;
     assert.equal(c.leadItemId, articleId);
     if (r.kind === "daily") {
-      assert.deepEqual(c.sections, [{ label: "Técnica e inovação", items: [entry] }]);
+      assert.equal(saved!.revision, 2);
+      assert.deepEqual(c.sections, [{ label: SURGERY, items: [entry] }]);
       assert.equal(c.metrics.modelsReleased, 0);
       assert.deepEqual(c.highlights, [articleId]);
       assert.equal(c.lead.title, "Manchete congelada");
     } else {
-      assert.deepEqual(c.themes, [{ heading: "Técnica e inovação", summary: null, storyRefs: [entry] }]);
-      assert.deepEqual(c.storyOrder, [articleId]);
-      assert.equal(c.overview, "Panorama mantido");
+      assert.equal(saved!.revision, 1);
+      assert.deepEqual(c.themes, [{ heading: SURGERY, summary: "Introdução antiga da cirurgia", storyRefs: [entry] }]);
     }
   }
   assert.deepEqual((await sql`SELECT selected,seat,score,visible_after,selected_ready_at FROM publications WHERE article_id=${articleId}`)[0], before);
   assert.equal((await sql`SELECT count(*)::int AS n FROM pgboss.job WHERE name=${QUEUES.digest}`)[0]!.n, digestCount);
   await overrideFields(articleId, { fields: {}, clear: ["category", "tags"], version: 1, reason: "verificar a reversão da correção" }, "test-category");
   const [restored] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2097-01-02'`;
-  assert.equal(restored!.content.sections[0].label, "Diretrizes e regulação");
+  assert.equal(restored!.content.sections[0].label, SURGERY);
   assert.equal(restored!.content.metrics.modelsReleased, 1);
-  await overrideFields(articleId, { fields: { tags: ["Diretriz/consenso", "Brasil"] }, version: 2, reason: "a diretriz é brasileira" }, "test-category");
-  const [brazilian] = await sql`SELECT content FROM reports WHERE kind='daily' AND key='2097-01-02'`;
-  assert.deepEqual(brazilian!.content.sections, [{ label: "Do Brasil", items: [entry] }]);
+  // Without the model's section, a tag of the other section moves the item there in every issue.
+  await overrideFields(articleId, { fields: { tags: ["Diretriz/consenso", "Fibrose cística"] }, version: 2, reason: "a diretriz é de fibrose cística" }, "test-category");
+  for (const r of contents) {
+    const [saved] = await sql`SELECT content FROM reports WHERE kind=${r.kind} AND key=${r.key}`;
+    const c = saved!.content;
+    if (r.kind === "daily") assert.deepEqual(c.sections, [{ label: PULMONOLOGY, items: [entry] }]);
+    else {
+      assert.deepEqual(c.themes, [{ heading: PULMONOLOGY, summary: null, storyRefs: [entry] }]);
+      assert.deepEqual(c.storyOrder, [articleId]);
+      assert.equal(c.overview, "Panorama mantido");
+    }
+  }
 });
