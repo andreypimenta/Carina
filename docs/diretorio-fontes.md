@@ -117,9 +117,9 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 
 | Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
-| Cincinnati Children's: Airway Reconstruction Research e Research Horizons | `cincinnati-research-horizons`, `cincinnati-releases`, `gnews-site-cincinnati` (pistas) | ativa | A página do programa é estática. O blog, os comunicados e a busca do Google News eram as fontes `rss-cincinnati-research-horizons`, `web-cincinnati-releases` e `rss-gnews-site-cincinnati`. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
-| Boston Children's: Esophageal and Airway Treatment Center e Answers | `boston-childrens-answers`, `gnews-site-boston-answers` (pistas) | ativa | A página do centro é estática. O blog e a busca do Google News eram as fontes `rss-boston-childrens-answers` e `rss-gnews-site-boston-answers`. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
-| CHOP: Neonatal Airway Program | `chop-news`, `gnews-site-chop` (pistas) | ativa | A página do programa é estática. As notícias e a busca do Google News eram as fontes `web-chop-news` e `rss-gnews-site-chop`. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
+| Cincinnati Children's: Airway Reconstruction Research e Research Horizons | `cincinnati-research-horizons`, `cincinnati-releases` (pistas) | ativa | A página do programa é estática. O blog e os comunicados eram as fontes `rss-cincinnati-research-horizons` e `web-cincinnati-releases`. A busca do Google News `rss-gnews-site-cincinnati` saiu em 31/10/2026, porque os links dos itens do Google News redirecionam por JavaScript e não levam ao artigo. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
+| Boston Children's: Esophageal and Airway Treatment Center e Answers | `boston-childrens-answers` (pista) | ativa | A página do centro é estática. O blog era a fonte `rss-boston-childrens-answers`. A busca do Google News `rss-gnews-site-boston-answers` saiu em 31/10/2026, porque os links dos itens do Google News redirecionam por JavaScript e não levam ao artigo. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
+| CHOP: Neonatal Airway Program | `chop-news` (pista) | ativa | A página do programa é estática. As notícias eram a fonte `web-chop-news`. A busca do Google News `rss-gnews-site-chop` saiu em 31/10/2026, porque os links dos itens do Google News redirecionam por JavaScript e não levam ao artigo. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
 | SickKids: DREAMS e pesquisa de via aérea | `sickkids-news` (pista) | ativa | A página da clínica é estática; a notícia citada está no newsroom, que era a fonte `web-sickkids-news`. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
 | Children's Hospital Colorado: Advances & Answers | `childrens-colorado` (pista) | ativa | A data aparece como "10/21/2026"; a página declara a ordem mês/dia/ano. Era a fonte `web-childrens-colorado`. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
 | Instituto Nacional del Tórax: Broncoscopía (Chile) | `rss-torax-cl` (feed de notícias do instituto) | ativa | A página de broncoscopia é operacional; o feed do site traz as notícias do instituto. |
@@ -207,9 +207,9 @@ Os congressos estão em `industry/congressos.json` e aparecem na página `/agend
 | 10 | DAS | `rss-das`, `das-2026` na agenda |
 | 11 | Global Tracheostomy Collaborative | `rss-youtube-gtc`, `its-2026` na agenda |
 | 12 | NTSP / Trachy Talk | `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp` |
-| 13 | Cincinnati Children's | `cincinnati-research-horizons`, `cincinnati-releases` e `gnews-site-cincinnati` (pistas) |
-| 14 | Boston Children's EAT Center | `boston-childrens-answers` e `gnews-site-boston-answers` (pistas) |
-| 15 | CHOP Airway Programs | `chop-news` e `gnews-site-chop` (pistas) |
+| 13 | Cincinnati Children's | `cincinnati-research-horizons` e `cincinnati-releases` (pistas) |
+| 14 | Boston Children's EAT Center | `boston-childrens-answers` (pista) |
+| 15 | CHOP Airway Programs | `chop-news` (pista) |
 
 ## Buscas do PubMed
 
@@ -279,9 +279,9 @@ Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-g
 | Brasil: estenose | "estenose de traqueia" | `rss-gnews-estenose-traqueia` |
 | Brasil: pediatria | "traqueostomia pediátrica" | `rss-gnews-traqueostomia-pediatrica` |
 | América Latina | "estenosis traqueal" cirugía | `rss-gnews-estenosis-traqueal` (edição latino-americana) |
-| Cincinnati Children's | site:cincinnatichildrens.org "airway" | `gnews-site-cincinnati` (pista desde 31/10/2026) |
-| Boston Children's | site:answers.childrenshospital.org tracheomalacia | `gnews-site-boston-answers` (pista desde 31/10/2026) |
-| CHOP | site:chop.edu "airway" reconstruction | `gnews-site-chop` (pista desde 31/10/2026) |
+| Cincinnati Children's | site:cincinnatichildrens.org "airway" | saiu em 31/10/2026 (era `rss-gnews-site-cincinnati`): o link do item redireciona por JavaScript e não leva ao artigo |
+| Boston Children's | site:answers.childrenshospital.org tracheomalacia | saiu em 31/10/2026 (era `rss-gnews-site-boston-answers`): o link do item redireciona por JavaScript e não leva ao artigo |
+| CHOP | site:chop.edu "airway" reconstruction | saiu em 31/10/2026 (era `rss-gnews-site-chop`): o link do item redireciona por JavaScript e não leva ao artigo |
 | WABIP | site:wabip.com guideline airway | `rss-gnews-site-wabip` |
 | SBCT | site:sbct.com.br traqueia | `rss-gnews-site-sbct` |
 
