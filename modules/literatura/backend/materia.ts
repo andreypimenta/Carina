@@ -103,10 +103,71 @@ export interface XCredit {
   url: string;
 }
 
-/** The line crediting the X post, at the very end: the paper is the source, the post only the lead. */
-export function creditBlock(credit: XCredit): string {
+/** The line crediting the X post, at the very end: the paper or the page is the source, the post only the lead. */
+export function creditBlock(credit: XCredit, what = "o artigo"): string {
   const name = credit.authorName.trim() && credit.authorName.trim() !== credit.handle ? `${esc(credit.authorName.trim())} ` : "";
-  return `<p><em>Pauta: o artigo foi destacado por ${name}<a href="${esc(credit.url)}">@${esc(credit.handle)}</a> no X.</em></p>`;
+  return `<p><em>Pauta: ${esc(what)} foi destacado por ${name}<a href="${esc(credit.url)}">@${esc(credit.handle)}</a> no X.</em></p>`;
+}
+
+export const FONTE_PURPOSE = "materia_fonte_article";
+/** Page texts longer than this reach the model cut at a word. */
+const MAX_PAGE_INPUT = 30_000;
+
+const FonteOutput = z.object({
+  fontePrimaria: z.boolean(),
+  organizacao: optional,
+  titulo: optional,
+  linhaFina: optional,
+  lide: optional,
+  corpo: optional,
+});
+export type FonteMateria = z.infer<typeof FonteOutput>;
+
+/** The official page an X post links (a society's guideline, a congress, an announcement), as the model reads it. */
+export interface PrimaryPage {
+  url: string;
+  title: string;
+  text: string;
+}
+
+export function fonteInput(page: PrimaryPage, post: string): string {
+  const text = page.text.length > MAX_PAGE_INPUT ? `${page.text.slice(0, page.text.lastIndexOf(" ", MAX_PAGE_INPUT))} […]` : page.text;
+  return [`Endereço da página: ${page.url}`, `Título da página: ${page.title || "não informado"}`, "", "Texto da página:", text, "", "Post que deu a pauta:", post].join("\n");
+}
+
+/**
+ * The site's article about the subject of an X post from the official page it links; null when the model
+ * says the page is not the primary source or leaves the article short. The receipt is returned either way.
+ */
+export async function writeFonteMateria(page: PrimaryPage, post: string): Promise<{ materia: FonteMateria | null; receiptId: number }> {
+  const res = await chatJson({
+    model: await modelFor(MATERIA_STEP),
+    purpose: FONTE_PURPOSE,
+    subject: `pagina:${page.url}`,
+    promptVersion: promptVersion("materia-fonte"),
+    system: promptText("materia-fonte"),
+    user: fonteInput(page, post),
+    schema: FonteOutput,
+    temperature: 0.3,
+    maxTokens: 3000,
+    timeoutMs: 180_000,
+  });
+  const m = res.data;
+  const usable = m.fontePrimaria && m.organizacao.trim() && m.titulo.trim().length >= 10 && m.lide.trim().length >= 20 && m.corpo.trim().length >= 10;
+  return { materia: usable ? m : null, receiptId: res.receiptId };
+}
+
+/** The article from the page, its source (the organisation and the page) and the post's credit. */
+export function renderFonteMateria(m: FonteMateria, page: PrimaryPage, credit: XCredit): string {
+  const host = page.url.replace(/^https?:\/\//, "").split("/")[0]!;
+  return [
+    m.linhaFina.trim() ? `<p><strong>${esc(m.linhaFina.trim())}</strong></p>` : "",
+    paragraphs(m.lide),
+    paragraphs(m.corpo),
+    `<h2>Fonte</h2><p>${esc(m.organizacao.trim())}: <a href="${esc(page.url)}">${esc(page.title || host)}</a></p>`,
+    `<p><em>Matéria escrita pelo ${esc(SITE.bareName)} a partir da página oficial.</em></p>`,
+    creditBlock(credit, "o assunto"),
+  ].join("");
 }
 
 export function renderMateria(m: Materia, paper: Paper, access: Access, pmcid: string | null, basis: "full" | "abstract"): string {

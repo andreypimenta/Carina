@@ -96,7 +96,7 @@ docker compose run --rm setup && docker compose up -d
 
 #### X 帖子改写成论文报道（2026 年 10 月 31 日）
 
-新迁移 `modules/literatura/migrations/0065_literatura_x_posts.sql`（新表 `literatura_x_posts`），没有新环境变量。模块多了一个插口 `ServerModule.takesXPosts`：装了 literatura 模块的站，编辑信源的 X 帖子不再单独进入全部动态、精选和日报周报（详情页保留，不收录）；升级后重新发布时，已在列表里的 X 帖子会退出。worker 每半小时（`literatura.apurar-x`，需 `COLLECT_ENABLED=true`）查帖子指向的论文，按论文写报道，文末署名帖子，见 [fontes.md](fontes.md#redes-sociais-x-instagram-e-linkedin)。
+新迁移 `modules/literatura/migrations/0065_literatura_x_posts.sql`（新表 `literatura_x_posts`），没有新环境变量。模块多了一个插口 `ServerModule.takesXPosts`：装了 literatura 模块的站，编辑信源的 X 帖子不再单独进入全部动态、精选和日报周报（详情页保留，不收录）；升级后重新发布时，已在列表里的 X 帖子会退出。worker 每半小时（`literatura.apurar-x`，需 `COLLECT_ENABLED=true`）查帖子指向的论文（没有标识符时用模型读出期刊、作者和主题去 PubMed 检索并核对），按论文写报道；指南、会议、活动类帖子按其链接的官方页面写报道；文末署名帖子。两次模型调用都用 `MATERIA_MODEL`，见 [fontes.md](fontes.md#redes-sociais-x-instagram-e-linkedin)。
 
 #### 导航里可以不放某些入口（2026 年 10 月 30 日）
 

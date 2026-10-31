@@ -7,11 +7,11 @@
 import type { ServerModule } from "@aihot/backend/modules";
 import { registerEspeciais } from "./api/especiais.ts";
 import { ADICIONAR_QUEUE } from "./backend/adicionar.ts";
-import { researchXPosts } from "./backend/apurar.ts";
+import { APURACAO_PURPOSE, researchXPosts } from "./backend/apurar.ts";
 import { collectLiterature } from "./backend/collect.ts";
 import { draftsToReview, ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE, especiaisSitemap, weeklyCard, weeklyPart } from "./backend/especiais.ts";
 import { LINHA_PURPOSE, LINHA_STEP } from "./backend/linha-do-tempo.ts";
-import { MATERIA_PURPOSE, MATERIA_STEP } from "./backend/materia.ts";
+import { FONTE_PURPOSE, MATERIA_PURPOSE, MATERIA_STEP } from "./backend/materia.ts";
 
 const server: ServerModule = {
   name: "literatura",
@@ -19,9 +19,9 @@ const server: ServerModule = {
   http: registerEspeciais,
   models: {
     [MATERIA_STEP]: {
-      label: "Matéria sobre artigo científico (texto próprio do site a partir do resumo ou do texto completo em acesso aberto)",
+      label: "Matéria sobre artigo científico (texto próprio do site a partir do resumo ou do texto completo em acesso aberto) e apuração dos posts do X (assunto, busca no PubMed, matéria a partir da página oficial)",
       env: "MATERIA_MODEL",
-      purposes: [MATERIA_PURPOSE],
+      purposes: [MATERIA_PURPOSE, APURACAO_PURPOSE, FONTE_PURPOSE],
     },
     [LINHA_STEP]: {
       label: "Especial Linha do tempo (os estudos-marco de um tema, a partir de uma busca no PubMed)",
