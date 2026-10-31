@@ -1,22 +1,40 @@
 // The research behind an X post. A post on its own is not news for the site (the module takes X posts over,
-// server.ts takesXPosts: they stay out of every list and edition); the paper it points to is. Each relevant
-// post of the last days is read once: the identifiers in its text and in the post it quotes (a DOI, a PubMed
-// or PMC address, "PMID: …"), then the pages it links (a journal's article page names its DOI or PMID in its
-// citation tags; a press release or a news page that links one single paper names it in its links; a page
+// server.ts takesXPosts: they stay out of every list and edition); its subject is. Each relevant post of the
+// last days is read once: the identifiers in its text and in the post it quotes (a DOI, a PubMed or PMC
+// address, "PMID: …"), then the pages it links (a journal's article page names its DOI or PMID in its
+// citation tags; a press release or a news page whose paper links all lead to one paper names it; a page
 // that only gives the paper's title is looked up in PubMed by that exact title). Pages are asked for once, as
-// the site's crawler, with no login and no way around a refusal, like the free copies (access.ts). The paper
-// found takes the path of any paper of the module (takePaper: the full text when its licence allows it, else
-// the site's own article, from the full text when a legal open copy is readable, else from the abstract),
-// with the post credited at the end. A paper the module already took is not written again. A post with no
-// paper found stays out of the editions: nothing is published from its text alone.
+// the site's crawler, with no login and no way around a refusal, like the free copies (access.ts). A post
+// with no identifier to follow is read by the model (industry/prompts/apuracao.md) for what it is about and
+// what to search: PubMed is searched with it, and only the one record found that has every name and term the
+// post gives is taken, never a guess. The paper found takes the path of any paper of the module (takePaper:
+// the full text when its licence allows it, else the site's own article, from the full text when a legal open
+// copy is readable, else from the abstract), with the post credited at the end. A post about a guideline, a
+// congress or an event, with no paper, is written up from the official page it links when the model finds the
+// page is the primary source (industry/prompts/materia-fonte.md), naming the organisation and the page and
+// crediting the post. A paper or page the module already took is not written again. A post with neither
+// stays out of the editions: nothing is published from its text alone. A post whose paper waits (PMC,
+// Unpaywall, the model) is taken again from that paper, with no page asked for again.
 import * as cheerio from "cheerio";
+import { z } from "zod";
+import { config } from "@aihot/backend/config";
+import { readable } from "@aihot/backend/content/extract";
+import { upsertMaterial } from "@aihot/backend/content/materials";
+import { sanitizeBody } from "@aihot/backend/content/sanitize";
 import { sql } from "@aihot/backend/db";
+import { modelFor } from "@aihot/backend/editorial/models";
+import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
+import { queueProcessing } from "@aihot/backend/jobs/content";
 import { guardedFetch } from "@aihot/backend/lib/http-fetch";
+import { chatJson } from "@aihot/backend/providers/llm";
+import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { earlier } from "./adicionar.ts";
-import { lookupPmid } from "./access.ts";
-import { enabledSources, MAX_ATTEMPTS, settings, takePaper } from "./collect.ts";
-import type { XCredit } from "./materia.ts";
-import { fetchPapers, pmidsForDoi, pmidsForTitle, type Paper } from "./pubmed.ts";
+import { blockText, lookupPmid } from "./access.ts";
+import { enabledSources, MATERIA_SOURCE, MAX_ATTEMPTS, settings, takePaper } from "./collect.ts";
+import { MATERIA_STEP, renderFonteMateria, writeFonteMateria, type PrimaryPage, type XCredit } from "./materia.ts";
+import { fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, type Paper } from "./pubmed.ts";
+
+export const APURACAO_PURPOSE = "apuracao_x";
 
 /** Posts are researched while they are this many days old (a paper waiting for PMC or Unpaywall included). */
 export const X_WINDOW_DAYS = 7;
@@ -24,6 +42,12 @@ export const X_WINDOW_DAYS = 7;
 const PER_RUN = 20;
 /** Linked pages read per post. */
 const MAX_PAGES = 3;
+/** Distinct paper links past which a page is a roundup, not the page of one paper. */
+const MAX_LINKED = 6;
+/** How far back, in days of PubMed entry, the study a post describes is searched for. */
+const SUBJECT_DAYS = 180;
+/** Below this many characters, a linked page has too little to write an article from. */
+const MIN_PAGE_TEXT = 600;
 
 export interface Refs {
   dois: string[];
@@ -59,6 +83,11 @@ export function refsIn(text: string): Refs {
   return { dois, pmids, pmcids };
 }
 
+interface Page {
+  html: string;
+  url: string;
+}
+
 const empty = (r: Refs) => !r.dois.length && !r.pmids.length && !r.pmcids.length;
 
 /** Addresses in the post that may lead to the paper: not X's own (the post, a quoted post, its media). */
@@ -69,10 +98,11 @@ export function postLinks(text: string): string[] {
 
 /**
  * What a page says about the paper: its citation tags (citation_doi, citation_pmid, Dublin Core, PRISM)
- * and the DOI in its own address; without them, the paper it links when it links exactly one; and the
- * article's title (citation_title) for a search in PubMed.
+ * and the DOI in its own address; the identifiers of each of its links (a press release or a news story
+ * links the paper at doi.org, PubMed, PMC or the journal's own DOI page); and the article's title
+ * (citation_title) for a search in PubMed.
  */
-export function pageRefs(html: string, url: string): Refs & { title: string | null } {
+export function pageRefs(html: string, url: string): { own: Refs; links: Refs[]; title: string | null } {
   const $ = cheerio.load(html);
   const meta = (names: string[]) => $("meta").toArray()
     .filter((m) => names.includes(($(m).attr("name") ?? $(m).attr("property") ?? "").toLowerCase()))
@@ -81,15 +111,16 @@ export function pageRefs(html: string, url: string): Refs & { title: string | nu
   const pmids = meta(["citation_pmid"]).filter((v) => /^\d{1,9}$/.test(v));
   const title = meta(["citation_title"])[0] ?? null;
   const own: Refs = { ...tagged, pmids: uniq([...tagged.pmids, ...pmids]) };
-  if (!empty(own)) return { ...own, title };
-  // A press release or a news story: the one paper it links.
-  const linked = refsIn($("a[href]").toArray().map((a) => $(a).attr("href") ?? "").filter((h) => /doi\.org\/10\.|pubmed\.ncbi\.nlm\.nih\.gov\/\d|ncbi\.nlm\.nih\.gov\/pmc\/articles\/PMC|pmc\.ncbi\.nlm\.nih\.gov\/articles\/PMC/i.test(h)).join(" "));
-  const count = linked.dois.length + linked.pmids.length + linked.pmcids.length;
-  return count === 1 ? { ...linked, title } : { dois: [], pmids: [], pmcids: [], title };
+  const links = new Map<string, Refs>();
+  for (const a of $("a[href]").toArray()) {
+    const refs = refsIn($(a).attr("href") ?? "");
+    if (!empty(refs)) links.set(JSON.stringify(refs), refs);
+  }
+  return { own, links: [...links.values()], title };
 }
 
 /** A linked page asked for once; null when it refuses the crawler, is not HTML or fails. */
-async function readPage(url: string): Promise<{ html: string; url: string } | null> {
+async function readPage(url: string): Promise<Page | null> {
   try {
     const res = await guardedFetch(url, { timeoutMs: 20_000, maxBytes: 4 * 1024 * 1024 });
     if (res.status !== 200 || !/html/.test(res.headers.get("content-type") ?? "")) return null;
@@ -103,7 +134,7 @@ async function readPage(url: string): Promise<{ html: string; url: string } | nu
 const normTitle = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
 /** The PubMed record of the first identifier that has one. */
-async function paperOf(refs: Refs, title: string | null = null): Promise<Paper | null> {
+async function paperOf(refs: Refs): Promise<Paper | null> {
   const pmids = [...refs.pmids];
   for (const pmcid of refs.pmcids) {
     const pmid = await lookupPmid(pmcid);
@@ -117,37 +148,117 @@ async function paperOf(refs: Refs, title: string | null = null): Promise<Paper |
     const paper = (await fetchPapers(await pmidsForDoi(doi))).find((p) => p.doi === doi);
     if (paper) return paper;
   }
-  // Only the title: the one record with exactly that title.
-  if (title && normTitle(title).length >= 20) {
-    const found = await pmidsForTitle(title);
-    if (found.length === 1) {
-      const paper = (await fetchPapers(found)).find((p) => normTitle(p.title) === normTitle(title));
-      if (paper) return paper;
-    }
-  }
   return null;
 }
 
-/** The paper the post is about, from its own text first and then from the pages it links. */
-export async function findPostPaper(text: string): Promise<Paper | null> {
+/** The one record with exactly this title. */
+async function paperByTitle(title: string): Promise<Paper | null> {
+  if (normTitle(title).length < 20) return null;
+  const found = await pmidsForTitle(title);
+  if (found.length !== 1) return null;
+  return (await fetchPapers(found)).find((p) => normTitle(p.title) === normTitle(title)) ?? null;
+}
+
+/** The paper a page's links lead to when they all lead to the same one; null when none, several or too many. */
+async function onlyLinkedPaper(links: Refs[]): Promise<Paper | null> {
+  if (links.length > MAX_LINKED) return null;
+  let found: Paper | null = null;
+  for (const refs of links) {
+    const paper = await paperOf(refs);
+    if (!paper) continue;
+    if (found && found.pmid !== paper.pmid) return null;
+    found = paper;
+  }
+  return found;
+}
+
+/** The paper the post is about, from its own text first and then from the pages it links, with the pages read. */
+export async function findPostPaper(text: string): Promise<{ paper: Paper | null; pages: Page[] }> {
   const own = refsIn(text);
   if (!empty(own)) {
     const paper = await paperOf(own);
-    if (paper) return paper;
+    if (paper) return { paper, pages: [] };
   }
+  const pages: Page[] = [];
   for (const link of postLinks(text).slice(0, MAX_PAGES)) {
     const page = await readPage(link);
     if (!page) continue;
+    pages.push(page);
     const refs = pageRefs(page.html, page.url);
-    const paper = await paperOf(refs, refs.title);
-    if (paper) return paper;
+    const paper = (!empty(refs.own) ? await paperOf(refs.own) : await onlyLinkedPaper(refs.links)) ?? (refs.title ? await paperByTitle(refs.title) : null);
+    if (paper) return { paper, pages };
   }
-  return null;
+  return { paper: null, pages };
+}
+
+const Subject = z.object({
+  assunto: z.enum(["artigo", "diretriz", "congresso", "evento", "outro"]),
+  revista: z.string().nullish().transform((v) => v?.trim() ?? ""),
+  tituloDoEstudo: z.string().nullish().transform((v) => v?.trim() ?? ""),
+  primeiroAutor: z.string().nullish().transform((v) => v?.trim() ?? ""),
+  nomeDoEnsaio: z.string().nullish().transform((v) => v?.trim() ?? ""),
+  termos: z.array(z.string()).nullish().transform((v) => (v ?? []).map((t) => t.trim()).filter(Boolean).slice(0, 4)),
+});
+export type Subject = z.infer<typeof Subject>;
+
+/** What the post is about and what to look for in PubMed, as the model reads it from the post (industry/prompts/apuracao.md). */
+async function readSubject(articleId: string, text: string): Promise<Subject> {
+  const res = await chatJson({
+    model: await modelFor(MATERIA_STEP),
+    purpose: APURACAO_PURPOSE,
+    subject: `x:${articleId}`,
+    promptVersion: promptVersion("apuracao"),
+    system: promptText("apuracao"),
+    user: `Post:\n${text}`,
+    schema: Subject,
+    temperature: 0,
+    maxTokens: 600,
+    timeoutMs: 60_000,
+  });
+  await completeReceipt(sql, res.receiptId);
+  return res.data;
+}
+
+const phrase = (s: string) => `"${s.replace(/["\[\]]/g, " ").replace(/\s+/g, " ").trim()}"`;
+
+/**
+ * Whether a record is the study the post describes: every name and term the post gives is in it (the journal,
+ * the first author, the trial in the title or abstract, each term in the title or abstract).
+ */
+export function matchesSubject(paper: Paper, s: Subject): boolean {
+  const has = (hay: string, needle: string) => !normTitle(needle) || ` ${normTitle(hay)} `.includes(` ${normTitle(needle)} `);
+  const text = [paper.title, ...paper.abstract.map((a) => a.text)].join(" ");
+  const journal = !s.revista || [paper.journal, paper.journalAbbrev ?? ""].some((j) => has(j, s.revista) || (!!normTitle(j) && has(s.revista, j)));
+  const author = !s.primeiroAutor || has(paper.authors[0]?.split(" ").slice(0, -1).join(" ") || paper.authors[0] || "", s.primeiroAutor);
+  return journal && author && has(text, s.nomeDoEnsaio) && s.termos.every((t) => has(text, t));
+}
+
+/**
+ * The study a post describes without naming an identifier, searched in PubMed among the records of the last
+ * months: by its exact title when the post gives it, else by its terms anchored to the journal, the first
+ * author or the trial the post names. Only one record found, and one that has all of them, is taken.
+ */
+export async function searchSubject(s: Subject): Promise<Paper | null> {
+  if (s.tituloDoEstudo) return paperByTitle(s.tituloDoEstudo);
+  if (!s.revista && !s.primeiroAutor && !s.nomeDoEnsaio) return null;
+  if (s.termos.length < 2 && !s.nomeDoEnsaio) return null;
+  const term = [
+    ...s.termos.map((t) => `${phrase(t)}[tiab]`),
+    s.revista ? `${phrase(s.revista)}[ta]` : "",
+    s.primeiroAutor ? `${phrase(s.primeiroAutor)}[1au]` : "",
+    s.nomeDoEnsaio ? `${phrase(s.nomeDoEnsaio)}[tiab]` : "",
+  ].filter(Boolean).join(" AND ");
+  const found = await searchPmids(term, SUBJECT_DAYS, 2);
+  if (found.length !== 1) return null;
+  const paper = (await fetchPapers(found)).find((p) => p.pmid === found[0]);
+  return paper && matchesSubject(paper, s) ? paper : null;
 }
 
 interface PostRow {
   id: string;
   url: string;
+  /** The paper an earlier run found for the post, still waiting (PMC, Unpaywall, the model). */
+  pmid: string | null;
   x_post: { tweetId?: string; handle?: string; authorName?: string; text?: string; quoted?: { text?: string; url?: string } | null };
   x_article: { title?: string; text?: string } | null;
 }
@@ -160,17 +271,64 @@ const RETRY = ["aguardando-pmc", "aguardando-unpaywall", "aguardando-modelo", "f
 
 export interface XOutcome { articleId: string; status: string; pmid: string | null; materiaId?: string }
 
-/** One post: its paper, taken unless the module took it before. */
+/**
+ * One post: its paper, taken unless the module took it before; without a paper, the official page it links,
+ * written up when the model finds it is the primary source. A post an earlier run found the paper of is
+ * taken again from that paper, with no page asked for again.
+ */
 export async function researchPost(row: PostRow, now = new Date(), sources?: { integral: boolean; materia: boolean }): Promise<XOutcome> {
-  const paper = await findPostPaper(postText(row));
-  if (!paper) return recordPost(row.id, "sem-fonte", null);
-  const before = await earlier(paper.pmid);
-  if (before) return recordPost(row.id, "ja-coberto", paper.pmid, before.articleId ?? undefined);
-  const langs = new Set(settings().languages);
-  if (langs.size && paper.languages.length && !paper.languages.some((l) => langs.has(l))) return recordPost(row.id, "idioma", paper.pmid);
   const credit: XCredit = { handle: row.x_post.handle ?? "", authorName: row.x_post.authorName ?? "", url: row.url };
-  const out = await takePaper(paper, now, sources ?? (await enabledSources()), credit);
-  return recordPost(row.id, out.status, paper.pmid, out.articleId);
+  const text = postText(row);
+  const known = row.pmid ? (await fetchPapers([row.pmid])).find((p) => p.pmid === row.pmid) ?? null : null;
+  const { paper: linked, pages } = known ? { paper: known, pages: [] } : await findPostPaper(text);
+  const subject = linked ? null : await readSubject(row.id, text);
+  const paper = linked ?? (subject && subject.assunto !== "outro" ? await searchSubject(subject) : null);
+  if (paper) {
+    const before = await earlier(paper.pmid);
+    if (before) return recordPost(row.id, "ja-coberto", paper.pmid, before.articleId ?? undefined);
+    const langs = new Set(settings().languages);
+    if (langs.size && paper.languages.length && !paper.languages.some((l) => langs.has(l))) return recordPost(row.id, "idioma", paper.pmid);
+    const out = await takePaper(paper, now, sources ?? (await enabledSources()), credit);
+    return recordPost(row.id, out.status, paper.pmid, out.articleId);
+  }
+  if (subject && subject.assunto !== "outro") {
+    for (const page of pages) {
+      const out = await takePage(row.id, page, text, credit, now);
+      if (out) return out;
+    }
+  }
+  return recordPost(row.id, "sem-fonte", null);
+}
+
+/**
+ * The site's article from an official page a post links, when the page has text and the model finds it is
+ * the primary source; null otherwise. A page another post already led to is not written again.
+ */
+async function takePage(articleId: string, page: Page, post: string, credit: XCredit, now: Date): Promise<XOutcome | null> {
+  const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE source_id = ${MATERIA_SOURCE} AND url = ${page.url}`;
+  if (taken) return recordPost(articleId, "ja-coberto", null, taken.id);
+  const body = readable(page.html, page.url);
+  const text = body ? blockText(body.html) : "";
+  if (text.length < MIN_PAGE_TEXT) return null;
+  const primary: PrimaryPage = { url: page.url, title: cheerio.load(page.html)("title").first().text().replace(/\s+/g, " ").trim(), text };
+  const { materia, receiptId } = await writeFonteMateria(primary, post);
+  if (!materia) {
+    await completeReceipt(sql, receiptId);
+    return null;
+  }
+  const html = sanitizeBody(renderFonteMateria(materia, primary, credit), page.url);
+  return sql.begin(async (tx) => {
+    const res = await upsertMaterial({
+      sourceId: MATERIA_SOURCE, url: page.url, title: materia.titulo.trim(), author: materia.organizacao.trim() || null, language: "pt",
+      publishedAt: now, excerpt: materia.linhaFina.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
+      raw: { basis: "pagina", organization: materia.organizacao.trim(), pageTitle: primary.title, xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
+    }, tx);
+    await completeReceipt(tx, receiptId);
+    await tx`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${articleId}, 'materia-pagina', NULL)
+      ON CONFLICT (article_id) DO UPDATE SET status = EXCLUDED.status, pmid = NULL, updated_at = now()`;
+    if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });
+    return { articleId, status: "materia-pagina", pmid: null, materiaId: res.articleId };
+  });
 }
 
 async function recordPost(articleId: string, status: string, pmid: string | null, materiaId?: string): Promise<XOutcome> {
@@ -193,21 +351,24 @@ async function recordPostFailure(articleId: string): Promise<XOutcome> {
 
 /**
  * The relevant posts of editorial X sources (the prefilter passed them) from the last days, not researched
- * yet or waiting for their paper, oldest first, up to the run's share.
+ * yet (oldest first) and then those waiting for their paper (the longest waiting first), up to the run's
+ * share. Nothing is researched while the article source is paused or model calls are off: the posts wait.
  */
 export async function researchXPosts(opts: { now?: Date; budgetMs?: number } = {}): Promise<Record<string, unknown>> {
   const started = Date.now();
   const now = opts.now ?? new Date();
+  const sources = await enabledSources();
+  if (!sources.materia) return { posts: 0, waiting: "fonte-pausada" };
+  if (!config.modelCallsEnabled) return { posts: 0, waiting: "aguardando-modelo" };
   const rows = await sql<PostRow[]>`
-    SELECT a.id, a.url, a.x_post, a.x_article FROM articles a
+    SELECT a.id, a.url, x.pmid, a.x_post, a.x_article FROM articles a
     JOIN sources s ON s.id = a.source_id
     LEFT JOIN literatura_x_posts x ON x.article_id = a.id
     WHERE s.kind = 'x_search' AND s.participation_mode = 'editorial' AND a.x_post IS NOT NULL AND NOT a.backfill
       AND a.discovered_at > ${now}::timestamptz - make_interval(days => ${X_WINDOW_DAYS})
       AND (x.article_id IS NULL OR x.status = ANY(${RETRY}))
       AND (SELECT an.relevance FROM analyses an WHERE an.article_id = a.id ORDER BY an.input_revision DESC, an.id DESC LIMIT 1) = 'pass'
-    ORDER BY a.discovered_at, a.id LIMIT ${PER_RUN}`;
-  const sources = await enabledSources();
+    ORDER BY x.article_id IS NOT NULL, coalesce(x.updated_at, a.discovered_at), a.id LIMIT ${PER_RUN}`;
   const counts: Record<string, number> = {};
   for (const row of rows) {
     if (opts.budgetMs && Date.now() - started > opts.budgetMs) break;

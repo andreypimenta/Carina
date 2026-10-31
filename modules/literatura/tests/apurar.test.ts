@@ -3,7 +3,10 @@
 // from the paper; the article does not credit the post or does not name the journal; a post with no paper
 // to find reaches the pool, the selection or an edition with nothing but its own text; a paper the module
 // already took is written (and paid for) again; a page that refuses the site's crawler is worked around;
-// a page linking several papers is pinned to one of them by guess.
+// a page linking several papers is pinned to one of them by guess; a post naming a study without an
+// identifier is matched to a record by guess, or not searched at all; a guideline or congress post with an
+// official page is dropped, or written from a page that is not the primary source; a post waiting for its
+// paper has its pages asked for again.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -24,7 +27,19 @@ const X_SOURCE = `x-apurar-${T}`;
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
 const materia = { titulo: "Reconstrução em um tempo é tão segura quanto em dois na estenose grau III", linhaFina: "Coorte multicêntrica", lide: "Um estudo multicêntrico comparou as duas técnicas em crianças.", contexto: "", metodos: "Coorte.", resultados: "Decanulação semelhante.", limitacoes: "Observacional.", paraOPediatra: "Encaminhe cedo.", paraOEspecialista: "Ambas as técnicas são opções." };
 
+const guideline = `<p>The American Academy of Otolaryngology published today its clinical practice guideline on pediatric tracheostomy care. ${"The guideline recommends that caregivers of every child discharged with a tracheostomy be trained in tube changes and emergency care before discharge, and that two trained caregivers be available at home. ".repeat(4)}</p><p>${"It also recommends routine airway endoscopy before decannulation and a capped trial of at least twelve hours in children who tolerate it. ".repeat(3)}</p>`;
+const subjects: Record<string, object> = {
+  "Silva et al": { assunto: "artigo", revista: "J Pediatr Surg", tituloDoEstudo: "", primeiroAutor: "Silva", nomeDoEnsaio: "", termos: ["laryngotracheal reconstruction", "subglottic stenosis"] },
+  "in The Laryngoscope": { assunto: "artigo", revista: "Laryngoscope", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: ["laryngotracheal reconstruction", "subglottic stenosis"] },
+  "this week on stenosis": { assunto: "artigo", revista: "", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: ["laryngotracheal reconstruction", "subglottic stenosis"] },
+  "guideline": { assunto: "diretriz", revista: "", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: [] },
+  "congress": { assunto: "congresso", revista: "", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: [] },
+};
+const fonte = { fontePrimaria: true, organizacao: "American Academy of Otolaryngology", titulo: "Academia americana publica diretriz sobre cuidados com traqueostomia em crianças", linhaFina: "Treinamento de dois cuidadores antes da alta.", lide: "A academia americana de otorrinolaringologia publicou uma diretriz sobre o cuidado da criança traqueostomizada.", corpo: "A diretriz recomenda treinar os cuidadores antes da alta." };
+
 const modelInputs: string[] = [];
+const subjectInputs: string[] = [];
+const searches: string[] = [];
 const hits: string[] = [];
 let base = "";
 
@@ -43,9 +58,16 @@ const stubServer = http.createServer((req, res) => {
     if (url === "/news/two") return html("<title>Roundup</title>", `<a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">one</a> <a href="https://doi.org/10.1186/s12890-026-01234-5">two</a>`);
     if (url === "/news/blocked") return send(403, "text/html", "<html><head><title>Just a moment...</title><meta name=\"citation_doi\" content=\"10.1016/j.jpedsurg.2026.161999\"></head></html>");
     if (url === "/news/congress") return html("<title>Congress</title>", "<p>See you in Lisbon.</p>");
+    if (url === "/news/same") return html("<title>Press release</title>", `<a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">doi</a> <a href="https://pubmed.ncbi.nlm.nih.gov/41000001/">PubMed</a> <a href="https://onlinelibrary.wiley.com/doi/full/10.1016/j.jpedsurg.2026.161999">journal</a>`);
+    if (url === "/news/journal-link") return html("<title>Press release</title>", `<p>Read it at <a href="https://www.sciencedirect.com/science/article/doi/10.1016/j.jpedsurg.2026.161999">the journal</a>.</p>`);
+    if (url === "/guideline/trach") return html("<title>Pediatric Tracheostomy Care Guideline</title>", `<article><h1>Pediatric Tracheostomy Care Guideline</h1>${guideline}</article>`);
+    if (url === "/blog/trach") return html("<title>My take on the new guideline</title>", `<article><h1>My take</h1>${guideline}</article>`);
     if (url.startsWith("/eutils/esearch.fcgi")) {
       const term = new URL(url, "http://stub").searchParams.get("term") ?? "";
+      searches.push(term);
       const idlist = /"10\.1016\/j\.jpedsurg\.2026\.161999"\[aid\]/.test(term) ? ["41000001"]
+        : /"10\.1186\/s12890-026-01234-5"\[aid\]/.test(term) ? ["41000002"]
+        : /"laryngotracheal reconstruction"\[tiab\]/.test(term) ? ["41000001"]
         : /^"single-stage versus double-stage laryngotracheal reconstruction for grade iii/i.test(term) ? ["41000001"] : [];
       return send(200, "application/json", JSON.stringify({ esearchresult: { idlist } }));
     }
@@ -59,8 +81,15 @@ const stubServer = http.createServer((req, res) => {
     if (url.startsWith("/epmc/")) return send(404, "text/plain", "not found");
     if (url.startsWith("/v1/chat/completions")) {
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { messages: Array<{ role: string; content: string }> };
-      modelInputs.push(body.messages.find((m) => m.role === "user")!.content);
-      return send(200, "application/json", JSON.stringify({ id: `stub-${modelInputs.length}`, choices: [{ message: { content: JSON.stringify(materia) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }));
+      const user = body.messages.find((m) => m.role === "user")!.content;
+      const answer = (data: object) => send(200, "application/json", JSON.stringify({ id: `stub-${modelInputs.length}-${subjectInputs.length}`, choices: [{ message: { content: JSON.stringify(data) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }));
+      if (user.startsWith("Post:")) {
+        subjectInputs.push(user);
+        return answer(Object.entries(subjects).find(([k]) => user.includes(k))?.[1] ?? { assunto: "outro", termos: [] });
+      }
+      modelInputs.push(user);
+      if (user.startsWith("Endereço da página:")) return answer(user.includes("/blog/") ? { fontePrimaria: false } : fonte);
+      return answer(materia);
     }
     send(500, "text/plain", "unexpected");
   });
@@ -114,7 +143,7 @@ test("the identifiers in a post: DOIs bare or in a journal's address, PubMed add
   assert.equal(cleanDoi("10.1002%2Flary.31234)"), "10.1002/lary.31234");
   assert.deepEqual(postLinks("Thread https://x.com/a/status/1 https://twitter.com/i/article/2 https://t.co/abc and https://www.aaohns.org/guideline."), ["https://www.aaohns.org/guideline"]);
   const page = pageRefs(`<meta name="dc.identifier" content="doi:10.1093/bja/aeae001"><meta name="citation_pmid" content="41000011">`, "https://academic.oup.com/bja/article/1/1");
-  assert.deepEqual([page.dois, page.pmids], [["10.1093/bja/aeae001"], ["41000011"]]);
+  assert.deepEqual([page.own.dois, page.own.pmids], [["10.1093/bja/aeae001"], ["41000011"]]);
 });
 
 test("a post linking a paper's DOI becomes the site's article written from the paper, naming the journal and crediting the post; the post itself stays out of the pool", async () => {
@@ -170,13 +199,69 @@ test("a paper the module already took is not written again; the post is recorded
 });
 
 test("linked pages lead to the paper by their citation tags, by the one paper a press release links, by the exact title, or by a PMC id; never through a refusal or by guess", async () => {
-  const pmid = async (text: string) => (await findPostPaper(text))?.pmid ?? null;
+  const pmid = async (text: string) => (await findPostPaper(text)).paper?.pmid ?? null;
   assert.equal(await pmid(`Out now ${base}/journal/article`), "41000001");
   assert.equal(await pmid(`Press ${base}/news/release`), "41000001");
+  assert.equal(await pmid(`Press ${base}/news/journal-link`), "41000001", "a link to the journal's own DOI page");
+  assert.equal(await pmid(`Press ${base}/news/same`), "41000001", "the paper's DOI, PubMed and journal links are one paper");
   assert.equal(await pmid(`Paper ${base}/journal/title-only`), "41000001");
   assert.equal(await pmid("Free full text https://pmc.ncbi.nlm.nih.gov/articles/PMC12345678/"), "41000002");
   const blocked = hits.length;
   assert.equal(await pmid(`Paywalled ${base}/news/blocked`), null, "a page that refuses the crawler is not read");
   assert.equal(hits.slice(blocked).filter((h) => h === "/news/blocked").length, 1, "asked for once");
   assert.equal(await pmid(`Two studies ${base}/news/two`), null, "a page linking two papers names neither");
+});
+
+test("a post naming a study without an identifier is searched in PubMed by what it names, and only a record with all of it is taken", async () => {
+  const found = await post("subject", "New multicenter cohort in J Pediatr Surg by Silva et al: single vs double stage LTR for grade III SGS in kids");
+  await researchXPosts();
+  assert.deepEqual(await xStatus(found.id), { status: "ja-coberto", pmid: "41000001" }, "the study is found (and was already written)");
+  assert.match(searches.at(-1)!, /"laryngotracheal reconstruction"\[tiab\] AND "subglottic stenosis"\[tiab\] AND "J Pediatr Surg"\[ta\] AND "Silva"\[1au\]/);
+
+  const wrongJournal = await post("subject-mismatch", "Single vs double stage LTR for SGS in The Laryngoscope");
+  await researchXPosts();
+  assert.deepEqual(await xStatus(wrongJournal.id), { status: "sem-fonte", pmid: null }, "a record from another journal is not taken");
+
+  const searched = searches.length;
+  const vague = await post("subject-vague", "Interesting airway paper this week on stenosis");
+  await researchXPosts();
+  assert.deepEqual(await xStatus(vague.id), { status: "sem-fonte", pmid: null });
+  assert.equal(searches.length, searched, "a topic with no journal, author or trial named is not searched");
+});
+
+test("a guideline post is written up from the official page it links, naming the organisation and crediting the post; a third party's page is not a source", async () => {
+  const { id, url } = await post("guideline", `New AAO guideline on pediatric tracheostomy care ${base}/guideline/trach`);
+  const before = modelInputs.length;
+  await researchXPosts();
+  assert.equal(modelInputs.length, before + 1);
+  assert.match(modelInputs.at(-1)!, /^Endereço da página: .*\/guideline\/trach/);
+  assert.match(modelInputs.at(-1)!, /capped trial of at least twelve hours/);
+  assert.equal((await xStatus(id))!.status, "materia-pagina");
+  const [article] = await sql<{ source_id: string; title: string; body_html: string; x_post: string }[]>`
+    SELECT source_id, title, body_html, raw->>'xPost' AS x_post FROM articles WHERE url = ${`${base}/guideline/trach`}`;
+  assert.equal(article!.source_id, MATERIA_SOURCE);
+  assert.equal(article!.title, fonte.titulo);
+  assert.match(article!.body_html, /<h2>Fonte<\/h2><p>American Academy of Otolaryngology: <a href="[^"]*\/guideline\/trach"[^>]*>Pediatric Tracheostomy Care Guideline<\/a>/);
+  assert.match(article!.body_html, /Pauta: o assunto foi destacado por ENT Papers/);
+  assert.equal(article!.x_post, url);
+
+  const again = await post("guideline-again", `The AAO guideline is out ${base}/guideline/trach`);
+  await researchXPosts();
+  assert.equal((await xStatus(again.id))!.status, "ja-coberto", "a page already written up is not written again");
+  assert.equal(modelInputs.length, before + 1);
+
+  const blog = await post("guideline-blog", `My thoughts on the new guideline ${base}/blog/trach`);
+  await researchXPosts();
+  assert.deepEqual(await xStatus(blog.id), { status: "sem-fonte", pmid: null });
+  const [none] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM articles WHERE url = ${`${base}/blog/trach`} AND source_id = ${MATERIA_SOURCE}`;
+  assert.equal(none!.n, 0);
+});
+
+test("a post waiting for its paper is taken again from the paper found, without asking for its pages again", async () => {
+  const { id } = await post("waiting", `Bronchoscopy in wheezy kids ${base}/news/release`);
+  await sql`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${id}, 'aguardando-unpaywall', '41000002')`;
+  const read = hits.length;
+  await researchXPosts();
+  assert.equal(hits.slice(read).filter((h) => h === "/news/release").length, 0, "the linked page is not asked for again");
+  assert.deepEqual(await xStatus(id), { status: "materia-abstract", pmid: "41000002" });
 });
