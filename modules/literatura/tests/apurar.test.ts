@@ -7,7 +7,9 @@
 // identifier is matched to a record by guess, or not searched at all; a guideline or congress post with an
 // official page is dropped, or written from a page that is not the primary source; a post waiting for its
 // paper has its pages asked for again; a paper PubMed does not have yet is dropped, or written up from its
-// publisher's page; a page the site already holds is paid for and thrown away.
+// publisher's page; a page the site already holds is paid for and thrown away; a society page linking one
+// paper PubMed lacks waits for it instead of being written up; a post still waiting when its window ends is
+// left waiting for good.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -20,7 +22,7 @@ import { stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import server from "../server.ts";
-import { cleanDoi, findPostPaper, pageRefs, postLinks, refsIn, researchXPosts } from "../backend/apurar.ts";
+import { cleanDoi, findPostPaper, pageRefs, postLinks, refsIn, researchXPosts, X_WINDOW_DAYS } from "../backend/apurar.ts";
 import { INTEGRAL_SOURCE, MATERIA_SOURCE } from "../backend/collect.ts";
 
 const T = tag();
@@ -60,7 +62,8 @@ const stubServer = http.createServer((req, res) => {
     if (url === "/news/release") return html("<title>Press release</title>", `<p>Read the study: <a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">J Pediatr Surg</a></p>`);
     if (url === "/news/two") return html("<title>Roundup</title>", `<a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">one</a> <a href="https://doi.org/10.1186/s12890-026-01234-5">two</a>`);
     if (url === "/news/blocked") return send(403, "text/html", "<html><head><title>Just a moment...</title><meta name=\"citation_doi\" content=\"10.1016/j.jpedsurg.2026.161999\"></head></html>");
-    if (url === "/journal/unindexed") return html(`<title>Early view</title><meta name="citation_title" content="Airway stenting in infants with severe tracheomalacia: a prospective series"><meta name="citation_doi" content="10.1002/lary.77777">`, guideline);
+    if (url === "/journal/unindexed") return html(`<title>Early view</title><meta name="citation_title" content="Airway stenting in infants with severe tracheomalacia: a prospective series"><meta name="citation_doi" content="10.1002/lary.77777"><meta name="citation_journal_title" content="The Laryngoscope"><meta name="citation_author" content="Costa, Ana"><meta name="citation_publication_date" content="2026/10/30"><meta name="citation_abstract" content="Twelve infants with severe tracheomalacia received a biodegradable airway stent; ten were weaned from ventilation within three months.">`, guideline);
+    if (url === "/society/ers") return html("<title>ERS statement on paediatric airway malacia</title>", `<article><h1>ERS statement</h1>${guideline}<p>Full statement: <a href="https://doi.org/10.1183/13993003.99999-2026">ERJ</a></p></article>`);
     if (url === "/society/press") return html("<title>Society statement on tracheostomy care</title>", `<article><h1>Society statement</h1>${guideline}</article>`);
     if (url === "/news/congress") return html("<title>Congress</title>", "<p>See you in Lisbon.</p>");
     if (url === "/news/same") return html("<title>Press release</title>", `<a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">doi</a> <a href="https://pubmed.ncbi.nlm.nih.gov/41000001/">PubMed</a> <a href="https://onlinelibrary.wiley.com/doi/full/10.1016/j.jpedsurg.2026.161999">journal</a>`);
@@ -307,4 +310,35 @@ test("a post waiting for its paper is taken again from the paper found, without 
   await researchXPosts();
   assert.equal(hits.slice(read).filter((h) => h === "/news/release").length, 0, "the linked page is not asked for again");
   assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: "41000002" }, "the paper written before is not written again");
+});
+
+test("a society page linking one paper PubMed does not have is written up from the page, not left waiting", async () => {
+  const { id } = await post("ers", `New ERS guideline statement on paediatric airway malacia ${base}/society/ers`);
+  const before = modelInputs.length;
+  await researchXPosts();
+  assert.deepEqual(await xStatus(id), { status: "materia-pagina", pmid: null });
+  assert.equal(modelInputs.length, before + 1);
+  assert.match(modelInputs.at(-1)!, /^Endereço da página: .*\/society\/ers/);
+});
+
+test("when the window ends with PubMed still lacking the DOI, the paper's publisher page is written up as a paper, and a post with nothing else ends as sem-fonte", async () => {
+  const [publisher] = await sql<{ article_id: string }[]>`SELECT article_id FROM literatura_x_posts WHERE doi = '10.1002/lary.77777' AND status = 'aguardando-pubmed'`;
+  assert.ok(publisher, "the post left waiting by an earlier test");
+  const bare = await post("early-bare", "Preprint on airway stents doi:10.1002/lary.66666");
+  await sql`INSERT INTO literatura_x_posts (article_id, status, doi) VALUES (${bare.id}, 'aguardando-pubmed', '10.1002/lary.66666')`;
+  const before = modelInputs.length;
+  await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
+
+  assert.deepEqual(await sql`SELECT status, doi FROM literatura_x_posts WHERE article_id = ${publisher!.article_id}`, [{ status: "materia-editora", doi: "10.1002/lary.77777" }]);
+  assert.equal(modelInputs.length, before + 1, "one article, written as a paper");
+  assert.match(modelInputs.at(-1)!, /^Título original: Airway stenting in infants with severe tracheomalacia/);
+  assert.match(modelInputs.at(-1)!, /Revista: The Laryngoscope \(2026\)/);
+  const [article] = await sql<{ source_id: string; body_html: string }[]>`SELECT source_id, body_html FROM articles WHERE url = 'https://doi.org/10.1002/lary.77777'`;
+  assert.equal(article!.source_id, MATERIA_SOURCE);
+  assert.match(article!.body_html, /<h2>Referência<\/h2>/);
+  assert.match(article!.body_html, /DOI: <a href="https:\/\/doi\.org\/10\.1002\/lary\.77777"/);
+  assert.doesNotMatch(article!.body_html, /PubMed:/);
+  assert.match(article!.body_html, /Pauta: o artigo foi destacado por ENT Papers/);
+
+  assert.deepEqual(await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${bare.id}`, [{ status: "sem-fonte" }], "nothing left waiting");
 });
