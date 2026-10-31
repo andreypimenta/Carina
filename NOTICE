@@ -6,7 +6,8 @@ and logo for your site.
 
 This repository also contains third-party material under its own terms:
 
-- assets/og-fonts/: Noto Sans SC, SIL Open Font License 1.1 (assets/og-fonts/LICENSE).
+- assets/og-fonts/: Noto Sans, SIL Open Font License 1.1 (assets/og-fonts/LICENSE-noto-sans.txt); Noto Sans SC,
+  SIL Open Font License 1.1 (assets/og-fonts/LICENSE).
 
 The demo sources in industry/sources.json are public feeds of their publishers. Their content belongs
 to them; by default the site shows only a summary and a link to the original.
