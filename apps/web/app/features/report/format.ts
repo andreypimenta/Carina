@@ -11,8 +11,11 @@ export const KIND_LABEL: Record<ReportKind, string> = { daily: "Notas diárias",
 /** The kind alone, for the diário / semanal / mensal switch. */
 export const KIND_SHORT: Record<ReportKind, string> = { daily: "Diário", weekly: "Semanal", monthly: "Mensal" };
 
+/** The front page, which shows the latest weekly edition; an origin-form request may spell it "//". */
+export const isFrontPath = (pathname: string) => /^\/+$/.test(pathname);
+
 export function kindFromPath(pathname: string): ReportKind {
-  if (pathname.startsWith("/weekly")) return "weekly";
+  if (isFrontPath(pathname) || pathname.startsWith("/weekly")) return "weekly";
   if (pathname.startsWith("/monthly")) return "monthly";
   return "daily";
 }

@@ -11,6 +11,7 @@ const api = createServer((req, res) => {
   upstreamPaths.push(req.url ?? "");
   res.setHeader("Content-Type", "application/json");
   if (req.url === "/api/site/meta") return res.end(JSON.stringify({ changelogVersion: null }));
+  if (req.url === "/api/site/reports/weekly/latest-page") return res.end(JSON.stringify({ index: [], report: null }));
   if (req.url?.startsWith("/api/site/timeline")) return res.end(JSON.stringify({
     cards: [], nextCursor: null, dayCounts: {}, hot: [], filters: { category: null, channel: null, tag: null },
   }));
@@ -39,13 +40,17 @@ test("origin-form slashes keep the router's homepage and unknown-route semantics
   for (const method of ["GET", "HEAD"] as const) {
     const home = await raw("/", method);
     assert.equal(home.status, 200, web.logs());
-    for (const path of ["//", "////", "//?category=ai-models"]) {
+    for (const path of ["//", "////"]) {
       const res = await raw(path, method);
       assert.equal(res.status, 200, `${method} ${path}: ${web.logs()}`);
       assert.equal(res.headers["content-type"], home.headers["content-type"]);
       assert.match(res.headers["cache-control"] ?? "", /^public, max-age=\d+, s-maxage=\d+, must-revalidate$/);
       if (method === "HEAD") assert.equal(res.body, "");
     }
+    // The front page's old feed filters lead to the feed, without reading the path as an authority.
+    const filtered = await raw("//?category=ai-models", method);
+    assert.equal(filtered.status, 302, `${method} //?category=ai-models: ${web.logs()}`);
+    assert.equal(filtered.headers.location, "/selecao?category=ai-models");
     for (const path of ["/unknown-page", "//unknown-page", "//evil.invalid/unknown-page", "//unknown-page.data?token=private"]) {
       const res = await raw(path, method);
       assert.equal(res.status, 404, `${method} ${path}: ${web.logs()}`);

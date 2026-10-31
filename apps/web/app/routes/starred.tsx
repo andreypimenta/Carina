@@ -137,7 +137,7 @@ export default function StarredPage() {
         <div className="mt-3 flex flex-col items-center rounded-card border border-dashed border-line-strong px-6 py-12 text-center">
           <IconBookmark size={20} className="text-ink-4" />
           <p className="mt-3 text-[13px] text-ink-3">Você ainda não salvou nada. Abra qualquer item e toque em Salvar na página dele.</p>
-          <Link to="/" className="mt-4 text-[12.5px] font-medium text-accent hover:text-accent-ink">
+          <Link to="/selecao" className="mt-4 text-[12.5px] font-medium text-accent hover:text-accent-ink">
             Ver a seleção →
           </Link>
         </div>

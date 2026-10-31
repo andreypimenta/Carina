@@ -116,7 +116,7 @@ export const POLICY = {
 export const NAV = {
   /**
    * 不放进导航的引擎入口，目前只支持热点榜（"/hot"）和主题（"/topics"）。页面照样能打开；原来回到它的返回按钮和链接改回精选，
-   * 写 "/hot" 时首页和搜索面板也不放当前热点。
+   * 写 "/hot" 时精选（/selecao）和搜索面板也不放当前热点。
    * 本站两个都不放：热点榜按 48 小时内谈到同一件事的不同来源数排，这里的来源多是互相重叠的 ClinicalTrials.gov 检索，
    * 榜单近一半时间是空的。
    */
@@ -183,11 +183,11 @@ export const ABOUT = {
 export const EXPEDIENTE = {
   editor: {
     /** Nome como deve aparecer, por exemplo "Dra. Fulana de Tal". */
-    name: null as string | null,
+    name: "Andrey Barbosa Pimenta" as string | null,
     /** Especialidade ou cargo, numa linha. */
-    role: null as string | null,
+    role: "Cirurgia torácica · Endoscopia respiratória · Cirurgia geral" as string | null,
     /** Registro profissional, por exemplo "CRM-SP 123456 · RQE 7890". */
-    crm: null as string | null,
+    crm: "CRM 38977 · RQE 43050 (Cirurgia torácica) · RQE 43051 (Endoscopia respiratória) · RQE 43049 (Cirurgia geral)" as string | null,
     /** Uma ou duas frases sobre a formação e a atuação. */
     bio: null as string | null,
     /** A foto: um arquivo de brand/ listado em SITE.rootIcons ("/editor.jpg") ou um endereço https. */

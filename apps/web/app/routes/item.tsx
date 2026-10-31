@@ -69,7 +69,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
       articleLd({ path: `/items/${item.id}`, headline: item.title, description: item.summary, publishedAt: item.publishedAt, image: `/og/items/${item.id}.png`, basedOn: item.links.original }),
       breadcrumbLd([
         { name: SITE.name, path: "/" },
-        { name: item.selected ? "Seleção" : "Todas as notícias", path: item.selected ? "/" : "/all" },
+        { name: item.selected ? "Seleção" : "Todas as notícias", path: item.selected ? "/selecao" : "/all" },
         { name: item.title, path: `/items/${item.id}` },
       ]),
     ],
@@ -176,7 +176,7 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
   const shownAt = preview.publishedAt ?? preview.timelineAt;
   return (
     <div className="mx-auto max-w-[var(--page-max-reading)] pb-8">
-      <PhoneBar back={{ to: preview.selected ? "/" : "/all", label: preview.selected ? "Seleção" : "Todas" }} title={isX ? preview.x!.authorName : preview.title} />
+      <PhoneBar back={{ to: preview.selected ? "/selecao" : "/all", label: preview.selected ? "Seleção" : "Todas" }} title={isX ? preview.x!.authorName : preview.title} />
       <article className="pb-6 pt-3" aria-busy="true">
         <div className="mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[13px] text-ink-3">
           <span className="font-semibold text-ink-2">{isX ? preview.x!.authorName : preview.source.name}</span>
@@ -229,7 +229,7 @@ function ItemGone() {
   const gone = isRouteErrorResponse(error) && error.status === 404;
   return (
     <div className="mx-auto max-w-sm pb-8">
-      <PhoneBar back={{ to: "/", label: "Seleção" }} />
+      <PhoneBar back={{ to: "/selecao", label: "Seleção" }} />
       <div className="py-24 text-center">
         <div className="text-[20px] font-bold text-ink">{gone ? "Não há nada aqui" : "Não foi possível carregar"}</div>
         <p className="mt-2 text-[13.5px] leading-relaxed text-ink-3">{gone ? "Este conteúdo não existe ou não está mais público." : "O serviço está ocupado. Tente de novo mais tarde."}</p>
@@ -295,7 +295,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
 
   const back = () => {
     if (window.history.state?.idx > 0) navigate(-1);
-    else navigate(item.selected ? "/" : "/all");
+    else navigate(item.selected ? "/selecao" : "/all");
   };
   const backButton = (
     <button type="button" onClick={back} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink">
@@ -426,7 +426,7 @@ function ItemView({ item }: { item: SiteItemDetail }) {
 
       {/* Phones: back to where the reader came from, the title once it has scrolled away, more actions. */}
       <PhoneBar
-        back={{ to: item.selected ? "/" : "/all", label: item.selected ? "Seleção" : "Todas" }}
+        back={{ to: item.selected ? "/selecao" : "/all", label: item.selected ? "Seleção" : "Todas" }}
         title={isX ? item.x!.authorName : item.title}
         actions={
           <BarButton label="Mais ações" onClick={() => setActionsOpen(true)}>

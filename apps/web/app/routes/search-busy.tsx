@@ -28,7 +28,7 @@ export default function SearchBusy() {
   }, [wait]);
   const kept = new URLSearchParams();
   for (const [k, v] of new URLSearchParams(search)) if (SEARCH_PARAMS.includes(k)) kept.append(k, v);
-  const base = pathname.startsWith("/all") ? "/all" : "/";
+  const base = pathname.startsWith("/all") ? "/all" : "/selecao";
   const retry = kept.toString() ? `${base}?${kept}` : base;
   const hasSearch = kept.has("q");
   const button = "inline-flex h-9 items-center rounded-full px-4 text-[13.5px]";
@@ -47,7 +47,7 @@ export default function SearchBusy() {
             <Link to={retry} className={`${button} bg-accent font-medium text-accent-contrast hover:bg-accent-ink`}>Repetir esta busca</Link>
           ))}
         <Link to="/all" className={`${button} ${hasSearch ? "border border-line-strong bg-surface text-ink-2 hover:border-ink-4" : "bg-accent font-medium text-accent-contrast hover:bg-accent-ink"}`}>Ver todas as notícias</Link>
-        <Link to="/" className={`${button} border border-line-strong bg-surface text-ink-2 hover:border-ink-4`}>Voltar à seleção</Link>
+        <Link to="/selecao" className={`${button} border border-line-strong bg-surface text-ink-2 hover:border-ink-4`}>Voltar à seleção</Link>
       </div>
     </div>
     </>

@@ -13,7 +13,9 @@ const modulePages: RouteConfigEntry[] = MODULES.flatMap((m) =>
 const moduleAdminPages: RouteConfigEntry[] = MODULES.flatMap((m) => (m.adminPages ?? []).map((p) => page(m.name, p)));
 
 export default [
-  index("routes/home.tsx"),
+  // The front page is the latest weekly edition; the Seleção feed has its own address.
+  index("routes/report-latest.tsx", { id: "front" }),
+  route("selecao", "routes/home.tsx"),
   route("all", "routes/all.tsx"),
   route("all/search-busy", "routes/search-busy.tsx", { id: "all-search-busy" }),
   route("search-busy", "routes/search-busy.tsx", { id: "search-busy" }),

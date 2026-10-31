@@ -11,8 +11,6 @@ export interface NavItem {
   to: string;
   label: string;
   icon: (p: { size?: number }) => ReactNode;
-  /** Match the path exactly (the home page). */
-  end?: boolean;
   /** Shows the unread dot while the changelog has news. */
   changelog?: boolean;
 }
@@ -21,10 +19,10 @@ const SECTIONS: Array<{ title: string; items: NavItem[] }> = [
   {
     title: "Conteúdo",
     items: [
-      { to: "/", label: "Seleção", icon: IconBolt, end: true },
+      { to: "/", label: "Edição semanal", icon: IconDoc },
+      { to: "/selecao", label: "Seleção", icon: IconBolt },
       { to: "/all", label: "Todas as notícias", icon: IconList },
       { to: "/hot", label: "Em alta", icon: IconFlame },
-      { to: "/weekly", label: "Edição semanal", icon: IconDoc },
       { to: "/topics", label: "Tópicos", icon: IconGrid },
       { to: "/starred", label: "Salvos", icon: IconBookmark },
     ],
@@ -56,7 +54,7 @@ const UP = {
 export function navUp(entry: keyof typeof UP): {
   to: string; name: string; back: string; returnTo: string; tab: TabKey; crumbs: Array<{ name: string; path: string }>;
 } {
-  if (!inNav(entry)) return { to: "/", name: "Seleção", back: "Seleção", returnTo: "Voltar à Seleção", tab: "featured", crumbs: [] };
+  if (!inNav(entry)) return { to: "/selecao", name: "Seleção", back: "Seleção", returnTo: "Voltar à Seleção", tab: "featured", crumbs: [] };
   return { to: entry, ...UP[entry], crumbs: [{ name: UP[entry].name, path: entry }] };
 }
 
@@ -77,15 +75,17 @@ export function sidebar(): Array<{ title: string; items: NavItem[] }> {
   return [...sections, more];
 }
 
-/** A sidebar entry is lit on its pages; the weekly edition also covers the daily notes and the monthly review. */
+/**
+ * A sidebar entry is lit on its pages; the weekly edition, the front page, also covers the daily notes and the
+ * monthly review.
+ */
 export function sidebarIsActive(item: NavItem, pathname: string): boolean {
-  if (item.end) return pathname === item.to;
-  if (item.to === "/weekly") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
+  if (item.to === "/") return pathname === "/" || /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
 /**
- * The phone tab bar: 全部 lives beside 精选 as a switch, 热点 and 日报 are tabs, and "我的" at /more holds
+ * The phone tab bar: the edition (the front page) first, 全部 lives beside 精选 as a switch, 热点 is a tab, and "我的" at /more holds
  * 收藏, 外观, the tools and the site's own pages. Which tab a page sits under is declared by the page
  * itself (components/shell/screens.ts).
  */
@@ -106,9 +106,9 @@ export interface Tab {
 }
 
 const ENGINE_TABS: Tab[] = [
-  { key: "featured", to: "/", label: "Seleção", icon: IconBolt },
+  { key: "daily", to: "/", label: "Edição", icon: IconDoc },
+  { key: "featured", to: "/selecao", label: "Seleção", icon: IconBolt },
   { key: "hot", to: "/hot", label: "Em alta", icon: IconFlame },
-  { key: "daily", to: "/weekly", label: "Edição", icon: IconDoc },
   { key: "me", to: "/more", label: "Meu", icon: IconUser, changelog: true },
 ];
 

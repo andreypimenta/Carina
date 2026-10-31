@@ -5,7 +5,7 @@
 import { data, Link, useLoaderData, useSearchParams, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import type { SiteItemDetail } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
-import { Wordmark } from "@aihot/site/brand/Logo.tsx";
+import { Masthead } from "@aihot/web/components/shell/Masthead";
 import { IconArrowLeft, IconExternal } from "@aihot/web/components/icons";
 import { ArticleBody } from "@aihot/web/features/item/ArticleBody";
 import { ItemModuleParts } from "@aihot/web/features/item/ModuleParts";
@@ -46,10 +46,7 @@ export default function AssineMateria() {
   const shownAt = item.publishedAt ?? item.discoveredAt;
   return (
     <div className="report-shell min-h-dvh">
-      <header className="mx-auto flex w-full max-w-[1160px] items-center justify-between gap-3 px-[var(--gutter-l)] py-4 lg:px-10">
-        <Wordmark size={22} className="text-ink" />
-        <span className="text-[12px] tracking-[0.12em] text-ink-4">EDIÇÃO SEMANAL · GRÁTIS</span>
-      </header>
+      <Masthead link={false} note="Edição semanal grátis" className="mx-auto w-full max-w-[1160px] px-[var(--gutter-l)] pb-2 pt-5 lg:px-10 lg:pt-7" />
       <main className="mx-auto w-full max-w-[var(--page-max-reading)] px-[var(--gutter-l)] pb-12">
         <Link to={signupPath(group, `/assine/${key}`)} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink">
           <IconArrowLeft size={16} /> Voltar à edição

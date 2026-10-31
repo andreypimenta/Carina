@@ -87,9 +87,9 @@ after(async()=>{
 // intent such as hover. The router and caches are the same code in both.
 // Every page's code must finish loading: a module part awaited in a chunk that the part itself imports never
 // resolves, and then no page hydrates although the server's HTML still shows.
-test('the home, an article and the admin login hydrate',async()=>{
+test('the front page, the Seleção feed, an article and the admin login hydrate',async()=>{
   const page=await chrome.newPage();
-  for(const [path,route] of [['/','routes/home'],['/items/navigation-fixture','routes/item'],['/admin/login','routes/admin-login']]){
+  for(const [path,route] of [['/','front'],['/selecao','routes/home'],['/items/navigation-fixture','routes/item'],['/admin/login','routes/admin-login']]){
     await page.goto(origin+path);
     await page.waitForFunction((id)=>Boolean((window as unknown as {__reactRouterRouteModules?:Record<string,unknown>}).__reactRouterRouteModules?.[id]),route,{timeout:10_000});
   }
@@ -100,7 +100,7 @@ test('SSR list and visited query variants return offline without another read',a
   const context=await safari.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     await expect(page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true})).toBeVisible();
     await page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).click();
     await expect(page.getByText('Texto fixo',{exact:true})).toBeVisible();
@@ -117,14 +117,14 @@ test('SSR list and visited query variants return offline without another read',a
     await context.setOffline(true);
     await page.goBack();
     await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible({timeout:1500});
-    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/?category=reviews');
+    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/selecao?category=reviews');
   }finally{await context.close();}
 });
 
 test('hover still fetches article data, touches that move do not, and failed prefetch does not replace the current page',async()=>{
   const context=await chrome.newContext();const page=await context.newPage();
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     const link=page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true});
     const start=hits.length;
     await link.dispatchEvent('touchstart');await link.dispatchEvent('touchmove');
@@ -137,7 +137,7 @@ test('hover still fetches article data, touches that move do not, and failed pre
     assert.equal(hits.slice(start).filter(x=>x.startsWith('/api/site/items/')).length,1,'navigation reuses its intent-prefetched response');
     const fresh=await chrome.newContext();const freshPage=await fresh.newPage();
     try{
-      await freshPage.goto(origin+'/');failing='/api/site/items/navigation-fixture';
+      await freshPage.goto(origin+'/selecao');failing='/api/site/items/navigation-fixture';
       const failed=freshPage.waitForResponse(r=>r.url().includes('/items/navigation-fixture.data')&&r.status()===503);
       await freshPage.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).hover();await failed;
       await expect(freshPage.getByRole('heading',{name:'Seleção',exact:true})).toBeVisible();
@@ -153,7 +153,15 @@ test('SSR all-pages and report kinds return offline with their own content',asyn
     await expect(page.getByRole('link',{name:'Todas, página 2',exact:true})).toBeVisible();
     await context.setOffline(true);await page.goBack();
     await expect(page.getByRole('link',{name:'Todas, página 1',exact:true})).toBeVisible({timeout:1500});
-    await context.setOffline(false);await page.goto(origin+'/daily');
+    await context.setOffline(false);
+    // Reached inside the site, the front page is still the weekly edition.
+    await page.getByRole('link',{name:/primeira página$/}).click();
+    await expect(page.locator('#report-start')).toContainText('Edição semanal');
+    // So does an old link to the front page with the Seleção feed's filters, followed inside the site.
+    await page.evaluate(()=>(window as unknown as {__reactRouterDataRouter:{navigate:(to:string)=>Promise<void>}}).__reactRouterDataRouter.navigate('/?category=reviews'));
+    await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible();
+    assert.equal(new URL(page.url()).pathname+new URL(page.url()).search,'/selecao?category=reviews');
+    await page.goto(origin+'/daily');
     await page.getByRole('link',{name:'Semanal',exact:true}).click();
     await expect(page.locator('#report-start')).toContainText('Edição semanal');
     await context.setOffline(true);await page.getByRole('link',{name:'Diário',exact:true}).click();
@@ -169,7 +177,7 @@ test('intent on a selected link preserves visited data and the next revisit star
   await context.route('**/*.data*',route=>route.continue());
   page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     await page.getByRole('link',{name:'Revisões',exact:true}).click();
     await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible();
     await page.getByRole('link',{name:'Revisões',exact:true}).focus();
@@ -189,7 +197,7 @@ test('a revisit never renews the original deadline; an expired read shows an err
   const context=await chrome.newContext();const page=await context.newPage();
   try{
     await page.clock.install();ttl=1;
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     await page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).click();await expect(page.getByText('Texto fixo',{exact:true})).toBeVisible();
     failing='/api/site/timeline';
     await page.clock.runFor(1500);
@@ -202,7 +210,7 @@ test('a revisit never renews the original deadline; an expired read shows an err
 test('SSR freshness spent in an upstream cache is not renewed by HTML hydration',async()=>{
   const context=await chrome.newContext();const page=await context.newPage();
   try{
-    ttl=0;await page.goto(origin+'/');
+    ttl=0;await page.goto(origin+'/selecao');
     await page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).click();await expect(page.getByText('Texto fixo',{exact:true})).toBeVisible();
     const start=hits.length;ttl=60;
     await page.goBack();await expect(page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true})).toBeVisible();
@@ -240,7 +248,7 @@ test('Agent tabs finish offline with matching canonical; invalid direct tabs and
 test('phone suggestions load only on opening, use one small read, retry failures and update on reopening',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}});const page=await context.newPage();
   try{
-    suggestionsVersion=1;await page.goto(origin+'/');
+    suggestionsVersion=1;await page.goto(origin+'/selecao');
     assert.equal(hits.filter(x=>x==='/api/site/search/suggestions').length,0);
     let start=hits.length;
     await page.getByRole('button',{name:'Buscar',exact:true}).click();
@@ -297,7 +305,7 @@ test('deep reading returns to its anchor, including folded dates',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();
   try{
-    await page.goto(origin+'/?tag=long-reading');
+    await page.goto(origin+'/selecao?tag=long-reading');
     await expect(page.locator('[data-card-key]')).toHaveCount(180);
     await page.getByRole('button',{name:'Recolher 4 de out.',exact:true}).click();
     await expect(page.locator('[data-card-key]')).toHaveCount(120);

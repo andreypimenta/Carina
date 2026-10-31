@@ -3,11 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Form, Link, useNavigation, useSearchParams } from "react-router";
 import { AREA_KEYS, AREA_LABELS, CATEGORY_KEYS, CATEGORY_LABELS, CHANNEL_LABELS, type AreaKey, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
-import { SITE } from "@aihot/site";
 import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
 import { PillTabs } from "../../components/ui/Tabs";
 import { Sheet } from "../../components/ui/Sheet";
-import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { BarButton, PhoneBar } from "../../components/shell/PhoneBar";
 import { openSearch } from "../search/SearchOverlay";
 import { centeredScrollLeft } from "../../lib/scroll-row.ts";
@@ -73,10 +71,10 @@ export function CategoryTabs({ base, category, channel = "all", layoutId, classN
 }
 
 /**
- * The phone bar of 精选 and 全部: the brand, the 精选 | 全部 switch (a filter in use carries over), and
+ * The phone bar of 精选 and 全部 (the masthead above names the journal): the 精选 | 全部 switch (a filter in use carries over), and
  * buttons for the filter sheet and search.
  */
-export function FeedBar({ base, category, channel }: { base: "/" | "/all"; category: CategoryKey | null; channel: ChannelKey }) {
+export function FeedBar({ base, category, channel }: { base: "/selecao" | "/all"; category: CategoryKey | null; channel: ChannelKey }) {
   const [params] = useSearchParams();
   const [sheet, setSheet] = useState(false);
   const scope = (to: string) => hrefWith(to, params, { q: null, tab: null, search: null });
@@ -84,19 +82,14 @@ export function FeedBar({ base, category, channel }: { base: "/" | "/all"; categ
   return (
     <>
       <PhoneBar
-        leading={
-          <Link to="/" aria-label={`Página inicial do ${SITE.bareName}`} className="flex h-11 items-center pl-2.5 pr-2 text-ink">
-            <Wordmark size={17} />
-          </Link>
-        }
         center={
           <PillTabs
             size="sm"
             layoutId="feed-scope"
             label="Ver a seleção ou todas"
-            active={base === "/" ? "featured" : "all"}
+            active={base === "/selecao" ? "featured" : "all"}
             items={[
-              { key: "featured", label: "Seleção", to: scope("/"), resetScroll: true, prefetch: 'intent' },
+              { key: "featured", label: "Seleção", to: scope("/selecao"), resetScroll: true, prefetch: 'intent' },
               { key: "all", label: "Todas", to: scope("/all"), resetScroll: true, prefetch: 'intent' },
             ]}
           />
