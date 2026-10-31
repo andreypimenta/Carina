@@ -37,7 +37,7 @@ import { earlier } from "./adicionar.ts";
 import { articleText, blockText, findOpenCopy, lookupPmid } from "./access.ts";
 import { enabledSources, MATERIA_SOURCE, MAX_ATTEMPTS, MIN_FULL_TEXT, settings, takePaper } from "./collect.ts";
 import { creditBlock, MATERIA_STEP, renderFonteMateria, renderMateria, writeFonteMateria, writeMateria, type PrimaryPage, type XCredit } from "./materia.ts";
-import { authorLine, fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, type Paper } from "./pubmed.ts";
+import { authorLine, fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, type Paper, type PubmedPaper } from "./pubmed.ts";
 
 export const APURACAO_PURPOSE = "apuracao_x";
 
@@ -142,7 +142,7 @@ async function readPage(url: string): Promise<Page | null> {
 const normTitle = (s: string) => s.toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 
 /** The PubMed record of the first identifier that has one. */
-async function paperOf(refs: Refs): Promise<Paper | null> {
+async function paperOf(refs: Refs): Promise<PubmedPaper | null> {
   const pmids = [...refs.pmids];
   for (const pmcid of refs.pmcids) {
     const pmid = await lookupPmid(pmcid);
@@ -160,7 +160,7 @@ async function paperOf(refs: Refs): Promise<Paper | null> {
 }
 
 /** The one record with exactly this title. */
-async function paperByTitle(title: string): Promise<Paper | null> {
+async function paperByTitle(title: string): Promise<PubmedPaper | null> {
   if (normTitle(title).length < 20) return null;
   const found = await pmidsForTitle(title);
   if (found.length !== 1) return null;
@@ -168,9 +168,9 @@ async function paperByTitle(title: string): Promise<Paper | null> {
 }
 
 /** The paper a page's links lead to when they all lead to the same one; null when none, several or too many. */
-async function onlyLinkedPaper(links: Refs[]): Promise<Paper | null> {
+async function onlyLinkedPaper(links: Refs[]): Promise<PubmedPaper | null> {
   if (links.length > MAX_LINKED) return null;
-  let found: Paper | null = null;
+  let found: PubmedPaper | null = null;
   for (const refs of links) {
     const paper = await paperOf(refs);
     if (!paper) continue;
@@ -188,7 +188,7 @@ async function onlyLinkedPaper(links: Refs[]): Promise<Paper | null> {
  * naming one DOI is returned as `publisher`. With no paper, the pages read that are not a paper's page go to
  * the official page path.
  */
-export async function findPostPaper(text: string, wait = true): Promise<{ paper: Paper | null; doi: string | null; pages: Page[]; publisher: { page: Page; doi: string } | null }> {
+export async function findPostPaper(text: string, wait = true): Promise<{ paper: PubmedPaper | null; doi: string | null; pages: Page[]; publisher: { page: Page; doi: string } | null }> {
   const none = { paper: null, doi: null, pages: [], publisher: null };
   const own = refsIn(text);
   if (!empty(own)) {
@@ -279,7 +279,7 @@ export function matchesSubject(paper: Paper, s: Subject): boolean {
  * months: by its exact title when the post gives it, else by its terms anchored to the journal, the first
  * author or the trial the post names. Only one record found, and one that has all of them, is taken.
  */
-export async function searchSubject(s: Subject): Promise<Paper | null> {
+export async function searchSubject(s: Subject): Promise<PubmedPaper | null> {
   if (s.tituloDoEstudo) return paperByTitle(s.tituloDoEstudo);
   if (!s.revista && !s.primeiroAutor && !s.nomeDoEnsaio) return null;
   if (s.termos.length < 2 && !s.nomeDoEnsaio) return null;
@@ -310,11 +310,14 @@ interface PostRow {
 /** All the post's own words: its text, the post it quotes and its X Article. */
 const postText = (r: PostRow) => [r.x_post.text, r.x_post.quoted?.text, r.x_article?.title, r.x_article?.text].filter(Boolean).join("\n\n");
 
-/** Whether the post is still in the days it is researched in (a post waiting for PubMed is taken once more after). */
+/** Whether the post is still in the days it is researched in (a post waiting for PubMed is taken once more after, one waiting on its paper until the wait ends). */
 const inWindow = (row: PostRow, now: Date) => now.getTime() - row.discovered_at.getTime() < X_WINDOW_DAYS * 86_400_000;
 
 /** Statuses a later run takes again: the paper waits for PMC, Unpaywall, the model or its source. */
 const RETRY = ["aguardando-pubmed", "aguardando-pmc", "aguardando-unpaywall", "aguardando-modelo", "fonte-pausada", "erro"];
+
+/** Waits of a found paper that end on their own (PMC and Unpaywall by its entry date, collect.ts; the model once calls are on): taken again past the post's window too. */
+const PAPER_WAITS = ["aguardando-pmc", "aguardando-unpaywall", "aguardando-modelo"];
 
 export interface XOutcome { articleId: string; status: string; pmid: string | null; materiaId?: string }
 
@@ -337,7 +340,7 @@ export async function researchPost(row: PostRow, now = new Date(), sources?: { i
   const subject = linked ? null : await readSubject(row.id, text);
   const paper = linked ?? (subject && subject.assunto !== "outro" ? await searchSubject(subject) : null);
   if (paper) {
-    const before = await earlier(paper.pmid);
+    const before = await earlier(paper);
     if (before) return recordPost(row.id, "ja-coberto", paper.pmid, before.articleId ?? undefined);
     const langs = new Set(settings().languages);
     if (langs.size && paper.languages.length && !paper.languages.some((l) => langs.has(l))) return recordPost(row.id, "idioma", paper.pmid);
@@ -388,6 +391,8 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
       raw: { doi, journal: paper.journal, access, originalTitle: paper.title, basis, ...(fullText ? { fullTextFrom: "publisher" } : {}), xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
+    await tx`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${`doi:${doi}`}, ${doi}, ${`materia-${basis}`}, ${res.articleId})
+      ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
     await tx`INSERT INTO literatura_x_posts (article_id, status, pmid, doi) VALUES (${articleId}, 'materia-editora', NULL, ${doi})
       ON CONFLICT (article_id) DO UPDATE SET status = EXCLUDED.status, pmid = NULL, doi = EXCLUDED.doi, updated_at = now()`;
     if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });
@@ -463,7 +468,8 @@ export async function researchXPosts(opts: { now?: Date; budgetMs?: number } = {
     JOIN sources s ON s.id = a.source_id
     LEFT JOIN literatura_x_posts x ON x.article_id = a.id
     WHERE s.kind = 'x_search' AND s.participation_mode = 'editorial' AND a.x_post IS NOT NULL AND NOT a.backfill
-      AND (a.discovered_at > ${now}::timestamptz - make_interval(days => ${X_WINDOW_DAYS}) OR x.status = 'aguardando-pubmed' OR (x.status = 'erro' AND x.doi IS NOT NULL))
+      AND (a.discovered_at > ${now}::timestamptz - make_interval(days => ${X_WINDOW_DAYS}) OR x.status = 'aguardando-pubmed' OR (x.status = 'erro' AND x.doi IS NOT NULL)
+        OR (x.pmid IS NOT NULL AND x.status = ANY(${PAPER_WAITS})))
       AND (x.article_id IS NULL OR x.status = ANY(${RETRY}))
       AND (SELECT an.relevance FROM analyses an WHERE an.article_id = a.id ORDER BY an.input_revision DESC, an.id DESC LIMIT 1) = 'pass'
     ORDER BY x.article_id IS NOT NULL, coalesce(x.updated_at, a.discovered_at), a.id LIMIT ${PER_RUN}`;

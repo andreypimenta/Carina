@@ -319,6 +319,13 @@ test("a post waiting for its paper is taken again from the paper found, without 
   assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: "41000002" }, "the paper written before is not written again");
 });
 
+test("past the window, a post whose paper waits (Unpaywall) is still taken again from that paper", async () => {
+  const { id } = await post("waiting-late", `Bronchoscopy in wheezy kids ${base}/news/release`);
+  await sql`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${id}, 'aguardando-unpaywall', '41000002')`;
+  await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
+  assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: "41000002" });
+});
+
 test("a society page linking one paper PubMed does not have is written up from the page, not left waiting", async () => {
   const { id } = await post("ers", `New ERS guideline statement on paediatric airway malacia ${base}/society/ers`);
   const before = modelInputs.length;
@@ -348,6 +355,8 @@ test("when the window ends with PubMed still lacking the DOI, the paper's publis
   assert.match(article!.body_html, /Pauta: o artigo foi destacado por ENT Papers/);
   assert.match(article!.body_html, /a partir do resumo publicado/, "a paid paper's page is not its full text");
   assert.match(modelInputs.at(-1)!, /Texto disponível: somente o resumo/);
+  const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE url = 'https://doi.org/10.1002/lary.77777'`;
+  assert.deepEqual([...await sql`SELECT status, article_id FROM literatura_papers WHERE pmid = 'doi:10.1002/lary.77777'`], [{ status: "materia-abstract", article_id: taken!.id }], "recorded as taken, as the collector records a paper by its DOI");
 
   assert.deepEqual([...await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${bare.id}`], [{ status: "sem-fonte" }], "nothing left waiting");
 });
