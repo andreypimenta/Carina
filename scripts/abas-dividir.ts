@@ -4,9 +4,11 @@
 // - Items in cirurgia that an older structure prompt put there, or that took it from their tags, are sorted
 //   again between the two sections the old one split into: the first tag of Cirurgia torácica or Via aérea
 //   decides, cirurgia with none; they never go to Pneumologia or Otorrino.
-//   The old analysis takes the new section and the item is published again without calling models; one
+//   The latest analysis takes the section (also one that had none and stays in cirurgia, so republishing never
+//   sorts it by its tags into another section) and the item is published again without calling models; one
 //   transaction per item, safe to stop and run again. Issues already out keep the sections they were published with.
-// - Editor corrections that chose cirurgia are only listed: the editor decides them in the admin.
+// - Editor corrections that chose cirurgia, and items without an analysis (only the editor's tags), are only
+//   listed: the editor decides them in the admin.
 // - E-mail readers who chose the old section first get both new ones (cirurgia,via-aerea). Run it once, right
 //   after updating: a reader who chose Cirurgia torácica alone after the update would be changed too.
 // Without --apply it only counts.
@@ -34,15 +36,15 @@ const rows = await sql<{ article_id: string; tags: string[]; analysis_id: number
   WHERE p.area = 'cirurgia' ORDER BY p.article_id`;
 const moves = rows.flatMap((r) => {
   const to = splitOf(r.tags);
-  return to !== "cirurgia" && !r.edited && (r.area === null || (r.area === "cirurgia" && !r.current)) ? [{ ...r, to }] : [];
+  return !r.edited && r.analysis_id !== null && (r.area === null || (to !== "cirurgia" && r.area === "cirurgia" && !r.current)) ? [{ ...r, analysis_id: r.analysis_id, to }] : [];
 });
-const edited = rows.filter((r) => r.edited && splitOf(r.tags) !== "cirurgia");
-console.log(`${rows.length} items in cirurgia; ${moves.length} move by their tags`);
+const edited = rows.filter((r) => (r.edited || r.analysis_id === null) && splitOf(r.tags) !== "cirurgia");
+console.log(`${rows.length} items in cirurgia; ${moves.length} get their section from their tags`);
 for (const a of AREAS) {
   const to = moves.filter((m) => m.to === a.key);
   if (to.length) console.log(`  ${a.label}: ${to.length} (${to.filter((m) => m.public).length} public)`);
 }
-if (edited.length) console.log(`${edited.length} editor corrections chose cirurgia for items whose tags point to Via aérea (decide in the admin):\n  ${edited.map((r) => r.article_id).join("\n  ")}`);
+if (edited.length) console.log(`${edited.length} items whose tags point to Via aérea keep cirurgia from an editor correction or have no analysis (decide in the admin):\n  ${edited.map((r) => r.article_id).join("\n  ")}`);
 const [readers] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM assinatura_subscribers WHERE interest = 'cirurgia'`;
 console.log(`${readers!.n} readers chose the old section first`);
 
@@ -53,13 +55,13 @@ if (!values.apply) {
   let done = 0;
   for (const m of moves) {
     await sql.begin(async (tx) => {
-      if (m.analysis_id !== null && m.area !== null) await tx`UPDATE analyses SET area = ${m.to} WHERE id = ${m.analysis_id} AND area = 'cirurgia'`;
+      await tx`UPDATE analyses SET area = ${m.to} WHERE id = ${m.analysis_id} AND (area = 'cirurgia' OR area IS NULL)`;
       await publishArticleTx(tx, m.article_id);
     });
     if (++done % 500 === 0) console.log(`${done}/${moves.length}`);
   }
   const changed = await sql`UPDATE assinatura_subscribers SET interest = 'cirurgia,via-aerea', updated_at = now() WHERE interest = 'cirurgia'`;
-  console.log(`${done} items moved; ${changed.count} readers now read Cirurgia torácica and Via aérea first`);
+  console.log(`${done} items sorted; ${changed.count} readers now read Cirurgia torácica and Via aérea first`);
   // A changed publication may queue follow-up jobs (sync, media); the queue's connection must close too.
   await stopBoss();
 }
