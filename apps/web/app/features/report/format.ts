@@ -92,7 +92,7 @@ export function archiveMark(kind: ReportKind, key: string): { big: string; small
 
 /** Short chip label for the phone switcher: "Hoje", "26 de set.", "Set. · 2ª sem.", "Agosto". */
 export function chipLabel(kind: ReportKind, key: string, index: ReportNavigationEntry[], today: string): string {
-  if (kind === "daily") return key === today ? "Hoje" : monthDay(key);
+  if (kind === "daily") return key === today ? "Hoje" : monthDay(key, today);
   if (kind === "monthly") return capitalize(monthName(Number(key.slice(5, 7))));
   const group = archiveGroups("weekly", index).find((g) => g.entries.some((e) => e.key === key));
   const entry = group?.entries.find((e) => e.key === key);
@@ -138,9 +138,9 @@ export function metricItems(metrics: Record<string, number>): Array<{ value: num
   return METRICS.filter(([k]) => typeof metrics[k] === "number" && (k !== "modelsReleased" || metrics[k]! > 0)).map(([k, unit]) => ({ value: metrics[k]!, unit }));
 }
 
-/** "Dia anterior · 25 de set.", "Edição anterior · semana 37", "Próxima edição · julho". */
-export function neighbourLabel(kind: ReportKind, key: string, direction: "prev" | "next"): string {
-  if (kind === "daily") return `${direction === "prev" ? "Dia anterior" : "Dia seguinte"} · ${monthDay(key)}`;
+/** "Dia anterior · 25 de set.", "Edição anterior · semana 37", "Próxima edição · julho". A day of another year than `now` (Brasília) carries its year. */
+export function neighbourLabel(kind: ReportKind, key: string, direction: "prev" | "next", now: number = Date.now()): string {
+  if (kind === "daily") return `${direction === "prev" ? "Dia anterior" : "Dia seguinte"} · ${monthDay(key, beijingDate(now))}`;
   const which = direction === "prev" ? "Edição anterior" : "Próxima edição";
   return kind === "weekly" ? `${which} · semana ${Number(key.slice(6))}` : `${which} · ${monthName(Number(key.slice(5, 7)))}`;
 }
