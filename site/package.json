@@ -16,6 +16,7 @@
     "@aihot/literatura": "*",
     "@aihot/assinatura": "*",
     "@aihot/agenda": "*",
+    "@aihot/caso": "*",
     "@aihot/instagram": "*"
   }
 }

@@ -34,7 +34,7 @@ O worker roda `assinatura.send` a cada minuto (só existe com algum canal ligado
 - Falha que pode passar (Resend fora do ar ou limitando, Evolution com a chave ou instância erradas) é tentada até 3 vezes no total, com 10 e 20 minutos de espera. O e-mail leva uma chave de idempotência, então uma nova tentativa nunca gera segunda cópia.
 - No WhatsApp, um tempo esgotado ou um erro 5xx da Evolution pode ter entregado a mensagem: o envio fica como **sem confirmação de entrega** e não é repetido sozinho. No Painel → **Inscritos**, “Enviar de novo” devolve esses envios (e os que falharam) para a fila, depois de você conferir na instância.
 - Ritmo no WhatsApp: uma mensagem a cada 12 a 18 segundos (cerca de 4 por minuto). Antes de cada rodada o worker confere se a instância está conectada; se não estiver, não manda nada e tenta no minuto seguinte.
-- O e-mail é a edição em HTML próprio para e-mail (manchete, destaques, seções, link de cada matéria para o site e para o original), com o link da página e o de saída. A mensagem de WhatsApp traz a manchete, os destaques, o link da edição e como sair.
+- O e-mail é a edição em HTML próprio para e-mail (manchete, destaques, as partes dos módulos que têm forma de e-mail, como o caso da semana, seções, link de cada matéria para o site e para o original), com o link da página e o de saída. A mensagem de WhatsApp traz a manchete, os destaques, o link da edição e como sair.
 
 O Painel → **Inscritos** mostra a contagem por canal e status, as edições enviadas com o resultado de cada uma, a lista (os 500 mais recentes) e o botão **Exportar CSV** com a lista inteira.
 

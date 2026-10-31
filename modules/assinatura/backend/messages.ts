@@ -4,6 +4,7 @@
 import type { ReportCitation, ReportDetail } from "@aihot/contracts/site";
 import { isoWeekRange } from "@aihot/contracts/time";
 import { config } from "@aihot/backend/config";
+import { serverModules } from "@aihot/backend/modules";
 import { EDITION_WHEN, SITE } from "@aihot/site";
 
 export const links = {
@@ -49,6 +50,15 @@ export function editionParts(report: ReportDetail) {
   const title = report.lead?.title ?? lead?.title ?? `${SITE.name} · Edição semanal`;
   const dek = lead?.summary ?? report.lead?.leadParagraph ?? null;
   return { lead, title, dek, overview: lead ? report.overview : null, highlights, sections };
+}
+
+/** The modules' parts of the edition that have an e-mail form (ServerModule.reports.mail), in the site's order. */
+function moduleParts(report: ReportDetail): Array<{ html: string; text: string }> {
+  return serverModules().flatMap((m) => {
+    const part = report.modules?.[m.name];
+    const mail = part === undefined ? null : m.reports?.mail?.(part, { kind: report.kind, key: report.key });
+    return mail ? [mail] : [];
+  });
 }
 
 const itemUrl = (c: ReportCitation) => (c.itemId ? `${config.siteUrl}/items/${c.itemId}` : c.sourceUrl);
@@ -106,6 +116,7 @@ ${c.summary ? `<p style="margin:6px 0 0;font-size:15px;line-height:1.7;color:#3b
 /** The weekly edition for one reader: the page's arrangement, each story linked to its page on the site. */
 export function editionEmail(report: ReportDetail, token: string) {
   const parts = editionParts(report);
+  const extra = moduleParts(report);
   const span = weekSpan(report.key);
   const url = links.edition(report.key);
   const leave = links.leave(token);
@@ -123,6 +134,7 @@ export function editionEmail(report: ReportDetail, token: string) {
       ? `<div style="margin-top:26px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;font-weight:bold;color:#0f766e">DESTAQUES DA SEMANA</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${parts.highlights.map((h, i) => `<tr><td valign="top" style="width:28px;padding:10px 0;font-size:22px;font-weight:bold;color:#0f766e">${i + 1}</td><td style="padding:10px 0;border-bottom:1px solid #e3e0d7"><a href="${esc(itemUrl(h))}" style="font-size:16px;line-height:1.5;font-weight:bold;color:#1f2a2e;text-decoration:none">${esc(h.title)}</a><div style="margin-top:2px;font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7478">${esc(h.sourceName)}</div></td></tr>`).join("")}</table>`
       : "",
+    ...extra.map((p) => p.html),
     ...parts.sections.map((s) => `<div style="margin-top:30px;padding-bottom:6px;border-bottom:2px solid #1f2a2e;font-size:21px;font-weight:bold;color:#1f2a2e">${esc(s.label)}</div>
 ${s.summary ? `<p style="margin:10px 0 0;font-size:15px;line-height:1.7;color:#3b4649"><b style="color:#0f766e">Nesta seção</b> ${esc(s.summary)}</p>` : ""}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${s.items.map((c) => storyHtml(c, 320)).join("")}</table>`),
@@ -138,6 +150,7 @@ ${s.summary ? `<p style="margin:10px 0 0;font-size:15px;line-height:1.7;color:#3
     ...(parts.lead ? [itemUrl(parts.lead)] : []),
     "",
     ...(parts.highlights.length ? ["DESTAQUES DA SEMANA", ...parts.highlights.map((h, i) => `${i + 1}. ${h.title} — ${itemUrl(h)}`), ""] : []),
+    ...extra.flatMap((p) => [p.text, ""]),
     ...parts.sections.flatMap((s) => [s.label.toUpperCase(), ...s.items.map((c) => `- ${c.title} (${c.sourceName}) — ${itemUrl(c)}`), ""]),
     `Ler a edição no site: ${url}`,
     "",

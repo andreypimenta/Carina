@@ -5,5 +5,6 @@ import type { ModuleDeclaration } from "@aihot/contracts/modules";
 import literatura from "@aihot/literatura/module";
 import assinatura from "@aihot/assinatura/module";
 import agenda from "@aihot/agenda/module";
+import caso from "@aihot/caso/module";
 
-export const MODULES: readonly ModuleDeclaration[] = [literatura, agenda, assinatura];
+export const MODULES: readonly ModuleDeclaration[] = [caso, literatura, agenda, assinatura];

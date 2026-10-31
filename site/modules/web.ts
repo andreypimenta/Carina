@@ -3,5 +3,6 @@ import type { WebModule } from "@aihot/web/modules";
 import literatura from "@aihot/literatura/web";
 import assinatura from "@aihot/assinatura/web";
 import agenda from "@aihot/agenda/web";
+import caso from "@aihot/caso/web";
 
-export const WEB_MODULES: readonly WebModule[] = [literatura, agenda, assinatura];
+export const WEB_MODULES: readonly WebModule[] = [caso, literatura, agenda, assinatura];
