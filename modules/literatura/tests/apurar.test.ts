@@ -322,7 +322,8 @@ test("a post waiting for its paper is taken again from the paper found, without 
 test("past the window, a post whose paper waits (Unpaywall) is still taken again from that paper", async () => {
   const { id } = await post("waiting-late", `Bronchoscopy in wheezy kids ${base}/news/release`);
   await sql`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${id}, 'aguardando-unpaywall', '41000002')`;
-  await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
+  await sql`UPDATE articles SET discovered_at = now() - make_interval(days => ${X_WINDOW_DAYS + 1}) WHERE id = ${id}`;
+  await researchXPosts();
   assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: "41000002" });
 });
 
