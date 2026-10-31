@@ -85,6 +85,17 @@ after(async()=>{
 
 // One engine per behaviour: WebKit for what phone readers do (iPhone Safari), Chromium for desktop-only
 // intent such as hover. The router and caches are the same code in both.
+// Every page's code must finish loading: a module part awaited in a chunk that the part itself imports never
+// resolves, and then no page hydrates although the server's HTML still shows.
+test('the home, an article and the admin login hydrate',async()=>{
+  const page=await chrome.newPage();
+  for(const [path,route] of [['/','routes/home'],['/items/navigation-fixture','routes/item'],['/admin/login','routes/admin-login']]){
+    await page.goto(origin+path);
+    await page.waitForFunction((id)=>Boolean((window as unknown as {__reactRouterRouteModules?:Record<string,unknown>}).__reactRouterRouteModules?.[id]),route,{timeout:10_000});
+  }
+  await page.close();
+});
+
 test('SSR list and visited query variants return offline without another read',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();

@@ -44,11 +44,13 @@ export default defineConfig({
         // Keep the framework stable across releases and reused shell/feed code in one browser cache
         // entry, including the site and industry packages. Page-specific code still splits by route;
         // report, agent and admin features stay with their pages instead of enlarging every document.
+        // A file that awaits its page's module parts (site-modules.ts `loadParts`) stays out too: the parts
+        // import this chunk, and a chunk that awaits code importing it never finishes loading.
         codeSplitting: {
           groups: [
             { name: "framework", test: /node_modules[\\/](?:react|react-dom|scheduler|react-router|@react-router|cookie|set-cookie-parser|turbo-stream)[\\/]/, priority: 30 },
             { name: "motion", test: /node_modules[\\/](?:motion|framer-motion|motion-dom|motion-utils)[\\/]/, priority: 20 },
-            { name: "shared", test: /apps[\\/]web[\\/]app[\\/](?!features[\\/](?:admin|agent|report)[\\/]|routes[\\/])|[\\/](?:industry|site)[\\/]/, minShareCount: 2, priority: 10 },
+            { name: "shared", test: /apps[\\/]web[\\/]app[\\/](?!features[\\/](?:admin|agent|report)[\\/]|features[\\/]item[\\/]ModuleParts\.|routes[\\/])|[\\/](?:industry|site)[\\/]/, minShareCount: 2, priority: 10 },
           ],
         },
       },
