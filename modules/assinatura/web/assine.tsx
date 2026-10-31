@@ -6,7 +6,7 @@
 import { data, Link, useLoaderData, useSearchParams, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import type { ReportDetail, ReportLatestPage } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
-import { Wordmark } from "@aihot/site/brand/Logo.tsx";
+import { Masthead } from "@aihot/web/components/shell/Masthead";
 import { apiGet, cachedPage, loadOr404 } from "@aihot/web/lib/api.server";
 import { pageMeta } from "@aihot/web/lib/seo";
 import { ReportPaper } from "@aihot/web/features/report/ReportPaper";
@@ -43,10 +43,7 @@ export default function AssinePage() {
   const group = groupTag(useSearchParams()[0].get("g"));
   return (
     <div className="report-shell min-h-dvh">
-      <header className="mx-auto flex w-full max-w-[1160px] items-center justify-between gap-3 px-[var(--gutter-l)] py-4 lg:px-10">
-        <Wordmark size={22} className="text-ink" />
-        <span className="text-[12px] tracking-[0.12em] text-ink-4">EDIÇÃO SEMANAL · GRÁTIS</span>
-      </header>
+      <Masthead link={false} note="Edição semanal grátis" className="mx-auto w-full max-w-[1160px] px-[var(--gutter-l)] pb-2 pt-5 lg:px-10 lg:pt-7" />
       <main className="mx-auto w-full max-w-[1160px] px-[var(--gutter-l)] pb-12 lg:px-10">
         {report ? (
           <ReportPaper

@@ -7,7 +7,7 @@
 import { useEffect, useId, useState } from "react";
 import { data, Link, useLoaderData, type HeadersArgs, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import { SITE } from "@aihot/site";
-import { Wordmark } from "@aihot/site/brand/Logo.tsx";
+import { Masthead } from "@aihot/web/components/shell/Masthead";
 import { IconCheck } from "@aihot/web/components/icons";
 import { pageMeta } from "@aihot/web/lib/seo";
 import type { Channel } from "../address.ts";
@@ -146,7 +146,7 @@ export default function LinkPage() {
 
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-bg px-[var(--gutter-l)] py-12">
-      <Wordmark size={26} className="text-ink" />
+      <Masthead link={false} className="w-full max-w-[26rem]" />
       <section className="card mt-8 w-full max-w-[26rem] px-6 py-8 text-center sm:px-8" aria-live="polite">
         {ok && (
           <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-full bg-accent text-accent-contrast">

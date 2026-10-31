@@ -14,6 +14,7 @@ import { PullToRefresh } from "./components/shell/PullToRefresh";
 import { usePageTransition } from "./components/shell/transitions";
 import { SearchOverlay } from "./features/search/SearchOverlay";
 import { BackToTop, NavigationProgress } from "./components/shell/Chrome";
+import { Masthead } from "./components/shell/Masthead";
 import { buttonClass } from "./components/ui/Controls";
 import { rememberPage, THEME_BOOT_SCRIPT, useThemeSync } from "./lib/local-state";
 import { apiGet } from "./lib/api.server";
@@ -101,6 +102,7 @@ function SiteShell({ changelogVersion, children }: { changelogVersion: string | 
           Desktop: the page fills the main area up to the list width (--page-max-wide), centred beyond it. */}
       <main id="main" className="min-w-0 flex-1 pb-[calc(72px+env(safe-area-inset-bottom))] lg:px-7 lg:pb-[72px] lg:pt-6">
         <div className="mx-auto w-full max-w-[640px] pl-[var(--gutter-l)] pr-[var(--gutter-r)] lg:max-w-[var(--page-max-wide)] lg:px-0">
+          <Masthead className="mb-1 pt-3 lg:mb-6 lg:pt-0" />
           {webModules().map((m) => m.root?.Top && <m.root.Top key={m.name} />)}
           {children}
           <Callouts at="foot" />
@@ -159,7 +161,7 @@ export function ErrorBoundary() {
           {!notFound && <Link reloadDocument to={pathname + search + hash} className={buttonClass("primary")}>
             Recarregar
           </Link>}
-          <Link reloadDocument to="/" className={buttonClass(notFound ? "primary" : "secondary")}>
+          <Link reloadDocument to="/selecao" className={buttonClass(notFound ? "primary" : "secondary")}>
             Voltar à seleção
           </Link>
           <Link reloadDocument to="/all" className={buttonClass("secondary")}>

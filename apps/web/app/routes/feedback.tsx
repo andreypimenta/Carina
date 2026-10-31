@@ -169,7 +169,7 @@ export default function FeedbackPage() {
           <p className="mt-2 text-[14px] text-ink-3">
             Número do feedback: <span className="mono font-semibold text-ink">#{state.id}</span>. Vamos citar este número se precisarmos responder.
           </p>
-          <Link to="/" className="mt-8 inline-flex h-10 items-center rounded-full bg-ink px-6 text-[14px] font-medium text-bg transition-opacity hover:opacity-90">
+          <Link to="/selecao" className="mt-8 inline-flex h-10 items-center rounded-full bg-ink px-6 text-[14px] font-medium text-bg transition-opacity hover:opacity-90">
             Voltar à seleção
           </Link>
         </div>

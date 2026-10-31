@@ -58,7 +58,7 @@ function structured($: cheerio.CheerioAPI): Array<Record<string, unknown>> {
 }
 
 test('filtered feeds keep their exact content address but leave indexing to the plain lists', async () => {
-  for (const base of ['/', '/all']) for (const query of ['channel=news', 'category=evidence', 'tag=Traqueostomia', 'channel=x&category=cases&tag=Traqueostomia']) {
+  for (const base of ['/selecao', '/all']) for (const query of ['channel=news', 'category=evidence', 'tag=Traqueostomia', 'channel=x&category=cases&tag=Traqueostomia']) {
     const $ = await page(`${base}?${query}&utm_source=fixture&anchorAt=old&deep=1`);
     assert.equal($('meta[name=robots]').attr('content'), 'noindex, follow', `${base}?${query}`);
     assert.equal($('link[rel=canonical]').attr('href'), `${web.origin}${base}?${query}`);
@@ -70,13 +70,29 @@ test('filtered feeds keep their exact content address but leave indexing to the 
 });
 
 test('plain feed pages stay indexable, drop ignored parameters and title their later pages', async () => {
-  for (const [requested, canonical] of [['/?channel=invalid&category=invalid&tag=%20&utm_source=fixture', '/'], ['/all?channel=all&tab=relevance&anchorAt=old&page=2&utm_source=fixture', '/all?page=2']]) {
+  for (const [requested, canonical] of [['/selecao?channel=invalid&category=invalid&tag=%20&utm_source=fixture', '/selecao'], ['/all?channel=all&tab=relevance&anchorAt=old&page=2&utm_source=fixture', '/all?page=2']]) {
     const $ = await page(requested!);
     assert.equal($('meta[name=robots]').attr('content'), undefined);
     assert.equal($('link[rel=canonical]').attr('href'), `${web.origin}${canonical}`);
     if (canonical?.includes('page=2')) assert.equal($('title').text(), `Todas as notícias · Página 2 · ${SITE.name}`);
   }
   assert.equal((await page('/all'))('title').text(), `Todas as notícias · ${SITE.name}`);
+});
+
+test('the front page is the latest weekly edition, one page in search with /weekly; old feed links go to the Seleção', async () => {
+  const r = report('weekly');
+  const front = await page('/');
+  assert.equal(front('link[rel=canonical]').attr('href'), `${web.origin}/`);
+  assert.equal(front('title').text(), SITE.homeTitle);
+  assert.ok(front('main').text().includes(r.lead!.title));
+  assert.ok(structured(front).some((entry) => entry['@type'] === 'NewsArticle'));
+  const weekly = await page('/weekly');
+  assert.equal(weekly('link[rel=canonical]').attr('href'), `${web.origin}/`);
+  assert.equal(weekly('meta[name=robots]').attr('content'), undefined);
+  const old = await fetch(`${web.origin}/?category=evidence`, { redirect: 'manual' });
+  assert.equal(old.status, 302);
+  assert.equal(old.headers.get('location'), '/selecao?category=evidence');
+  await old.text();
 });
 
 for (const [kind, label, date] of [['daily', 'Notas diárias', '04/10/2026'], ['weekly', 'Edição semanal', '28/09 a 04/10/2026'], ['monthly', 'Balanço mensal', 'outubro de 2026']] as const) {

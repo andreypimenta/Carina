@@ -227,7 +227,7 @@ export default function AboutPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3 lg:pb-2">
-          <IntentLink to="/" className={buttonClass("primary", "lg")}>
+          <IntentLink to="/selecao" className={buttonClass("primary", "lg")}>
             Ver a seleção de hoje <IconArrowRight size={15} />
           </IntentLink>
           <IntentLink to="/daily" className={buttonClass("secondary", "lg")}>

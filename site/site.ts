@@ -183,11 +183,11 @@ export const ABOUT = {
 export const EXPEDIENTE = {
   editor: {
     /** Nome como deve aparecer, por exemplo "Dra. Fulana de Tal". */
-    name: null as string | null,
+    name: "Andrey Barbosa Pimenta" as string | null,
     /** Especialidade ou cargo, numa linha. */
-    role: null as string | null,
+    role: "Cirurgia torácica · Endoscopia respiratória · Cirurgia geral" as string | null,
     /** Registro profissional, por exemplo "CRM-SP 123456 · RQE 7890". */
-    crm: null as string | null,
+    crm: "CRM 38977 · RQE 43050 (Cirurgia torácica) · RQE 43051 (Endoscopia respiratória) · RQE 43049 (Cirurgia geral)" as string | null,
     /** Uma ou duas frases sobre a formação e a atuação. */
     bio: null as string | null,
     /** A foto: um arquivo de brand/ listado em SITE.rootIcons ("/editor.jpg") ou um endereço https. */

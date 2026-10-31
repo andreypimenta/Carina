@@ -109,14 +109,14 @@ export function llmsTxt(opts: {
   if (ACCESS.ratePerMinute) lines.push(`- Um mesmo IP acima de cerca de ${ACCESS.ratePerMinute} requisições por minuto recebe 429; espere o Retry-After e não repita em paralelo.`);
   lines.push("");
   lines.push("## Páginas principais do site", "");
-  lines.push(`- [Início · Seleção](${u("/")}): a Seleção diária de ${SITE.subject}`);
+  if (opts.hasWeekly) lines.push(`- [Início · Edição semanal](${u("/")}): a edição semanal mais recente; ${REPORTS.descriptions.weekly} (as edições anteriores ficam em ${u("/weekly")}); também pode ser lida por /api/v1/weeklies, por /api/v1/agent/weekly (para agentes) ou pela ferramenta MCP ${T.weekly}, ou assinada em /feed/weekly.xml`);
+  lines.push(`- [Seleção](${u("/selecao")}): a Seleção diária de ${SITE.subject}`);
   lines.push(`- [Em alta](${u("/hot")}): eventos de ${SITE.subject} discutidos por várias fontes independentes nas últimas 48 horas; a página de cada evento mostra as atualizações, a evolução do índice, a linha do tempo das matérias e o panorama de IA`);
   lines.push(`- [Todas as notícias](${u("/all")}): o fluxo completo de ${withSubject("notícias")}, com filtro por categoria`);
   if (opts.hasDailies) {
     lines.push(`- [Notas diárias](${u("/daily")}): ${REPORTS.descriptions.daily}`);
     lines.push(`- [Arquivo das notas diárias](${u("/daily/archive")}): todas as edições anteriores`);
   }
-  if (opts.hasWeekly) lines.push(`- [Edição semanal](${u("/weekly")}): ${REPORTS.descriptions.weekly} (com as edições anteriores); também pode ser lido por /api/v1/weeklies, por /api/v1/agent/weekly (para agentes) ou pela ferramenta MCP ${T.weekly}, ou assinado em /feed/weekly.xml`);
   if (opts.hasMonthly) lines.push(`- [Balanço mensal](${u("/monthly")}): ${REPORTS.descriptions.monthly} (com as edições anteriores); também pode ser lido por /api/v1/monthlies, por /api/v1/agent/monthly (para agentes) ou pela ferramenta MCP ${T.monthly}, ou assinado em /feed/monthly.xml`);
   lines.push(`- [Tópicos](${u("/topics")}): ${withSubject("as últimas notícias")} por ${TOPIC_GROUPS.map((g) => g.name.toLowerCase()).join(", ")}${opts.topics.length ? (opts.topics.length === 1 ? " (1 tópico, listado na próxima seção)" : ` (${opts.topics.length} tópicos, listados um a um na próxima seção)`) : ""}`);
   lines.push(...opts.modules.pages);

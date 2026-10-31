@@ -35,12 +35,13 @@ export async function loadSitemapEntries(at = new Date()): Promise<Entry[]> {
     ) citations ON true ORDER BY r.kind, r.key DESC`;
   const topics = await topicPageCounts(at);
   entries.push(
-    { loc: "/", changefreq: "hourly", priority: 1 },
+    // The front page is the latest weekly edition (/weekly names it as its canonical).
+    { loc: "/", changefreq: "daily", priority: 1 },
+    { loc: "/selecao", changefreq: "hourly", priority: 0.9 },
     { loc: "/all", changefreq: "hourly", priority: 0.9 },
     { loc: "/daily", changefreq: "daily", priority: 0.9 },
     { loc: "/hot", changefreq: "hourly", priority: 0.9 },
     { loc: "/daily/archive", changefreq: "daily", priority: 0.7 },
-    { loc: "/weekly", changefreq: "weekly", priority: 0.7 },
     { loc: "/monthly", changefreq: "monthly", priority: 0.6 },
     { loc: "/topics", changefreq: "daily", priority: 0.7 },
     // The modules' pages, between the content pages and the site's own.

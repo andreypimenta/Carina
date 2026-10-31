@@ -100,7 +100,7 @@ test('SSR list and visited query variants return offline without another read',a
   const context=await safari.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     await expect(page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true})).toBeVisible();
     await page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).click();
     await expect(page.getByText('Texto fixo',{exact:true})).toBeVisible();
@@ -117,14 +117,14 @@ test('SSR list and visited query variants return offline without another read',a
     await context.setOffline(true);
     await page.goBack();
     await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible({timeout:1500});
-    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/?category=reviews');
+    await expect(page.locator('link[rel=canonical]')).toHaveAttribute('href',origin+'/selecao?category=reviews');
   }finally{await context.close();}
 });
 
 test('hover still fetches article data, touches that move do not, and failed prefetch does not replace the current page',async()=>{
   const context=await chrome.newContext();const page=await context.newPage();
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     const link=page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true});
     const start=hits.length;
     await link.dispatchEvent('touchstart');await link.dispatchEvent('touchmove');
@@ -137,7 +137,7 @@ test('hover still fetches article data, touches that move do not, and failed pre
     assert.equal(hits.slice(start).filter(x=>x.startsWith('/api/site/items/')).length,1,'navigation reuses its intent-prefetched response');
     const fresh=await chrome.newContext();const freshPage=await fresh.newPage();
     try{
-      await freshPage.goto(origin+'/');failing='/api/site/items/navigation-fixture';
+      await freshPage.goto(origin+'/selecao');failing='/api/site/items/navigation-fixture';
       const failed=freshPage.waitForResponse(r=>r.url().includes('/items/navigation-fixture.data')&&r.status()===503);
       await freshPage.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).hover();await failed;
       await expect(freshPage.getByRole('heading',{name:'Seleção',exact:true})).toBeVisible();
@@ -169,7 +169,7 @@ test('intent on a selected link preserves visited data and the next revisit star
   await context.route('**/*.data*',route=>route.continue());
   page.on('request',request=>{if(request.url().includes('.data'))requests.push(request.url());});
   try{
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     await page.getByRole('link',{name:'Revisões',exact:true}).click();
     await expect(page.getByRole('link',{name:'Categoria reviews',exact:true})).toBeVisible();
     await page.getByRole('link',{name:'Revisões',exact:true}).focus();
@@ -189,7 +189,7 @@ test('a revisit never renews the original deadline; an expired read shows an err
   const context=await chrome.newContext();const page=await context.newPage();
   try{
     await page.clock.install();ttl=1;
-    await page.goto(origin+'/');
+    await page.goto(origin+'/selecao');
     await page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).click();await expect(page.getByText('Texto fixo',{exact:true})).toBeVisible();
     failing='/api/site/timeline';
     await page.clock.runFor(1500);
@@ -202,7 +202,7 @@ test('a revisit never renews the original deadline; an expired read shows an err
 test('SSR freshness spent in an upstream cache is not renewed by HTML hydration',async()=>{
   const context=await chrome.newContext();const page=await context.newPage();
   try{
-    ttl=0;await page.goto(origin+'/');
+    ttl=0;await page.goto(origin+'/selecao');
     await page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true}).click();await expect(page.getByText('Texto fixo',{exact:true})).toBeVisible();
     const start=hits.length;ttl=60;
     await page.goBack();await expect(page.getByRole('link',{name:'Artigo de teste de desempenho',exact:true})).toBeVisible();
@@ -240,7 +240,7 @@ test('Agent tabs finish offline with matching canonical; invalid direct tabs and
 test('phone suggestions load only on opening, use one small read, retry failures and update on reopening',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}});const page=await context.newPage();
   try{
-    suggestionsVersion=1;await page.goto(origin+'/');
+    suggestionsVersion=1;await page.goto(origin+'/selecao');
     assert.equal(hits.filter(x=>x==='/api/site/search/suggestions').length,0);
     let start=hits.length;
     await page.getByRole('button',{name:'Buscar',exact:true}).click();
@@ -297,7 +297,7 @@ test('deep reading returns to its anchor, including folded dates',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();
   try{
-    await page.goto(origin+'/?tag=long-reading');
+    await page.goto(origin+'/selecao?tag=long-reading');
     await expect(page.locator('[data-card-key]')).toHaveCount(180);
     await page.getByRole('button',{name:'Recolher 4 de out.',exact:true}).click();
     await expect(page.locator('[data-card-key]')).toHaveCount(120);
