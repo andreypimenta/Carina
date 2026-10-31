@@ -50,7 +50,7 @@ export const SITE = {
   /** 默认域名，只在没设置 SITE_URL 时使用。 */
   defaultUrl: "http://localhost:3000",
   /** 标准图标（favicon.ico、icon.png、icon-192.png、apple-icon.png、logo.svg）以外也放在网站根目录的图标，site/brand/ 里的文件名（选填）；manifest.webmanifest 或外站引用了它们时用。 */
-  rootIcons: [] as string[],
+  rootIcons: ["editor.jpg"] as string[],
   /**
    * MCP 工具名的前缀（小写字母、数字、下划线），工具会叫 folego_get_latest、folego_search……
    * 已经有人接入后就不要再改。
@@ -185,13 +185,13 @@ export const EXPEDIENTE = {
     /** Nome como deve aparecer, por exemplo "Dra. Fulana de Tal". */
     name: "Andrey Barbosa Pimenta" as string | null,
     /** Especialidade ou cargo, numa linha. */
-    role: "Cirurgia torácica · Endoscopia respiratória · Cirurgia geral" as string | null,
+    role: "Cirurgião torácico · Endoscopia respiratória · Cirurgia de via aérea pediátrica" as string | null,
     /** Registro profissional, por exemplo "CRM-SP 123456 · RQE 7890". */
-    crm: "CRM 38977 · RQE 43050 (Cirurgia torácica) · RQE 43051 (Endoscopia respiratória) · RQE 43049 (Cirurgia geral)" as string | null,
+    crm: "CRM-MG 38977 · RQE 43050 (Cirurgia torácica) · RQE 43051 (Endoscopia respiratória) · RQE 43049 (Cirurgia geral)" as string | null,
     /** Uma ou duas frases sobre a formação e a atuação. */
-    bio: null as string | null,
+    bio: "Cirurgião torácico formado pela Faculdade de Medicina da UFMG, com residências em cirurgia geral e em cirurgia torácica e endoscopia respiratória. Atua nos serviços de cirurgia torácica e de via aérea pediátrica do Hospital das Clínicas da UFMG, do Hospital Municipal de Contagem, da Rede Mater Dei de Saúde e do Hospital Vila da Serra. Também integra a equipe de transplante pulmonar do Hospital das Clínicas da UFMG." as string | null,
     /** A foto: um arquivo de brand/ listado em SITE.rootIcons ("/editor.jpg") ou um endereço https. */
-    photo: null as string | null,
+    photo: "/editor.jpg" as string | null,
   },
 };
 
