@@ -7,7 +7,8 @@
 // found days after entering PubMed is still news for the week's edition: the engine's 48-hour rule
 // (content/materials.ts) that archives late material as history does not apply to these two sources.
 // A paper that fails (a service down, an unusable answer) is tried again on later runs, up to MAX_ATTEMPTS.
-// The watched journals (backend/revistas.ts) add their PubMed search and their tables of contents to the run.
+// The watched journals (backend/revistas.ts) add their PubMed search and their tables of contents to the run, and
+// the leads (backend/pistas.ts) the papers that children's hospitals' news is about.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { sql } from "@aihot/backend/db";
@@ -19,6 +20,7 @@ import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { SITE_UTC_OFFSET } from "@aihot/contracts/time";
 import { fetchPapers, pmidsForDoi, searchPmids, skippable, authorLine, type Paper } from "./pubmed.ts";
 import { onSubject, paperFromItem, pubmedTerm, readSumario, type Revistas } from "./revistas.ts";
+import { papersOfPost, readPosts, type Pista, type Post } from "./pistas.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
 import { creditBlock, referenceBlock, renderMateria, writeMateria, type XCredit } from "./materia.ts";
 
@@ -215,10 +217,40 @@ async function readSumarios(cfg: Revistas, since: Date): Promise<{ pmids: string
 }
 
 /**
- * Every saved search (with the watched journals' search and tables of contents when `revistas` is given), then
- * the papers not taken yet (and the failed ones still within their attempts), up to the run's share.
+ * The leads' new posts, each with the papers it names that the run is to take. A post that fails to open is left
+ * to the next run; one already done with (collectLiterature records it) is not opened again.
  */
-export async function collectLiterature(opts: { budgetMs?: number; now?: Date; revistas?: Revistas } = {}): Promise<Record<string, unknown>> {
+async function readLeads(list: Pista[], cfg: Revistas, since: Date): Promise<{ posts: Array<Post & { pmids: string[] }>; read: number; failed: string[] }> {
+  const out = { posts: [] as Array<Post & { pmids: string[] }>, read: 0, failed: [] as string[] };
+  const posts = new Map<string, Post>();
+  for (const pista of list) {
+    try {
+      for (const post of await readPosts(pista, since)) if (!posts.has(post.key)) posts.set(post.key, post);
+      out.read++;
+    } catch (error) {
+      out.failed.push(pista.id);
+      console.error(`literatura: pista ${pista.id}: ${(error as Error).message}`);
+    }
+  }
+  if (!posts.size) return out;
+  const seen = new Set((await sql<{ pmid: string }[]>`SELECT pmid FROM literatura_papers WHERE pmid = ANY(${[...posts.keys()]})`).map((r) => r.pmid));
+  for (const post of posts.values()) {
+    if (seen.has(post.key)) continue;
+    try {
+      out.posts.push({ ...post, pmids: await papersOfPost(post, cfg) });
+    } catch (error) {
+      console.error(`literatura: pista ${post.url}: ${(error as Error).message}`);
+    }
+  }
+  return out;
+}
+
+/**
+ * Every saved search (with the watched journals' search and tables of contents when `revistas` is given, and
+ * the papers the leads' posts name when `pistas` is given too), then the papers not taken yet (and the failed
+ * ones still within their attempts), up to the run's share.
+ */
+export async function collectLiterature(opts: { budgetMs?: number; now?: Date; revistas?: Revistas; pistas?: Pista[] } = {}): Promise<Record<string, unknown>> {
   const started = Date.now();
   const now = opts.now ?? new Date();
   const s = settings();
@@ -234,8 +266,11 @@ export async function collectLiterature(opts: { budgetMs?: number; now?: Date; r
       console.error(`literatura: busca ${q.id}: ${(error as Error).message}`);
     }
   }
-  const sumarios = opts.revistas ? await readSumarios(opts.revistas, new Date(now.getTime() - s.days * 86_400_000)) : null;
+  const since = new Date(now.getTime() - s.days * 86_400_000);
+  const sumarios = opts.revistas ? await readSumarios(opts.revistas, since) : null;
   for (const id of sumarios?.pmids ?? []) found.add(id);
+  const leads = opts.revistas && opts.pistas ? await readLeads(opts.pistas, opts.revistas, since) : null;
+  for (const post of leads?.posts ?? []) for (const id of post.pmids) found.add(id);
   const done = new Set((await sql<{ pmid: string }[]>`SELECT pmid FROM literatura_papers WHERE pmid = ANY(${[...found]}) AND status <> 'erro'`).map((r) => r.pmid));
   const retrying = new Set((await sql<{ pmid: string }[]>`SELECT pmid FROM literatura_papers WHERE pmid = ANY(${[...found]}) AND status = 'erro'`).map((r) => r.pmid));
   // New papers first; papers that failed before take what is left of the run's share; then the papers only a
@@ -273,10 +308,20 @@ export async function collectLiterature(opts: { budgetMs?: number; now?: Date; r
     const out = await take(paper);
     counts[out.status] = (counts[out.status] ?? 0) + 1;
   }
+  // A lead's post is done with once each paper it names is (taken, or given up after its attempts); until then
+  // later runs open it again, so a paper left for later or failed is not lost with it.
+  if (leads?.posts.length) {
+    const named = leads.posts.flatMap((p) => p.pmids);
+    const handled = new Set((await sql<{ pmid: string }[]>`SELECT pmid FROM literatura_papers WHERE pmid = ANY(${named}) AND status <> 'erro'`).map((r) => r.pmid));
+    for (const post of leads.posts.filter((p) => p.pmids.every((id) => handled.has(id)))) {
+      await sql`INSERT INTO literatura_papers (pmid, status) VALUES (${post.key}, ${post.pmids.length ? "pista" : "pista-sem-artigo"}) ON CONFLICT (pmid) DO NOTHING`;
+    }
+  }
   // Like the ingest API: the two sources report in, so their health shows the run, not a missing fetch.
   if (failedQueries.length < queries.length) await sql`UPDATE sources SET last_fetch_at = now(), last_ok_at = now() WHERE id IN (${INTEGRAL_SOURCE}, ${MATERIA_SOURCE})`;
   return {
     searched: queries.length, failedQueries, found: found.size, new: pending.length + fromSumarios.length,
-    ...(sumarios ? { revistasLidas: sumarios.read, revistasFalharam: sumarios.failed } : {}), ...counts,
+    ...(sumarios ? { revistasLidas: sumarios.read, revistasFalharam: sumarios.failed } : {}),
+    ...(leads ? { pistasLidas: leads.read, pistasFalharam: leads.failed, pistasPosts: leads.posts.length, pistasArtigos: new Set(leads.posts.flatMap((p) => p.pmids)).size } : {}), ...counts,
   };
 }

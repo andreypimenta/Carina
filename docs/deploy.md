@@ -83,6 +83,14 @@ docker compose run --rm setup && docker compose up -d
 
 后台登录和飞书登录的 cookie 是否带 Secure，改为按请求实际的协议判断（读反向代理转来的 `X-Forwarded-Proto`），不再看 `SITE_URL` 是不是 https。自带的 Caddy 默认会转发这个头，不用改；自己用 Nginx 或 CDN 反向代理的站，升级前在代理配置里补上 `proxy_set_header X-Forwarded-Proto $scheme;`（CDN 按其文档转发同名请求头），否则 HTTPS 下仍能登录，但 cookie 会丢掉 Secure。无需数据库迁移。
 
+#### 儿科期刊、学会共识与医院新闻线索（2026 年 10 月 31 日）
+
+没有新的环境变量或数据库迁移。
+
+- **儿科期刊**：`industry/revistas.json` 加了九本儿科期刊（Pediatric Pulmonology、IJPORL、Paediatric Respiratory Reviews、ERJ Open Research、Journal of Pediatric Surgery、European Journal of Pediatric Surgery、Pediatric Anesthesia、The Laryngoscope、JAMA Otolaryngology），和胸外科期刊一样经主题筛选、PubMed 和开放目录读取、按 DOI 去重。按 2026 年 10 月的量，每周多约 8 篇站内报道，每篇一次模型调用。
+- **检索**：`industry/literatura.json` 删掉了成人气道检索 `diretorio-adulto`；儿科气道检索并入成人检索的主题词，气管切开/拔管和结构性手术两条加上儿童年龄限定；新增 `consensos-grupos-pediatricos` 和 `diretrizes-sociedades-pediatria`，跟踪学会和儿科团体的共识与指南。检索配置从文件读，升级后即生效。
+- **医院新闻只作线索**：Cincinnati Children's、Boston Children's、CHOP、SickKids、Children's Colorado 的新闻改由文献模块读取（`industry/pistas.json`），只用来找原始论文，本身不再成为站内内容。对应的六个信源从 `industry/sources.json` 删除；已上线的站点导入只增不删，它们仍然登记且开着，**升级后在 Painel → Fontes 暂停** `rss-boston-childrens-answers`、`rss-cincinnati-research-horizons`、`web-cincinnati-releases`、`web-chop-news`、`web-sickkids-news`、`web-childrens-colorado`，否则这些新闻会照旧成为内容。已有的条目不受影响。
+
 #### 搜索引擎（2026 年 10 月 30 日）
 
 没有新的环境变量或数据库迁移。
