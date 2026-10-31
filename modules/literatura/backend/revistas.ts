@@ -1,5 +1,5 @@
-// The watched journals (industry/revistas.json): the thoracic surgery journals the owner listed, read for the
-// site's subjects only (a child or newborn, and the airway, the lungs or the chest). Each journal is searched in
+// The watched journals (industry/revistas.json): the thoracic surgery, pediatric, airway and respiratory journals
+// the owner listed, read for the site's subjects only (a child or newborn, and the airway, the lungs or the chest). Each journal is searched in
 // PubMed by its NLM abbreviation; a journal with an open table of contents (its publisher's feed, or the
 // Crossref listing of its ISSN) is also read there, so a paper enters before PubMed has it and a journal PubMed
 // does not index still enters. A paper from a table of contents is written up like a PubMed paper (collect.ts):

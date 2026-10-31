@@ -75,7 +75,7 @@ const stubServer = http.createServer((req, res) => {
     if (url === "/guideline/trach") return html("<title>Pediatric Tracheostomy Care Guideline</title>", `<article><h1>Pediatric Tracheostomy Care Guideline</h1>${guideline}</article>`);
     if (url === "/blog/trach") return html("<title>My take on the new guideline</title>", `<article><h1>My take</h1>${guideline}</article>`);
     if (url.startsWith("/eutils/esearch.fcgi")) {
-      const term = new URL(url, "http://stub").searchParams.get("term") ?? "";
+      const term = new URLSearchParams(Buffer.concat(chunks).toString()).get("term") ?? "";
       searches.push(term);
       const idlist = /"10\.1016\/j\.jpedsurg\.2026\.161999"\[aid\]/.test(term) ? ["41000001"]
         : /"10\.1186\/s12890-026-01234-5"\[aid\]/.test(term) && !lagging.has("10.1186/s12890-026-01234-5") ? ["41000002"]

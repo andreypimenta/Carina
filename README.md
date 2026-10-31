@@ -6,7 +6,7 @@ O Fôlego acompanha a literatura (buscas salvas no PubMed) e as notícias de soc
 
 ## Como funciona
 
-- **Artigos científicos**: módulo `modules/literatura`, configurado em `industry/literatura.json` (buscas no PubMed), `industry/revistas.json` (revistas de cirurgia torácica e de pediatria vigiadas, pelo PubMed e pelo sumário aberto de cada uma) e `industry/pistas.json` (notícias de centros pediátricos, lidas só para achar o artigo original). Detalhes em [docs/fontes.md](docs/fontes.md).
+- **Artigos científicos**: módulo `modules/literatura`, configurado em `industry/literatura.json` (buscas no PubMed), `industry/revistas.json` (revistas de cirurgia torácica, de pediatria, de via aérea, de otorrinolaringologia, de pneumologia e de terapia intensiva vigiadas, pelo PubMed e pelo sumário aberto de cada uma) e `industry/pistas.json` (notícias de centros pediátricos, lidas só para achar o artigo original). Detalhes em [docs/fontes.md](docs/fontes.md).
 - **Especiais**: textos do jornal escritos a partir de estudos do PubMed (o primeiro formato é a Linha do tempo), que ficam como rascunho no painel e só vão ao ar depois de aprovados e publicados pelo editor. Detalhes em [docs/especiais.md](docs/especiais.md).
 - **Caso da semana**: um caso clínico curto que o editor escreve no painel para cada edição semanal, com imagem opcional e uma pergunta ao leitor (“Qual a sua conduta?”, com ou sem alternativas); a resposta e a discussão saem na edição seguinte. No módulo `modules/caso`, sem chamada a modelo. Detalhes em [docs/caso.md](docs/caso.md).
 - **Agenda**: os congressos de `industry/congressos.json` na página `/agenda` e, quando um congresso está em andamento ou começa nos 30 dias seguintes, num bloco da edição semanal, no módulo `modules/agenda`.

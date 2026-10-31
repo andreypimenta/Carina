@@ -45,7 +45,8 @@ const post = (name: string) => `${base}/news/${T}/${name}`;
 const stubServer = http.createServer((req, res) => {
   const url = new URL(req.url ?? "/", "http://stub");
   const send = (status: number, type: string, body: string) => { res.writeHead(status, { "content-type": type }); res.end(body); };
-  req.resume();
+  const chunks: Buffer[] = [];
+  req.on("data", (c: Buffer) => chunks.push(c));
   req.on("end", () => {
     if (url.pathname === "/news/feed.xml") {
       const item = (name: string, date: string) => `<item><title>News ${name}</title><link>${post(name)}</link><pubDate>${date}</pubDate></item>`;
@@ -62,7 +63,7 @@ const stubServer = http.createServer((req, res) => {
       return send(200, "text/html", "<p>Our hospital won an award.</p>");
     }
     if (url.pathname === "/eutils/esearch.fcgi") {
-      const term = url.searchParams.get("term") ?? "";
+      const term = new URLSearchParams(Buffer.concat(chunks).toString()).get("term") ?? "";
       return send(200, "application/json", JSON.stringify({ esearchresult: { idlist: term === `"${DOI}"[aid]` ? ["43000001"] : [] } }));
     }
     if (url.pathname === "/eutils/efetch.fcgi") return send(200, "text/xml", pubmedXml(url.searchParams.get("id")!.split(",")));

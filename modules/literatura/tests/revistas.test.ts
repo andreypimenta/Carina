@@ -36,7 +36,8 @@ const pubmedXml = (pmid: string, d: string) => `<?xml version="1.0"?><PubmedArti
 const stubServer = http.createServer((req, res) => {
   const url = new URL(req.url ?? "/", "http://stub");
   const send = (status: number, type: string, body: string) => { res.writeHead(status, { "content-type": type }); res.end(body); };
-  req.resume();
+  const chunks: Buffer[] = [];
+  req.on("data", (c: Buffer) => chunks.push(c));
   req.on("end", () => {
     if (url.pathname === "/crossref/works") {
       const issn = /issn:([^,]+)/.exec(url.searchParams.get("filter") ?? "")?.[1];
@@ -54,7 +55,7 @@ const stubServer = http.createServer((req, res) => {
         <pubDate>Wed, 28 Oct 2026 10:00:00 GMT</pubDate></item></channel></rss>`);
     }
     if (url.pathname === "/eutils/esearch.fcgi") {
-      const term = url.searchParams.get("term") ?? "";
+      const term = new URLSearchParams(Buffer.concat(chunks).toString()).get("term") ?? "";
       searches.push(term);
       const aid = /^"(.+)"\[aid\]$/.exec(term)?.[1];
       const ids = aid ? (pubmedHas.has(aid) ? [pmidOf[aid.split("-").pop()!]!] : []) : [...pubmedHas].map((d) => pmidOf[d.split("-").pop()!]!);

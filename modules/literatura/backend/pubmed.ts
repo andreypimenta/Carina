@@ -48,11 +48,16 @@ function common(): string {
   return params.toString();
 }
 
-/** One esearch: the PMIDs it returns and how many records the search finds in all. */
-async function esearch(params: Record<string, string>): Promise<{ count: number; pmids: string[] }> {
+/**
+ * One esearch: the PMIDs it returns and how many records the search finds in all. The term goes in a POST body,
+ * as NCBI asks for long searches: the watched journals' search is too long for a URL (HTTP 414).
+ */
+async function esearch({ term, ...params }: { term: string } & Record<string, string>): Promise<{ count: number; pmids: string[] }> {
   const query = new URLSearchParams({ db: "pubmed", retmode: "json", ...params });
   await turn();
-  const res = await guardedFetch(`${BASE()}/esearch.fcgi?${query}&${common()}`, { timeoutMs: 30_000 });
+  const res = await guardedFetch(`${BASE()}/esearch.fcgi?${query}&${common()}`, {
+    method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ term }).toString(), timeoutMs: 30_000,
+  });
   if (res.status !== 200) throw new Error(`PubMed esearch HTTP ${res.status}`);
   const data = JSON.parse(res.text()) as { esearchresult?: { count?: string; idlist?: string[]; ERROR?: string } };
   if (data.esearchresult?.ERROR) throw new Error(`PubMed esearch: ${data.esearchresult.ERROR}`);
