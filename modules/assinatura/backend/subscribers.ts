@@ -11,6 +11,7 @@ import { feedbackSourceHash } from "@aihot/backend/operations/feedback";
 import { normalizeEmail, phoneVariants, type Channel } from "../address.ts";
 import { CONSENT, JOIN_TEXT, LEAVE_WORDS, WHATSAPP_CONSENT } from "../copy.ts";
 import { groupTag } from "../group.ts";
+import { interestOf } from "../interest.ts";
 import { channelReady, sendEmail, sendWhatsapp, whatsappNumber, type Outcome } from "./channels.ts";
 import { confirmationEmail, welcomeWhatsapp } from "./messages.ts";
 
@@ -44,6 +45,8 @@ export interface SignupInput {
   trap?: string | null;
   /** The tag of the group whose link the reader came by (/assine?g=). */
   group?: unknown;
+  /** The section the reader wants first (interest.ts); anything else is both. */
+  interest?: unknown;
   ip: string;
   userAgent: string;
 }
@@ -69,12 +72,13 @@ export async function subscribe(input: SignupInput): Promise<boolean> {
   rateLimit(feedbackSourceHash(input.ip, input.userAgent));
   // A confirmed address stays confirmed; any other becomes pending, and is due a confirmation unless one went
   // out in the last ten minutes, or its attempts ran out in the last day (then they start again). The group that
-  // first brought the address stays its group.
+  // first brought the address stays its group; a confirmed address keeps its preference (only its own link changes it).
   const [row] = await sql<{ id: number; status: string; confirm_sent_at: Date | null; confirm_attempts: number }[]>`
-    INSERT INTO assinatura_subscribers (channel, address, status, token, consent, consent_at, group_tag)
-    VALUES ('email', ${email}, 'pending', ${randomBytes(18).toString("base64url")}, ${CONSENT}, now(), ${groupTag(input.group)})
+    INSERT INTO assinatura_subscribers (channel, address, status, token, consent, consent_at, group_tag, interest)
+    VALUES ('email', ${email}, 'pending', ${randomBytes(18).toString("base64url")}, ${CONSENT}, now(), ${groupTag(input.group)}, ${interestOf(input.interest)})
     ON CONFLICT (channel, address) DO UPDATE SET
       group_tag = coalesce(assinatura_subscribers.group_tag, EXCLUDED.group_tag),
+      interest = CASE WHEN assinatura_subscribers.status = 'confirmed' THEN assinatura_subscribers.interest ELSE EXCLUDED.interest END,
       status = CASE WHEN assinatura_subscribers.status = 'confirmed' THEN 'confirmed' ELSE 'pending' END,
       consent = EXCLUDED.consent, consent_at = EXCLUDED.consent_at,
       unsubscribed_at = NULL, left_by = NULL,
@@ -129,23 +133,48 @@ export async function confirm(token: string): Promise<{ channel: Channel; status
   return row ?? null;
 }
 
-/** The button behind the link in every message, the mail client's one click, a WhatsApp SAIR: the address is sent nothing more. */
-export async function unsubscribe(token: string, by: "link" | "one-click" | "whatsapp"): Promise<{ channel: Channel; undo: boolean } | null> {
-  const [row] = await sql<{ channel: Channel; confirmed_at: Date | null }[]>`
+/**
+ * The button behind the link in every message, the mail client's one click, a WhatsApp SAIR, a complaint to the
+ * mail provider: the address is sent nothing more. Leaving is put down to the last edition it was sent, for the
+ * admin's leavings per edition.
+ */
+export async function unsubscribe(token: string, by: "link" | "one-click" | "whatsapp" | "complaint"): Promise<{ channel: Channel; undo: boolean } | null> {
+  // unsubscribed_at is now() only for an address that left in this statement.
+  const [row] = await sql<{ id: number; channel: Channel; confirmed_at: Date | null; just_left: boolean }[]>`
     UPDATE assinatura_subscribers SET
       left_by = CASE WHEN status = 'unsubscribed' THEN left_by ELSE ${by} END,
       unsubscribed_at = CASE WHEN status = 'unsubscribed' THEN unsubscribed_at ELSE now() END,
       status = 'unsubscribed', updated_at = now()
-    WHERE token = ${token} RETURNING channel, confirmed_at`;
-  return row ? { channel: row.channel, undo: row.confirmed_at !== null } : null;
+    WHERE token = ${token} RETURNING id, channel, confirmed_at, unsubscribed_at = now() AS just_left`;
+  if (!row) return null;
+  if (row.just_left) {
+    await sql`INSERT INTO assinatura_reads (send_id, left_at)
+      SELECT id, now() FROM assinatura_sends WHERE subscriber_id = ${row.id} AND status = 'sent' ORDER BY sent_at DESC LIMIT 1
+      ON CONFLICT (send_id) DO UPDATE SET left_at = now()`;
+  }
+  return { channel: row.channel, undo: row.confirmed_at !== null };
 }
 
 /** Undoes leaving (a click by mistake), for an address that had been confirmed. */
 export async function resubscribe(token: string): Promise<Channel | null> {
-  const [row] = await sql<{ channel: Channel }[]>`
+  const [row] = await sql<{ id: number; channel: Channel }[]>`
     UPDATE assinatura_subscribers SET status = 'confirmed', unsubscribed_at = NULL, left_by = NULL, updated_at = now()
-    WHERE token = ${token} AND status = 'unsubscribed' AND confirmed_at IS NOT NULL RETURNING channel`;
-  return row?.channel ?? null;
+    WHERE token = ${token} AND status = 'unsubscribed' AND confirmed_at IS NOT NULL RETURNING id, channel`;
+  if (!row) return null;
+  await sql`UPDATE assinatura_reads r SET left_at = NULL FROM assinatura_sends s WHERE s.id = r.send_id AND s.subscriber_id = ${row.id} AND r.left_at IS NOT NULL`;
+  return row.channel;
+}
+
+/** The preferences page behind the e-mail's link: the address's channel, whether it is on the list, and its section first. */
+export async function preferences(token: string): Promise<{ channel: Channel; status: string; interest: string | null } | null> {
+  const [row] = await sql<{ channel: Channel; status: string; interest: string | null }[]>`SELECT channel, status, interest FROM assinatura_subscribers WHERE token = ${token}`;
+  return row ?? null;
+}
+
+/** Changes the section the edition puts first (null: both, in the journal's order). */
+export async function setInterest(token: string, interest: unknown): Promise<{ interest: string | null } | null> {
+  const [row] = await sql<{ interest: string | null }[]>`UPDATE assinatura_subscribers SET interest = ${interestOf(interest)}, updated_at = now() WHERE token = ${token} RETURNING interest`;
+  return row ?? null;
 }
 
 /** "SAIR!", "sair " and "Sáir" are all SAIR. */
@@ -204,10 +233,31 @@ export async function handleInbound(payload: unknown): Promise<{ action: "joined
   return { action: "joined", subscriber: joined.id };
 }
 
-/** The retention run: pending addresses nobody confirmed in 30 days, and addresses that left 30 days ago. */
+/**
+ * The retention run: pending addresses nobody confirmed in 30 days, and addresses that left 30 days ago. Before
+ * they go, what they did with each edition joins the edition's counts (assinatura_erased) and a reader who had
+ * confirmed is kept for retention by origin without the address (assinatura_departed).
+ */
 export async function expireSubscribers(now: Date): Promise<Record<string, number>> {
   const cutoff = new Date(now.getTime() - 30 * 86400_000);
-  const pending = await sql`DELETE FROM assinatura_subscribers WHERE status = 'pending' AND consent_at < ${cutoff}`;
-  const left = await sql`DELETE FROM assinatura_subscribers WHERE status = 'unsubscribed' AND unsubscribed_at < ${cutoff}`;
-  return { pendingExpired: pending.count, unsubscribedErased: left.count };
+  return sql.begin(async (tx) => {
+    const gone = () => tx`SELECT id FROM assinatura_subscribers WHERE (status = 'pending' AND consent_at < ${cutoff}) OR (status = 'unsubscribed' AND unsubscribed_at < ${cutoff})`;
+    await tx`INSERT INTO assinatura_erased (edition_key, channel, delivered, clicked, scanned, answered, indique, left_after, complained)
+      SELECT s.edition_key, sub.channel,
+        count(*) FILTER (WHERE s.status = 'sent' AND r.bounced_at IS NULL)::int, count(*) FILTER (WHERE r.clicks > 0)::int,
+        count(*) FILTER (WHERE r.clicks = 0 AND r.bot_clicks > 0)::int,
+        count(r.answered_at)::int, count(r.indique_at)::int, count(r.left_at)::int, count(r.complained_at)::int
+      FROM assinatura_sends s JOIN assinatura_subscribers sub ON sub.id = s.subscriber_id LEFT JOIN assinatura_reads r ON r.send_id = s.id
+      WHERE s.subscriber_id IN (${gone()}) GROUP BY s.edition_key, sub.channel
+      ON CONFLICT (edition_key, channel) DO UPDATE SET delivered = assinatura_erased.delivered + EXCLUDED.delivered,
+        clicked = assinatura_erased.clicked + EXCLUDED.clicked, scanned = assinatura_erased.scanned + EXCLUDED.scanned, answered = assinatura_erased.answered + EXCLUDED.answered,
+        indique = assinatura_erased.indique + EXCLUDED.indique, left_after = assinatura_erased.left_after + EXCLUDED.left_after,
+        complained = assinatura_erased.complained + EXCLUDED.complained`;
+    await tx`INSERT INTO assinatura_departed (channel, group_tag, confirmed_on, left_on)
+      SELECT channel, group_tag, confirmed_at::date, coalesce(unsubscribed_at, consent_at)::date FROM assinatura_subscribers
+      WHERE id IN (${gone()}) AND confirmed_at IS NOT NULL`;
+    const pending = await tx`DELETE FROM assinatura_subscribers WHERE status = 'pending' AND consent_at < ${cutoff}`;
+    const left = await tx`DELETE FROM assinatura_subscribers WHERE status = 'unsubscribed' AND unsubscribed_at < ${cutoff}`;
+    return { pendingExpired: pending.count, unsubscribedErased: left.count };
+  });
 }

@@ -1,6 +1,6 @@
 # Caso da semana
 
-Cada edição semanal pode trazer um **caso da semana**: um caso clínico curto, com imagem opcional e uma pergunta ao leitor ("Qual a sua conduta?", aberta ou com alternativas). A resposta e a discussão saem na edição seguinte. A ideia é dar assunto aos grupos durante a semana e um motivo para abrir a próxima edição. O leitor responde nos grupos; o site não recebe votos nem respostas.
+Cada edição semanal pode trazer um **caso da semana**: um caso clínico curto, com imagem opcional e uma pergunta ao leitor ("Qual a sua conduta?", aberta ou com alternativas). A resposta e a discussão saem na edição seguinte. A ideia é dar assunto aos grupos durante a semana e um motivo para abrir a próxima edição. O leitor discute nos grupos. No e-mail da edição, cada alternativa é um link: tocar nela abre a edição com a escolha marcada, e o Painel → Inscritos conta quantos leitores responderam assim, sobre os que receberam o caso (só a contagem, não a alternativa de cada um; veja [Assinatura](assinatura.md#medir-a-leitura)). Uma pergunta aberta não tem links.
 
 O código fica no módulo `modules/caso`: `caso.ts` (tipos e as semanas de cada edição), `backend/casos.ts` (regras, imagem e a parte da edição), `backend/mail.ts` (a parte do e-mail), `api/casos.ts` (rotas), `web/` (painel e bloco da edição) e a tabela `caso_semana`. Nada aqui chama um modelo.
 

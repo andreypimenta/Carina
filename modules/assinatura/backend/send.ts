@@ -3,7 +3,8 @@
 // confirmed then: one send each (assinatura_sends), so nobody gets it twice. A send that may succeed later is
 // tried up to MAX_ATTEMPTS times, ten minutes apart and more; one that may have arrived is never resent on its
 // own (the admin can, after checking). WhatsApp messages leave one every WHATSAPP_GAP_MS or so, with a little
-// jitter, so the number is not taken for a spammer; e-mails a little under Resend's two a second.
+// jitter, so the number is not taken for a spammer; e-mails a little under Resend's two a second. Each e-mail puts the
+// reader's chosen section first and sends its links through the site, which counts the clicks (reads.ts).
 import { addDays, beijingDate, isoWeekRange } from "@aihot/contracts/time";
 import { sql } from "@aihot/backend/db";
 import { listReports, loadReport } from "@aihot/backend/publication/reports";
@@ -11,6 +12,7 @@ import type { ReportDetail } from "@aihot/contracts/site";
 import type { Channel } from "../address.ts";
 import { channelReady, sendEmail, sendWhatsapp, whatsappConnected, type Outcome } from "./channels.ts";
 import { editionEmail, editionWhatsapp, links } from "./messages.ts";
+import { trackLinks } from "./reads.ts";
 import { dueConfirmations, sendConfirmation } from "./subscribers.ts";
 
 export const MAX_ATTEMPTS = 3;
@@ -65,14 +67,14 @@ async function recoverStale(): Promise<void> {
 
 /** The next send due on a channel, claimed. */
 async function claimSend(channel: Channel) {
-  const [row] = await sql<{ id: number; edition_key: string; attempts: number; address: string; token: string; status: string }[]>`
+  const [row] = await sql<{ id: number; edition_key: string; attempts: number; address: string; token: string; status: string; interest: string | null }[]>`
     WITH next AS (
       SELECT s.id FROM assinatura_sends s JOIN assinatura_subscribers sub ON sub.id = s.subscriber_id
       WHERE sub.channel = ${channel} AND s.status = 'pending' AND s.next_attempt_at <= now()
       ORDER BY s.id LIMIT 1 FOR UPDATE OF s SKIP LOCKED)
     UPDATE assinatura_sends s SET status = 'sending', attempts = s.attempts + 1, updated_at = now()
     FROM next, assinatura_subscribers sub WHERE s.id = next.id AND sub.id = s.subscriber_id
-    RETURNING s.id, s.edition_key, s.attempts, sub.address, sub.token, sub.status`;
+    RETURNING s.id, s.edition_key, s.attempts, sub.address, sub.token, sub.status, sub.interest`;
   return row ?? null;
 }
 
@@ -118,6 +120,7 @@ export async function runSends(options: RunOptions = {}): Promise<Record<string,
   const count = (what: string) => { counts[what] = (counts[what] ?? 0) + 1; };
 
   if (ready.email) {
+    const asked = new Set<string>();
     for (const id of await dueConfirmations(50)) {
       if (left() < 2_000) break;
       count(`confirm_email_${await sendConfirmation(id)}`);
@@ -132,7 +135,13 @@ export async function runSends(options: RunOptions = {}): Promise<Record<string,
         count("email_skipped");
         continue;
       }
-      const mail = editionEmail(report, send.token);
+      const mail = editionEmail(report, send.token, send.interest);
+      mail.html = trackLinks(mail.html, send.id, links.indique());
+      // Its readers were asked the case of the week: the admin counts the answers against them.
+      if (mail.html.includes("data-answer") && !asked.has(send.edition_key)) {
+        asked.add(send.edition_key);
+        await sql`UPDATE assinatura_editions SET caso = true WHERE edition_key = ${send.edition_key} AND channel = 'email' AND NOT caso`;
+      }
       const outcome = await sendEmail({
         to: send.address, ...mail, idempotencyKey: `assinatura-send-${send.id}`,
         // One-click unsubscribe (RFC 8058): mail clients show their own button, which posts to the link.

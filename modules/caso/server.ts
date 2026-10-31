@@ -8,7 +8,7 @@ import { casoMail } from "./backend/mail.ts";
 const server: ServerModule = {
   name: "caso",
   http: registerCasos,
-  reports: { read: (_saved, issue) => weeklyPart(issue), mail: (part) => casoMail(part) },
+  reports: { read: (_saved, issue) => weeklyPart(issue), mail: (part, issue) => casoMail(part, issue) },
 };
 
 export default server;

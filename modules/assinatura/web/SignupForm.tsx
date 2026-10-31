@@ -1,13 +1,15 @@
 // The ways to sign up, only those open now: the e-mail form (with the consent the reader ticks and a field
 // people never see that bots fill), and a button that opens WhatsApp with JOIN_TEXT ready to send to the
 // journal's number, the consent written beside it. The tag of the group whose link brought the reader
-// (?g=) goes with the e-mail. The api decides; the form only says early what it would refuse.
+// (?g=) goes with the e-mail, and so does the section the reader wants first (optional; both by default). The api
+// decides; the form only says early what it would refuse.
 import { useId, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { EDITION_WHEN } from "@aihot/site";
 import { IconCheck, IconMessage } from "@aihot/web/components/icons";
 import { normalizeEmail } from "../address.ts";
 import { CONSENT, JOIN_TEXT, WHATSAPP_CONSENT } from "../copy.ts";
+import { INTERESTS } from "../interest.ts";
 import type { SignupChannels } from "../types.ts";
 
 const FIELD = "h-12 w-full rounded-card bg-bg-sunk px-4 text-[16px] text-ink outline-none ring-1 ring-inset ring-line-soft transition-[background-color,box-shadow] placeholder:text-ink-4 hover:ring-line-strong focus:bg-surface focus:shadow-[0_0_0_3px_var(--accent-soft)] focus:ring-accent dark:bg-bg-muted/60 dark:focus:bg-surface";
@@ -31,12 +33,30 @@ function WhatsappJoin({ number }: { number: string }) {
   );
 }
 
+/** The section the edition puts first: one choice, both by default. */
+export function InterestChoice({ name, value, onChange }: { name: string; value: string | null; onChange: (key: string | null) => void }) {
+  return (
+    <fieldset>
+      <legend className={LABEL}>Qual seção vem primeiro no seu e-mail?</legend>
+      <div className="flex flex-wrap gap-2">
+        {INTERESTS.map((o) => (
+          <label key={o.key ?? ""} className={`cursor-pointer rounded-full px-3.5 py-2 has-[:focus-visible]:shadow-[0_0_0_3px_var(--accent-soft)] text-[13.5px] ring-1 ring-inset transition-colors ${value === o.key ? "bg-accent-soft font-semibold text-ink ring-accent" : "text-ink-2 ring-line-soft hover:ring-line-strong"}`}>
+            <input type="radio" name={name} checked={value === o.key} onChange={() => onChange(o.key)} className="sr-only" />
+            {o.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
 export function SignupForm({ channels, title }: { channels: SignupChannels; title: string }) {
   const id = useId();
   const [params] = useSearchParams();
   const [email, setEmail] = useState("");
   const [trap, setTrap] = useState("");
   const [consent, setConsent] = useState(false);
+  const [interest, setInterest] = useState<string | null>(null);
   const [state, setState] = useState<{ kind: "idle" | "sending" | "error"; message?: string } | { kind: "done"; sent: boolean }>({ kind: "idle" });
 
   if (!channels.email && !channels.whatsapp) {
@@ -75,7 +95,7 @@ export function SignupForm({ channels, title }: { channels: SignupChannels; titl
       const res = await fetch("/api/assinatura", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: e1, consent, website: trap, group: params.get("g") }),
+        body: JSON.stringify({ email: e1, consent, website: trap, group: params.get("g"), interest }),
       });
       const body = (await res.json().catch(() => ({}))) as { sent?: boolean; detail?: string };
       if (!res.ok || typeof body.sent !== "boolean") return setState({ kind: "error", message: body.detail ?? "Não foi possível concluir a inscrição. Tente de novo daqui a pouco." });
@@ -97,6 +117,7 @@ export function SignupForm({ channels, title }: { channels: SignupChannels; titl
             <label htmlFor={`${id}-email`} className={LABEL}>E-mail</label>
             <input id={`${id}-email`} type="email" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="voce@exemplo.com" className={FIELD} />
           </div>
+          <InterestChoice name={`${id}-interest`} value={interest} onChange={setInterest} />
           {/* People never see this field; a bot that fills it is thanked and forgotten. */}
           <div aria-hidden="true" className="absolute left-[-10000px] top-auto h-px w-px overflow-hidden">
             <label htmlFor={`${id}-website`}>Site</label>

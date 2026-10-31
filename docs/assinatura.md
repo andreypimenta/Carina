@@ -34,13 +34,34 @@ A inscrição só mostra os canais que estão ligados (abaixo): o formulário de
 
 ## Inscrição, confirmação e saída
 
-- **E-mail**: o formulário pede o e-mail e a caixa de consentimento (texto em `modules/assinatura/copy.ts`, guardado com cada endereço). A resposta é a mesma para um endereço novo, pendente ou já confirmado, para ninguém descobrir quem está na lista.
+- **E-mail**: o formulário pede o e-mail, a seção que vem primeiro (opcional, abaixo) e a caixa de consentimento (texto em `modules/assinatura/copy.ts`, guardado com cada endereço). A resposta é a mesma para um endereço novo, pendente ou já confirmado, para ninguém descobrir quem está na lista.
 - **Confirmação dupla do e-mail**: o endereço recebe na hora um link de confirmação e não recebe nenhuma edição antes de confirmar. Um pedido repetido reenvia a confirmação no máximo a cada 10 minutos, até 5 tentativas; depois disso, por 24 horas, a resposta diz para procurar na caixa de spam e tentar de novo mais tarde, sem enviar nada. Passado um dia da última tentativa, um novo pedido recomeça as tentativas.
 - **WhatsApp**: o botão **Receber pelo WhatsApp** abre o WhatsApp (`wa.me`) com a mensagem **QUERO O FÔLEGO** pronta para o número do jornal (`NEWSLETTER_WHATSAPP_NUMBER`), com a frase de consentimento ao lado. Quando a mensagem chega (maiúsculas, acentos e pontuação à parte: “quero o folego”, “Quero o Fôlego!”), o número entra na lista já confirmado, com o consentimento e a mensagem guardados, e recebe uma única mensagem de boas-vindas que diz como sair. Um número que já está na lista não recebe outra.
 - **Os links não mudam nada sozinhos**: os links `/assine/confirmar?t=…` e `/assine/sair?t=…` só abrem uma página curta (`/assine/confirmacao` ou `/assine/saida`), com o nome do jornal, uma frase e um botão: **Confirmar inscrição** ou **Não quero mais receber**. Sem o endereço, sem formulário de inscrição, sem a edição e sem o resto do site. Assim, um antivírus de e-mail ou a prévia de link que abre o endereço não confirma nem tira ninguém da lista. Depois de sair, a página oferece “Voltar a receber”. Um link que não vale mais (endereço apagado pela limpeza, link cortado) diz isso depois do clique, ou logo ao abrir quando chega sem o token, e aponta para a inscrição. As mensagens do WhatsApp que levam esses links saem sem prévia de link.
 - **Saída**: todo envio leva o link de saída. O e-mail traz também os cabeçalhos `List-Unsubscribe` e `List-Unsubscribe-Post` (RFC 8058), que os clientes de e-mail mostram como botão e que tiram o endereço da lista com um clique. No WhatsApp, responder **SAIR** ou **PARAR** tira o número da lista.
 - **Abuso**: campo-armadilha invisível, no máximo 5 inscrições por aparelho a cada 10 minutos (identificador irreversível de IP e navegador, como no feedback).
 - **Prazo dos dados**: e-mails não confirmados em 30 dias e endereços que saíram há 30 dias são apagados pela limpeza diária.
+
+## Seção que vem primeiro
+
+O jornal tem duas seções (`AREAS` em `industry/taxonomy.ts`): **Cirurgia torácica pediátrica e via aérea** e **Pneumologia pediátrica**. O formulário de e-mail pergunta “Qual seção vem primeiro no seu e-mail?”, com **Ambos** (o padrão), uma ou outra. O e-mail da edição põe a seção escolhida antes da outra; com **Ambos**, fica a ordem do jornal. As duas seções continuam chegando: a escolha só muda a ordem.
+
+O rodapé de cada e-mail traz **Escolher a seção que vem primeiro**, que abre `/assine/preferencias?t=…`: a escolha atual e um botão **Salvar**. A página de saída (`/assine/saida`) oferece o mesmo antes do botão de sair. Uma nova inscrição de um endereço já confirmado não muda a escolha (só o link do próprio leitor muda). Inscrições pelo WhatsApp não têm escolha (a mensagem não tem seções). A escolha aparece na lista do painel, no CSV e no quadro **Interesse por seção**.
+
+## Medir a leitura
+
+Aberturas não servem: o Apple Mail e outros clientes baixam as imagens de todo e-mail sozinhos, e o e-mail não leva pixel de abertura. O painel conta **cliques**, sem serviço de terceiros:
+
+- Cada link do HTML do e-mail da edição passa pelo próprio site: `/assine/l?s=<envio>&k=<tipo>&u=<destino>&h=<assinatura>`. A assinatura (HMAC com `SESSION_SECRET`) prende o envio, o tipo e o destino, então o endereço não redireciona para nenhum outro lugar; um link alterado responde 404. O site conta o clique e manda o leitor ao destino. O link de saída e o de preferências não passam por aí, nem o texto puro do e-mail.
+- Tipos de link: comum, **resposta ao caso da semana** (cada alternativa do caso, no e-mail, é um link para a edição em `/assine/<semana>?resposta=B#caso`, que marca a escolha e diz quando sai a resposta) e **Indique a um colega**.
+- **Filtro de robôs** (`modules/assinatura/backend/reads.ts`). Antivírus e filtros de e-mail corporativos abrem os links sozinhos. Não contam como leitor: pedidos `HEAD`; pedidos de pré-carregamento (cabeçalho `Purpose`/`Sec-Purpose`); navegador vazio ou de robô, script ou filtro conhecido (bot, crawler, preview, scan, python, curl, Barracuda, Proofpoint, Mimecast, Safe Links…); faixas de IP publicadas de filtros de e-mail (Microsoft Exchange Online Protection, Proofpoint, Mimecast, Barracuda); cliques nos primeiros 30 segundos depois do envio; e 5 ou mais cliques em 10 segundos no mesmo e-mail (um robô que segue todos os links): nesse caso os cliques dessa rajada, e a resposta ao caso ou o Indique que ela fez, passam para os robôs. Esses cliques são contados à parte (“só robôs”). O redirecionamento acontece sempre.
+- **O que fica guardado** (`assinatura_reads`, uma linha por envio clicado): o número de cliques de pessoa e de robô, a hora do primeiro clique, a hora da resposta ao caso e do clique no Indique, e, quando houver, a devolução, a reclamação e a saída depois daquela edição. Nada de IP, navegador ou qual link foi clicado.
+- **Saídas** contam para a última edição enviada ao endereço; voltar à lista pelo botão “Voltar a receber” desfaz a contagem.
+- **Devoluções e reclamações** vêm do webhook do Resend (abaixo). Uma reclamação (“marcar como spam”) também tira o endereço da lista (`left_by = complaint`). O “entregue” é o envio aceito pelo Resend e não devolvido.
+- **Botões de compartilhar do site** (**Mandar no WhatsApp**, **Copiar link**, **Enviar o link** do Indique): cada clique manda um aviso ao site (`/api/assinatura/botao`), que soma por dia (`assinatura_buttons`), sem nada do leitor. É clique no botão, não encaminhamento confirmado: o site não sabe se a mensagem foi enviada.
+- **Quando o endereço é apagado** pela limpeza dos 30 dias, as somas das edições que ele recebeu vão para `assinatura_erased`, e quem tinha confirmado fica em `assinatura_departed` só com o canal, a marcação do grupo e as datas de confirmação e saída; assim as taxas de uma edição antiga e a retenção não mudam quando os endereços somem.
+
+No Painel → **Inscritos**, o quadro **Leitura do e-mail** mostra, para as últimas 12 edições por e-mail: entregues; leitores com ao menos um clique de pessoa (taxa sobre os entregues); e-mails clicados só por robôs; respostas ao caso da semana sobre os expostos (os entregues da edição que trazia o caso); cliques no Indique do e-mail; saídas e reclamações sobre os entregues. Acima dela: **leitores recorrentes** (confirmados que clicaram em pelo menos 2 das últimas 4 edições, sobre os que receberam pelo menos 2 delas) e os cliques nos botões de compartilhar nos últimos 30 dias. **Interesse por seção** conta os leitores de e-mail confirmados por escolha e quantos deles clicaram nas últimas 4 edições. No quadro **Por grupo**, **Retidos em 8 semanas**: dos que confirmaram há 8 semanas ou mais, quantos continuavam na lista 8 semanas depois de confirmar.
 
 ## Envio da edição
 
@@ -50,9 +71,9 @@ O worker roda `assinatura.send` a cada minuto (só existe com algum canal ligado
 - Falha que pode passar (Resend fora do ar ou limitando, Evolution com a chave ou instância erradas) é tentada até 3 vezes no total, com 10 e 20 minutos de espera. O e-mail leva uma chave de idempotência, então uma nova tentativa nunca gera segunda cópia.
 - No WhatsApp, um tempo esgotado ou um erro 5xx da Evolution pode ter entregado a mensagem: o envio fica como **sem confirmação de entrega** e não é repetido sozinho. No Painel → **Inscritos**, “Enviar de novo” devolve esses envios (e os que falharam) para a fila, depois de você conferir na instância.
 - Ritmo no WhatsApp: uma mensagem a cada 12 a 18 segundos (cerca de 4 por minuto). Antes de cada rodada o worker confere se a instância está conectada; se não estiver, não manda nada e tenta no minuto seguinte.
-- O e-mail é a edição em HTML próprio para e-mail (manchete, destaques, as partes dos módulos que têm forma de e-mail, como o caso da semana, seções, link de cada matéria para o site e para o original), com o link da página e o de saída. A mensagem de WhatsApp traz a manchete, os destaques, o link da edição e como sair.
+- O e-mail é a edição em HTML próprio para e-mail (manchete, destaques, as partes dos módulos que têm forma de e-mail, como o caso da semana, seções na ordem que o leitor escolheu, link de cada matéria para o site e para o original, todos passando pelo site para contar os cliques), com o link da página, o de preferências e o de saída. A mensagem de WhatsApp traz a manchete, os destaques, o link da edição e como sair.
 
-O Painel → **Inscritos** mostra a contagem por canal e status, a contagem por grupo (acima), as edições enviadas com o resultado de cada uma, a lista (os 500 mais recentes) e o botão **Exportar CSV** com a lista inteira.
+O Painel → **Inscritos** mostra a contagem por canal e status, a contagem por grupo (acima), a leitura do e-mail (acima), as edições enviadas com o resultado de cada uma, a lista (os 500 mais recentes) e o botão **Exportar CSV** com a lista inteira.
 
 ## Configuração
 
@@ -63,6 +84,7 @@ No `.env` (todos os interruptores só ligam com `true`):
 NEWSLETTER_EMAIL_ENABLED=true
 RESEND_API_KEY=re_...
 NEWSLETTER_FROM=O Fôlego <edicao@ofolego.com>   # domínio verificado no Resend
+RESEND_WEBHOOK_SECRET=whsec_...                 # devoluções e reclamações (abaixo)
 
 # WhatsApp
 NEWSLETTER_WHATSAPP_ENABLED=true
@@ -74,6 +96,10 @@ EVOLUTION_WEBHOOK_SECRET=...     # uma sequência aleatória (openssl rand -hex 
 ```
 
 Depois de mudar, reinicie a api e o worker (`docker compose up -d`). O Painel → Inscritos mostra se cada canal está ligado. Um `NEWSLETTER_WHATSAPP_NUMBER` fora do formato (só dígitos, 8 a 15, com o código do país) deixa o WhatsApp fechado, e o Painel → Inscritos mostra o motivo. Sem o webhook (abaixo), ninguém consegue se inscrever pelo WhatsApp.
+
+### Apontar o Resend para o webhook
+
+No painel do Resend, em **Webhooks**, crie um endpoint `https://ofolego.com/api/assinatura/resend` com os eventos `email.bounced` e `email.complained`, e copie o segredo dele (`whsec_…`) para `RESEND_WEBHOOK_SECRET`. O site só aceita chamadas com a assinatura desse segredo (Svix) feitas nos últimos 5 minutos. Sem ele, o painel avisa que devoluções e reclamações não são contadas.
 
 ### Apontar a Evolution para o webhook
 
@@ -91,4 +117,4 @@ curl -X POST "$EVOLUTION_API_URL/webhook/set/$EVOLUTION_INSTANCE" \
 
 ## Tabelas
 
-`assinatura_subscribers` (um endereço por canal, com status, consentimento, token e a marcação do grupo), `assinatura_editions` (cada edição planejada por canal) e `assinatura_sends` (cada envio). Nenhum teste nem o desenvolvimento local manda e-mail ou WhatsApp de verdade: os testes usam servidores locais no lugar do Resend e da Evolution.
+`assinatura_subscribers` (um endereço por canal, com status, consentimento, token, a marcação do grupo e a seção que vem primeiro), `assinatura_editions` (cada edição planejada por canal, e se o e-mail trazia o caso da semana), `assinatura_sends` (cada envio), `assinatura_reads` (o que o leitor fez com cada envio, só contagens e horas), `assinatura_erased` e `assinatura_departed` (as somas que ficam de endereços apagados) e `assinatura_buttons` (cliques por dia nos botões de compartilhar). Nenhum teste nem o desenvolvimento local manda e-mail ou WhatsApp de verdade: os testes usam servidores locais no lugar do Resend e da Evolution.

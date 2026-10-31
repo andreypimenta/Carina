@@ -246,6 +246,10 @@ docker compose logs -f --tail 100 api worker web
 
 后台的“运行”页能看到每个定时任务最近的结果，“信源”页能看到每个信源的抓取状况。
 
+### 订阅读者统计（Painel → Inscritos）
+
+更新后迁移会新建 `assinatura_reads`、`assinatura_erased`、`assinatura_departed`、`assinatura_buttons`，并给 `assinatura_subscribers` 加 `interest`、给 `assinatura_editions` 加 `caso`，都不改已有数据。之前发出的邮件里的链接不经过网站，所以更新前的期数没有点击数。要统计退信和投诉，在 Resend 后台建 webhook，并在 `.env` 里设 `RESEND_WEBHOOK_SECRET`（见 [assinatura.md](assinatura.md#apontar-o-resend-para-o-webhook)）。
+
 ### 给已有内容补上分区（一次性）
 
 分区（`industry/taxonomy.ts` 的 `AREAS`）上线后，新内容由结构化一步给出分区；之前发布的内容没有分区，在“精选”和“全部动态”的分区标签下看不到。迁移完成后运行 `scripts/abas-preencher.ts`：不调用模型，按每条的主题标签补上分区（规则见 [定制](customize.md) 的 `AREAS`），每批 500 条、每条一个事务，中断后重跑会从没补的继续。已出的日报、周报、月报保留出刊时的分节。不加 `--apply` 只按分区统计会补多少条。

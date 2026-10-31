@@ -12,7 +12,8 @@ export default defineModule({
     { path: "assine/:key/:item", file: "web/materia.tsx", id: "assine-materia" },
     { path: "assine/confirmacao", file: "web/link.tsx", id: "assine-confirmacao" },
     { path: "assine/saida", file: "web/link.tsx", id: "assine-saida" },
+    { path: "assine/preferencias", file: "web/link.tsx", id: "assine-preferencias" },
   ],
   adminPages: [{ path: "admin/assinatura", file: "web/admin.tsx" }],
-  apiPaths: [/^\/assine\/(?:confirmar|sair)$/],
+  apiPaths: [/^\/assine\/(?:confirmar|sair|l)$/],
 });
