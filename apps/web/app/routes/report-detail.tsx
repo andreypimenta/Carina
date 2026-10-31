@@ -4,7 +4,7 @@ import type { ReportDetail, ReportNavigationResponse, ReportKind } from "@aihot/
 import { SITE } from "@aihot/site";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
-import { pageMeta, reportLd, titled } from "../lib/seo";
+import { pageMeta, reportLd, reportTitle, titled } from "../lib/seo";
 import { beijingDate } from "@aihot/contracts/time";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportPaper, reportOutline } from "../features/report/ReportPaper";
@@ -38,7 +38,7 @@ export function meta({ loaderData }: Route.MetaArgs) {
   const description = r.lead?.leadParagraph ?? r.overview?.slice(0, 150) ?? `${KIND_LABEL[r.kind]} do ${SITE.bareName}: ${r.key}.`;
   const path = `/${r.kind}/${r.key}`;
   return [...pageMeta({
-    title: r.kind === "daily" ? `${KIND_LABEL.daily} ${r.key}` : r.title.replace(`${SITE.name} ${KIND_LABEL[r.kind]}`, KIND_LABEL[r.kind]),
+    title: reportTitle(r),
     description,
     path,
     image: `/og/reports/${r.kind}/${r.key}.png`,
