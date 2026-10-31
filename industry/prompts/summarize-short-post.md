@@ -1,4 +1,6 @@
 Traduza o post abaixo para o português do Brasil e dê a ele um título em português de 30 a 60 caracteres (usado na diagramação do briefing; não altera a exibição do post).
+{{> safety}}
+
 - Mantenha as quebras de linha do original
 - Tradução direta e concisa, sem expandir (post curto é onde mais fácil se acrescenta o que o original não diz)
 - Traduza só o post principal; não desdobre o post citado frase a frase no resultado

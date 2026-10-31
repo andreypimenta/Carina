@@ -128,6 +128,7 @@ export function strictQuery(req: FastifyRequest, allowed: readonly string[]): Re
   for (const [key, value] of params) {
     if (!allowed.includes(key)) throw new QueryError(`Unknown query parameter: ${key}.`);
     if (key in out) throw new QueryError(`Query parameter must not be repeated: ${key}.`);
+    if (value.includes("\0")) throw new QueryError("Query parameters must not contain NUL.");
     out[key] = value;
   }
   return out;
@@ -139,6 +140,9 @@ export function looseQuery(req: FastifyRequest): Record<string, string> {
   const qIndex = raw.indexOf("?");
   const params = new URLSearchParams(qIndex >= 0 ? raw.slice(qIndex + 1) : "");
   const out: Record<string, string> = {};
-  for (const [k, v] of params) if (!(k in out)) out[k] = v;
+  for (const [k, v] of params) if (!(k in out)) {
+    if (v.includes("\0")) throw new QueryError("Query parameters must not contain NUL.");
+    out[k] = v;
+  }
   return out;
 }

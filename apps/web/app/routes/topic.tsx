@@ -22,10 +22,11 @@ export const { clientLoader, shouldRevalidate } = pageReuse<typeof loader>();
 
 /** Selected items of a topic: shared caches keep the page as long as its api answer (one minute). */
 export async function loader({ params, request }: Route.LoaderArgs) {
+  if (/[\u0000-\u001f\u007f]/.test(params.slug)) throw new Response("Not found", { status: 404 });
   const page = params.page ? Number(params.page) : 1;
   if (params.page !== undefined && (!/^\d+$/.test(params.page) || page < 1)) throw new Response("Not found", { status: 404 });
   // Page 1 lives at the topic's own address (308).
-  if (params.page === "1") throw redirect(`/topics/${params.slug}`, 308);
+  if (params.page === "1") throw redirect(`/topics/${encodeURIComponent(params.slug)}`, 308);
   const data = await loadOr404<TopicPage>(`/api/site/topics/${encodeURIComponent(params.slug)}?page=${page}`, { signal: request.signal });
   return cachedPage(60, { data });
 }

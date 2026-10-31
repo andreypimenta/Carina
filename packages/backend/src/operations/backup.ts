@@ -83,7 +83,23 @@ export async function runBackup(now = new Date()) {
   // Named after the database ("news_db" → news-db-…), so two databases backed up into one store stay apart.
   const name = sql.options.database.toLowerCase().replace(/[^a-z0-9]+/g, "-");
   const dump = path.join(dir, `${name}-${stamp}.dump`);
-  await run("pg_dump", ["--format=custom", "--compress=6", "--no-owner", "--file", dump, config.databaseUrl], { maxBuffer: 16 * 1024 * 1024 });
+  // execFile includes argv in failures. Give libpq credentials through its environment so neither
+  // process listings nor a failed job's stored error contain them; keep other connection options.
+  const connection = new URL(config.databaseUrl);
+  const env = { ...process.env,
+    ...(connection.username ? { PGUSER: decodeURIComponent(connection.username) } : {}),
+    ...(connection.password ? { PGPASSWORD: decodeURIComponent(connection.password) } : {}),
+  };
+  connection.username = connection.password = "";
+  // libpq decodes percent escapes but not form-style '+'. Keep non-credential options byte-for-byte.
+  connection.search = connection.search.slice(1).split("&").filter(option => {
+    const separator = option.indexOf("=");
+    const key = decodeURIComponent(option.slice(0, separator));
+    if (key !== "user" && key !== "password") return true;
+    env[key === "user" ? "PGUSER" : "PGPASSWORD"] = decodeURIComponent(option.slice(separator + 1));
+    return false;
+  }).join("&");
+  await run("pg_dump", ["--format=custom", "--compress=6", "--no-owner", "--file", dump, connection.href], { env, maxBuffer: 16 * 1024 * 1024 });
   // Verify before shipping: the archive must list cleanly.
   await run("pg_restore", ["--list", dump], { maxBuffer: 64 * 1024 * 1024 });
   const files = path.join(dir, `${name}-files-${stamp}.tar.gz`);

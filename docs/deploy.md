@@ -81,6 +81,12 @@ docker compose run --rm setup && docker compose up -d
 
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
+#### 安全边界（2026 年 10 月 30 日）
+
+没有新增环境变量或数据库迁移。`deploy/Caddyfile` 给站点响应加上 HSTS、`X-Frame-Options: SAMEORIGIN`、`nosniff`、`Referrer-Policy` 和 `Permissions-Policy`（应用自己已设的同名头保持不变，不加 CSP）。Caddy 只在启动时读配置文件，更新后重启它才生效：`docker compose --profile https up -d --force-recreate caddy`。HSTS 让浏览器一年内只用 HTTPS 访问本域名（不含子域名）；站点不能再回到纯 HTTP。用 Nginx 的站点可自行加上同样的头。
+
+数据库备份的 `pg_dump` 改从环境变量（`PGUSER`/`PGPASSWORD`）取账号密码，不再出现在进程列表和失败记录里；连接串的其他参数不变。摘要和翻译的提示词也引用了 `{{> safety}}`，提示词版本号随之变化，已有摘要和译文不会因此重做。
+
 #### 原帖展示与引擎同步（2026 年 10 月 6 日）
 
 没有新增必填环境变量或数据库迁移。自己维护 `site/site.ts` 的站点需补上 `REPORTS.quiet`，可对照示范配置：日报时段内有资料经过评判、但没有新大事时照常出刊，用这两句做标题与导语；导语的 `{start}`、`{end}` 是时段起止。没有任何资料经过评判仍算采集或判断失败，不伪装成平静的一天。
