@@ -17,8 +17,8 @@ export function useChangelogDot(latestVersion: string | null): boolean {
 }
 
 function SideLink({ item, dot }: { item: NavItem; dot: boolean }) {
-  const { pathname, search } = useLocation();
-  const isActive = sidebarIsActive(item, pathname, search);
+  const { pathname } = useLocation();
+  const isActive = sidebarIsActive(item, pathname);
   const Icon = item.icon;
   return (
     <Link

@@ -1,7 +1,7 @@
 import { SITE } from "@aihot/site";
 import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
-import { CATEGORY_KEYS, CATEGORY_LABELS } from "@aihot/contracts/taxonomy";
+import { AREA_KEYS, AREA_LABELS, CATEGORY_KEYS, CATEGORY_LABELS } from "@aihot/contracts/taxonomy";
 import type { Route } from "./+types/content-item";
 import type { AdminContentChain } from "@aihot/contracts/admin";
 import { adminGet } from "../../lib/admin.server";
@@ -41,7 +41,7 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
   const { run, pending } = useAdminAction();
   const [dialog, setDialog] = useState<Dialog>(null);
   const [visibility, setVisibility] = useState<string>(p?.visibility ?? "public");
-  const [fields, setFields] = useState({ title: "", summary: "", reason: "", category: "", tags: "", selected: "", silent: "" });
+  const [fields, setFields] = useState({ title: "", summary: "", reason: "", category: "", area: "", tags: "", selected: "", silent: "" });
   const [mergeInto, setMergeInto] = useState("");
   const version = c.override?.version ?? 0;
   const base = `/api/admin/content/${encodeURIComponent(a.id)}`;
@@ -55,6 +55,7 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
       summary: String(f.summary ?? ""),
       reason: String(f.reason ?? ""),
       category: String(f.category ?? ""),
+      area: String(f.area ?? ""),
       tags: Array.isArray(f.tags) ? (f.tags as string[]).join(", ") : "",
       selected: f.selected === undefined ? "" : String(f.selected),
       silent: f.silent === undefined ? "" : String(f.silent),
@@ -175,6 +176,7 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
                     ["Visibilidade", VISIBILITY_LABEL[p.visibility] ?? p.visibility],
                     ["Seleção", p.selected ? `Sim · visível a partir de ${p.visible_after ? bj(p.visible_after, true) : "imediatamente"}` : "Não"],
                     ["Categoria", p.category ? CATEGORY_LABELS[p.category as keyof typeof CATEGORY_LABELS] ?? p.category : null],
+                    ["Aba", p.area ? AREA_LABELS[p.area as keyof typeof AREA_LABELS] ?? p.area : null],
                     ["Tags", (p.tags as string[] | null)?.join(", ")],
                     ["Resumo", p.summary],
                     ["Por que ler", p.reason],
@@ -343,6 +345,8 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
           }
           if (fields.category) next.category = fields.category;
           else if (c.override?.fields.category !== undefined) clear.push("category");
+          if (fields.area) next.area = fields.area;
+          else if (c.override?.fields.area !== undefined) clear.push("area");
           if (fields.tags.trim()) next.tags = fields.tags.split(/[,，]/).map((t) => t.trim()).filter(Boolean);
           else if (c.override?.fields.tags !== undefined) clear.push("tags");
           for (const k of ["selected", "silent"] as const) {
@@ -360,6 +364,12 @@ export default function ContentItem({ loaderData }: Route.ComponentProps) {
             <Select value={fields.category} onChange={(e) => setFields({ ...fields, category: e.target.value })}>
               <option value="">Não corrigir</option>
               {CATEGORY_KEYS.map((k) => <option key={k} value={k}>{CATEGORY_LABELS[k]}</option>)}
+            </Select>
+          </Field>
+          <Field label="Aba">
+            <Select value={fields.area} onChange={(e) => setFields({ ...fields, area: e.target.value })}>
+              <option value="">Não corrigir</option>
+              {AREA_KEYS.map((k) => <option key={k} value={k}>{AREA_LABELS[k]}</option>)}
             </Select>
           </Field>
           <Field label="Tags (separadas por vírgula)"><Input value={fields.tags} onChange={(e) => setFields({ ...fields, tags: e.target.value })} /></Field>

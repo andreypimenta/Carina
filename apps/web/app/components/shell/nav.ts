@@ -2,7 +2,6 @@
 // and the site's modules'.
 import type { ReactNode } from "react";
 import { NAV } from "@aihot/site";
-import { AREA_KEYS, AREA_LABELS } from "@aihot/contracts/taxonomy";
 import { webModules } from "../../site-modules";
 import {
   IconBolt, IconBookmark, IconDoc, IconFlame, IconGrid, IconHeart, IconHistory, IconList, IconMessage, IconPlug, IconUser,
@@ -29,11 +28,6 @@ const SECTIONS: Array<{ title: string; items: NavItem[] }> = [
       { to: "/topics", label: "Tópicos", icon: IconGrid },
       { to: "/starred", label: "Salvos", icon: IconBookmark },
     ],
-  },
-  {
-    // The site's sections (abas): Seleção narrowed to one.
-    title: "Áreas",
-    items: AREA_KEYS.map((k) => ({ to: `/?area=${k}`, label: AREA_LABELS[k], icon: IconGrid })),
   },
   {
     title: "Mais",
@@ -83,15 +77,9 @@ export function sidebar(): Array<{ title: string; items: NavItem[] }> {
   return [...sections, more];
 }
 
-/**
- * A sidebar entry is lit on its pages; the weekly edition also covers the daily notes and the monthly review.
- * A section's entry is lit on its section, and Seleção only without one.
- */
-export function sidebarIsActive(item: NavItem, pathname: string, search = ""): boolean {
-  const area = new URLSearchParams(search).get("area");
-  const [path, query] = item.to.split("?");
-  if (query !== undefined) return pathname === path && area === new URLSearchParams(query).get("area");
-  if (item.end) return pathname === item.to && !area;
+/** A sidebar entry is lit on its pages; the weekly edition also covers the daily notes and the monthly review. */
+export function sidebarIsActive(item: NavItem, pathname: string): boolean {
+  if (item.end) return pathname === item.to;
   if (item.to === "/weekly") return /^\/(daily|weekly|monthly)(\/|$)/.test(pathname);
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }

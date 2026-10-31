@@ -279,8 +279,8 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const summary = pickString(f.summary, original ? original.summary : analysis?.summary_zh ?? null);
   const category = pickString(f.category, analysis?.category ?? null);
   const tags = Array.isArray(f.tags) ? (f.tags as string[]) : [...new Set([...(analysis?.tags ?? []), ...(analysis?.subjects ?? []).map((s) => `entity:${s}`)])];
-  // Every item has its section (aba): the structure step's, else its tags'.
-  const area = areaOf(analysis?.area, tags);
+  // Every item has its section (aba): the editor's, else the structure step's, else its tags'.
+  const area = typeof f.area === "string" ? f.area : areaOf(analysis?.area, tags);
   const score = typeof f.score === "number" ? f.score : analysis?.score ?? null;
   const relevance = typeof f.relevance === "string" ? (f.relevance as string) : analysis?.relevance ?? null;
   const judgedSelected = typeof f.selected === "boolean" ? (f.selected as boolean) : analysis?.selected ?? null;

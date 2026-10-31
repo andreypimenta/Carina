@@ -1,5 +1,5 @@
 // Failure cases: a device note, regulation note, technique or follow-up is counted as a guideline; a category
-// correction leaves a frozen daily's release figure stale, a tag correction that changes the section (aba)
+// correction leaves a frozen daily's release figure stale, a tag or section (aba) correction that changes the section
 // leaves frozen daily/weekly/monthly sections stale, a correction rewrites the lead or selection, triggers
 // a paid digest, leaves an obsolete section introduction, or commits without its audit/revision.
 import { tag } from "./setup.ts";
@@ -94,4 +94,35 @@ test("category corrections revise every standard report atomically without selec
       assert.equal(c.overview, "Panorama mantido");
     }
   }
+});
+
+test("an editor's section (aba) wins over the model's and moves the item in every issue; clearing it restores the model's", async () => {
+  const sourceId = `area-${tag()}`;
+  await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${sourceId},'Area fixture','rss','T1','editorial')`;
+  const { articleId } = await upsertMaterial({ sourceId, url: `https://example.com/${sourceId}`, title: "Estenose subglótica em lactentes", bodyText: "Texto", bodyStatus: "ok", via: "fetch", publishedAt: new Date() });
+  await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,category,area,tags,title_zh,summary_zh,score,selected)
+    VALUES (${articleId},1,'rule','pass','guidelines','cirurgia',ARRAY['Diretriz/consenso','Fibrose cística'],'Estenose subglótica em lactentes','Resumo',80,true)`;
+  await publishArticle(articleId, { releasedAt: new Date() });
+  const area = async () => (await sql`SELECT area FROM publications WHERE article_id=${articleId}`)[0]!.area;
+  assert.equal(await area(), "cirurgia");
+  const entry = { itemId: articleId, title: "Título congelado", summary: "Resumo", sourceId, firstParty: true, role: "Oficial" };
+  const keys = { daily: "2097-02-02", weekly: "2097-W05", monthly: "2097-02" } as const;
+  for (const [kind, key] of Object.entries(keys)) {
+    const content = kind === "daily"
+      ? { leadItemId: articleId, highlights: [articleId], flashes: [], sections: [{ label: SURGERY, items: [entry] }], metrics: { totalEvents: 1, modelsReleased: 1 } }
+      : { headline: "Manchete", leadItemId: articleId, storyOrder: [articleId], overview: "Panorama", themes: [{ heading: SURGERY, summary: "Introdução", storyRefs: [entry] }], metrics: { totalStories: 1 } };
+    await sql`INSERT INTO reports (kind,key,window_start,window_end,content,generated_at,origin)
+      VALUES (${kind},${key},now(),now(),${sql.json(content as never)},now(),'imported')`;
+  }
+  const sections = async () => Promise.all(Object.entries(keys).map(async ([kind, key]) => {
+    const c = (await sql`SELECT content FROM reports WHERE kind=${kind} AND key=${key}`)[0]!.content;
+    return kind === "daily" ? c.sections.map((s: { label: string }) => s.label) : c.themes.map((t: { heading: string }) => t.heading);
+  }));
+  await overrideFields(articleId, { fields: { area: "pneumologia" }, version: 0, reason: "é pneumologia" }, "test-area");
+  assert.equal(await area(), "pneumologia");
+  assert.deepEqual(await sections(), [[PULMONOLOGY], [PULMONOLOGY], [PULMONOLOGY]]);
+  await overrideFields(articleId, { fields: {}, clear: ["area"], version: 1, reason: "volta ao modelo" }, "test-area");
+  assert.equal(await area(), "cirurgia");
+  assert.deepEqual(await sections(), [[SURGERY], [SURGERY], [SURGERY]]);
+  await assert.rejects(overrideFields(articleId, { fields: { area: "adulto" }, version: 2, reason: "aba inexistente" }, "test-area"));
 });
