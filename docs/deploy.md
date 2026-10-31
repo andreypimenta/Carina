@@ -90,7 +90,7 @@ docker compose run --rm setup && docker compose up -d
 - **分区**：原来的第一个分区“Cirurgia torácica pediátrica e via aérea”拆成“Cirurgia torácica pediátrica”（key 仍是 `cirurgia`，`/selecao?area=cirurgia` 的旧链接照常打开，但只剩胸外科）和“Via aérea pediátrica”（`via-aerea`），另加“Otorrinolaringologia pediátrica”（`otorrino`）。日报、周报、月报按这四个分区分节；肺科和耳鼻喉科每期最多 5/6/9 条（日报/周报/月报，原来肺科是 6/8/12），两区合计给胸外科和气道至少留下 6/8/12 个位置。已出的各期保留出刊时的分节。
 - **范围**：本刊扩展到儿童耳鼻喉科（只限儿童，成人耳鼻喉科仍不收）。预筛、结构化、评分提示词和主题标签（`Otite média`、`Adenotonsilectomia`、`Apneia obstrutiva do sono`、`Perda auditiva`、`Implante coclear`、`Rinossinusite`、`Atresia de coanas`、`Cabeça e pescoço`）跟着改；`industry/revistas.json` 的主题过滤加了耳鼻喉词，`industry/literatura.json` 加了检索 `otorrino-pediatrica-evidencia`，`consensos-grupos-pediatricos` 的主题词也加了耳鼻喉。每周大约多 7 次文章写作的模型调用（见 [fontes.md](fontes.md#otorrinolaringologia-pediátrica)）。
 - **订阅偏好**：邮件订阅者现在可以选几个分区放在前面（`assinatura_subscribers.interest` 存逗号分隔的分区 key）。
-- **已有内容（一次性）**：更新后马上运行 `scripts/abas-dividir.ts`：不调用模型，把旧提示词放进 `cirurgia` 或按标签进 `cirurgia` 的内容按主题标签重新分区（气道标签进 `via-aerea`），每条一个事务；后台“人工修正”里选过 `cirurgia` 而标签指向别的分区的内容只列出来，由编辑在后台决定；选了旧分区优先的读者改成胸外科和气道都优先（`cirurgia,via-aerea`）。只运行一次：之后新选“只要胸外科”的读者也会被改。不加 `--apply` 只统计。
+- **已有内容（一次性）**：更新后马上运行 `scripts/abas-dividir.ts`：不调用模型，把旧提示词放进 `cirurgia` 或按标签进 `cirurgia` 的内容只在 `cirurgia` 和 `via-aerea` 之间按主题标签重新分区（第一个属于这两个分区的标签决定，没有就留在 `cirurgia`；不会进 `pneumologia` 或 `otorrino`），每条一个事务；后台“人工修正”里选过 `cirurgia` 而标签指向 `via-aerea` 的内容只列出来，由编辑在后台决定；选了旧分区优先的读者改成胸外科和气道都优先（`cirurgia,via-aerea`）。只运行一次：之后新选“只要胸外科”的读者也会被改。不加 `--apply` 只统计。
 
 ```bash
 docker compose exec worker node scripts/abas-dividir.ts            # 预览
