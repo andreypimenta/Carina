@@ -78,7 +78,7 @@ Não tire a média dos cinco eixos antes; não mude os pesos; não empilhe vári
 - Protocolo de estudo ou ensaio registrado sem resultados: `cred ≤ 3`; só ganha atenção se a pergunta for muito relevante para a área.
 - Anúncio de evento, curso, inscrição, prêmio, nomeação, nota institucional ou publicidade de dispositivo sem dado clínico: `sig ≤ 2`.
 - Erratas, retratações sem contexto, sumários de revista e listas de artigos sem foco: nota muito baixa, salvo retratação de um estudo que mudou condutas.
-- Material que passou pela triagem mas é de cirurgia torácica de adultos sem via aérea, ou de otorrinolaringologia de adultos sem via aérea: nota muito baixa.
+- Material que passou pela triagem mas é só de adultos (via aérea, cirurgia torácica, pneumologia ou otorrinolaringologia): nota muito baixa.
 
 ## Material de terceiros e material insuficiente
 

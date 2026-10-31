@@ -113,7 +113,7 @@
       "tags": [
         "Estenose traqueal"
       ],
-      "definition": "Estenose traqueal congênita e adquirida, em crianças e adultos: ressecção com anastomose, traqueoplastia por deslizamento e tratamento endoscópico."
+      "definition": "Estenose traqueal congênita e adquirida, em crianças: ressecção com anastomose, traqueoplastia por deslizamento e tratamento endoscópico."
     },
     {
       "slug": "traqueostomia",
@@ -144,7 +144,7 @@
         "Fenda laríngea",
         "Papilomatose respiratória"
       ],
-      "definition": "Paralisia de pregas vocais, fenda laríngea e papilomatose respiratória recorrente em crianças e adultos."
+      "definition": "Paralisia de pregas vocais, fenda laríngea e papilomatose respiratória recorrente em crianças."
     },
     {
       "slug": "corpo-estranho",
@@ -177,13 +177,12 @@
     },
     {
       "slug": "via-aerea-adulto",
-      "name": "Via aérea do adulto",
+      "name": "Via aérea difícil e intubação",
       "group": "field",
       "tags": [
-        "Via aérea adulto",
         "Via aérea difícil"
       ],
-      "definition": "Estenose traqueal pós-intubação, ressecção traqueal, via aérea difícil e intubação em adultos."
+      "definition": "Via aérea difícil e intubação em crianças e adolescentes: avaliação, técnica, dispositivos e lesão de via aérea por intubação."
     },
     {
       "slug": "malformacoes-pulmonares",

@@ -45,11 +45,11 @@ export const AREAS = [
   },
   {
     key: "via-aerea", label: "Via aérea pediátrica",
-    guide: "Laringe, traqueia e brônquios e a endoscopia respiratória: estenoses subglótica e traqueal e sua reconstrução, laringomalácia e traqueobroncomalácia, paralisia de pregas vocais, fenda laríngea, papilomatose, traqueostomia e decanulação, corpo estranho, broncoscopia, stents, intubação e via aérea difícil. A via aérea do adulto também fica aqui.",
+    guide: "Laringe, traqueia e brônquios e a endoscopia respiratória: estenoses subglótica e traqueal e sua reconstrução, laringomalácia e traqueobroncomalácia, paralisia de pregas vocais, fenda laríngea, papilomatose, traqueostomia e decanulação, corpo estranho, broncoscopia, stents, intubação e via aérea difícil.",
     tags: [
       "Estenose subglótica", "Estenose traqueal", "Laringotraqueoplastia", "Ressecção cricotraqueal", "Traqueostomia", "Decanulação",
       "Laringomalácia", "Traqueobroncomalácia", "Paralisia de pregas vocais", "Fenda laríngea", "Papilomatose respiratória", "Corpo estranho",
-      "Broncoscopia", "Stents de via aérea", "Via aérea difícil", "Via aérea adulto",
+      "Broncoscopia", "Stents de via aérea", "Via aérea difícil",
     ],
   },
   {
@@ -100,7 +100,7 @@ export const TOPIC_TAGS = [
   // Via aérea
   "Estenose subglótica", "Estenose traqueal", "Laringotraqueoplastia", "Ressecção cricotraqueal", "Traqueostomia", "Decanulação",
   "Laringomalácia", "Traqueobroncomalácia", "Paralisia de pregas vocais", "Fenda laríngea", "Papilomatose respiratória", "Corpo estranho",
-  "Broncoscopia", "Stents de via aérea", "Via aérea difícil", "Via aérea adulto",
+  "Broncoscopia", "Stents de via aérea", "Via aérea difícil",
   // Cirurgia torácica pediátrica
   "Malformações pulmonares", "Hérnia diafragmática", "Pectus", "Empiema", "Pneumotórax", "Tumores torácicos", "Mediastino",
   "Atresia de esôfago", "Fístula traqueoesofágica", "Cirurgia minimamente invasiva",
