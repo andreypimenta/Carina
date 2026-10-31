@@ -360,7 +360,7 @@ export async function researchPost(row: PostRow, now = new Date(), sources?: { i
 /**
  * The site's article about a paper PubMed never had, from its publisher's page (the page as served to the
  * site's crawler): written like any paper's (industry/prompts/materia.md), from the page's text up to its back
- * matter when the page is the open copy Unpaywall points to and has more than the abstract (as for the free copies,
+ * matter when the page is the open copy Unpaywall points to (its address or this DOI's) and has more than the abstract (as for the free copies,
  * access.ts), else from the abstract its citation tags declare, with the reference block; null without a
  * title or with neither. A paper already written under its DOI is not written again.
  */
@@ -373,7 +373,9 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
   const abstractChars = paper.abstract.reduce((n, a) => n + a.text.length, 0);
   const access = await findOpenCopy(doi);
   const host = (u: string) => new URL(u).hostname.replace(/^www\./, "");
-  const copy = access.kind === "open" && host(access.copy.url) === host(page.url) ? articleText(page.html, page.url, abstractChars) : null;
+  const doiAddress = /^https?:\/\/(?:dx\.)?doi\.org\//i;
+  const isThisPage = (u: string) => (doiAddress.test(u) ? cleanDoi(u.replace(doiAddress, "")) === doi : host(u) === host(page.url));
+  const copy = access.kind === "open" && isThisPage(access.copy.url) ? articleText(page.html, page.url, abstractChars) : null;
   const fullText = copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
   if (!fullText && !abstractChars) return null;
   const basis = fullText ? "full" : "abstract";
