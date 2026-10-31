@@ -1,4 +1,4 @@
-// A taxonomia do Fôlego (cirurgia torácica pediátrica, via aérea adulto e pediátrica, pneumologia pediátrica): categorias,
+// A taxonomia do Fôlego (cirurgia torácica, via aérea, pneumologia e otorrinolaringologia pediátricas): categorias,
 // vocabulário de tags, cadastro de sociedades e órgãos, e o dicionário de identidade.
 // O modelo escolhe tags deste vocabulário; os tópicos (topics.json) se agrupam pelas tags; a barra de filtros agrupa por categoria.
 // Depois de publicado, não mude a key das categorias (ela aparece na URL: /all?category=…); tags e cadastro podem mudar.
@@ -27,26 +27,42 @@ export const CATEGORIES = [
  * e no banco: não mude depois de publicar. label é o nome da aba e o título da seção; guide diz ao modelo o que entra nela.
  * tags: as tags de tema da aba, para o item que o modelo não classificou (e para o preenchimento dos itens antigos): vale a
  * primeira tag de tema do item que estiver numa destas listas; sem nenhuma, o item vai para a primeira aba.
- * max: o teto de entradas da aba em cada edição, para que ela não tome o lugar do núcleo do jornal; as vagas que sobram
- * depois que as outras abas se esgotam ainda vão para ela, e o tamanho de cada edição não muda.
+ * max: o teto de entradas da aba em cada edição, para que ela não tome o lugar do núcleo do jornal (cirurgia torácica e via
+ * aérea, sem teto); as vagas que sobram depois que as outras abas se esgotam ainda vão para ela, e o tamanho de cada edição
+ * não muda. Pneumologia e otorrino têm o mesmo teto: juntas ficam com no máximo 10 de 16 entradas da diária, 12 de 20 da
+ * semanal e 18 de 30 da mensal.
+ * A key cirurgia era, até 31/10/2026, a aba única de cirurgia torácica e via aérea; os itens antigos passam para as abas
+ * novas com scripts/abas-dividir.ts.
  */
 export const AREAS = [
   {
-    key: "cirurgia", label: "Cirurgia torácica pediátrica e via aérea",
-    guide: "Cirurgia torácica pediátrica, via aérea e endoscopia: estenoses, malácias, traqueostomia, malformações pulmonares, hérnia diafragmática, pectus, empiema, tumores torácicos, corpo estranho, broncoscopia, fístula traqueoesofágica, cirurgia minimamente invasiva, transplante pulmonar como cirurgia. A via aérea do adulto também fica aqui.",
+    key: "cirurgia", label: "Cirurgia torácica pediátrica",
+    guide: "Cirurgia do tórax da criança fora da via aérea: malformações pulmonares, hérnia diafragmática, pectus e parede torácica, empiema, pneumotórax, tumores torácicos e do mediastino, atresia de esôfago e fístula traqueoesofágica, cirurgia minimamente invasiva e robótica, transplante pulmonar como cirurgia.",
+    tags: [
+      "Malformações pulmonares", "Hérnia diafragmática", "Pectus", "Empiema", "Pneumotórax", "Tumores torácicos", "Mediastino",
+      "Atresia de esôfago", "Fístula traqueoesofágica", "Cirurgia minimamente invasiva",
+    ],
+  },
+  {
+    key: "via-aerea", label: "Via aérea pediátrica",
+    guide: "Laringe, traqueia e brônquios e a endoscopia respiratória: estenoses subglótica e traqueal e sua reconstrução, laringomalácia e traqueobroncomalácia, paralisia de pregas vocais, fenda laríngea, papilomatose, traqueostomia e decanulação, corpo estranho, broncoscopia, stents, intubação e via aérea difícil.",
     tags: [
       "Estenose subglótica", "Estenose traqueal", "Laringotraqueoplastia", "Ressecção cricotraqueal", "Traqueostomia", "Decanulação",
       "Laringomalácia", "Traqueobroncomalácia", "Paralisia de pregas vocais", "Fenda laríngea", "Papilomatose respiratória", "Corpo estranho",
-      "Fístula traqueoesofágica", "Atresia de esôfago", "Broncoscopia", "Stents de via aérea", "Via aérea difícil", "Via aérea adulto",
-      "Malformações pulmonares", "Hérnia diafragmática", "Pectus", "Empiema", "Pneumotórax", "Tumores torácicos", "Mediastino",
-      "Cirurgia minimamente invasiva",
+      "Broncoscopia", "Stents de via aérea", "Via aérea difícil",
     ],
   },
   {
     key: "pneumologia", label: "Pneumologia pediátrica",
     guide: "Pneumologia clínica da criança, sem foco cirúrgico ou de via aérea: fibrose cística, bronquiectasias, discinesia ciliar, displasia broncopulmonar, asma e sibilância, infecções respiratórias, doenças intersticiais, função pulmonar, ventilação mecânica e domiciliar, ECMO, neonatologia respiratória, seguimento clínico do transplante pulmonar.",
     tags: ["Fibrose cística", "Bronquiectasias", "Discinesia ciliar", "Displasia broncopulmonar", "Transplante pulmonar", "ECMO", "Ventilação mecânica", "Neonatologia"],
-    max: { daily: 6, weekly: 8, monthly: 12 },
+    max: { daily: 5, weekly: 6, monthly: 9 },
+  },
+  {
+    key: "otorrino", label: "Otorrinolaringologia pediátrica",
+    guide: "Otorrinolaringologia da criança fora da laringe e da traqueia: otite média e tubos de ventilação, amigdalectomia e adenoidectomia, apneia obstrutiva do sono, perda auditiva e implante coclear, nariz e seios paranasais, atresia de coanas, cabeça e pescoço (massas cervicais, malformações linfáticas, fenda palatina e insuficiência velofaríngea). Só crianças e adolescentes: a otorrinolaringologia do adulto fica fora do jornal.",
+    tags: ["Otite média", "Adenotonsilectomia", "Apneia obstrutiva do sono", "Perda auditiva", "Implante coclear", "Rinossinusite", "Atresia de coanas", "Cabeça e pescoço"],
+    max: { daily: 5, weekly: 6, monthly: 9 },
   },
 ] as const satisfies ReadonlyArray<{ key: string; label: string; guide: string; tags: readonly string[]; max?: { daily: number; weekly: number; monthly: number } }>;
 
@@ -84,13 +100,16 @@ export const TOPIC_TAGS = [
   // Via aérea
   "Estenose subglótica", "Estenose traqueal", "Laringotraqueoplastia", "Ressecção cricotraqueal", "Traqueostomia", "Decanulação",
   "Laringomalácia", "Traqueobroncomalácia", "Paralisia de pregas vocais", "Fenda laríngea", "Papilomatose respiratória", "Corpo estranho",
-  "Fístula traqueoesofágica", "Atresia de esôfago", "Broncoscopia", "Stents de via aérea", "Via aérea difícil", "Via aérea adulto",
+  "Broncoscopia", "Stents de via aérea", "Via aérea difícil",
   // Cirurgia torácica pediátrica
   "Malformações pulmonares", "Hérnia diafragmática", "Pectus", "Empiema", "Pneumotórax", "Tumores torácicos", "Mediastino",
-  "Cirurgia minimamente invasiva",
+  "Atresia de esôfago", "Fístula traqueoesofágica", "Cirurgia minimamente invasiva",
   // Pneumologia pediátrica e cuidados intensivos
   "Fibrose cística", "Bronquiectasias", "Discinesia ciliar", "Displasia broncopulmonar", "Transplante pulmonar", "ECMO",
   "Ventilação mecânica", "Neonatologia",
+  // Otorrinolaringologia pediátrica
+  "Otite média", "Adenotonsilectomia", "Apneia obstrutiva do sono", "Perda auditiva", "Implante coclear", "Rinossinusite", "Atresia de coanas",
+  "Cabeça e pescoço",
   // Origem
   "Brasil",
 ] as const;
@@ -133,6 +152,12 @@ export const TAG_SYNONYMS: Readonly<Record<string, string>> = {
   dbp: "Displasia broncopulmonar", ventilação: "Ventilação mecânica", "ventilação domiciliar": "Ventilação mecânica", uti: "Ventilação mecânica",
   brasil: "Brasil", brasileiro: "Brasil", "do brasil": "Brasil",
   "recém-nascido": "Neonatologia", neonatal: "Neonatologia", prematuridade: "Neonatologia",
+  "otite média aguda": "Otite média", "otite média com efusão": "Otite média", "otite média crônica": "Otite média", otite: "Otite média", "tubo de ventilação": "Otite média", timpanostomia: "Otite média", miringotomia: "Otite média",
+  amigdalectomia: "Adenotonsilectomia", tonsilectomia: "Adenotonsilectomia", adenoidectomia: "Adenotonsilectomia", adenoamigdalectomia: "Adenotonsilectomia", "hipertrofia adenotonsilar": "Adenotonsilectomia",
+  "apneia do sono": "Apneia obstrutiva do sono", "apneia obstrutiva": "Apneia obstrutiva do sono", saos: "Apneia obstrutiva do sono", "distúrbio respiratório do sono": "Apneia obstrutiva do sono", ronco: "Apneia obstrutiva do sono",
+  surdez: "Perda auditiva", "perda auditiva neurossensorial": "Perda auditiva", "triagem auditiva neonatal": "Perda auditiva", audição: "Perda auditiva",
+  "implante coclear": "Implante coclear", sinusite: "Rinossinusite", "rinossinusite crônica": "Rinossinusite",
+  "atresia coanal": "Atresia de coanas", "massa cervical": "Cabeça e pescoço", "malformação linfática": "Cabeça e pescoço", "fenda palatina": "Cabeça e pescoço", "insuficiência velofaríngea": "Cabeça e pescoço",
 };
 
 // ── Sociedades e órgãos ─────────────────────────────────────────────────────────────────

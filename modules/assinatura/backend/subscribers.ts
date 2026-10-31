@@ -45,7 +45,7 @@ export interface SignupInput {
   trap?: string | null;
   /** The tag of the group whose link the reader came by (/assine?g=). */
   group?: unknown;
-  /** The section the reader wants first (interest.ts); anything else is both. */
+  /** The sections the reader wants first (interest.ts); anything else is all, in the journal's order. */
   interest?: unknown;
   ip: string;
   userAgent: string;

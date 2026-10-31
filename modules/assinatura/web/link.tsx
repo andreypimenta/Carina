@@ -1,8 +1,8 @@
 // Where the links in the messages land (/assine/confirmacao, /assine/saida, sent here by the api with the
 // token): the journal's name and one button. Opening the page changes nothing; only the
 // click confirms or takes the address off, so a mail scanner or a link preview that opens it does neither.
-// After leaving, the reader can come back with one more click. The e-mail's "Escolher a seção que vem primeiro"
-// opens /assine/preferencias, where the reader picks the section the edition puts first; the leaving page offers
+// After leaving, the reader can come back with one more click. The e-mail's "Escolher as seções que vêm primeiro"
+// opens /assine/preferencias, where the reader picks the sections the edition puts first; the leaving page offers
 // the same before the reader goes. Nothing else of the site, and no sign-up form.
 import { useEffect, useId, useState } from "react";
 import { data, Link, useLoaderData, type HeadersArgs, type LoaderFunctionArgs, type MetaArgs } from "react-router";
@@ -43,7 +43,7 @@ async function act<T>(path: string, token: string, extra: Record<string, unknown
 const BUTTON = "inline-flex h-12 w-full items-center justify-center rounded-full px-6 text-[15.5px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-60";
 
 /**
- * The section the e-mailed edition puts first, for a confirmed e-mail address: read with the token, changed with
+ * The sections the e-mailed edition puts first, for a confirmed e-mail address: read with the token, changed with
  * one click on "Salvar". Says nothing for other addresses (WhatsApp's message has no sections).
  */
 function Preferences({ token, intro, onInvalid }: { token: string; intro: string; onInvalid?: () => void }) {
@@ -94,8 +94,8 @@ export default function LinkPage() {
   let ok = false;
   if (prefs && state.kind !== "invalid") {
     title = "Suas preferências";
-    body = "Escolha a seção que vem primeiro na sua edição semanal. As duas continuam chegando.";
-    action = <Preferences token={token!} intro="A seção escolhida abre o seu e-mail; a outra vem logo depois." onInvalid={() => setState({ kind: "invalid" })} />;
+    body = "Escolha as seções que vêm primeiro na sua edição semanal. Todas continuam chegando.";
+    action = <Preferences token={token!} intro="As seções escolhidas abrem o seu e-mail; as outras vêm logo depois, na ordem do jornal." onInvalid={() => setState({ kind: "invalid" })} />;
   } else if (state.kind === "invalid") {
     title = "Este link não vale mais";
     body = "Ele expirou ou chegou incompleto. Se quiser receber a edição, inscreva-se de novo.";
@@ -139,7 +139,7 @@ export default function LinkPage() {
           {state.kind === "busy" ? "Um momento…" : leave ? "Não quero mais receber" : "Confirmar inscrição"}
         </button>
         {state.kind === "error" && <p role="alert" className="mt-3 text-[13.5px] font-medium text-hot">Não foi possível agora. Tente de novo.</p>}
-        {leave && <Preferences token={token!} intro="Prefere continuar e só mudar a seção que vem primeiro?" />}
+        {leave && <Preferences token={token!} intro="Prefere continuar e só mudar as seções que vêm primeiro?" />}
       </>
     );
   }

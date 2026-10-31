@@ -1,7 +1,7 @@
-// Failure cases: an item appears in no section or in both; an item published before sections existed has
-// none; the sections leave the pack's order; pulmonology crowds the surgical and airway core out of a daily
-// or a weekly; a section's cap shrinks an issue the other section cannot fill; the site's section filter
-// lets the other section through.
+// Failure cases: an item appears in no section or in two; an item published before sections existed has
+// none; the sections leave the pack's order; pulmonology or ENT crowds the surgical and airway core out of a
+// daily or a weekly; a section's cap shrinks an issue the other sections cannot fill; the site's section
+// filter lets another section through.
 import { editionAt, stub, tag } from "./setup.ts";
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
@@ -20,33 +20,41 @@ process.env.DEEPSEEK_BASE_URL = `${provider.url}/v1`;
 process.env.DEEPSEEK_API_KEY = "test-key";
 after(async () => { await provider.close(); await stopBoss(); await closeDb(); });
 
-const SURGERY = "Cirurgia torácica pediátrica e via aérea";
+const SURGERY = "Cirurgia torácica pediátrica";
+const AIRWAY = "Via aérea pediátrica";
 const PULMONOLOGY = "Pneumologia pediátrica";
+const ENT = "Otorrinolaringologia pediátrica";
 
-test("the two sections, in order; an item without one takes it from its first section tag, else the core", () => {
-  assert.deepEqual(SECTION_ORDER, [SURGERY, PULMONOLOGY]);
+test("the four sections, in order; an item without one takes it from its first section tag, else the first section", () => {
+  assert.deepEqual(SECTION_ORDER, [SURGERY, AIRWAY, PULMONOLOGY, ENT]);
   for (const a of AREAS) for (const t of a.tags) assert.ok((TOPIC_TAGS as readonly string[]).includes(t), `${t} is a topic tag`);
+  assert.equal(new Set(AREAS.flatMap((a) => a.tags)).size, AREAS.flatMap((a) => a.tags).length, "a tag points to one section");
   assert.equal(sectionOf("pneumologia", ["Estudo observacional", "Estenose subglótica"]), PULMONOLOGY);
   assert.equal(sectionOf(null, ["Estudo observacional", "Brasil", "Fibrose cística", "Traqueostomia"]), PULMONOLOGY);
-  assert.equal(sectionOf(null, ["Relato de caso", "Traqueostomia", "Fibrose cística"]), SURGERY);
+  assert.equal(sectionOf(null, ["Relato de caso", "Traqueostomia", "Fibrose cística"]), AIRWAY);
+  assert.equal(sectionOf(null, ["Técnica cirúrgica", "Atresia de esôfago", "Broncoscopia"]), SURGERY);
+  assert.equal(sectionOf(null, ["Ensaio clínico", "Adenotonsilectomia", "Apneia obstrutiva do sono"]), ENT);
   assert.equal(sectionOf(null, ["Revisão narrativa"]), SURGERY);
   assert.equal(areaOf("outra", []), "cirurgia");
 });
 
-test("a section's cap keeps the core's places, and gives them back when the core has no more", () => {
+test("the capped sections keep the core's places, and get them back when the core has no more", () => {
   const ranked = (areas: string[]) => areas.map((area, i) => ({ id: `${area}-${i}`, area }));
   const pickArea = (e: { area: string }) => e.area;
-  const crowded = ranked([...Array(14).fill("pneumologia"), ...Array(6).fill("cirurgia")]);
+  const count = (taken: Array<{ area: string }>, area: string) => taken.filter((e) => e.area === area).length;
+  const crowded = ranked([...Array(14).fill("pneumologia"), ...Array(3).fill("cirurgia"), ...Array(3).fill("via-aerea")]);
   const daily = takeBySection(crowded, MAIN_ENTRIES, "daily", pickArea);
   assert.equal(daily.taken.length, MAIN_ENTRIES);
-  assert.equal(daily.taken.filter((e) => e.area === "pneumologia").length, 10, "6 within the cap, 4 more once the core ran out");
-  assert.equal(daily.taken.filter((e) => e.area === "cirurgia").length, 6);
+  assert.equal(count(daily.taken, "pneumologia"), 10, "5 within the cap, 5 more once the core ran out");
+  assert.equal(count(daily.taken, "cirurgia") + count(daily.taken, "via-aerea"), 6);
   assert.deepEqual(daily.taken.map((e) => e.id), [...daily.taken].sort((a, b) => crowded.indexOf(a) - crowded.indexOf(b)).map((e) => e.id), "rank order");
-  const both = ranked([...Array(14).fill("pneumologia"), ...Array(14).fill("cirurgia")]);
-  const capped = takeBySection(both, 20, "weekly", pickArea);
-  assert.equal(capped.taken.filter((e) => e.area === "pneumologia").length, 8);
-  assert.equal(capped.taken.filter((e) => e.area === "cirurgia").length, 12);
-  assert.equal(capped.left.length, both.length - 20);
+  const all = ranked([...Array(10).fill("otorrino"), ...Array(10).fill("pneumologia"), ...Array(7).fill("via-aerea"), ...Array(7).fill("cirurgia")]);
+  const capped = takeBySection(all, 20, "weekly", pickArea);
+  assert.equal(count(capped.taken, "otorrino"), 6);
+  assert.equal(count(capped.taken, "pneumologia"), 6);
+  assert.equal(count(capped.taken, "via-aerea"), 7);
+  assert.equal(count(capped.taken, "cirurgia"), 1);
+  assert.equal(capped.left.length, all.length - 20);
 });
 
 /** A selected item from a source of its own, `hours` before the edition time of the daily dated `date`. */
@@ -61,14 +69,16 @@ async function item(date: string, hours: number, area: string | null, tags: stri
   return id;
 }
 
-test("dailies and weeklies put every item in one of the two sections, the core first", async () => {
+test("dailies and weeklies put every item in one of the four sections, in the journal's order", async () => {
   const [monday, tuesday] = ["2031-06-02", "2031-06-03"];
   const ids = {
-    airway: await item(monday, 10, "cirurgia", ["Estudo observacional", "Estenose subglótica"]),
+    airway: await item(monday, 10, "via-aerea", ["Estudo observacional", "Estenose subglótica"]),
     cf: await item(monday, 9, "pneumologia", ["Ensaio clínico", "Fibrose cística"]),
     unsorted: await item(monday, 8, null, ["Relato de caso", "Displasia broncopulmonar"]),
+    ear: await item(monday, 7, "otorrino", ["Ensaio clínico", "Otite média"]),
     pectus: await item(tuesday, 10, null, ["Técnica cirúrgica", "Pectus"]),
     society: await item(tuesday, 9, null, ["Sociedades/eventos"]),
+    tonsils: await item(tuesday, 8, null, ["Estudo observacional", "Adenotonsilectomia"]),
   };
   const sorted = (groups: Array<{ label: string; items: string[] }>) => groups.map((g) => ({ label: g.label, items: [...g.items].sort() }));
 
@@ -77,35 +87,40 @@ test("dailies and weeklies put every item in one of the two sections, the core f
   const dailies = await sql<{ content: { sections: Array<{ label: string; items: Array<{ itemId: string }> }> } }[]>`
     SELECT content FROM reports WHERE kind = 'daily' AND key IN (${monday}, ${tuesday}) ORDER BY key`;
   const daily = dailies.map((d) => d.content.sections.map((s) => ({ label: s.label, items: s.items.map((i) => i.itemId) })));
+  assert.deepEqual(daily[0]!.map((g) => g.label), [AIRWAY, PULMONOLOGY, ENT]);
   assert.deepEqual(sorted(daily[0]!), sorted([
-    { label: SURGERY, items: [ids.airway] },
+    { label: AIRWAY, items: [ids.airway] },
     { label: PULMONOLOGY, items: [ids.cf, ids.unsorted] },
+    { label: ENT, items: [ids.ear] },
   ]));
-  assert.deepEqual(sorted(daily[1]!), sorted([{ label: SURGERY, items: [ids.pectus, ids.society] }]));
+  assert.deepEqual(sorted(daily[1]!), sorted([{ label: SURGERY, items: [ids.pectus, ids.society] }, { label: ENT, items: [ids.tonsils] }]));
 
   const week = isoWeekLabel(monday);
   await composeWeekly(week);
   const [weekly] = await sql<{ content: { themes: Array<{ heading: string; storyRefs: Array<{ itemId: string }> }> } }[]>`
     SELECT content FROM reports WHERE kind = 'weekly' AND key = ${week}`;
   const themes = weekly!.content.themes.map((t) => ({ label: t.heading, items: t.storyRefs.map((r) => r.itemId) }));
+  assert.deepEqual(themes.map((t) => t.label), [SURGERY, AIRWAY, PULMONOLOGY, ENT]);
   assert.deepEqual(sorted(themes), sorted([
-    { label: SURGERY, items: [ids.airway, ids.pectus, ids.society] },
+    { label: SURGERY, items: [ids.pectus, ids.society] },
+    { label: AIRWAY, items: [ids.airway] },
     { label: PULMONOLOGY, items: [ids.cf, ids.unsorted] },
+    { label: ENT, items: [ids.ear, ids.tonsils] },
   ]));
 });
 
 test("a busy pulmonology day leaves the core its places in the daily", async () => {
   const day = "2031-07-08";
   const pulmonology = await Promise.all(Array.from({ length: 14 }, (_, i) => item(day, 2 + i * 0.5, "pneumologia", ["Ensaio clínico", "Fibrose cística"], 95)));
-  const surgery = await Promise.all(Array.from({ length: 10 }, (_, i) => item(day, 1 + i * 0.5, "cirurgia", ["Estudo observacional", "Traqueostomia"], 70)));
+  const surgery = await Promise.all(Array.from({ length: 10 }, (_, i) => item(day, 1 + i * 0.5, "via-aerea", ["Estudo observacional", "Traqueostomia"], 70)));
   await composeDaily(day);
   const [issue] = await sql<{ content: { sections: Array<{ label: string; items: Array<{ itemId: string }> }>; flashes: Array<{ itemId: string }> } }[]>`
     SELECT content FROM reports WHERE kind = 'daily' AND key = ${day}`;
   const section = (label: string) => issue!.content.sections.find((s) => s.label === label)?.items.map((i) => i.itemId) ?? [];
-  assert.equal(section(PULMONOLOGY).length, 6);
-  assert.equal(section(SURGERY).length, MAIN_ENTRIES - 6);
+  assert.equal(section(PULMONOLOGY).length, 6, "5 within the cap and 1 the core left over");
+  assert.equal(section(AIRWAY).length, 10);
   assert.ok(section(PULMONOLOGY).every((id) => pulmonology.includes(id)));
-  assert.ok(section(SURGERY).every((id) => surgery.includes(id)));
+  assert.ok(section(AIRWAY).every((id) => surgery.includes(id)));
   assert.ok(issue!.content.flashes.some((f) => pulmonology.includes(f.itemId)), "the rest of pulmonology is still in the flashes");
 });
 

@@ -26,7 +26,7 @@ export const SITE = {
    */
   subject: "cirurgia torácica e via aérea",
   /** 首页的完整标题（浏览器标签、搜索结果）。 */
-  homeTitle: "O Fôlego — cirurgia torácica pediátrica, via aérea e pneumologia pediátrica: a edição semanal",
+  homeTitle: "O Fôlego — cirurgia torácica, via aérea, pneumologia e otorrinolaringologia pediátricas: a edição semanal",
   /** 主题目录页（/topics）的标题。 */
   topicsTitle: "Tópicos: doenças, procedimentos, sociedades e formatos de estudo",
   /** 反馈表单输入框里的示例。 */
@@ -36,13 +36,13 @@ export const SITE = {
   /** 反馈表单邮箱框里的提示。 */
   feedbackEmailHint: "Deixe seu e-mail se quiser que a gente responda",
   /** 一句话介绍：搜索引擎、分享卡片、RSS、llms.txt 会用。 */
-  description: `Lê a literatura e as notícias de cirurgia torácica pediátrica, via aérea adulto e pediátrica e pneumologia pediátrica, escolhe o que muda a prática e publica matérias completas em português numa edição ${EDITION_WHEN.weekly}.`,
+  description: `Lê a literatura e as notícias de cirurgia torácica pediátrica, via aérea pediátrica, pneumologia pediátrica e otorrinolaringologia pediátrica, escolhe o que muda a prática e publica matérias completas em português numa edição ${EDITION_WHEN.weekly}.`,
   /** llms.txt 里一句话介绍下面的一段详细介绍（选填）。 */
   llmsIntro: null as string | null,
   /** 一行小字：分享图、海报下方。 */
   tagline: "Cirurgia torácica e via aérea, toda semana",
   /** 搜索引擎读到的关键词（首页结构化数据）。 */
-  keywords: ["cirurgia torácica pediátrica", "via aérea pediátrica", "estenose subglótica", "laringotraqueoplastia", "traqueostomia", "broncoscopia", "pneumologia pediátrica", "estenose traqueal"] as string[],
+  keywords: ["cirurgia torácica pediátrica", "via aérea pediátrica", "estenose subglótica", "laringotraqueoplastia", "traqueostomia", "broncoscopia", "pneumologia pediátrica", "estenose traqueal", "otorrinolaringologia pediátrica"] as string[],
   /** 网站开始收录的年份（结构化数据的时间范围，选填）。 */
   since: null as string | null,
   /** 界面语言（HTML lang、og:locale）。 */

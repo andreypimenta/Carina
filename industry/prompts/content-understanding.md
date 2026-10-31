@@ -37,10 +37,10 @@ Antes de responder, verifique se `itemType` e a primeira tag de categoria são c
 
 Depois, de 0 a 5 tags aplicáveis, só destas duas listas permitidas:
 
-- Tema: Estenose subglótica, Estenose traqueal, Laringotraqueoplastia, Ressecção cricotraqueal, Traqueostomia, Decanulação, Laringomalácia, Traqueobroncomalácia, Paralisia de pregas vocais, Fenda laríngea, Papilomatose respiratória, Corpo estranho, Fístula traqueoesofágica, Atresia de esôfago, Broncoscopia, Stents de via aérea, Via aérea difícil, Via aérea adulto, Malformações pulmonares, Hérnia diafragmática, Pectus, Empiema, Pneumotórax, Tumores torácicos, Mediastino, Cirurgia minimamente invasiva, Fibrose cística, Bronquiectasias, Discinesia ciliar, Displasia broncopulmonar, Transplante pulmonar, ECMO, Ventilação mecânica, Neonatologia
+- Tema: Estenose subglótica, Estenose traqueal, Laringotraqueoplastia, Ressecção cricotraqueal, Traqueostomia, Decanulação, Laringomalácia, Traqueobroncomalácia, Paralisia de pregas vocais, Fenda laríngea, Papilomatose respiratória, Corpo estranho, Broncoscopia, Stents de via aérea, Via aérea difícil, Malformações pulmonares, Hérnia diafragmática, Pectus, Empiema, Pneumotórax, Tumores torácicos, Mediastino, Atresia de esôfago, Fístula traqueoesofágica, Cirurgia minimamente invasiva, Fibrose cística, Bronquiectasias, Discinesia ciliar, Displasia broncopulmonar, Transplante pulmonar, ECMO, Ventilação mecânica, Neonatologia, Otite média, Adenotonsilectomia, Apneia obstrutiva do sono, Perda auditiva, Implante coclear, Rinossinusite, Atresia de coanas, Cabeça e pescoço
 - Entidade: SBCT, SBPT, SBP, ABORL-CCF, APSA, ESTS, ATS, ERS, FDA, ANVISA
 
-Use "Via aérea adulto" quando os pacientes forem adultos, para que o leitor de pediatria saiba de antemão. Entidade só quando a organização é autora ou sujeito do conteúdo (a sociedade que publica a diretriz, o regulador que emite o alerta), não quando é só citada. Não crie tags fora das listas.
+Material só de adultos usa a tag de categoria "Fora do tema". Entidade só quando a organização é autora ou sujeito do conteúdo (a sociedade que publica a diretriz, o regulador que emite o alerta), não quando é só citada. Não crie tags fora das listas.
 
 ## "Por que importa" candidato
 

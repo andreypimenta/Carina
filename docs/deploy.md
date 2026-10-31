@@ -83,6 +83,20 @@ docker compose run --rm setup && docker compose up -d
 
 后台登录和飞书登录的 cookie 是否带 Secure，改为按请求实际的协议判断（读反向代理转来的 `X-Forwarded-Proto`），不再看 `SITE_URL` 是不是 https。自带的 Caddy 默认会转发这个头，不用改；自己用 Nginx 或 CDN 反向代理的站，升级前在代理配置里补上 `proxy_set_header X-Forwarded-Proto $scheme;`（CDN 按其文档转发同名请求头），否则 HTTPS 下仍能登录，但 cookie 会丢掉 Secure。无需数据库迁移。
 
+#### 四个分区：拆分胸外科与气道，新增儿童耳鼻喉科（2026 年 10 月 31 日）
+
+没有新的环境变量和数据库迁移。
+
+- **分区**：原来的第一个分区“Cirurgia torácica pediátrica e via aérea”拆成“Cirurgia torácica pediátrica”（key 仍是 `cirurgia`，`/selecao?area=cirurgia` 的旧链接照常打开，但只剩胸外科）和“Via aérea pediátrica”（`via-aerea`），另加“Otorrinolaringologia pediátrica”（`otorrino`）。日报、周报、月报按这四个分区分节；肺科和耳鼻喉科每期最多 5/6/9 条（日报/周报/月报，原来肺科是 6/8/12），两区合计给胸外科和气道至少留下 6/8/12 个位置。已出的各期保留出刊时的分节。
+- **范围**：本刊扩展到儿童耳鼻喉科，并且只收儿童：成人气道不再收录，预筛把只涉及成人的气道、胸外科、肺科和耳鼻喉科材料判为 BLOCK。主题标签 `Via aérea adulto` 停用（不再用于新的分类；已有条目保留存下的标签，没有迁移），主题 `via-aerea-adulto` 保留原 slug，改成儿童困难气道与插管（标签 `Via aérea difícil`）。预筛、结构化、评分提示词和主题标签（`Otite média`、`Adenotonsilectomia`、`Apneia obstrutiva do sono`、`Perda auditiva`、`Implante coclear`、`Rinossinusite`、`Atresia de coanas`、`Cabeça e pescoço`）跟着改；`industry/revistas.json` 的主题过滤加了耳鼻喉词，`industry/literatura.json` 加了检索 `otorrino-pediatrica-evidencia`，`consensos-grupos-pediatricos` 的主题词也加了耳鼻喉。每周大约多 7 次文章写作的模型调用（见 [fontes.md](fontes.md#otorrinolaringologia-pediátrica)）。
+- **订阅偏好**：邮件订阅者现在可以选几个分区放在前面（`assinatura_subscribers.interest` 存逗号分隔的分区 key）。
+- **已有内容（一次性）**：更新后马上运行 `scripts/abas-dividir.ts`：不调用模型，把旧提示词放进 `cirurgia` 或按标签进 `cirurgia` 的内容只在 `cirurgia` 和 `via-aerea` 之间按主题标签重新分区（第一个属于这两个分区的标签决定，旧条目带的已停用标签 `Via aérea adulto` 算作 `via-aerea`，没有就留在 `cirurgia`；不会进 `pneumologia` 或 `otorrino`），分区写进最新的分析（原来没有分区的也写，包括留在 `cirurgia` 的），重新发布时不会再按标签算到别的分区，每条一个事务；后台“人工修正”里选过 `cirurgia`、或没有分析只有编辑标签，而标签指向 `via-aerea` 的内容只列出来，由编辑在后台决定；选了旧分区优先的读者改成胸外科和气道都优先（`cirurgia,via-aerea`）。只运行一次：之后新选“只要胸外科”的读者也会被改。不加 `--apply` 只统计。
+
+```bash
+docker compose exec worker node scripts/abas-dividir.ts            # 预览
+docker compose exec worker node scripts/abas-dividir.ts --apply
+```
+
 #### 证据阶段、同一研究的版本、监管警示与 ELSO 指南（2026 年 10 月 31 日）
 
 新迁移 `modules/literatura/migrations/0070_literatura_estudos.sql`（新表 `literatura_estudos`：每项研究的阶段和各版本共有的标识符）、`0071_literatura_estudos_ids_idx.sql`（其 GIN 索引）和 `0072_literatura_alertas.sql`（新表 `literatura_alertas`：读过的监管文件和 ELSO 指南版本）。不删任何数据，不补写旧报道。新的环境变量只有测试用的服务地址（`CTGOV_BASE_URL`、`OPENFDA_BASE_URL`、`ANVISA_BASE_URL`），线上不用填。说明见 [fontes.md](fontes.md#estágio-da-evidência-e-versões-do-mesmo-estudo)。

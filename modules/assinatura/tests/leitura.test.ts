@@ -54,8 +54,10 @@ before(async () => {
   const content = {
     kind: "weekly", title: `O Fôlego · ${WEEK}`, headline: "Edição", overview: "Uma semana.",
     themes: [
-      { heading: AREA_LABELS.cirurgia, summary: null, storyRefs: [story("Estenose subglótica em prematuros", "https://pubmed.example/1")] },
+      { heading: AREA_LABELS.cirurgia, summary: null, storyRefs: [story("Pectus excavatum: barra única ou dupla", "https://pubmed.example/3")] },
+      { heading: AREA_LABELS["via-aerea"], summary: null, storyRefs: [story("Estenose subglótica em prematuros", "https://pubmed.example/1")] },
       { heading: AREA_LABELS.pneumologia, summary: null, storyRefs: [story("Fibrose cística e novos moduladores", "https://pubmed.example/2")] },
+      { heading: AREA_LABELS.otorrino, summary: null, storyRefs: [story("Tubos de ventilação na otite média recorrente", "https://pubmed.example/4")] },
     ],
   };
   await sql`INSERT INTO reports (kind, key, window_start, window_end, content, generated_at, origin) VALUES ('weekly', ${WEEK}, now(), now(), ${sql.json(content as never)}, now(), 'imported')`;
@@ -80,29 +82,32 @@ const click = (href: string, headers: Record<string, string> = { "user-agent": P
   app.inject({ method, url: href.replace(/&amp;/g, "&").replace("https://folego.example", ""), headers });
 const linksIn = (html: string) => [...html.matchAll(/href="(https:\/\/folego\.example\/assine\/l\?[^"]*)"/g)].map((m) => m[1]!);
 
-test("the chosen section comes first; clicks of people count, scanners' do not; leaving and complaints go to the edition and outlive the erasure", async () => {
+test("the chosen sections come first; clicks of people count, scanners' do not; leaving and complaints go to the edition and outlive the erasure", async () => {
   // The choice at sign-up, and a stranger's new sign-up does not change a confirmed reader's.
   const signup = (email: string, interest: unknown) => app.inject({ method: "POST", url: "/api/assinatura", payload: { email, consent: true, interest }, headers: { "x-real-ip": "10.9.0.1", "user-agent": "test" } });
   assert.equal((await signup(`nova-${T}@example.com`, "pneumologia")).statusCode, 202);
   assert.equal((await sql`SELECT interest FROM assinatura_subscribers WHERE address = ${`nova-${T}@example.com`}`)[0]!.interest, "pneumologia");
+  await signup(`nova-${T}@example.com`, ["otorrino", "via-aerea"]);
+  assert.equal((await sql`SELECT interest FROM assinatura_subscribers WHERE address = ${`nova-${T}@example.com`}`)[0]!.interest, "via-aerea,otorrino", "several, in the journal's order");
   await signup(`nova-${T}@example.com`, "qualquer");
-  assert.equal((await sql`SELECT interest FROM assinatura_subscribers WHERE address = ${`nova-${T}@example.com`}`)[0]!.interest, null, "anything else is both");
+  assert.equal((await sql`SELECT interest FROM assinatura_subscribers WHERE address = ${`nova-${T}@example.com`}`)[0]!.interest, null, "anything else is all, in the journal's order");
   await sql`DELETE FROM assinatura_subscribers WHERE address = ${`nova-${T}@example.com`}`;
 
-  const ana = await add("ana", "pneumologia");
+  const ana = await add("ana", "pneumologia,otorrino");
   const bia = await add("bia", null);
   const caio = await add("caio", null);
   const davi = await add("davi", null);
   await sql`UPDATE assinatura_subscribers SET confirmed_at = now() WHERE id = ${davi.id}`;
   await signup(ana.address, "cirurgia");
-  assert.equal((await sql`SELECT interest FROM assinatura_subscribers WHERE id = ${ana.id}`)[0]!.interest, "pneumologia", "a confirmed reader's choice is changed only by its own link");
+  assert.equal((await sql`SELECT interest FROM assinatura_subscribers WHERE id = ${ana.id}`)[0]!.interest, "pneumologia,otorrino", "a confirmed reader's choice is changed only by its own link");
 
   await runSends({ wait: async () => {}, now: MONDAY });
   const mailOf = (who: { address: string }) => mails.find((m) => m.to === who.address)!;
-  const order = (html: string) => html.indexOf(AREA_LABELS.pneumologia) < html.indexOf(AREA_LABELS.cirurgia);
-  assert.equal(order(mailOf(ana).html), true, "Ana reads pneumologia first");
-  assert.equal(order(mailOf(bia).html), false, "both keeps the journal's order");
-  assert.ok(mailOf(ana).text.indexOf(AREA_LABELS.pneumologia.toUpperCase()) < mailOf(ana).text.indexOf(AREA_LABELS.cirurgia.toUpperCase()));
+  const order = (text: string, labels: string[]) => labels.map((l) => text.indexOf(l)).sort((a, b) => a - b).join() === labels.map((l) => text.indexOf(l)).join();
+  const anaOrder = [AREA_LABELS.pneumologia, AREA_LABELS.otorrino, AREA_LABELS.cirurgia, AREA_LABELS["via-aerea"]];
+  assert.equal(order(mailOf(ana).html, anaOrder), true, "Ana reads pneumologia and otorrino first");
+  assert.equal(order(mailOf(bia).html, Object.values(AREA_LABELS)), true, "none keeps the journal's order");
+  assert.equal(order(mailOf(ana).text, anaOrder.map((l) => l.toUpperCase())), true);
   assert.ok(!/href="https:\/\/pubmed\.example/.test(mailOf(ana).html), "no link goes straight out");
   assert.match(mailOf(ana).html, new RegExp(`href="https://folego.example/assine/sair\\?t=${ana.token}"`), "the way out is not counted");
   assert.match(mailOf(ana).html, new RegExp(`/assine/preferencias\\?t=${ana.token}`));
@@ -145,7 +150,7 @@ test("the chosen section comes first; clicks of people count, scanners' do not; 
   assert.deepEqual({ ...reading.editions[0] }, expected);
   assert.deepEqual([...reading.buttons], [{ button: "indique", clicks: 1 }, { button: "whatsapp", clicks: 2 }]);
   assert.deepEqual({ ...reading.recurring }, { readers: 0, eligible: 0, editions: 1 });
-  assert.deepEqual(reading.interests.map((i) => [i.interest, i.confirmed, i.clicked]), [[null, 1, 0], ["pneumologia", 1, 1]]);
+  assert.deepEqual(reading.interests.map((i) => [i.interest, i.confirmed, i.clicked]), [[null, 1, 0], ["pneumologia,otorrino", 1, 1]]);
   assert.equal(reading.resendWebhook, true);
 
   // Bia left 31 days ago, 39 days after confirming: erased, her edition's counts and her short stay remain.
@@ -158,7 +163,8 @@ test("the chosen section comes first; clicks of people count, scanners' do not; 
 
   // Ana's own link reads and changes her choice; a token that is not one changes nothing.
   const prefs = (path: string, payload: Record<string, unknown>) => app.inject({ method: "POST", url: `/api/assinatura/preferencias${path}`, payload });
-  assert.deepEqual((await prefs("/ler", { t: ana.token })).json(), { channel: "email", status: "confirmed", interest: "pneumologia" });
+  assert.deepEqual((await prefs("/ler", { t: ana.token })).json(), { channel: "email", status: "confirmed", interest: "pneumologia,otorrino" });
   assert.deepEqual((await prefs("", { t: ana.token, interest: "cirurgia" })).json(), { interest: "cirurgia" });
+  assert.deepEqual((await prefs("", { t: ana.token, interest: ["via-aerea", "cirurgia"] })).json(), { interest: "cirurgia,via-aerea" });
   assert.equal((await prefs("", { t: "x".repeat(24), interest: "cirurgia" })).statusCode, 404);
 });

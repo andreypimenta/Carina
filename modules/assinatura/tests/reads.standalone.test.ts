@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
 import { test } from "node:test";
 import { config } from "@aihot/backend/config";
-import { orderSections } from "../interest.ts";
+import { interestName, interestOf, orderSections } from "../interest.ts";
 import { afterClick, BURST_CLICKS, readLink, scannerReason, trackedUrl, trackLinks, webhookSigned } from "../backend/reads.ts";
 
 config.siteUrl = "https://folego.example";
@@ -87,10 +87,24 @@ test("Resend's webhook is believed only with its Svix signature, in the last fiv
   assert.equal(webhookSigned(secret, { ...headers, "svix-signature": "" }, body, now), false);
 });
 
-test("the reader's section comes first; both keeps the journal's order", () => {
-  const sections = [{ label: "Cirurgia torácica pediátrica e via aérea" }, { label: "Pneumologia pediátrica" }];
-  assert.deepEqual(orderSections(sections, "pneumologia").map((s) => s.label), ["Pneumologia pediátrica", "Cirurgia torácica pediátrica e via aérea"]);
+test("the reader's sections come first, in the journal's order; none keeps the journal's order", () => {
+  const sections = [{ label: "Cirurgia torácica pediátrica" }, { label: "Via aérea pediátrica" }, { label: "Pneumologia pediátrica" }, { label: "Otorrinolaringologia pediátrica" }];
+  const labels = (interest: string | null) => orderSections(sections, interest).map((s) => s.label);
+  assert.deepEqual(labels("otorrino"), ["Otorrinolaringologia pediátrica", "Cirurgia torácica pediátrica", "Via aérea pediátrica", "Pneumologia pediátrica"]);
+  assert.deepEqual(labels("via-aerea,otorrino"), ["Via aérea pediátrica", "Otorrinolaringologia pediátrica", "Cirurgia torácica pediátrica", "Pneumologia pediátrica"]);
   assert.deepEqual(orderSections(sections, "cirurgia"), sections);
   assert.deepEqual(orderSections(sections, null), sections);
   assert.deepEqual(orderSections(sections, "other"), sections);
+  assert.equal(orderSections(sections.slice(2), "via-aerea").length, 2, "a section the issue lacks adds nothing");
+});
+
+test("a form's choice is kept as the sections in the journal's order; none or all of them is null", () => {
+  assert.equal(interestOf("pneumologia"), "pneumologia");
+  assert.equal(interestOf(["otorrino", "cirurgia", "otorrino", "x"]), "cirurgia,otorrino");
+  assert.equal(interestOf("otorrino,via-aerea"), "via-aerea,otorrino");
+  assert.equal(interestOf(["cirurgia", "via-aerea", "pneumologia", "otorrino"]), null);
+  assert.equal(interestOf([]), null);
+  assert.equal(interestOf(7), null);
+  assert.equal(interestName("cirurgia,via-aerea"), "Cirurgia torácica pediátrica + Via aérea pediátrica");
+  assert.equal(interestName(null), "Todas");
 });

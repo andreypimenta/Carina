@@ -92,3 +92,18 @@ test("the watched journals' filter takes pediatric pulmonology too, and still le
   }
   assert.ok(!onSubject(cfg, "Arterial switch in neonates: late outcomes"), "a child, but cardiac");
 });
+
+test("the watched journals' filter takes pediatric otolaryngology, and still leaves out the adult-only papers", () => {
+  const cfg = revistas();
+  const pairs = [
+    ["Tympanostomy tubes for recurrent acute otitis media in children", "Chronic otitis media surgery in adults"],
+    ["Tonsillectomy versus watchful waiting in children with sleep-disordered breathing", "Tonsillectomy pain control in adults"],
+    ["Cochlear implantation in infants before 12 months of age", "Cochlear implantation in older adults"],
+    ["Bilateral choanal atresia repair in neonates", "Septoplasty outcomes in adult men"],
+    ["Pediatric head and neck lymphatic malformations treated with sirolimus", "Head and neck cancer survival in older adults"],
+  ];
+  for (const [child, adult] of pairs) {
+    assert.ok(onSubject(cfg, child!), child);
+    assert.ok(!onSubject(cfg, adult!), adult);
+  }
+});

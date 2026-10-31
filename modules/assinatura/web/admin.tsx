@@ -13,7 +13,7 @@ import { copyText } from "@aihot/web/lib/clipboard";
 import { AdminPage, Badge, Button, Card, DataTable, Field, FilterChips, Input, ReasonDialog, Stat } from "@aihot/web/features/admin/ui";
 import { formatPhone, type Channel } from "../address.ts";
 import { groupTag, INDIQUE_GROUP, signupPath } from "../group.ts";
-import { INTERESTS } from "../interest.ts";
+import { interestName } from "../interest.ts";
 import type { AdminEdition, AdminOverview, Reading } from "../types.ts";
 
 export async function loader({ request }: LoaderFunctionArgs) {
@@ -107,7 +107,6 @@ function Groups({ rows, retention }: { rows: AdminOverview["groups"]; retention:
 const share = (n: number, of: number) => (of > 0 ? `${n} de ${of} (${Math.round((100 * n) / of)}%)` : "—");
 
 const BUTTON: Record<string, string> = { whatsapp: "Mandar no WhatsApp", copiar: "Copiar link", indique: "Indique a um colega" };
-const interestName = (key: string | null) => INTERESTS.find((o) => o.key === key)?.label ?? key ?? "Ambos";
 
 /** How readers took the e-mailed editions: clicks taken for a person's only, as backend/reads.ts tells them apart. */
 function ReadingCard({ r }: { r: Reading }) {
@@ -161,22 +160,19 @@ function ReadingCard({ r }: { r: Reading }) {
         <p className="mt-4 text-[13px] text-ink-4">Nenhuma edição enviada por e-mail ainda.</p>
       )}
       <h3 className="mt-6 text-[13.5px] font-semibold text-ink">Interesse por seção</h3>
-      <p className="mt-1 text-[12.5px] text-ink-4">A seção que cada leitor de e-mail escolheu para vir primeiro, e quanto clicou nas últimas 4 edições.</p>
+      <p className="mt-1 text-[12.5px] text-ink-4">As seções que cada leitor de e-mail escolheu para vir primeiro, e quanto clicou nas últimas 4 edições.</p>
       <table className="mt-2 w-full text-[13px]">
         <thead>
           <tr className="text-left text-ink-4"><th className="py-1.5 font-medium">Primeiro</th><th className={th}>Confirmados</th><th className={th}>Clicaram nas últimas 4</th></tr>
         </thead>
         <tbody>
-          {INTERESTS.map((o) => {
-            const row = r.interests.find((i) => i.interest === o.key);
-            return (
-              <tr key={o.key ?? ""} className="border-t border-line">
-                <td className="py-1.5 text-ink">{interestName(o.key)}</td>
-                <td className={`${td} font-semibold text-ink`}>{row?.confirmed ?? 0}</td>
-                <td className={`${td} text-ink-2`}>{share(row?.clicked ?? 0, row?.delivered ?? 0)}</td>
-              </tr>
-            );
-          })}
+          {(r.interests.length ? r.interests : [{ interest: null, confirmed: 0, delivered: 0, clicked: 0 }]).map((row) => (
+            <tr key={row.interest ?? ""} className="border-t border-line">
+              <td className="py-1.5 text-ink">{interestName(row.interest)}</td>
+              <td className={`${td} font-semibold text-ink`}>{row.confirmed}</td>
+              <td className={`${td} text-ink-2`}>{share(row.clicked, row.delivered)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </Card>
