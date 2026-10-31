@@ -4,6 +4,7 @@
 import type { SiteStats } from "@aihot/contracts/site";
 import { sql } from "../db.ts";
 import { cached } from "../lib/cache.ts";
+import { JOURNAL } from "../publication/items.ts";
 import { publicSourceName } from "../publication/rules.ts";
 import { selectedCondition } from "../publication/scope.ts";
 
@@ -33,8 +34,8 @@ async function querySiteStats(now: Date): Promise<SiteStats> {
     sql<{ name: string; kind: string; heat_only: boolean }[]>`
       SELECT name, kind, participation_mode = 'hot_signal' AS heat_only FROM sources WHERE enabled
       ORDER BY md5(id::text || ${now.toISOString().slice(0, 10)}), id LIMIT ${SAMPLE}`,
-    sql<{ id: string; title: string; source: string }[]>`
-      SELECT p.article_id AS id, p.title, s.name AS source FROM publications p JOIN sources s ON s.id = p.source_id
+    sql<{ id: string; title: string; source: string; journal: string | null }[]>`
+      SELECT p.article_id AS id, p.title, s.name AS source, ${JOURNAL} FROM publications p JOIN sources s ON s.id = p.source_id
       WHERE ${selectedCondition(now)} ORDER BY p.timeline_at DESC, p.article_id DESC LIMIT 8`,
   ]);
   const { collected, selectedDay, ...totals } = row!;
@@ -43,7 +44,7 @@ async function querySiteStats(now: Date): Promise<SiteStats> {
     sourceKinds: Object.fromEntries(kinds.map((k) => [k.kind, k.n])),
     day: { collected, selected: selectedDay },
     sampleSources: sample.map((s) => ({ name: publicSourceName(s.name), kind: s.kind, heatOnly: s.heat_only })),
-    latest: latest.map((item) => ({ ...item, source: publicSourceName(item.source) })),
+    latest: latest.map(({ journal, ...item }) => ({ ...item, source: publicSourceName(item.source, journal) })),
   };
   return value;
 }

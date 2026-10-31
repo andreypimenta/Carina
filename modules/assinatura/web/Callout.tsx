@@ -1,14 +1,16 @@
 // The way to /assine from the site's own pages, for the reader who came by a shared link: one line under an
 // issue's masthead and at the foot of every page, and a short card where an issue or an article ends. Nothing
-// pops up or covers the reading.
+// pops up or covers the reading. Under a weekly issue's line, the button that copies its link for the groups.
 import { Link } from "react-router";
 import { EDITION_WHEN, SITE } from "@aihot/site";
+import type { ReportDetail } from "@aihot/contracts/site";
 import type { CalloutPlace } from "@aihot/web/modules";
 import { IconArrowRight, IconMail } from "@aihot/web/components/icons";
+import { ShareLink } from "./ShareLink.tsx";
 
 const LINE = `Receba a edição semanal ${EDITION_WHEN.weekly}, de graça.`;
 
-export function Callout({ at }: { at: CalloutPlace }) {
+export function Callout({ at, report }: { at: CalloutPlace; report?: ReportDetail }) {
   if (at === "report-end" || at === "item-end") {
     return (
       <aside aria-label="Assine a edição semanal" className="card mt-12 flex flex-col gap-4 px-5 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-7">
@@ -43,11 +45,14 @@ export function Callout({ at }: { at: CalloutPlace }) {
     );
   }
   return (
-    <Link to="/assine" prefetch="intent" className="group mt-5 flex items-center gap-2.5 rounded-card bg-accent-softer px-4 py-2.5 text-[13.5px] leading-snug text-ink-2 ring-1 ring-inset ring-accent/25">
-      <IconMail size={16} className="shrink-0 text-accent" />
-      <span className="min-w-0">
-        {LINE} {more}
-      </span>
-    </Link>
+    <>
+      <Link to="/assine" prefetch="intent" className="group mt-5 flex items-center gap-2.5 rounded-card bg-accent-softer px-4 py-2.5 text-[13.5px] leading-snug text-ink-2 ring-1 ring-inset ring-accent/25">
+        <IconMail size={16} className="shrink-0 text-accent" />
+        <span className="min-w-0">
+          {LINE} {more}
+        </span>
+      </Link>
+      {report?.kind === "weekly" && <ShareLink week={report.key} />}
+    </>
   );
 }

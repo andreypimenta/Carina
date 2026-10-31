@@ -3,7 +3,7 @@
 import type { CategoryKey, ChannelKey } from "@aihot/contracts/taxonomy";
 import type { GroupReportsResponse } from "@aihot/contracts/site";
 import { sql } from "../db.ts";
-import { categoryCondition, channelCondition, tagCondition } from "./items.ts";
+import { categoryCondition, channelCondition, JOURNAL, tagCondition } from "./items.ts";
 import { evidenceCondition, listedCondition } from "./scope.ts";
 import { publicSourceName } from "./rules.ts";
 
@@ -19,8 +19,8 @@ const MAX_REPORTS = 100;
 
 /** The fact's public reports under the filters, newest first; null when it has none. */
 export async function loadGroupReports(q: GroupReportsQuery, now = new Date()): Promise<GroupReportsResponse | null> {
-  const members = await sql<{ id: string; title: string; timeline_at: Date; url: string; source_name: string }[]>`
-    SELECT p.article_id AS id, p.title, p.timeline_at, p.url, s.name AS source_name
+  const members = await sql<{ id: string; title: string; timeline_at: Date; url: string; source_name: string; journal: string | null }[]>`
+    SELECT p.article_id AS id, p.title, p.timeline_at, p.url, s.name AS source_name, ${JOURNAL}
     FROM facts f JOIN fact_articles fa ON fa.fact_id = f.id JOIN publications p ON p.article_id = fa.article_id
     JOIN sources s ON s.id = p.source_id
     WHERE f.public_id = ${q.factPublicId} AND ${evidenceCondition()} AND ${listedCondition(now)}
@@ -33,7 +33,7 @@ export async function loadGroupReports(q: GroupReportsQuery, now = new Date()): 
     reports: members.map((m) => ({
       id: m.id,
       title: m.title,
-      source: { name: publicSourceName(m.source_name) },
+      source: { name: publicSourceName(m.source_name, m.journal) },
       timelineAt: m.timeline_at.toISOString(),
       originalUrl: m.url,
     })),

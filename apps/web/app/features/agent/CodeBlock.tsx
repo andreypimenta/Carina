@@ -8,7 +8,11 @@ export function CopyButton({ text, label = "Copiar", className = "" }: { text: s
     <button
       type="button"
       onClick={async () => {
-        await copyText(text);
+        try {
+          await copyText(text);
+        } catch {
+          return;
+        }
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}

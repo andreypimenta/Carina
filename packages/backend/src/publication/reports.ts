@@ -10,6 +10,7 @@ import { isoWeekRange, monthRange } from "@aihot/contracts/time";
 import { dailyUrl, itemUrl, periodUrl, siteUrl } from "./links.ts";
 import { publicSourceName } from "./rules.ts";
 import { listedCondition } from "./scope.ts";
+import { JOURNAL } from "./items.ts";
 
 export type { ReportKind };
 
@@ -29,6 +30,7 @@ interface Availability {
   firstParty: boolean;
   sourceId: string | null;
   sourceName: string | null;
+  journal: string | null;
   sourceIcon: string | null;
   publishedAt: Date | null;
 }
@@ -36,8 +38,8 @@ interface Availability {
 async function availability(ids: string[]): Promise<Map<string, Availability>> {
   const out = new Map<string, Availability>();
   if (ids.length === 0) return out;
-  const rows = await sql<{ id: string; available: boolean; summary: string | null; first_party: boolean; source_id: string; source_name: string | null; icon_url: string | null; at: Date | null }[]>`
-    SELECT p.article_id AS id, (${listedCondition(new Date())}) AS available, p.summary, (s.tier = 'T1') AS first_party, p.source_id, s.name AS source_name, s.icon_url,
+  const rows = await sql<{ id: string; available: boolean; summary: string | null; first_party: boolean; source_id: string; source_name: string | null; journal: string | null; icon_url: string | null; at: Date | null }[]>`
+    SELECT p.article_id AS id, (${listedCondition(new Date())}) AS available, p.summary, (s.tier = 'T1') AS first_party, p.source_id, s.name AS source_name, ${JOURNAL}, s.icon_url,
       coalesce(p.published_at, p.discovered_at) AS at
     FROM publications p LEFT JOIN sources s ON s.id = p.source_id
     WHERE p.article_id IN ${sql(ids)}`;
@@ -48,6 +50,7 @@ async function availability(ids: string[]): Promise<Map<string, Availability>> {
       firstParty: r.first_party,
       sourceId: r.source_id,
       sourceName: r.source_name,
+      journal: r.journal,
       sourceIcon: r.icon_url,
       publishedAt: r.at,
     });
@@ -237,7 +240,7 @@ function citationFrom(raw: Record<string, any>, avail: Map<string, Availability>
     itemId: id,
     title: String(raw.title ?? ""),
     ...metadata,
-    sourceName: publicSourceName(metadata.sourceName),
+    sourceName: publicSourceName(metadata.sourceName, a?.journal),
     sourceIconUrl: a?.sourceIcon ? proxiedImage(a.sourceIcon, "avatar") : null,
     ...(iconSrcSet ? { sourceIconSrcSet: iconSrcSet } : {}),
     firstParty: a?.firstParty ?? false,

@@ -4,9 +4,13 @@ O módulo `modules/assinatura` deixa o leitor receber a edição semanal por **e
 
 ## A página `/assine`
 
-É o link para mandar em grupos de WhatsApp. Mostra só a edição semanal mais recente, com os mesmos componentes da página `/weekly`, sem o menu lateral, a barra inferior e o resto do site, e o formulário de inscrição no topo e no fim. Quando ainda não há edição, mostra uma apresentação curta do jornal e o formulário. A prévia do link (Open Graph) usa a imagem `/og/pages/assine.png` (texto em `CARDS.assine`, `site/site.ts`) e cita a manchete da edição.
+É o link para mandar em grupos de WhatsApp. Mostra só a edição semanal mais recente, com os mesmos componentes da página `/weekly`, sem o menu lateral, a barra inferior e o resto do site, e o formulário de inscrição no fim da edição. Quando ainda não há edição, mostra uma apresentação curta do jornal e o formulário. A prévia do link (Open Graph) usa a imagem `/og/pages/assine.png` (texto em `CARDS.assine`, `site/site.ts`) e cita a manchete da edição.
 
 `/assine/2026-W43` mostra uma edição em particular: é o link que cada envio leva, para que uma mensagem encaminhada abra a mesma edição.
+
+Uma matéria tocada nessas páginas abre em `/assine/2026-W43/<id>`, tão enxuta quanto a edição: o texto, o link para o original e o formulário de inscrição no fim. O único caminho de volta é **Voltar à edição**, para a mesma `/assine/2026-W43`; nada leva ao resto do site, além das páginas de privacidade e termos. A prévia do link usa a imagem e o resumo da matéria, e a página não é indexada (a da matéria no site, `/items/<id>`, é a que vai para os buscadores). O **Original ↗** de cada matéria na edição continua indo direto para a fonte.
+
+Para pegar o link, abra a edição semanal no site (`/weekly` ou `/weekly/2026-W43`): embaixo do cabeçalho, o botão **Copiar link para grupos** copia o endereço completo da `/assine` daquela semana (`https://ofolego.com/assine/2026-W43`). Se o navegador não deixar copiar, o endereço aparece num campo para selecionar e copiar à mão.
 
 O resto do site leva a `/assine`, para quem chega pelo jornal compartilhado: **Assine grátis** no menu lateral, **Assine** na barra inferior do celular e uma linha na página **Meu**; uma faixa “Receba a edição semanal toda segunda-feira às 07:00, de graça” (dia e hora de `EDITION_WHEN.weekly`, em `site/site.ts`) embaixo do cabeçalho de cada edição (semanal, mensal e nota diária) e no pé de todas as páginas; e um quadro **Quero receber** no fim de cada edição e de cada matéria. Nada abre por cima da leitura. Esses textos não citam canal: quem escolhe e-mail ou WhatsApp é a página `/assine`, que só mostra os canais ligados.
 
