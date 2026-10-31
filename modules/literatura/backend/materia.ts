@@ -97,6 +97,19 @@ export function referenceBlock(paper: Paper, access: Access, pmcid: string | nul
   return `<h2>Referência</h2><p>${cite}</p><p>${links}</p>${accessLine}${note}`;
 }
 
+/** The X post that led the site to the paper (backend/apurar.ts): its account and its address. */
+export interface XCredit {
+  handle: string;
+  authorName: string;
+  url: string;
+}
+
+/** The line crediting the X post, at the very end: the paper is the source, the post only the lead. */
+export function creditBlock(credit: XCredit): string {
+  const name = credit.authorName.trim() && credit.authorName.trim() !== credit.handle ? `${esc(credit.authorName.trim())} ` : "";
+  return `<p><em>Pauta: o artigo foi destacado por ${name}<a href="${esc(credit.url)}">@${esc(credit.handle)}</a> no X.</em></p>`;
+}
+
 export function renderMateria(m: Materia, paper: Paper, access: Access, pmcid: string | null, basis: "full" | "abstract"): string {
   return [
     m.linhaFina.trim() ? `<p><strong>${esc(m.linhaFina.trim())}</strong></p>` : "",

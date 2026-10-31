@@ -115,6 +115,17 @@ export async function lookupPmcid(pmid: string): Promise<string | null> {
   return hit?.pmcid && /^PMC\d+$/i.test(hit.pmcid) ? hit.pmcid.toUpperCase() : null;
 }
 
+/** The PubMed record (PMID) Europe PMC has for a PMC id, or null. */
+export async function lookupPmid(pmcid: string): Promise<string | null> {
+  const query = encodeURIComponent(`PMCID:${pmcid}`);
+  const res = await guardedFetch(`${EUROPE_PMC()}/search?query=${query}&format=json&resultType=lite&pageSize=1`, { timeoutMs: 20_000 });
+  if (res.status === 404) return null;
+  if (res.status !== 200) throw new Error(`Europe PMC search HTTP ${res.status}`);
+  const data = JSON.parse(res.text()) as { resultList?: { result?: Array<{ pmid?: string; pmcid?: string }> } };
+  const hit = data.resultList?.result?.find((r) => r.pmcid?.toUpperCase() === pmcid.toUpperCase());
+  return hit?.pmid && /^\d+$/.test(hit.pmid) ? hit.pmid : null;
+}
+
 /** The full text Europe PMC holds for a PMC id; null when it has none. */
 export async function fetchFullText(pmcid: string): Promise<FullText | null> {
   const res = await guardedFetch(`${EUROPE_PMC()}/${encodeURIComponent(pmcid)}/fullTextXML`, { timeoutMs: 30_000, maxBytes: 16 * 1024 * 1024 });

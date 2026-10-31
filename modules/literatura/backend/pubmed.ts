@@ -75,6 +75,11 @@ export async function pmidsForDoi(doi: string): Promise<string[]> {
   return (await esearch({ term: `"${doi.replace(/"/g, "")}"[aid]`, retmax: "5" })).pmids;
 }
 
+/** PMIDs of the records whose title is exactly this phrase (at most a few). */
+export async function pmidsForTitle(title: string): Promise<string[]> {
+  return (await esearch({ term: `"${title.replace(/["\[\]]/g, " ").replace(/\s+/g, " ").trim()}"[ti]`, retmax: "3" })).pmids;
+}
+
 /** The records of up to 200 PMIDs. */
 export async function fetchPapers(pmids: string[]): Promise<PubmedPaper[]> {
   if (!pmids.length) return [];
