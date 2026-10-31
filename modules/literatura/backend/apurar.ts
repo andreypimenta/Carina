@@ -14,7 +14,9 @@
 // page is the primary source (industry/prompts/materia-fonte.md), naming the organisation and the page and
 // crediting the post. A paper or page the module already took is not written again. A post with neither
 // stays out of the editions: nothing is published from its text alone. A post whose paper waits (PMC,
-// Unpaywall, the model) is taken again from that paper, with no page asked for again.
+// Unpaywall, the model) is taken again from that paper, and one whose DOI PubMed does not have yet is asked
+// about again by that DOI while the post is in its window, with no page asked for again; a paper's page is
+// never written up as an official page.
 import * as cheerio from "cheerio";
 import { z } from "zod";
 import { config } from "@aihot/backend/config";
@@ -26,6 +28,7 @@ import { modelFor } from "@aihot/backend/editorial/models";
 import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
 import { queueProcessing } from "@aihot/backend/jobs/content";
 import { guardedFetch } from "@aihot/backend/lib/http-fetch";
+import { identityKeyForUrl } from "@aihot/backend/lib/url";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { earlier } from "./adicionar.ts";
@@ -172,23 +175,30 @@ async function onlyLinkedPaper(links: Refs[]): Promise<Paper | null> {
   return found;
 }
 
-/** The paper the post is about, from its own text first and then from the pages it links, with the pages read. */
-export async function findPostPaper(text: string): Promise<{ paper: Paper | null; pages: Page[] }> {
+/**
+ * The paper the post is about, from its own text first and then from the pages it links (an address that is
+ * itself an identifier is not asked for: the identifier says it all); or the one DOI it points to that PubMed
+ * does not have yet; or, with neither, the pages read that are not a paper's page, for the official page path.
+ */
+export async function findPostPaper(text: string): Promise<{ paper: Paper | null; doi: string | null; pages: Page[] }> {
   const own = refsIn(text);
   if (!empty(own)) {
     const paper = await paperOf(own);
-    if (paper) return { paper, pages: [] };
+    if (paper) return { paper, doi: null, pages: [] };
+    if (own.dois.length === 1) return { paper: null, doi: own.dois[0]!, pages: [] };
   }
   const pages: Page[] = [];
-  for (const link of postLinks(text).slice(0, MAX_PAGES)) {
+  for (const link of postLinks(text).filter((l) => empty(refsIn(l))).slice(0, MAX_PAGES)) {
     const page = await readPage(link);
     if (!page) continue;
-    pages.push(page);
     const refs = pageRefs(page.html, page.url);
     const paper = (!empty(refs.own) ? await paperOf(refs.own) : await onlyLinkedPaper(refs.links)) ?? (refs.title ? await paperByTitle(refs.title) : null);
-    if (paper) return { paper, pages };
+    if (paper) return { paper, doi: null, pages: [] };
+    const named = !empty(refs.own) ? refs.own.dois : refs.links.length === 1 ? refs.links[0]!.dois : [];
+    if (named.length === 1) return { paper: null, doi: named[0]!, pages: [] };
+    if (empty(refs.own) && !refs.title) pages.push(page);
   }
-  return { paper: null, pages };
+  return { paper: null, doi: null, pages };
 }
 
 const Subject = z.object({
@@ -259,6 +269,8 @@ interface PostRow {
   url: string;
   /** The paper an earlier run found for the post, still waiting (PMC, Unpaywall, the model). */
   pmid: string | null;
+  /** The DOI an earlier run found for the post, waiting for PubMed to have it. */
+  doi: string | null;
   x_post: { tweetId?: string; handle?: string; authorName?: string; text?: string; quoted?: { text?: string; url?: string } | null };
   x_article: { title?: string; text?: string } | null;
 }
@@ -267,7 +279,7 @@ interface PostRow {
 const postText = (r: PostRow) => [r.x_post.text, r.x_post.quoted?.text, r.x_article?.title, r.x_article?.text].filter(Boolean).join("\n\n");
 
 /** Statuses a later run takes again: the paper waits for PMC, Unpaywall, the model or its source. */
-const RETRY = ["aguardando-pmc", "aguardando-unpaywall", "aguardando-modelo", "fonte-pausada", "erro"];
+const RETRY = ["aguardando-pubmed", "aguardando-pmc", "aguardando-unpaywall", "aguardando-modelo", "fonte-pausada", "erro"];
 
 export interface XOutcome { articleId: string; status: string; pmid: string | null; materiaId?: string }
 
@@ -279,8 +291,11 @@ export interface XOutcome { articleId: string; status: string; pmid: string | nu
 export async function researchPost(row: PostRow, now = new Date(), sources?: { integral: boolean; materia: boolean }): Promise<XOutcome> {
   const credit: XCredit = { handle: row.x_post.handle ?? "", authorName: row.x_post.authorName ?? "", url: row.url };
   const text = postText(row);
-  const known = row.pmid ? (await fetchPapers([row.pmid])).find((p) => p.pmid === row.pmid) ?? null : null;
-  const { paper: linked, pages } = known ? { paper: known, pages: [] } : await findPostPaper(text);
+  const known = row.pmid ? (await fetchPapers([row.pmid])).find((p) => p.pmid === row.pmid) ?? null
+    : row.doi ? await paperOf({ dois: [row.doi], pmids: [], pmcids: [] }) : null;
+  if (!known && !row.pmid && row.doi) return recordPost(row.id, "aguardando-pubmed", null, undefined, row.doi);
+  const { paper: linked, doi, pages } = known ? { paper: known, doi: null, pages: [] } : await findPostPaper(text);
+  if (!linked && doi) return recordPost(row.id, "aguardando-pubmed", null, undefined, doi);
   const subject = linked ? null : await readSubject(row.id, text);
   const paper = linked ?? (subject && subject.assunto !== "outro" ? await searchSubject(subject) : null);
   if (paper) {
@@ -305,7 +320,9 @@ export async function researchPost(row: PostRow, now = new Date(), sources?: { i
  * the primary source; null otherwise. A page another post already led to is not written again.
  */
 async function takePage(articleId: string, page: Page, post: string, credit: XCredit, now: Date): Promise<XOutcome | null> {
-  const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE source_id = ${MATERIA_SOURCE} AND url = ${page.url}`;
+  const key = identityKeyForUrl(page.url);
+  if (!key) return null;
+  const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE identity_key = ${key}`;
   if (taken) return recordPost(articleId, "ja-coberto", null, taken.id);
   const body = readable(page.html, page.url);
   const text = body ? blockText(body.html) : "";
@@ -331,9 +348,9 @@ async function takePage(articleId: string, page: Page, post: string, credit: XCr
   });
 }
 
-async function recordPost(articleId: string, status: string, pmid: string | null, materiaId?: string): Promise<XOutcome> {
-  await sql`INSERT INTO literatura_x_posts (article_id, status, pmid) VALUES (${articleId}, ${status}, ${pmid})
-    ON CONFLICT (article_id) DO UPDATE SET status = EXCLUDED.status, pmid = EXCLUDED.pmid, updated_at = now()`;
+async function recordPost(articleId: string, status: string, pmid: string | null, materiaId?: string, doi: string | null = null): Promise<XOutcome> {
+  await sql`INSERT INTO literatura_x_posts (article_id, status, pmid, doi) VALUES (${articleId}, ${status}, ${pmid}, ${doi})
+    ON CONFLICT (article_id) DO UPDATE SET status = EXCLUDED.status, pmid = EXCLUDED.pmid, doi = EXCLUDED.doi, updated_at = now()`;
   return { articleId, status, pmid, materiaId };
 }
 
@@ -361,7 +378,7 @@ export async function researchXPosts(opts: { now?: Date; budgetMs?: number } = {
   if (!sources.materia) return { posts: 0, waiting: "fonte-pausada" };
   if (!config.modelCallsEnabled) return { posts: 0, waiting: "aguardando-modelo" };
   const rows = await sql<PostRow[]>`
-    SELECT a.id, a.url, x.pmid, a.x_post, a.x_article FROM articles a
+    SELECT a.id, a.url, x.pmid, x.doi, a.x_post, a.x_article FROM articles a
     JOIN sources s ON s.id = a.source_id
     LEFT JOIN literatura_x_posts x ON x.article_id = a.id
     WHERE s.kind = 'x_search' AND s.participation_mode = 'editorial' AND a.x_post IS NOT NULL AND NOT a.backfill
