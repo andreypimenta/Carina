@@ -1,5 +1,5 @@
 // A matéria's public corrections: the editor adds one (the day, what changed and why) for a substantive change,
-// and it shows at the end of the matéria; the latest ones, with a way to delete one added by mistake.
+// and it shows at the end of the matéria for good (the history is append-only); the latest ones.
 import { useState } from "react";
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router";
 import { beijingDate } from "@aihot/contracts/time";
@@ -61,11 +61,6 @@ function AddForm() {
 
 export default function CorrecoesAdmin() {
   const { rows } = useLoaderData<typeof loader>();
-  const { run, pending } = useAdminAction();
-  const remove = async (r: AdminCorrecao) => {
-    if (!window.confirm("Apagar esta correção? Ela deixa de aparecer na matéria.")) return;
-    await run("DELETE", `/api/admin/literatura/correcoes/${r.id}`, undefined, { label: `del-${r.id}`, success: "Correção apagada" });
-  };
   return (
     <AdminPage title="Correções" subtitle="Histórico público de correções: cada nota aparece no fim da matéria, com a data, o que mudou e por quê.">
       <AddForm />
@@ -83,7 +78,6 @@ export default function CorrecoesAdmin() {
               </div>
             ) },
             { key: "at", label: "Registrada", render: (r) => <span className="num text-ink-3">{`${bj(r.at)} · ${r.actor}`}</span> },
-            { key: "del", label: "", render: (r) => <Button size="sm" busy={pending === `del-${r.id}`} onClick={() => void remove(r)}>Apagar</Button> },
           ]}
         />
       </Card>

@@ -104,7 +104,7 @@ docker compose run --rm setup && docker compose up -d
 
 #### 报道的可信度信息与公开更正（2026 年 10 月 31 日）
 
-新迁移 `modules/literatura/migrations/0067_literatura_confianca.sql`（新表 `literatura_confianca`：每篇新报道的“Em um minuto”、人群、研究设计、主要局限、实际读的文本、是否预印本、指南日期）、`0068_literatura_correcoes.sql` 和 `0069_literatura_correcoes_article_idx.sql`（新表 `literatura_correcoes`：管理员在 Painel → Conteúdo → **Correções** 加的公开更正）。没有新环境变量，不删任何数据；只有升级后写的报道有这些信息，旧报道照旧显示，不补写。写报道的模型多回答几个短字段（`industry/prompts/materia.md`、`materia-fonte.md`），每篇的输出 token 略增。引擎多了三个插口：`ServerModule.items`（文章页和周报邮件里模块的部分，`SiteItemDetail.modules`）、`WebModule.itemPage`（在文章页和 /assine 的文章页画出来）、`ServerModule.titleLabel`（发布时公开标题必须带的前缀：预印本标题前加“Preprint – não revisado por pares”，模型或编辑改标题都保留）。自己有模块的站不用改。说明见 [fontes.md](fontes.md#por-que-confiar-em-cada-matéria)。
+新迁移 `modules/literatura/migrations/0067_literatura_confianca.sql`（新表 `literatura_confianca`：每篇新报道的“Em um minuto”、人群、研究设计、主要局限、实际读的文本、是否预印本、指南日期）、`0068_literatura_correcoes.sql` 和 `0069_literatura_correcoes_article_idx.sql`（新表 `literatura_correcoes`：管理员在 Painel → Conteúdo → **Correções** 加的公开更正）。没有新环境变量，不删任何数据；只有升级后写的报道有这些信息，旧报道照旧显示，不补写。写报道的模型多回答几个短字段（`industry/prompts/materia.md`、`materia-fonte.md`），每篇的输出 token 略增。可以重新发布翻译的全文（`literatura-integral`）入库前也调用一次写报道的模型（`MATERIA_MODEL`，有回执和预算熔断），从全文得出同样的可信信息，所以每篇全文多一次模型调用；`MODEL_CALLS_ENABLED` 关着时，这些全文和报道一样等待。引擎多了三个插口：`ServerModule.items`（文章页和周报邮件里模块的部分，`SiteItemDetail.modules`）、`WebModule.itemPage`（在文章页和 /assine 的文章页画出来）、`ServerModule.titleLabel`（发布时公开标题必须带的前缀：预印本标题前加“Preprint – não revisado por pares”，模型或编辑改标题都保留）。自己有模块的站不用改。说明见 [fontes.md](fontes.md#por-que-confiar-em-cada-matéria)。
 
 #### X 帖子改写成论文报道（2026 年 10 月 31 日）
 

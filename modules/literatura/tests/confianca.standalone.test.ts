@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { isGuideline, isPreprint, parsePubmedXml } from "../backend/pubmed.ts";
-import { confiancaDaMateria, confiancaDaPagina, emUmMinuto, preprintNote, renderMateria, textoLido, type Materia } from "../backend/materia.ts";
+import { confiancaDaMateria, confiancaDaPagina, confiancaDaTraducao, emUmMinuto, preprintNote, renderMateria, textoLido, type Materia } from "../backend/materia.ts";
 import { pageDates } from "../backend/apurar.ts";
 import { materiaMail } from "../backend/confianca.ts";
 import { articleIdFrom, linhaRevisao, minutoCompacto, PREPRINT_LABEL, type MateriaPart } from "../confianca.ts";
@@ -46,11 +46,14 @@ test("the grade: a preprint never changes anything; aligned with a guideline onl
   assert.equal(emUmMinuto({ ...materia, achado: " " }, false), null);
 });
 
-test("the text read is what the pipeline gave the model: the abstract, a full text, or the authors' accepted manuscript", () => {
-  assert.equal(textoLido("abstract", { kind: "open", copy: { url: "https://x.org/a", license: null, host: "repository", version: "acceptedVersion" } }), "resumo");
-  assert.equal(textoLido("full", { kind: "unknown" }), "texto-completo");
-  assert.equal(textoLido("full", { kind: "open", copy: { url: "https://x.org/a", license: null, host: "publisher", version: "publishedVersion" } }), "texto-completo");
-  assert.equal(textoLido("full", { kind: "open", copy: { url: "https://x.org/a", license: null, host: "repository", version: "acceptedVersion" } }), "manuscrito-aceito");
+test("the text read is what the pipeline gave the model: the abstract, a full text, or the authors' accepted manuscript only when read from that copy", () => {
+  const accepted = { kind: "open" as const, copy: { url: "https://x.org/a", license: null, host: "repository" as const, version: "acceptedVersion" as const } };
+  assert.equal(textoLido(null, accepted), "resumo");
+  assert.equal(textoLido("pmc", { kind: "unknown" }), "texto-completo");
+  assert.equal(textoLido("pmc", accepted), "texto-completo", "PMC's text is not Unpaywall's copy");
+  assert.equal(textoLido("copy", { kind: "open", copy: { url: "https://x.org/a", license: null, host: "publisher", version: "publishedVersion" } }), "texto-completo");
+  assert.equal(textoLido("copy", accepted), "manuscrito-aceito");
+  assert.equal(textoLido("publisher", accepted), "manuscrito-aceito");
 });
 
 test("a matéria's record: missing population fields say so, a guideline carries its dates, a preprint is labelled in its body", () => {
@@ -59,6 +62,8 @@ test("a matéria's record: missing population fields say so, a guideline carries
   const c = confiancaDaMateria(materia, paper!, "resumo", now);
   assert.deepEqual(c.populacao, { idade: "não informada", doenca: "Estenose subglótica grau III", cenario: "Três centros terciários" });
   assert.equal(c.desenho, "coorte");
+  assert.equal(c.limitacao, "Retrospectivo, sem randomização.");
+  assert.equal(confiancaDaMateria({ ...materia, limitacaoPrincipal: " " }, paper!, "resumo", now).limitacao, "não informada");
   assert.equal(c.textoLido, "resumo");
   assert.equal(c.preprint, false);
   assert.equal(c.datas, null, "a cohort has no document dates");
@@ -90,9 +95,14 @@ test("an official page's dates come from its metadata, else its JSON-LD; nothing
 test("the review line names the editor only once the site does; the e-mail line only for a piece with Em um minuto", () => {
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const c = confiancaDaMateria(materia, paper!, "resumo", now);
-  assert.match(linhaRevisao(c, null), /^Esta matéria foi redigida com inteligência artificial .* O editor responsável revisa o texto antes da publicação\./);
-  assert.match(linhaRevisao(c, "Dra. Fulana"), /O editor responsável, Dra\. Fulana, revisa/);
-  assert.match(linhaRevisao({ ...c, feitura: "traducao" }, null), /^O texto do artigo foi traduzido com inteligência artificial/);
+  assert.match(linhaRevisao(c, null), /^Matéria redigida com auxílio de inteligência artificial \(IA\) a partir da fonte original .* e selecionada automaticamente: .* O editor responsável acompanha o que vai ao ar e corrige quando necessário;/);
+  assert.match(linhaRevisao(c, "Dra. Fulana"), /O editor responsável, Dra\. Fulana, acompanha o que vai ao ar/);
+  const traducao = confiancaDaTraducao(materia, paper!, now);
+  assert.equal(traducao.feitura, "traducao");
+  assert.equal(traducao.textoLido, "texto-completo");
+  assert.equal(traducao.desenho, "coorte");
+  assert.match(linhaRevisao(traducao, null), /^Artigo traduzido na íntegra com inteligência artificial \(IA\) e selecionado automaticamente: .* O editor responsável acompanha/);
+  for (const feitura of ["materia", "pagina", "traducao"] as const) assert.doesNotMatch(linhaRevisao({ ...c, feitura }, "Dra. Fulana"), /revisa|antes da publicação/, "nothing is reviewed before it goes live");
 
   const part: MateriaPart = { confianca: c, correcoes: [] };
   assert.equal(minutoCompacto(part), "Em um minuto: Decanulação semelhante entre os dois tempos cirúrgicos. Para quem: Cirurgiões de via aérea pediátrica. Muda algo agora? Pode informar a discussão.");

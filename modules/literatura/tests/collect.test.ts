@@ -19,7 +19,7 @@ import { collectLiterature, INTEGRAL_SOURCE, MATERIA_SOURCE, MAX_ATTEMPTS, recor
 import { parsePubmedXml } from "../backend/pubmed.ts";
 import { itemParts } from "@aihot/backend/publication/detail";
 import { publishArticle } from "@aihot/backend/publication/publish";
-import { addCorrection, deleteCorrection, listCorrections } from "../backend/correcoes.ts";
+import { addCorrection, listCorrections } from "../backend/correcoes.ts";
 import type { MateriaPart } from "../confianca.ts";
 
 
@@ -48,6 +48,7 @@ const stubServer = http.createServer((req, res) => {
     // The free copy Unpaywall points to, served here: the article, a page with only the abstract, a bot challenge.
     const copyAt = (page: string) => fixture("unpaywall-oa.json").replace(/https:\/\/bmcpulmmed\.biomedcentral\.com\/articles\/[^"]+/g, `http://${req.headers.host}/publisher/${page}`);
     if (url.startsWith("/unpaywall/10.5555%2Fdown")) return send(503, "text/plain", "busy");
+    if (url.startsWith("/unpaywall/10.5555%2Faccepted")) return send(200, "application/json", JSON.stringify({ is_oa: true, best_oa_location: { url_for_landing_page: `http://${req.headers.host}/publisher/open`, host_type: "repository", version: "acceptedVersion" } }));
     if (url.startsWith("/unpaywall/10.5555%2Fnew")) return send(404, "application/json", JSON.stringify({ error: true, message: "not in our database" }));
     const copy = /^\/unpaywall\/10\.5555%2F(open|stub|blocked)\b/.exec(url)?.[1];
     if (copy) return send(200, "application/json", copyAt(copy));
@@ -86,7 +87,7 @@ before(async () => {
     await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at)
       VALUES (${id}, ${id}, 'external', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
   }
-  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004', '41000005', '41000006', '41000007', '41000008', '41000009', '41000010', '41000011', '41000012')`;
+  await sql`DELETE FROM literatura_papers WHERE pmid IN ('41000001', '41000002', '41000003', '41000004', '41000005', '41000006', '41000007', '41000008', '41000009', '41000010', '41000011', '41000012', '41000013', '41000014', '41000015')`;
 });
 
 after(async () => {
@@ -101,8 +102,9 @@ test("a run republishes the open-licence paper, writes the closed one from its a
   assert.equal(first.integral, 1);
   assert.equal(first["materia-abstract"], 1);
   assert.equal(first.erratum, 1);
-  assert.equal(modelInputs.length, 1, "only the closed paper is written by the model");
-  assert.match(modelInputs[0]!, /Texto disponível: somente o resumo/);
+  assert.equal(modelInputs.length, 2, "the closed paper is written by the model, the open one read for its trust record");
+  assert.ok(modelInputs.some((m) => /Texto disponível: somente o resumo/.test(m)));
+  assert.ok(modelInputs.some((m) => /Texto disponível: texto completo\n/.test(m) && /Children with persistent wheeze were assessed/.test(m)), "the translation's record is read from its full text");
 
   const papers = await sql<{ pmid: string; status: string; source_id: string | null; title: string | null; body_html: string | null; language: string | null; url: string | null; published_at: Date | null;
     backfill: boolean | null; backfill_reason: string | null; timeline_at: Date | null; discovered_at: Date | null }[]>`
@@ -131,6 +133,14 @@ test("a run republishes the open-licence paper, writes the closed one from its a
   assert.match(open!.body_html!, /Texto completo gratuito/);
   assert.doesNotMatch(open!.body_html!, /thank the families/);
   assert.doesNotMatch(open!.body_html!, /Matéria escrita pelo Fôlego/, "a republished text is not the site's article");
+  const [openRow] = await sql<{ article_id: string }[]>`SELECT article_id FROM literatura_papers WHERE pmid = '41000002'`;
+  const translated = ((await itemParts([openRow!.article_id])).get(openRow!.article_id)!.literatura as MateriaPart).confianca!;
+  assert.equal(translated.feitura, "traducao");
+  assert.equal(translated.textoLido, "texto-completo");
+  assert.deepEqual(translated.minuto, { achado: materia.achado, paraQuem: materia.paraQuem, mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024" });
+  assert.deepEqual(translated.populacao, { idade: "1 a 5 anos", doenca: "Sibilância persistente", cenario: "Ambulatório de um centro terciário" });
+  assert.equal(translated.desenho, "coorte");
+  assert.equal(translated.limitacao, "Centro único.");
 
   assert.equal(erratum!.status, "erratum");
   assert.equal(erratum!.source_id, null);
@@ -248,12 +258,41 @@ test("each new matéria stores why it can be trusted, with the text the pipeline
   assert.equal((await listCorrections()).find((c) => c.id === added.id)?.actor, "editor");
   const [audited] = await sql`SELECT 1 FROM audit_log WHERE action = 'literatura.correcao' AND subject = ${`content:${out.articleId}`}`;
   assert.ok(audited, "the correction is audited");
-  assert.deepEqual(await deleteCorrection(added.id, "editor"), { deleted: true });
-  assert.deepEqual(((await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart).correcoes, []);
-  assert.deepEqual(await deleteCorrection(added.id, "editor"), { deleted: false });
 
   const full = await takePaper({ ...paper!, pmid: "41000012", doi: `10.9999/pmc-${T}`, pmcid: "PMC99" });
   assert.equal(((await itemParts([full.articleId!])).get(full.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "texto-completo");
+  const pmcRead = await takePaper({ ...paper!, pmid: "41000013", doi: `10.5555/accepted-pmc-${T}`, pmcid: "PMC99" });
+  assert.equal(pmcRead.status, "materia-full");
+  assert.equal(((await itemParts([pmcRead.articleId!])).get(pmcRead.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "texto-completo",
+    "PMC's text is not the accepted manuscript Unpaywall's open copy is");
+  const copyRead = await takePaper({ ...paper!, pmid: "41000014", doi: `10.5555/accepted-copy-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  assert.equal(copyRead.status, "materia-full");
+  assert.equal(((await itemParts([copyRead.articleId!])).get(copyRead.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "manuscrito-aceito");
+});
+
+test("design and main limitation are always on a matéria: an unknown design is 'outro', a missing limitation says so; a translation waits for the model like a matéria", async () => {
+  const [, paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const saved = { desenho: materia.desenho, limitacaoPrincipal: materia.limitacaoPrincipal };
+  Object.assign(materia, { desenho: "estudo-pragmatico", limitacaoPrincipal: "" });
+  try {
+    const out = await takePaper({ ...paper!, pmid: "41000015", doi: `10.9999/sem-limite-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+    const c = ((await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart).confianca!;
+    assert.equal(c.desenho, "outro");
+    assert.equal(c.limitacao, "não informada");
+  } finally {
+    Object.assign(materia, saved);
+  }
+
+  config.modelCallsEnabled = false;
+  try {
+    const calls = modelInputs.length;
+    const waiting = await takePaper({ ...paper!, pmid: `wait-${T}`, doi: `10.9999/wait-${T}`, pmcid: "PMC12345678" });
+    assert.equal(waiting.status, "aguardando-modelo");
+    assert.equal(modelInputs.length, calls);
+    assert.equal((await sql`SELECT 1 FROM literatura_papers WHERE pmid = ${`wait-${T}`}`).length, 0, "nothing recorded, so a later run takes it");
+  } finally {
+    config.modelCallsEnabled = true;
+  }
 });
 
 test("a preprint is labelled in its public title, whatever wrote the title, and in its body; it never changes practice", async () => {

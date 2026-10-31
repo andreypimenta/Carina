@@ -95,15 +95,18 @@ export function dataBr(day: string): string {
   return [d, m, y].filter(Boolean).join("/");
 }
 
-/** What the model did and who checks it, for the line at the end of the piece; the editor by name once the site names one (EXPEDIENTE). */
+/**
+ * What the model did and who follows it, for the line at the end of the piece: published without a human review
+ * first, so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE).
+ */
 export function linhaRevisao(c: Confianca, editor: string | null): string {
   const ia = {
-    materia: "Esta matéria foi redigida com inteligência artificial (IA) a partir do texto indicado em “Texto lido”: a IA resumiu o estudo, extraiu população, desenho e principal limitação e graduou se ele muda algo agora.",
-    pagina: "Esta matéria foi redigida com inteligência artificial (IA) a partir da página oficial indicada na fonte: a IA resumiu o conteúdo e graduou se ele muda algo agora.",
-    traducao: "O texto do artigo foi traduzido com inteligência artificial (IA); em caso de divergência, vale o original.",
+    materia: "Matéria redigida com auxílio de inteligência artificial (IA) a partir da fonte original (o texto indicado em “Texto lido”) e selecionada automaticamente: a IA resumiu o estudo, extraiu população, desenho e principal limitação e graduou se ele muda algo agora.",
+    pagina: "Matéria redigida com auxílio de inteligência artificial (IA) a partir da página oficial indicada na fonte e selecionada automaticamente: a IA resumiu o conteúdo e graduou se ele muda algo agora.",
+    traducao: "Artigo traduzido na íntegra com inteligência artificial (IA) e selecionado automaticamente: a IA traduziu o texto, extraiu população, desenho e principal limitação e graduou se ele muda algo agora; em caso de divergência, vale o original.",
   }[c.feitura];
   const who = editor ? `O editor responsável, ${editor},` : "O editor responsável";
-  return `${ia} ${who} revisa o texto antes da publicação. Correções de substância são registradas no fim da página, com a data, o que mudou e por quê.`;
+  return `${ia} ${who} acompanha o que vai ao ar e corrige quando necessário; correções de substância são registradas no fim da página, com a data, o que mudou e por quê.`;
 }
 
 /** The compact "Em um minuto" of the weekly e-mail as one line of plain text, or null for a piece without one. */

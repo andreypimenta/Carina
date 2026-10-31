@@ -420,7 +420,7 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
       raw: { doi, journal: paper.journal, access, originalTitle: paper.title, basis, ...(fullText ? { fullTextFrom: "publisher" } : {}), xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
-    await saveConfianca(tx, res.articleId, confiancaDaMateria(materia, paper, textoLido(basis, access), now));
+    await saveConfianca(tx, res.articleId, confiancaDaMateria(materia, paper, textoLido(fullText ? "publisher" : null, access), now));
     await tx`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${`doi:${doi}`}, ${doi}, ${`materia-${basis}`}, ${res.articleId})
       ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
     await tx`INSERT INTO literatura_x_posts (article_id, status, pmid, doi) VALUES (${articleId}, 'materia-editora', NULL, ${doi})

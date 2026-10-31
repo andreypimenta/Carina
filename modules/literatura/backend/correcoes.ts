@@ -1,6 +1,6 @@
 // The public corrections of a matéria: the editor adds one (the day, what changed and why) from the admin, and
-// it shows at the end of the matéria (backend/confianca.ts materiaParts), for good; a correction added by
-// mistake can be deleted. Each change is audited like the admin's others.
+// it shows at the end of the matéria (backend/confianca.ts materiaParts), for good: the history is append-only.
+// Each one is audited like the admin's other changes.
 import { z } from "zod";
 import { beijingDate } from "@aihot/contracts/time";
 import { audit } from "@aihot/backend/audit";
@@ -35,17 +35,6 @@ export async function addCorrection(input: unknown, actor: string, now = new Dat
     await audit(actor, AUDIT_ACTION, `content:${articleId}`, porque, null, { data, oQueMudou, porque }, { db: tx });
     await emit("articleChanged", { id: articleId, kind: "detail", reason: "public correction" }, tx);
     return { id: Number(row!.id), articleId };
-  });
-}
-
-export async function deleteCorrection(id: number, actor: string): Promise<{ deleted: boolean }> {
-  return sql.begin(async (tx) => {
-    const [row] = await tx<{ article_id: string; corrected_on: string; what: string; why: string }[]>`
-      DELETE FROM literatura_correcoes WHERE id = ${id} RETURNING article_id, to_char(corrected_on, 'YYYY-MM-DD') AS corrected_on, what, why`;
-    if (!row) return { deleted: false };
-    await audit(actor, `${AUDIT_ACTION}.apagar`, `content:${row.article_id}`, "correção apagada", { data: row.corrected_on, oQueMudou: row.what, porque: row.why }, null, { db: tx });
-    await emit("articleChanged", { id: row.article_id, kind: "detail", reason: "public correction deleted" }, tx);
-    return { deleted: true };
   });
 }
 

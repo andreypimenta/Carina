@@ -21,7 +21,8 @@ const MAX_INPUT = 60_000;
 const optional = z.string().nullish().transform((v) => v ?? "");
 /** An answer outside the list counts as the most cautious grade, "nao". */
 const grade = z.string().nullish().transform((v): Implicacao => ((IMPLICACOES as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Implicacao) : "nao"));
-const design = z.string().nullish().transform((v): Desenho | null => ((DESENHOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Desenho) : null));
+/** An answer outside the list, or none, counts as "outro": every matéria shows a design. */
+const design = z.string().nullish().transform((v): Desenho => ((DESENHOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Desenho) : "outro"));
 /** "Em um minuto" (industry/prompts/materia.md, materia-fonte.md). */
 const minuto = { achado: optional, paraQuem: optional, mudaAlgo: grade, diretriz: optional };
 const Output = z.object({
@@ -57,13 +58,16 @@ export function emUmMinuto(m: { achado: string; paraQuem: string; mudaAlgo: Impl
   return { achado, paraQuem, mudaAlgo, diretriz: mudaAlgo === "alinhado-a-diretriz" ? diretriz : null };
 }
 
+/** Where the full text the model read came from: PMC, the free copy Unpaywall points to, or the publisher's page that is that copy. */
+export type FullTextFrom = "pmc" | "copy" | "publisher";
+
 /**
- * What the pipeline gave the model, from where the text came: the abstract, or a full text from PMC, a free
- * copy or the publisher's page, which is the authors' accepted manuscript when Unpaywall says the open copy is.
+ * What the pipeline gave the model: the abstract (no full text), or a full text, which is the authors' accepted
+ * manuscript only when it was read from the open copy Unpaywall says is that version (never PMC's text).
  */
-export function textoLido(basis: "full" | "abstract", access: Access): TextoLido {
-  if (basis === "abstract") return "resumo";
-  return access.kind === "open" && access.copy.version === "acceptedVersion" ? "manuscrito-aceito" : "texto-completo";
+export function textoLido(from: FullTextFrom | null, access: Access): TextoLido {
+  if (!from) return "resumo";
+  return from !== "pmc" && access.kind === "open" && access.copy.version === "acceptedVersion" ? "manuscrito-aceito" : "texto-completo";
 }
 
 /** A guideline's dates: published as its record says, revised when the source gives it, checked today. */
@@ -81,19 +85,16 @@ export function confiancaDaMateria(m: Materia, paper: Paper, lido: TextoLido, no
     populacao: { idade: field(m.populacaoIdade, "não informada"), doenca: field(m.populacaoDoenca, "não informada"), cenario: field(m.populacaoCenario, "não informado") },
     desenho: m.desenho,
     desenhoDetalhe: m.desenhoDetalhe.trim() || null,
-    limitacao: m.limitacaoPrincipal.trim() || null,
+    limitacao: field(m.limitacaoPrincipal, "não informada"),
     textoLido: lido,
     preprint,
     datas: isGuideline(paper) || m.desenho === "diretriz" || m.desenho === "consenso" ? datas(paper.publishedOn ?? paper.year, null, now) : null,
   };
 }
 
-/** A paper's text republished in full and translated: what was read, whether it is a preprint, a guideline's dates. */
-export function confiancaDaTraducao(paper: Paper, now: Date): Confianca {
-  return {
-    feitura: "traducao", minuto: null, populacao: null, desenho: null, desenhoDetalhe: null, limitacao: null,
-    textoLido: "texto-completo", preprint: isPreprint(paper), datas: isGuideline(paper) ? datas(paper.publishedOn ?? paper.year, null, now) : null,
-  };
+/** A paper's text republished in full and translated: the same record as a matéria's, from the full text the model read. */
+export function confiancaDaTraducao(m: Materia, paper: Paper, now: Date): Confianca {
+  return { ...confiancaDaMateria(m, paper, "texto-completo", now), feitura: "traducao" };
 }
 
 /** The line that opens a preprint's body, in every exit that carries the body. */
