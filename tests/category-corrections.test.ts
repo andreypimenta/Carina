@@ -96,12 +96,12 @@ test("category corrections revise every standard report atomically without selec
   }
 });
 
-test("an editor's section (aba) wins over the model's and moves the item in every issue; clearing it restores the model's", async () => {
+test("an editor's section (aba) wins over the model's and moves the item, even one without a category, in every issue; clearing it restores the model's", async () => {
   const sourceId = `area-${tag()}`;
   await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${sourceId},'Area fixture','rss','T1','editorial')`;
   const { articleId } = await upsertMaterial({ sourceId, url: `https://example.com/${sourceId}`, title: "Estenose subglótica em lactentes", bodyText: "Texto", bodyStatus: "ok", via: "fetch", publishedAt: new Date() });
   await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,category,area,tags,title_zh,summary_zh,score,selected)
-    VALUES (${articleId},1,'rule','pass','guidelines','cirurgia',ARRAY['Diretriz/consenso','Fibrose cística'],'Estenose subglótica em lactentes','Resumo',80,true)`;
+    VALUES (${articleId},1,'rule','pass',NULL,'cirurgia',ARRAY['Diretriz/consenso','Fibrose cística'],'Estenose subglótica em lactentes','Resumo',80,true)`;
   await publishArticle(articleId, { releasedAt: new Date() });
   const area = async () => (await sql`SELECT area FROM publications WHERE article_id=${articleId}`)[0]!.area;
   assert.equal(await area(), "cirurgia");
