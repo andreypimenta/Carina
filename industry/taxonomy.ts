@@ -1,4 +1,4 @@
-// A taxonomia do Fôlego (cirurgia torácica pediátrica, via aérea adulto e pediátrica, pneumologia e otorrinolaringologia pediátricas): categorias,
+// A taxonomia do Fôlego (cirurgia torácica, via aérea, pneumologia e otorrinolaringologia pediátricas): categorias,
 // vocabulário de tags, cadastro de sociedades e órgãos, e o dicionário de identidade.
 // O modelo escolhe tags deste vocabulário; os tópicos (topics.json) se agrupam pelas tags; a barra de filtros agrupa por categoria.
 // Depois de publicado, não mude a key das categorias (ela aparece na URL: /all?category=…); tags e cadastro podem mudar.

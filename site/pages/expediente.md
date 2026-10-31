@@ -2,7 +2,7 @@
 
 Introdução:
 
-> O Fôlego é um jornal semanal, gratuito e em português, sobre cirurgia torácica pediátrica, via aérea adulto e pediátrica, pneumologia pediátrica e otorrinolaringologia pediátrica. Esta página diz quem responde por ele e como cada matéria chega à edição.
+> O Fôlego é um jornal semanal, gratuito e em português, sobre cirurgia torácica pediátrica, via aérea pediátrica, pneumologia pediátrica e otorrinolaringologia pediátrica. Esta página diz quem responde por ele e como cada matéria chega à edição.
 
 ## Como as matérias são escolhidas
 

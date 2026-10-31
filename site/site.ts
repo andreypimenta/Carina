@@ -36,7 +36,7 @@ export const SITE = {
   /** 反馈表单邮箱框里的提示。 */
   feedbackEmailHint: "Deixe seu e-mail se quiser que a gente responda",
   /** 一句话介绍：搜索引擎、分享卡片、RSS、llms.txt 会用。 */
-  description: `Lê a literatura e as notícias de cirurgia torácica pediátrica, via aérea adulto e pediátrica, pneumologia pediátrica e otorrinolaringologia pediátrica, escolhe o que muda a prática e publica matérias completas em português numa edição ${EDITION_WHEN.weekly}.`,
+  description: `Lê a literatura e as notícias de cirurgia torácica pediátrica, via aérea pediátrica, pneumologia pediátrica e otorrinolaringologia pediátrica, escolhe o que muda a prática e publica matérias completas em português numa edição ${EDITION_WHEN.weekly}.`,
   /** llms.txt 里一句话介绍下面的一段详细介绍（选填）。 */
   llmsIntro: null as string | null,
   /** 一行小字：分享图、海报下方。 */

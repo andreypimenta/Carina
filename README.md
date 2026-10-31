@@ -1,6 +1,6 @@
 # Fôlego
 
-Jornal semanal em português sobre **cirurgia torácica pediátrica, via aérea (adulto e pediátrica), pneumologia pediátrica e otorrinolaringologia pediátrica**, para especialistas e pediatras.
+Jornal semanal em português sobre **cirurgia torácica pediátrica, via aérea pediátrica, pneumologia pediátrica e otorrinolaringologia pediátrica**, para especialistas e pediatras.
 
 O Fôlego acompanha a literatura (buscas salvas no PubMed) e as notícias de sociedades, reguladores e registros de ensaios clínicos; avalia cada estudo pelo desenho e pelo impacto na conduta; e publica matérias completas em português, com uma parte para o pediatra e outra para o especialista. Artigos com licença aberta (CC BY) são traduzidos e republicados na íntegra, com crédito; para os demais, o Fôlego escreve uma matéria própria e indica onde ler o texto gratuito legal, quando existe. A edição sai toda segunda-feira às 07:00 (horário de Brasília).
 
