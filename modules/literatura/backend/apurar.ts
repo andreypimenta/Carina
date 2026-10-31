@@ -34,7 +34,7 @@ import { identityKeyForUrl } from "@aihot/backend/lib/url";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { earlier } from "./adicionar.ts";
-import { blockText, findOpenCopy, lookupPmid } from "./access.ts";
+import { articleText, blockText, findOpenCopy, lookupPmid } from "./access.ts";
 import { enabledSources, MATERIA_SOURCE, MAX_ATTEMPTS, MIN_FULL_TEXT, settings, takePaper } from "./collect.ts";
 import { creditBlock, MATERIA_STEP, renderFonteMateria, renderMateria, writeFonteMateria, writeMateria, type PrimaryPage, type XCredit } from "./materia.ts";
 import { authorLine, fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, type Paper } from "./pubmed.ts";
@@ -220,7 +220,7 @@ export function paperFromPage(html: string, doi: string): Paper | null {
   const meta = metaOf(cheerio.load(html));
   const title = meta(["citation_title", "dc.title"])[0];
   if (!title) return null;
-  const abstract = meta(["citation_abstract", "dc.description", "description", "og:description"])[0];
+  const abstract = meta(["citation_abstract", "dc.description"])[0];
   return {
     pmid: "", doi, pmcid: null, title: title.replace(/\.$/, ""),
     abstract: abstract ? [{ label: null, text: abstract }] : [],
@@ -310,6 +310,9 @@ interface PostRow {
 /** All the post's own words: its text, the post it quotes and its X Article. */
 const postText = (r: PostRow) => [r.x_post.text, r.x_post.quoted?.text, r.x_article?.title, r.x_article?.text].filter(Boolean).join("\n\n");
 
+/** Whether the post is still in the days it is researched in (a post waiting for PubMed is taken once more after). */
+const inWindow = (row: PostRow, now: Date) => now.getTime() - row.discovered_at.getTime() < X_WINDOW_DAYS * 86_400_000;
+
 /** Statuses a later run takes again: the paper waits for PMC, Unpaywall, the model or its source. */
 const RETRY = ["aguardando-pubmed", "aguardando-pmc", "aguardando-unpaywall", "aguardando-modelo", "fonte-pausada", "erro"];
 
@@ -327,7 +330,7 @@ export async function researchPost(row: PostRow, now = new Date(), sources?: { i
   const text = postText(row);
   const known = row.pmid ? (await fetchPapers([row.pmid])).find((p) => p.pmid === row.pmid) ?? null
     : row.doi ? await paperOf({ dois: [row.doi], pmids: [], pmcids: [] }) : null;
-  const wait = now.getTime() - row.discovered_at.getTime() < X_WINDOW_DAYS * 86_400_000;
+  const wait = inWindow(row, now);
   if (!known && !row.pmid && row.doi && wait) return recordPost(row.id, "aguardando-pubmed", null, undefined, row.doi);
   const { paper: linked, doi, pages, publisher } = known ? { paper: known, doi: null, pages: [], publisher: null } : await findPostPaper(text, wait);
   if (!linked && doi) return recordPost(row.id, "aguardando-pubmed", null, undefined, doi);
@@ -356,9 +359,10 @@ export async function researchPost(row: PostRow, now = new Date(), sources?: { i
 
 /**
  * The site's article about a paper PubMed never had, from its publisher's page (the page as served to the
- * site's crawler): written like any paper's (industry/prompts/materia.md), from the page's text when it is a
- * full text and else from the abstract in its citation tags, with the reference block; null without a title
- * or a text. A paper already written under its DOI is not written again.
+ * site's crawler): written like any paper's (industry/prompts/materia.md), from the page's text up to its back
+ * matter when Unpaywall finds the paper open and the page has more than the abstract (as for the free copies,
+ * access.ts), else from the abstract its citation tags declare, with the reference block; null without a
+ * title or with neither. A paper already written under its DOI is not written again.
  */
 async function takePublisherPage(articleId: string, page: Page, doi: string, credit: XCredit, now: Date): Promise<XOutcome | null> {
   const url = `https://doi.org/${doi}`;
@@ -366,12 +370,11 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
   if (taken) return recordPost(articleId, "ja-coberto", null, taken.id, doi);
   const paper = paperFromPage(page.html, doi);
   if (!paper) return null;
-  const body = readable(page.html, page.url);
-  const text = body ? blockText(body.html) : "";
   const abstractChars = paper.abstract.reduce((n, a) => n + a.text.length, 0);
-  const fullText = text.length - abstractChars >= MIN_FULL_TEXT ? text : null;
-  if (!fullText && !abstractChars) return null;
   const access = await findOpenCopy(doi);
+  const copy = access.kind === "open" ? articleText(page.html, page.url, abstractChars) : null;
+  const fullText = copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
+  if (!fullText && !abstractChars) return null;
   const basis = fullText ? "full" : "abstract";
   const { materia, receiptId } = await writeMateria(paper, fullText);
   const html = sanitizeBody(renderMateria(materia, paper, access, null, basis) + creditBlock(credit), url);
@@ -428,12 +431,13 @@ async function recordPost(articleId: string, status: string, pmid: string | null
   return { articleId, status, pmid, materiaId };
 }
 
-async function recordPostFailure(articleId: string): Promise<XOutcome> {
+/** A failed attempt; the last one allowed, or one past the post's window (no later run takes it), gives the post up. */
+async function recordPostFailure(articleId: string, last: boolean): Promise<XOutcome> {
   const [row] = await sql<{ attempts: number }[]>`
     INSERT INTO literatura_x_posts (article_id, status, attempts) VALUES (${articleId}, 'erro', 1)
     ON CONFLICT (article_id) DO UPDATE SET status = 'erro', attempts = literatura_x_posts.attempts + 1, updated_at = now()
     RETURNING attempts`;
-  if (row!.attempts >= MAX_ATTEMPTS) {
+  if (last || row!.attempts >= MAX_ATTEMPTS) {
     await sql`UPDATE literatura_x_posts SET status = 'falhou' WHERE article_id = ${articleId}`;
     return { articleId, status: "falhou", pmid: null };
   }
@@ -467,7 +471,7 @@ export async function researchXPosts(opts: { now?: Date; budgetMs?: number } = {
     try {
       out = await researchPost(row, now, sources);
     } catch (error) {
-      out = await recordPostFailure(row.id);
+      out = await recordPostFailure(row.id, !inWindow(row, now));
       console.error(`literatura: post do X ${row.url}: ${(error as Error).message}`);
     }
     counts[out.status] = (counts[out.status] ?? 0) + 1;
