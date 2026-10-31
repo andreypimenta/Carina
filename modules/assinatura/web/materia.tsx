@@ -1,7 +1,7 @@
 // An article opened from /assine: as lean as the edition it came from (WebModule.ownChrome), with the text,
 // the link to the original, the buttons that send this page to WhatsApp or copy it, and the sign-up form at the
 // end. Its only way back is to that edition; nothing leads into the rest of the site.
-import { data, Link, useLoaderData, type LoaderFunctionArgs, type MetaArgs } from "react-router";
+import { data, Link, useLoaderData, useSearchParams, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import type { SiteItemDetail } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
@@ -10,6 +10,7 @@ import { ArticleBody } from "@aihot/web/features/item/ArticleBody";
 import { apiGet, cachedPage, loadOr404 } from "@aihot/web/lib/api.server";
 import { fullDateTime } from "@aihot/web/lib/format";
 import { pageMeta, titled } from "@aihot/web/lib/seo";
+import { groupTag, signupPath } from "../group.ts";
 import type { SignupChannels } from "../types.ts";
 import { materiaUrl, ShareLink } from "./ShareLink.tsx";
 import { SignupForm } from "./SignupForm.tsx";
@@ -35,6 +36,7 @@ export function meta({ loaderData, location }: MetaArgs<typeof loader>) {
 
 export default function AssineMateria() {
   const { key, item, channels } = useLoaderData<typeof loader>();
+  const group = groupTag(useSearchParams()[0].get("g"));
   const isX = item.channel === "x" && !!item.x;
   const lang = item.bodyLanguage;
   const bodyHtml = lang === "zh" ? (item.body?.zh ?? item.body?.original) : (item.body?.original ?? item.body?.zh);
@@ -47,7 +49,7 @@ export default function AssineMateria() {
         <span className="text-[12px] tracking-[0.12em] text-ink-4">EDIÇÃO SEMANAL · GRÁTIS</span>
       </header>
       <main className="mx-auto w-full max-w-[var(--page-max-reading)] px-[var(--gutter-l)] pb-12">
-        <Link to={`/assine/${key}`} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink">
+        <Link to={signupPath(group, `/assine/${key}`)} className="-ml-1.5 inline-flex h-8 items-center gap-1.5 rounded-full px-1.5 text-[13px] text-ink-3 transition-colors hover:text-ink">
           <IconArrowLeft size={16} /> Voltar à edição
         </Link>
         <article className="pb-6 pt-4">

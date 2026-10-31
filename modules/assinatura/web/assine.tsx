@@ -3,13 +3,14 @@
 // of the site (WebModule.ownChrome): its articles open on lean pages under its address (materia.tsx). Then
 // "Indique a um colega" and a link to who makes the journal (/expediente). With no edition yet, a short
 // presentation and the form. The links in the messages have a page of their own (link.tsx).
-import { data, Link, useLoaderData, type LoaderFunctionArgs, type MetaArgs } from "react-router";
+import { data, Link, useLoaderData, useSearchParams, type LoaderFunctionArgs, type MetaArgs } from "react-router";
 import type { ReportDetail, ReportLatestPage } from "@aihot/contracts/site";
 import { SITE } from "@aihot/site";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { apiGet, cachedPage, loadOr404 } from "@aihot/web/lib/api.server";
 import { pageMeta } from "@aihot/web/lib/seo";
 import { ReportPaper } from "@aihot/web/features/report/ReportPaper";
+import { groupTag, signupPath } from "../group.ts";
 import type { SignupChannels } from "../types.ts";
 import { Indique } from "./Indique.tsx";
 import { SignupForm } from "./SignupForm.tsx";
@@ -39,6 +40,7 @@ export function meta({ loaderData, location }: MetaArgs<typeof loader>) {
 
 export default function AssinePage() {
   const { report, channels } = useLoaderData<typeof loader>();
+  const group = groupTag(useSearchParams()[0].get("g"));
   return (
     <div className="report-shell min-h-dvh">
       <header className="mx-auto flex w-full max-w-[1160px] items-center justify-between gap-3 px-[var(--gutter-l)] py-4 lg:px-10">
@@ -51,7 +53,7 @@ export default function AssinePage() {
             report={report}
             index={[{ key: report.key, issueNumber: report.issueNumber, title: report.title, count: 0 }]}
             standalone
-            itemPath={(id) => `/assine/${report.key}/${id}`}
+            itemPath={(id) => signupPath(group, `/assine/${report.key}/${id}`)}
           />
         ) : (
           <section className="mt-4 max-w-[46em]">

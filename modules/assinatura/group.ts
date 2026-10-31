@@ -12,7 +12,7 @@ export function groupTag(raw: unknown): string | null {
   return tag || null;
 }
 
-/** /assine with its group's tag, or without one when the tag comes to nothing. */
-export function signupPath(tag: string | null): string {
-  return tag ? `/assine?${new URLSearchParams({ g: tag })}` : "/assine";
+/** A page under /assine (by default /assine itself) with its group's tag, or without one when the tag comes to nothing. */
+export function signupPath(tag: string | null, path = "/assine"): string {
+  return tag ? `${path}?${new URLSearchParams({ g: tag })}` : path;
 }

@@ -202,6 +202,8 @@ test("a sign-up keeps the tag of the group whose link brought it, the first one,
   assert.equal(groupTag("a".repeat(60))?.length, 40);
   assert.equal(signupPath(groupTag("Grupo A")), "/assine?g=grupo-a");
   assert.equal(signupPath(null), "/assine");
+  assert.equal(signupPath("grupo-a", "/assine/2026-W43/abc"), "/assine/2026-W43/abc?g=grupo-a");
+  assert.equal(signupPath(null, "/assine/2026-W43"), "/assine/2026-W43");
 
   const group = groupTag(`grupo-${T}`)!;
   const tagOf = async (address: string) => (await sql<{ group_tag: string | null }[]>`SELECT group_tag FROM assinatura_subscribers WHERE channel = 'email' AND address = ${address}`)[0]?.group_tag;
