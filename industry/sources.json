@@ -1298,46 +1298,6 @@
       "syndicate_fulltext": false
     },
     {
-      "id": "rss-boston-childrens-answers",
-      "name": "Boston Children's · Answers",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://answers.childrenshospital.org/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "centro de referência"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-cincinnati-research-horizons",
-      "name": "Cincinnati Children's · Research Horizons",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://scienceblog.cincinnatichildrens.org/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 360,
-      "tags": [
-        "centro de referência"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
       "id": "rss-pediatrics-nationwide",
       "name": "Nationwide Children's · Pediatrics Nationwide",
       "kind": "rss",
@@ -1348,34 +1308,6 @@
         }
       },
       "tier": "T1_5",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 360,
-      "tags": [
-        "centro de referência"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-chop-news",
-      "name": "CHOP · notícias",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.chop.edu/newsroom/search",
-        "parseMode": "html",
-        "itemSelector": ".views-row article",
-        "linkSelector": "h3 a",
-        "titleSelector": "h3 a",
-        "publishedAtSelector": "time",
-        "allowUrlPrefixes": [
-          "https://www.chop.edu/news/"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
       "owner_entity_id": null,
       "participation_mode": "editorial",
       "interval_minutes": 360,
@@ -1415,35 +1347,6 @@
       "syndicate_fulltext": false
     },
     {
-      "id": "web-cincinnati-releases",
-      "name": "Cincinnati Children's · comunicados",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.cincinnatichildrens.org/news/release",
-        "parseMode": "html",
-        "itemSelector": "h4.Newsroom",
-        "linkSelector": "a",
-        "titleSelector": "a",
-        "publishedAtSelector": ".NewsDate",
-        "publishedAtUtcOffset": "-05:00",
-        "allowUrlPrefixes": [
-          "https://www.cincinnatichildrens.org/news/release/20"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 360,
-      "tags": [
-        "centro de referência"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
       "id": "web-gosh-news",
       "name": "Great Ormond Street · notícias",
       "kind": "web_list",
@@ -1457,35 +1360,6 @@
         "publishedAtUtcOffset": "+00:00",
         "allowUrlPrefixes": [
           "https://www.gosh.nhs.uk/news/"
-        ],
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 360,
-      "tags": [
-        "centro de referência"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-sickkids-news",
-      "name": "SickKids · notícias",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.sickkids.ca/en/news/newsroom/",
-        "parseMode": "html",
-        "itemSelector": ".card-body",
-        "linkSelector": ".card-title a",
-        "titleSelector": ".card-title a",
-        "publishedAtSelector": ".card-lead",
-        "publishedAtUtcOffset": "-05:00",
-        "allowUrlPrefixes": [
-          "https://www.sickkids.ca/en/news/archive/"
         ],
         "_aihot": {
           "initialBackfillLimit": 8
@@ -2602,36 +2476,6 @@
       "kind": "rss",
       "config": {
         "feedUrl": "https://torax.cl/feed/",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 240,
-      "tags": [
-        "centro de referência"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "web-childrens-colorado",
-      "name": "Children's Hospital Colorado · Advances & Answers",
-      "kind": "web_list",
-      "config": {
-        "url": "https://www.childrenscolorado.org/advances-answers/recent-articles/",
-        "parseMode": "html",
-        "itemSelector": ".article-item",
-        "linkSelector": "h3 a",
-        "titleSelector": "h3 a",
-        "publishedAtSelector": ".article-item-meta__read-time span",
-        "publishedAtDateOrder": "mdy",
-        "publishedAtUtcOffset": "-07:00",
-        "allowUrlPrefixes": [
-          "https://www.childrenscolorado.org/advances-answers/recent-articles/"
-        ],
         "_aihot": {
           "initialBackfillLimit": 8
         }
@@ -4055,69 +3899,6 @@
       "kind": "rss",
       "config": {
         "feedUrl": "https://news.google.com/rss/search?q=%22estenosis+traqueal%22+cirug%C3%ADa&hl=es-419&gl=MX&ceid=MX:es-419",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 360,
-      "tags": [
-        "imprensa",
-        "Google News"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-gnews-site-cincinnati",
-      "name": "Google News · site:cincinnatichildrens.org \"airway\" (EN)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://news.google.com/rss/search?q=site%3Acincinnatichildrens.org+%22airway%22&hl=en-US&gl=US&ceid=US:en",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 360,
-      "tags": [
-        "imprensa",
-        "Google News"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-gnews-site-boston-answers",
-      "name": "Google News · site:answers.childrenshospital.org tracheomalacia (EN)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://news.google.com/rss/search?q=site%3Aanswers.childrenshospital.org+tracheomalacia&hl=en-US&gl=US&ceid=US:en",
-        "_aihot": {
-          "initialBackfillLimit": 8
-        }
-      },
-      "tier": "T2",
-      "owner_entity_id": null,
-      "participation_mode": "editorial",
-      "interval_minutes": 360,
-      "tags": [
-        "imprensa",
-        "Google News"
-      ],
-      "site_fulltext": false,
-      "syndicate_fulltext": false
-    },
-    {
-      "id": "rss-gnews-site-chop",
-      "name": "Google News · site:chop.edu \"airway\" reconstruction (EN)",
-      "kind": "rss",
-      "config": {
-        "feedUrl": "https://news.google.com/rss/search?q=site%3Achop.edu+%22airway%22+reconstruction&hl=en-US&gl=US&ceid=US:en",
         "_aihot": {
           "initialBackfillLimit": 8
         }

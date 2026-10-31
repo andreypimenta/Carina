@@ -1,5 +1,6 @@
 // A deliberately small online-migration vocabulary. Unknown SQL needs an explicit safety design, not an opt-out.
 export const FIRST_ONLINE_MIGRATION = 55;
+export const MAX_ROWS_BY_ID = 50;
 export type MigrationPlan = { kind: "transaction" | "validation" | "statistics" } | { kind: "index"; index: string; table: string };
 
 // Keep quoted values opaque, including their semicolons and comment markers. SQL bodies are not in
@@ -95,6 +96,10 @@ export function migrationPlan(text: string): MigrationPlan {
     return { kind: "transaction" };
   }
   if (alterDefault.test(sql)) return { kind: "transaction" };
+  // Setting one column to a constant on rows named by primary key locks those rows only, and the list
+  // bounds how many: a configuration change (pausing retired sources), not a backfill.
+  const byId = new RegExp(`^update ${RELATION} set ${IDENT} = ${LITERAL} where id in \\( ('(?:[^']|'')*'(?: , '(?:[^']|'')*')*) \\)$`, "i").exec(sql);
+  if (byId && byId[1].split(" , ").length <= MAX_ROWS_BY_ID) return { kind: "transaction" };
   if (new RegExp(`^alter table ${RELATION} add constraint ${IDENT} (?:check \\(.*\\)|foreign key \\(.*\\) references .*) not valid$`, "i").test(sql)) return { kind: "transaction" };
   throw new Error(`not safe for an online migration: ${sql.slice(0, 180)}. Use constant-default columns, NOT VALID then separate validation, concurrent indexes, column MCV statistics with separate column ANALYZE, or DROP TABLE IF EXISTS / DROP COLUMN IF EXISTS / DROP CONSTRAINT IF EXISTS for one object nothing uses; backfill data in bounded batches outside release migrations.`);
 }

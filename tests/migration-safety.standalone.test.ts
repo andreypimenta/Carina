@@ -1,7 +1,7 @@
 // Failure cases for online migrations: table scans under strong locks, unsafe retries, and hidden SQL.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { migrationPlan } from "../scripts/migration-safety.ts";
+import { MAX_ROWS_BY_ID, migrationPlan } from "../scripts/migration-safety.ts";
 
 test("online migrations reject writes, blocking indexes and table rewrites before execution", () => {
   for (const statement of [
@@ -125,5 +125,27 @@ test("statistics maintenance names one table and its columns without skipping wo
     "ANALYZE publications(selected); UPDATE publications SET selected = false;",
     "ANALYZE publications (selected); SET statement_timeout = 0;",
     "VACUUM ANALYZE publications (selected);",
+  ]) assert.throws(() => migrationPlan(statement), statement);
+});
+
+// Pausing a few named rows (retired sources): a constant on rows listed by primary key, never a filter that
+// could reach the whole table, a computed value, or more rows than a configuration change names.
+test("a constant can be set on a short list of rows named by id, nothing broader", () => {
+  for (const statement of [
+    "UPDATE sources SET enabled = false WHERE id IN ('web-one', 'rss-two');",
+    "-- paused\nUPDATE public.sources SET enabled = false WHERE id IN ('it''s');",
+  ]) assert.equal(migrationPlan(statement).kind, "transaction", statement);
+  const many = Array.from({ length: MAX_ROWS_BY_ID + 1 }, (_, i) => `'s${i}'`).join(", ");
+  for (const statement of [
+    "UPDATE sources SET enabled = false;",
+    "UPDATE sources SET enabled = false WHERE kind IN ('rss');",
+    "UPDATE sources SET enabled = false WHERE id = 'one';",
+    "UPDATE sources SET enabled = false WHERE id IN (SELECT id FROM sources);",
+    "UPDATE sources SET enabled = false WHERE id IN ('one') OR true;",
+    "UPDATE sources SET enabled = NOT enabled WHERE id IN ('one');",
+    "UPDATE sources SET enabled = false, tier = 'T1' WHERE id IN ('one');",
+    "UPDATE sources SET enabled = false WHERE id IN ('one') RETURNING id;",
+    "UPDATE sources SET enabled = false WHERE id IN ('one'); UPDATE sources SET enabled = false WHERE id IN ('two');",
+    `UPDATE sources SET enabled = false WHERE id IN (${many});`,
   ]) assert.throws(() => migrationPlan(statement), statement);
 });

@@ -117,11 +117,11 @@ Por esse caminho viram matéria do Fôlego, como os outros artigos do PubMed.
 
 | Fonte | Como entrou | Situação | Observação |
 |---|---|---|---|
-| Cincinnati Children's: Airway Reconstruction Research e Research Horizons | `rss-cincinnati-research-horizons`, `web-cincinnati-releases` (já existiam); `rss-gnews-site-cincinnati` | ativa | A página do programa é estática; o blog e os comunicados já eram coletados. |
-| Boston Children's: Esophageal and Airway Treatment Center e Answers | `rss-boston-childrens-answers` (já existia); `rss-gnews-site-boston-answers` | ativa | A página do centro é estática. |
-| CHOP: Neonatal Airway Program | `web-chop-news` (já existia); `rss-gnews-site-chop` | ativa | A página do programa é estática. |
-| SickKids: DREAMS e pesquisa de via aérea | `web-sickkids-news` (já existia) | ativa | A página da clínica é estática; a notícia citada está no newsroom. |
-| Children's Hospital Colorado: Advances & Answers | `web-childrens-colorado` | ativa | A data aparece como "10/21/2026"; a fonte declara a ordem mês/dia/ano. |
+| Cincinnati Children's: Airway Reconstruction Research e Research Horizons | `cincinnati-research-horizons`, `cincinnati-releases` (pistas) | ativa | A página do programa é estática. O blog e os comunicados eram as fontes `rss-cincinnati-research-horizons` e `web-cincinnati-releases`. A busca do Google News `rss-gnews-site-cincinnati` saiu em 31/10/2026, porque os links dos itens do Google News redirecionam por JavaScript e não levam ao artigo. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
+| Boston Children's: Esophageal and Airway Treatment Center e Answers | `boston-childrens-answers` (pista) | ativa | A página do centro é estática. O blog era a fonte `rss-boston-childrens-answers`. A busca do Google News `rss-gnews-site-boston-answers` saiu em 31/10/2026, porque os links dos itens do Google News redirecionam por JavaScript e não levam ao artigo. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
+| CHOP: Neonatal Airway Program | `chop-news` (pista) | ativa | A página do programa é estática. As notícias eram a fonte `web-chop-news`. A busca do Google News `rss-gnews-site-chop` saiu em 31/10/2026, porque os links dos itens do Google News redirecionam por JavaScript e não levam ao artigo. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
+| SickKids: DREAMS e pesquisa de via aérea | `sickkids-news` (pista) | ativa | A página da clínica é estática; a notícia citada está no newsroom, que era a fonte `web-sickkids-news`. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
+| Children's Hospital Colorado: Advances & Answers | `childrens-colorado` (pista) | ativa | A data aparece como "10/21/2026"; a página declara a ordem mês/dia/ano. Era a fonte `web-childrens-colorado`. Desde 31/10/2026 é lida só como pista para o artigo original (`industry/pistas.json`; veja [fontes.md](fontes.md#pistas-notícias-dos-centros-pediátricos)). |
 | Instituto Nacional del Tórax: Broncoscopía (Chile) | `rss-torax-cl` (feed de notícias do instituto) | ativa | A página de broncoscopia é operacional; o feed do site traz as notícias do instituto. |
 | Great Ormond Street | `web-gosh-news` (já existia) | ativa | |
 | Mass General | `rss-gnews-site-mgb` (Google News, `site:massgeneralbrigham.org` com termos de via aérea) | ativa | O site de notícias (news.massgeneralbrigham.org) é montado por JavaScript, sem feed (`/feed/` e `query-index.json` respondem 404); só o sitemap é público, e o coletor não lê sitemaps. |
@@ -207,20 +207,20 @@ Os congressos estão em `industry/congressos.json` e aparecem na página `/agend
 | 10 | DAS | `rss-das`, `das-2026` na agenda |
 | 11 | Global Tracheostomy Collaborative | `rss-youtube-gtc`, `its-2026` na agenda |
 | 12 | NTSP / Trachy Talk | `web-ntsp-news`, `rss-trachy-talk`, `rss-youtube-ntsp` |
-| 13 | Cincinnati Children's | `rss-cincinnati-research-horizons`, `web-cincinnati-releases`, `rss-gnews-site-cincinnati` |
-| 14 | Boston Children's EAT Center | `rss-boston-childrens-answers`, `rss-gnews-site-boston-answers` |
-| 15 | CHOP Airway Programs | `web-chop-news`, `rss-gnews-site-chop` |
+| 13 | Cincinnati Children's | `cincinnati-research-horizons` e `cincinnati-releases` (pistas) |
+| 14 | Boston Children's EAT Center | `boston-childrens-answers` (pista) |
+| 15 | CHOP Airway Programs | `chop-news` (pista) |
 
 ## Buscas do PubMed
 
-As quatro buscas prontas do diretório entram exatamente como estão, só passadas para uma linha. Os ajustes recomendados entram como buscas próprias. Todas estão ativas em `industry/literatura.json`.
+As quatro buscas prontas do diretório entraram exatamente como estavam, só passadas para uma linha. Os ajustes recomendados entram como buscas próprias. Todas estão ativas em `industry/literatura.json`, com uma mudança de 31/10/2026: o jornal passou a cobrir só a criança, e a busca de adultos (`diretorio-adulto`) saiu, assim como a consulta do Scholar sobre estenose em adultos (`scholar-estenose-adulto`). A busca pediátrica ganhou os termos de tema que só a de adultos tinha (estenose, reconstrução e próteses de traqueia e brônquio, colapso dinâmico excessivo, lesão traqueobrônquica e laríngea, tumor de traqueia, eletrocautério com termo de via aérea), e os alertas de traqueostomia e decanulação e de cirurgia estrutural ganharam o bloco de idade da busca pediátrica. Medido nos 42 dias até 31/10/2026, nada se perdeu: a busca pediátrica trouxe os mesmos 147 artigos, e os artigos que a busca de adultos e os dois alertas sem idade traziam já vinham das buscas amplas sem bloco de idade (`diretorio-tematica-sem-idade` e as outras).
 
 | Item do diretório | Busca | Artigos por semana | Fora das buscas que já existiam |
 |---|---|---|---|
-| Via aérea em adultos | `diretorio-adulto` | 35,5 | 26,7 |
-| Via aérea pediátrica | `diretorio-pediatrica` | 20,3 | 4,2 |
-| Alerta de traqueostomia e decanulação (também o ajuste "concentrar em decanulação") | `diretorio-traqueostomia-decanulacao` | 8,3 | 4,3 |
-| Alerta de cirurgia estrutural | `diretorio-cirurgia-estrutural` | 3,7 | 0,2 |
+| Via aérea em adultos | saiu em 31/10/2026 (era `diretorio-adulto`) | 35,5 | 26,7 |
+| Via aérea pediátrica (com os termos de tema da de adultos desde 31/10/2026) | `diretorio-pediatrica` | 20,3 | 4,2 |
+| Alerta de traqueostomia e decanulação (também o ajuste "concentrar em decanulação"; só crianças desde 31/10/2026) | `diretorio-traqueostomia-decanulacao` | 8,3 | 4,3 |
+| Alerta de cirurgia estrutural (só crianças desde 31/10/2026) | `diretorio-cirurgia-estrutural` | 3,7 | 0,2 |
 | Ajuste: bloco temático sem o bloco de idade (a união dos blocos temáticos das buscas de adulto e pediátrica) | `diretorio-tematica-sem-idade` | 88,2 | 53,5 |
 | Ajuste: só reconstrução (estenose, reconstrução laringotraqueal, traqueoplastia e ressecção) | `diretorio-reconstrucao` | 6,7 | 0 |
 | Ajuste: manejo anestésico, separado (MeSH de manejo e intubação, via aérea e intubação difíceis, videolaringoscopia, dispositivo supraglótico, extubação, acesso cervical) | `diretorio-manejo-anestesico` | 67,2 | 50,3 |
@@ -228,7 +228,7 @@ As quatro buscas prontas do diretório entram exatamente como estão, só passad
 | Ajuste: diretrizes por termos livres e tipos de publicação (bloco temático com guideline, consensus, recommendation, position statement, expert panel, Delphi e os tipos Guideline, Practice Guideline e Consensus Development Conference) | `diretorio-diretrizes` | 10,2 | 6,7 |
 | Periódicos do diretório nos temas de via aérea (veja Periódicos) | `periodicos-sem-feed` | 2,7 | 1,0 |
 
-Medição: esearch por data de entrada no PubMed (EDAT) em seis janelas de 7 dias, de 10/09 a 21/10/2026, com o filtro de idioma do módulo. As colunas não somam, porque as buscas se sobrepõem muito: a temática sem idade contém quase todas as outras. Juntas, as 25 buscas novas trazem 78,5 artigos por semana que as 25 antigas não traziam.
+Medição (anterior à mudança de 31/10/2026): esearch por data de entrada no PubMed (EDAT) em seis janelas de 7 dias, de 10/09 a 21/10/2026, com o filtro de idioma do módulo. As colunas não somam, porque as buscas se sobrepõem muito: a temática sem idade contém quase todas as outras. Juntas, as 25 buscas novas trazem 78,5 artigos por semana que as 25 antigas não traziam.
 
 ## Google Scholar
 
@@ -238,7 +238,7 @@ Foi escolhido o PubMed, e não o Europe PMC, para que os artigos sigam o mesmo c
 
 | Tema | Consulta no Scholar | Busca no PubMed |
 |---|---|---|
-| Estenose em adultos | "subglottic stenosis" adult treatment | `scholar-estenose-adulto` |
+| Estenose em adultos | "subglottic stenosis" adult treatment | saiu em 31/10/2026 (era `scholar-estenose-adulto`): o jornal cobre só a criança |
 | Ressecção cricotraqueal | "cricotracheal resection" outcomes | `scholar-ressecao-cricotraqueal` |
 | Ressecção traqueal | "tracheal resection" reconstruction outcomes | `scholar-ressecao-traqueal` |
 | Reconstrução pediátrica | "laryngotracheal reconstruction" children | `scholar-reconstrucao-pediatrica` |
@@ -254,11 +254,11 @@ Foi escolhido o PubMed, e não o Europe PMC, para que os artigos sigam o mesmo c
 | Trauma | "tracheobronchial injury" surgical management | `scholar-trauma` |
 | ECMO | ECMO "airway surgery" | `scholar-ecmo` |
 
-Todas estão ativas. Cada uma traz de 0 a 0,5 artigo por semana, e nenhum desses artigos ficava fora das buscas que já existiam.
+As que não saíram estão ativas. Cada uma traz de 0 a 0,5 artigo por semana, e nenhum desses artigos ficava fora das buscas que já existiam.
 
 ## Google Alerts
 
-Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-gnews-*` que já existiam, inclusive as com `site:`. Todas estão ativas, com nível T2. O Google News devolve os resultados por relevância, e muitos são antigos; a coleta só publica o que aparecer depois de a fonte ser importada.
+Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-gnews-*` que já existiam, inclusive as com `site:`. Todas estão ativas, com nível T2, menos as três pelos sites de Cincinnati Children's, Boston Children's e CHOP, que saíram em 31/10/2026. O Google News devolve os resultados por relevância, e muitos são antigos; a coleta só publica o que aparecer depois de a fonte ser importada.
 
 | Finalidade | Consulta | Fonte |
 |---|---|---|
@@ -279,9 +279,9 @@ Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-g
 | Brasil: estenose | "estenose de traqueia" | `rss-gnews-estenose-traqueia` |
 | Brasil: pediatria | "traqueostomia pediátrica" | `rss-gnews-traqueostomia-pediatrica` |
 | América Latina | "estenosis traqueal" cirugía | `rss-gnews-estenosis-traqueal` (edição latino-americana) |
-| Cincinnati Children's | site:cincinnatichildrens.org "airway" | `rss-gnews-site-cincinnati` |
-| Boston Children's | site:answers.childrenshospital.org tracheomalacia | `rss-gnews-site-boston-answers` |
-| CHOP | site:chop.edu "airway" reconstruction | `rss-gnews-site-chop` |
+| Cincinnati Children's | site:cincinnatichildrens.org "airway" | saiu em 31/10/2026 (era `rss-gnews-site-cincinnati`): o link do item redireciona por JavaScript e não leva ao artigo |
+| Boston Children's | site:answers.childrenshospital.org tracheomalacia | saiu em 31/10/2026 (era `rss-gnews-site-boston-answers`): o link do item redireciona por JavaScript e não leva ao artigo |
+| CHOP | site:chop.edu "airway" reconstruction | saiu em 31/10/2026 (era `rss-gnews-site-chop`): o link do item redireciona por JavaScript e não leva ao artigo |
 | WABIP | site:wabip.com guideline airway | `rss-gnews-site-wabip` |
 | SBCT | site:sbct.com.br traqueia | `rss-gnews-site-sbct` |
 

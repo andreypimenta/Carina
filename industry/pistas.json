@@ -1,0 +1,89 @@
+{
+  "$comment": "Pistas do módulo literatura (modules/literatura/backend/pistas.ts): as notícias dos centros pediátricos de referência que o relatório de fontes do dono indicou (31/10/2026), lidas só para achar o artigo original. Uma notícia nunca vira matéria: a cada execução, cada post novo dos últimos 7 dias é aberto uma vez, e os DOIs e links do PubMed que ele traz são procurados no PubMed; o artigo que entrou no PubMed até um ano antes do post e passa no filtro de tema de industry/revistas.json segue o caminho de todo artigo científico. Post sem artigo é deixado de lado. kind e config são os de uma fonte do mesmo tipo (docs/sources.md). Guia em docs/fontes.md (Pistas: notícias dos centros pediátricos).",
+  "paginas": [
+    {
+      "id": "boston-childrens-answers",
+      "name": "Boston Children's · Answers",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://answers.childrenshospital.org/feed/"
+      }
+    },
+    {
+      "id": "cincinnati-research-horizons",
+      "name": "Cincinnati Children's · Research Horizons",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://scienceblog.cincinnatichildrens.org/feed/"
+      }
+    },
+    {
+      "id": "cincinnati-releases",
+      "name": "Cincinnati Children's · comunicados",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.cincinnatichildrens.org/news/release",
+        "parseMode": "html",
+        "itemSelector": "h4.Newsroom",
+        "linkSelector": "a",
+        "titleSelector": "a",
+        "publishedAtSelector": ".NewsDate",
+        "publishedAtUtcOffset": "-05:00",
+        "allowUrlPrefixes": [
+          "https://www.cincinnatichildrens.org/news/release/20"
+        ]
+      }
+    },
+    {
+      "id": "chop-news",
+      "name": "CHOP · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.chop.edu/newsroom/search",
+        "parseMode": "html",
+        "itemSelector": ".views-row article",
+        "linkSelector": "h3 a",
+        "titleSelector": "h3 a",
+        "publishedAtSelector": "time",
+        "allowUrlPrefixes": [
+          "https://www.chop.edu/news/"
+        ]
+      }
+    },
+    {
+      "id": "sickkids-news",
+      "name": "SickKids · notícias",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.sickkids.ca/en/news/newsroom/",
+        "parseMode": "html",
+        "itemSelector": ".card-body",
+        "linkSelector": ".card-title a",
+        "titleSelector": ".card-title a",
+        "publishedAtSelector": ".card-lead",
+        "publishedAtUtcOffset": "-05:00",
+        "allowUrlPrefixes": [
+          "https://www.sickkids.ca/en/news/archive/"
+        ]
+      }
+    },
+    {
+      "id": "childrens-colorado",
+      "name": "Children's Hospital Colorado · Advances & Answers",
+      "kind": "web_list",
+      "config": {
+        "url": "https://www.childrenscolorado.org/advances-answers/recent-articles/",
+        "parseMode": "html",
+        "itemSelector": ".article-item",
+        "linkSelector": "h3 a",
+        "titleSelector": "h3 a",
+        "publishedAtSelector": ".article-item-meta__read-time span",
+        "publishedAtDateOrder": "mdy",
+        "publishedAtUtcOffset": "-07:00",
+        "allowUrlPrefixes": [
+          "https://www.childrenscolorado.org/advances-answers/recent-articles/"
+        ]
+      }
+    }
+  ]
+}

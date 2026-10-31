@@ -1,5 +1,5 @@
 // The literature module's backend: the run every six hours (backend/collect.ts, with the watched journals of
-// backend/revistas.ts) and the model step that writes the site's articles about papers (backend/materia.ts),
+// backend/revistas.ts and the leads of backend/pistas.ts) and the model step that writes the site's articles about papers (backend/materia.ts),
 // chosen like the engine's steps; and the
 // specials written from PubMed references (backend/especiais.ts): their writing queue, their admin and site
 // routes (api/especiais.ts), their pages in the sitemap and their place in the weekly issue; and the papers the
@@ -13,6 +13,7 @@ import { collectLiterature } from "./backend/collect.ts";
 import { draftsToReview, ESPECIAL_FAILED_QUEUE, ESPECIAL_QUEUE, especiaisSitemap, weeklyCard, weeklyPart } from "./backend/especiais.ts";
 import { LINHA_PURPOSE, LINHA_STEP } from "./backend/linha-do-tempo.ts";
 import { FONTE_PURPOSE, MATERIA_PURPOSE, MATERIA_STEP } from "./backend/materia.ts";
+import { pistas } from "./backend/pistas.ts";
 import { revistas } from "./backend/revistas.ts";
 
 const server: ServerModule = {
@@ -36,7 +37,7 @@ const server: ServerModule = {
       name: "literatura.collect",
       cron: "20 */6 * * *",
       missed: "once",
-      run: () => collectLiterature({ budgetMs: 50 * 60_000, revistas: revistas() }),
+      run: () => collectLiterature({ budgetMs: 50 * 60_000, revistas: revistas(), pistas: pistas() }),
       when: () => process.env.COLLECT_ENABLED === "true",
     },
     {
