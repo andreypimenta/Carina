@@ -39,6 +39,8 @@ const api = createServer((req, res) => {
     res.statusCode = 308;
     return res.end(JSON.stringify({ mergedInto: "surviving-story" }));
   }
+  if (url.pathname === "/api/auth/options") return res.end(JSON.stringify({ password: true, feishu: false }));
+  if (url.pathname === "/api/admin/me" && req.headers.cookie?.includes("aihot_admin=fixture")) return res.end(JSON.stringify({ name: "Fixture admin", csrf: "fixture", dev: false }));
   res.statusCode = url.pathname.startsWith("/api/admin/") ? 401 : 404;
   res.end(JSON.stringify({ code: "not_found" }));
 });
@@ -190,6 +192,21 @@ test("browser caching preserves noindex and private sign-in responses", async ()
   assert.equal(login.headers.get("Cache-Control"), "private, no-store");
   assert.equal(login.headers.get("X-Robots-Tag"), "noindex, nofollow");
   await login.text();
+});
+
+test("a signed-in admin is sent past the sign-in page", async () => {
+  const res = await fetch(`${origin}/admin/login?return=%2Fadmin%2Fcontent`, { headers: { cookie: "aihot_admin=fixture" }, redirect: "manual" });
+  assert.equal(res.status, 302);
+  assert.equal(res.headers.get("location"), "/admin/content");
+  await res.text();
+  for (const target of ["javascript:alert(1)", "//evil.example/admin", "https://evil.example/admin"]) {
+    const away = await fetch(`${origin}/admin/login?return=${encodeURIComponent(target)}`, { headers: { cookie: "aihot_admin=fixture" }, redirect: "manual" });
+    assert.equal(away.headers.get("location"), "/admin", target);
+    await away.text();
+  }
+  const anonymous = await fetch(`${origin}/admin/login?return=%2Fadmin`, { redirect: "manual" });
+  assert.equal(anonymous.status, 200, "without a session the page still offers the ways in");
+  await anonymous.text();
 });
 
 test("a visitor cannot name its own address to the api without a trusted proxy in front", async () => {
