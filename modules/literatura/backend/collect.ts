@@ -18,7 +18,7 @@ import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { SITE_UTC_OFFSET } from "@aihot/contracts/time";
 import { fetchPapers, searchPmids, skippable, authorLine, type Paper } from "./pubmed.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
-import { referenceBlock, renderMateria, writeMateria } from "./materia.ts";
+import { creditBlock, referenceBlock, renderMateria, writeMateria, type XCredit } from "./materia.ts";
 
 export const INTEGRAL_SOURCE = "literatura-integral";
 export const MATERIA_SOURCE = "literatura-materia";
@@ -93,9 +93,10 @@ export async function enabledSources(): Promise<{ integral: boolean; materia: bo
 
 /**
  * One paper: its access, its body, and its material. A status it returns without recording ("aguardando-…")
- * leaves it for a later run; a thrown error counts as a failed attempt.
+ * leaves it for a later run; a thrown error counts as a failed attempt. A paper found through an X post
+ * (backend/apurar.ts) carries the post's credit at the end of its body.
  */
-export async function takePaper(paper: Paper, now = new Date(), sources = { integral: true, materia: true }): Promise<Outcome> {
+export async function takePaper(paper: Paper, now = new Date(), sources = { integral: true, materia: true }, credit?: XCredit): Promise<Outcome> {
   const skip = skippable(paper);
   if (skip) return record(paper, skip);
   const access: Access = paper.doi ? await findOpenCopy(paper.doi) : { kind: "unknown" };
@@ -105,10 +106,11 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   const url = paper.doi ? `https://doi.org/${paper.doi}` : `https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/`;
   const publishedAt = entryTime(paper.enteredOn, now);
   const language = LANGUAGES[paper.languages[0] ?? "eng"] ?? null;
-  const raw = { pmid: paper.pmid, doi: paper.doi, pmcid, journal: paper.journal, publicationTypes: paper.publicationTypes, access, license: full?.license ?? null };
+  const raw = { pmid: paper.pmid, doi: paper.doi, pmcid, journal: paper.journal, publicationTypes: paper.publicationTypes, access, license: full?.license ?? null, ...(credit ? { xPost: credit.url } : {}) };
+  const credited = credit ? creditBlock(credit) : "";
 
   if (sources.integral && isFull && republishable(full!.license)) {
-    const html = sanitizeBody(integralBody(paper, full!, access, pmcid!), url);
+    const html = sanitizeBody(integralBody(paper, full!, access, pmcid!) + credited, url);
     const res = await upsertMaterial({
       sourceId: INTEGRAL_SOURCE, url, title: paper.title, author: authorLine(paper.authors) || null, language,
       publishedAt, excerpt: paper.abstract.map((s) => s.text).join(" ").slice(0, 1000) || null,
@@ -136,7 +138,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   const basis = fullText ? "full" : "abstract";
   if (basis === "abstract" && !paper.abstract.length) return record(paper, "sem-texto");
   const { materia, receiptId } = await writeMateria(paper, fullText);
-  const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null, basis), url);
+  const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null, basis) + credited, url);
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url, title: materia.titulo.trim(), author: authorLine(paper.authors) || null, language: "pt",

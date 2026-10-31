@@ -301,6 +301,11 @@ export interface ServerModule {
   notices?: Partial<RequestNotices>;
   /** The origin v1 links stories at while it returns one, instead of the site's (publication/links.ts: hot topics' links.story, related stories' links.api). */
   storyOrigin?: () => string | null;
+  /**
+   * X posts of editorial sources are leads for this module's own articles, not items of their own: they leave
+   * the pool, the selection and the editions, keeping only their detail page (publication/rules.ts isPoolEligible).
+   */
+  takesXPosts?: boolean;
   /** More keys a feedback sender is known by; a ban under any of them holds (operations/feedback.ts). */
   feedbackKeys?: (ip: string) => string[];
 }

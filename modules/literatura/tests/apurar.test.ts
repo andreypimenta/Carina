@@ -1,0 +1,182 @@
+// X posts researched against local stand-ins for PubMed, Unpaywall, Europe PMC, linked pages and the model.
+// Failure cases: a post that links a paper is published as the post itself instead of an article written
+// from the paper; the article does not credit the post or does not name the journal; a post with no paper
+// to find reaches the pool, the selection or an edition with nothing but its own text; a paper the module
+// already took is written (and paid for) again; a page that refuses the site's crawler is worked around;
+// a page linking several papers is pinned to one of them by guess.
+import { tag } from "../../../tests/setup.ts";
+import assert from "node:assert/strict";
+import http from "node:http";
+import { readFileSync } from "node:fs";
+import { after, before, test } from "node:test";
+import { config } from "@aihot/backend/config";
+import { closeDb, sql } from "@aihot/backend/db";
+import { upsertMaterial } from "@aihot/backend/content/materials";
+import { stopBoss } from "@aihot/backend/jobs/queue";
+import { installModules } from "@aihot/backend/modules";
+import { publishArticle } from "@aihot/backend/publication/publish";
+import server from "../server.ts";
+import { cleanDoi, findPostPaper, pageRefs, postLinks, refsIn, researchXPosts } from "../backend/apurar.ts";
+import { INTEGRAL_SOURCE, MATERIA_SOURCE } from "../backend/collect.ts";
+
+const T = tag();
+const X_SOURCE = `x-apurar-${T}`;
+const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
+const materia = { titulo: "Reconstrução em um tempo é tão segura quanto em dois na estenose grau III", linhaFina: "Coorte multicêntrica", lide: "Um estudo multicêntrico comparou as duas técnicas em crianças.", contexto: "", metodos: "Coorte.", resultados: "Decanulação semelhante.", limitacoes: "Observacional.", paraOPediatra: "Encaminhe cedo.", paraOEspecialista: "Ambas as técnicas são opções." };
+
+const modelInputs: string[] = [];
+const hits: string[] = [];
+let base = "";
+
+const stubServer = http.createServer((req, res) => {
+  const chunks: Buffer[] = [];
+  req.on("data", (c: Buffer) => chunks.push(c));
+  req.on("end", () => {
+    const url = req.url ?? "/";
+    hits.push(url);
+    const send = (status: number, type: string, body: string) => { res.writeHead(status, { "content-type": type }); res.end(body); };
+    const html = (head: string, body = "") => send(200, "text/html; charset=utf-8", `<!doctype html><html><head>${head}</head><body>${body}</body></html>`);
+    // Linked pages: a journal's article page, a press release, a page linking two papers, a bot challenge, a page with no paper.
+    if (url === "/journal/article") return html(`<meta name="citation_title" content="Single-stage versus double-stage laryngotracheal reconstruction"><meta name="citation_doi" content="10.1016/j.jpedsurg.2026.161999">`);
+    if (url === "/journal/title-only") return html(`<meta name="citation_title" content="Single-stage versus double-stage laryngotracheal reconstruction for grade III subglottic stenosis in children: a multicenter cohort.">`);
+    if (url === "/news/release") return html("<title>Press release</title>", `<p>Read the study: <a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">J Pediatr Surg</a></p>`);
+    if (url === "/news/two") return html("<title>Roundup</title>", `<a href="https://doi.org/10.1016/j.jpedsurg.2026.161999">one</a> <a href="https://doi.org/10.1186/s12890-026-01234-5">two</a>`);
+    if (url === "/news/blocked") return send(403, "text/html", "<html><head><title>Just a moment...</title><meta name=\"citation_doi\" content=\"10.1016/j.jpedsurg.2026.161999\"></head></html>");
+    if (url === "/news/congress") return html("<title>Congress</title>", "<p>See you in Lisbon.</p>");
+    if (url.startsWith("/eutils/esearch.fcgi")) {
+      const term = new URL(url, "http://stub").searchParams.get("term") ?? "";
+      const idlist = /"10\.1016\/j\.jpedsurg\.2026\.161999"\[aid\]/.test(term) ? ["41000001"]
+        : /^"single-stage versus double-stage laryngotracheal reconstruction for grade iii/i.test(term) ? ["41000001"] : [];
+      return send(200, "application/json", JSON.stringify({ esearchresult: { idlist } }));
+    }
+    if (url.startsWith("/eutils/efetch.fcgi")) return send(200, "text/xml", fixture("pubmed.xml"));
+    if (url.startsWith("/unpaywall/")) return send(200, "application/json", fixture("unpaywall-closed.json"));
+    if (url.startsWith("/epmc/search")) {
+      const query = new URL(url, "http://stub").searchParams.get("query") ?? "";
+      const result = query === "PMCID:PMC12345678" ? [{ pmid: "41000002", pmcid: "PMC12345678" }] : [];
+      return send(200, "application/json", JSON.stringify({ resultList: { result } }));
+    }
+    if (url.startsWith("/epmc/")) return send(404, "text/plain", "not found");
+    if (url.startsWith("/v1/chat/completions")) {
+      const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { messages: Array<{ role: string; content: string }> };
+      modelInputs.push(body.messages.find((m) => m.role === "user")!.content);
+      return send(200, "application/json", JSON.stringify({ id: `stub-${modelInputs.length}`, choices: [{ message: { content: JSON.stringify(materia) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }));
+    }
+    send(500, "text/plain", "unexpected");
+  });
+});
+
+before(async () => {
+  await new Promise<void>((resolve) => stubServer.listen(0, "127.0.0.1", () => resolve()));
+  base = `http://127.0.0.1:${(stubServer.address() as { port: number }).port}`;
+  config.allowPrivateNetworkFetch = true;
+  config.modelCallsEnabled = true;
+  delete process.env.MATERIA_MODEL;
+  Object.assign(process.env, {
+    PUBMED_BASE_URL: `${base}/eutils`, UNPAYWALL_BASE_URL: `${base}/unpaywall`, EUROPE_PMC_BASE_URL: `${base}/epmc`, LITERATURA_EMAIL: "test@example.com",
+    LLM_BASE_URL: `${base}/v1`, LLM_API_KEY: "test-key", LLM_MODEL: "one-model",
+  });
+  installModules([server]);
+  for (const id of [MATERIA_SOURCE, INTEGRAL_SOURCE]) {
+    await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at)
+      VALUES (${id}, ${id}, 'external', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
+  }
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, next_fetch_at)
+    VALUES (${X_SOURCE}, 'X: ENT Papers (@ENT_Papers)', 'x_search', 'T2', 'editorial', '2100-01-01')`;
+});
+
+after(async () => {
+  await new Promise<void>((resolve) => stubServer.close(() => resolve()));
+  await stopBoss();
+  await closeDb();
+});
+
+/** A post of the X source, judged relevant and selected by the engine (an analysis row as the engine writes it). */
+async function post(name: string, text: string) {
+  const url = `https://x.com/ENT_Papers/status/${name}${T}`;
+  const material = await upsertMaterial({
+    sourceId: X_SOURCE, url, title: text.slice(0, 100), bodyText: text, bodyStatus: "ok", via: "fetch", publishedAt: new Date(),
+    xPost: { tweetId: `${name}${T}`, authorName: "ENT Papers", handle: "ENT_Papers", text },
+  });
+  await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, title_zh, summary_zh, score, selected)
+    VALUES (${material.articleId}, 1, 'model', 'pass', ${text.slice(0, 60)}, ${text}, 90, true)`;
+  return { id: material.articleId, url };
+}
+
+const xStatus = async (id: string) => (await sql<{ status: string; pmid: string | null }[]>`SELECT status, pmid FROM literatura_x_posts WHERE article_id = ${id}`)[0];
+
+test("the identifiers in a post: DOIs bare or in a journal's address, PubMed addresses and PMIDs, PMC ids; X's own links are not followed", () => {
+  const refs = refsIn("New in J Pediatr Surg https://doi.org/10.1016/J.JPEDSURG.2026.161999. Also https://onlinelibrary.wiley.com/doi/full/10.1002/lary.31234?af=R and https://pubmed.ncbi.nlm.nih.gov/41000009/ (PMID: 41000010), https://pmc.ncbi.nlm.nih.gov/articles/PMC12345678/");
+  assert.deepEqual(refs.dois, ["10.1016/j.jpedsurg.2026.161999", "10.1002/lary.31234"]);
+  assert.deepEqual(refs.pmids, ["41000009", "41000010"]);
+  assert.deepEqual(refs.pmcids, ["PMC12345678"]);
+  assert.equal(cleanDoi("10.1056/NEJMoa2400001/full"), "10.1056/nejmoa2400001");
+  assert.equal(cleanDoi("10.1002%2Flary.31234)"), "10.1002/lary.31234");
+  assert.deepEqual(postLinks("Thread https://x.com/a/status/1 https://twitter.com/i/article/2 https://t.co/abc and https://www.aaohns.org/guideline."), ["https://www.aaohns.org/guideline"]);
+  const page = pageRefs(`<meta name="dc.identifier" content="doi:10.1093/bja/aeae001"><meta name="citation_pmid" content="41000011">`, "https://academic.oup.com/bja/article/1/1");
+  assert.deepEqual([page.dois, page.pmids], [["10.1093/bja/aeae001"], ["41000011"]]);
+});
+
+test("a post linking a paper's DOI becomes the site's article written from the paper, naming the journal and crediting the post; the post itself stays out of the pool", async () => {
+  const { id, url } = await post("doi", "Single vs double stage LTR for grade III SGS — multicenter cohort out now https://doi.org/10.1016/j.jpedsurg.2026.161999");
+  const before = modelInputs.length;
+  const run = await researchXPosts();
+  assert.equal(run["materia-abstract"], 1);
+  assert.equal(modelInputs.length, before + 1, "one article is written");
+  assert.match(modelInputs.at(-1)!, /Título original: Single-stage versus double-stage laryngotracheal reconstruction/);
+  assert.match(modelInputs.at(-1)!, /Revista: Journal of pediatric surgery/);
+  assert.doesNotMatch(modelInputs.at(-1)!, /multicenter cohort out now/, "the article is written from the paper, not from the post");
+
+  const x = await xStatus(id);
+  assert.deepEqual(x, { status: "materia-abstract", pmid: "41000001" });
+  const [article] = await sql<{ source_id: string; url: string; title: string; body_html: string; journal: string; x_post: string }[]>`
+    SELECT a.source_id, a.url, a.title, a.body_html, a.raw->>'journal' AS journal, a.raw->>'xPost' AS x_post
+    FROM literatura_papers p JOIN articles a ON a.id = p.article_id WHERE p.pmid = '41000001'`;
+  assert.equal(article!.source_id, MATERIA_SOURCE);
+  assert.equal(article!.url, "https://doi.org/10.1016/j.jpedsurg.2026.161999");
+  assert.equal(article!.title, materia.titulo);
+  assert.equal(article!.journal, "Journal of pediatric surgery");
+  assert.match(article!.body_html, /<h2>Referência<\/h2>/);
+  assert.match(article!.body_html, /<em>J Pediatr Surg<\/em>/);
+  assert.match(article!.body_html, new RegExp(`Pauta: o artigo foi destacado por ENT Papers <a href="${url.replace(/[.?]/g, "\\$&")}"[^>]*>@ENT_Papers</a> no X`));
+  assert.equal(article!.x_post, url);
+
+  await publishArticle(id, { releasedAt: new Date(Date.now() - 60_000) });
+  const [p] = await sql<{ eligible: boolean; selected: boolean }[]>`SELECT eligible, selected FROM publications WHERE article_id = ${id}`;
+  assert.deepEqual(p, { eligible: false, selected: false }, "the post is not published as an item of its own");
+
+  const again = await researchXPosts();
+  assert.equal(again.posts, 0, "a researched post is not taken again");
+  assert.equal(modelInputs.length, before + 1);
+});
+
+test("a post with no paper to find is not published with its text alone", async () => {
+  const { id } = await post("congress", `Great airway session at the congress today! Slides soon ${base}/news/congress`);
+  const before = modelInputs.length;
+  await researchXPosts();
+  assert.deepEqual(await xStatus(id), { status: "sem-fonte", pmid: null });
+  assert.equal(modelInputs.length, before, "nothing is written");
+  await publishArticle(id, { releasedAt: new Date(Date.now() - 60_000) });
+  const [p] = await sql<{ eligible: boolean; selected: boolean; indexable: boolean }[]>`SELECT eligible, selected, indexable FROM publications WHERE article_id = ${id}`;
+  assert.deepEqual(p, { eligible: false, selected: false, indexable: false }, "out of the pool, the selection and the editions, and not indexed");
+});
+
+test("a paper the module already took is not written again; the post is recorded as covered", async () => {
+  const { id } = await post("again", "Must read: PMID 41000001");
+  const before = modelInputs.length;
+  await researchXPosts();
+  assert.deepEqual(await xStatus(id), { status: "ja-coberto", pmid: "41000001" });
+  assert.equal(modelInputs.length, before);
+});
+
+test("linked pages lead to the paper by their citation tags, by the one paper a press release links, by the exact title, or by a PMC id; never through a refusal or by guess", async () => {
+  const pmid = async (text: string) => (await findPostPaper(text))?.pmid ?? null;
+  assert.equal(await pmid(`Out now ${base}/journal/article`), "41000001");
+  assert.equal(await pmid(`Press ${base}/news/release`), "41000001");
+  assert.equal(await pmid(`Paper ${base}/journal/title-only`), "41000001");
+  assert.equal(await pmid("Free full text https://pmc.ncbi.nlm.nih.gov/articles/PMC12345678/"), "41000002");
+  const blocked = hits.length;
+  assert.equal(await pmid(`Paywalled ${base}/news/blocked`), null, "a page that refuses the crawler is not read");
+  assert.equal(hits.slice(blocked).filter((h) => h === "/news/blocked").length, 1, "asked for once");
+  assert.equal(await pmid(`Two studies ${base}/news/two`), null, "a page linking two papers names neither");
+});
