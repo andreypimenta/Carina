@@ -45,7 +45,7 @@ const provider = await stub((_hit, req) => {
     if (marker === "SENSITIVE") return new Reply(400, { contentFilter: [{ level: 1, role: "user" }], error: { code: "1301", message: "O sistema detectou que a entrada ou o conteúdo gerado pode conter material inseguro ou sensível" } });
     return answer({ itemType: "narrative_review", authorRole: "principal", tags: ["Técnica cirúrgica", "Pectus", "Malformações pulmonares", "Tag inexistente"], editorialJudgment: `Por que ler ${marker}`, titleZh: `Título entendido ${marker}`, summaryZh: `Resumo entendido ${marker}. A segunda frase traz um número-chave.` });
   }
-  if (step === "structure") return answer({ category: "reviews", tags: ["Revisão narrativa", "Estenose subglótica"], subjects: ["sbpt", "unknown-co"], scope: "single", fact: { title: `Fato ${marker}`, subject: "Uma empresa", action: "lança", object: "modelo", occurredAt: null, evidence: "a lab released a model", conditions: [] } });
+  if (step === "structure") return answer({ category: "reviews", area: "pneumologia", tags: ["Revisão narrativa", "Estenose subglótica"], subjects: ["sbpt", "unknown-co"], scope: "single", fact: { title: `Fato ${marker}`, subject: "Uma empresa", action: "lança", object: "modelo", occurredAt: null, evidence: "a lab released a model", conditions: [] } });
   return answer(`title_zh: Título traduzido ${marker}\nsummary_zh: Resumo traduzido ${marker}. A segunda frase traz o impacto.`);
 });
 pointModels(provider.url);
@@ -70,8 +70,8 @@ const article = async (marker: string, extra: Record<string, unknown> = {}) =>
   } as never)).articleId;
 const calls = (marker: string) => requests.filter((r) => r.marker === marker).map((r) => r.step);
 const row = async (id: string) =>
-  (await sql<{ selected: boolean; relevance: string; score: string | null; title_zh: string; reason_zh: string | null; category: string | null; tags: string[]; subjects: string[]; receipt_ids: string[]; output: Record<string, any> }[]>`
-    SELECT selected, relevance, score, title_zh, reason_zh, category, tags, subjects, receipt_ids, output FROM analyses WHERE article_id = ${id} ORDER BY id DESC LIMIT 1`)[0]!;
+  (await sql<{ selected: boolean; relevance: string; score: string | null; title_zh: string; reason_zh: string | null; category: string | null; area: string | null; tags: string[]; subjects: string[]; receipt_ids: string[]; output: Record<string, any> }[]>`
+    SELECT selected, relevance, score, title_zh, reason_zh, category, area, tags, subjects, receipt_ids, output FROM analyses WHERE article_id = ${id} ORDER BY id DESC LIMIT 1`)[0]!;
 
 test("a selected item: prefilter, two scores, the content understanding and the structure", async () => {
   assert.ok(FLOOR >= 4 && FLOOR < T1 && T1 <= 97, "the cases need the understand floor below the T1 threshold, and a few points either side");
@@ -84,6 +84,7 @@ test("a selected item: prefilter, two scores, the content understanding and the 
   // Failure case: the writer's independent labels contradict the structural category.
   assert.deepEqual(r.tags, ["Revisão narrativa", "Estenose subglótica", "SBPT"], "category and tags come from the same structural judgement, plus the verified subject tag");
   assert.deepEqual(r.subjects, ["sbpt"]);
+  assert.equal(r.area, "pneumologia", "the section is the structure step's, even where a tag points to the other one");
   assert.deepEqual([r.output.writer, r.output.itemType, r.output.prefilter.label, r.output.fact.title], ["understand", "narrative_review", "PASS", "Fato CLEAR"]);
   assert.equal(r.output.scope, "single");
   assert.equal(r.output.fact.evidence, "a lab released a model");

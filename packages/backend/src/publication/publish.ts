@@ -8,6 +8,7 @@ import { sha256, stableJson } from "../lib/ids.ts";
 import { collapseWhitespace, isSiteLanguage } from "../lib/text.ts";
 import type { XPostData } from "../content/materials.ts";
 import { originalPostCopy } from "../content/posts.ts";
+import { areaOf } from "../editorial/vocabulary.ts";
 import { itemUrl } from "./links.ts";
 import { pickRepresentative, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "./representative.ts";
 import { enqueue, QUEUES, shutdownSignal } from "../jobs/queue.ts";
@@ -41,6 +42,7 @@ interface AnalysisRow {
   id: number;
   relevance: string | null;
   category: string | null;
+  area: string | null;
   tags: string[];
   subjects: string[];
   title_zh: string | null;
@@ -69,6 +71,7 @@ interface PublicationRow {
   summary: string | null;
   reason: string | null;
   category: string | null;
+  area: string | null;
   tags: string[];
   score: number | null;
   body_mode: string;
@@ -248,7 +251,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     SELECT id, name, kind, tier, participation_mode, first_party, site_fulltext, syndicate_fulltext FROM sources WHERE id = ${article.source_id}`;
   if (!source) return null;
   const [analysis] = await tx<AnalysisRow[]>`
-    SELECT id, relevance, category, tags, subjects, title_zh, summary_zh, reason_zh, score, selected
+    SELECT id, relevance, category, area, tags, subjects, title_zh, summary_zh, reason_zh, score, selected
     FROM analyses WHERE article_id = ${articleId} ORDER BY input_revision DESC, id DESC LIMIT 1`;
   const [override] = await tx<OverrideRow[]>`SELECT fields, visibility FROM editorial_overrides WHERE article_id = ${articleId}`;
   const [membership] = await tx<{ fact_id: number; story_id: number | null }[]>`
@@ -276,6 +279,8 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const summary = pickString(f.summary, original ? original.summary : analysis?.summary_zh ?? null);
   const category = pickString(f.category, analysis?.category ?? null);
   const tags = Array.isArray(f.tags) ? (f.tags as string[]) : [...new Set([...(analysis?.tags ?? []), ...(analysis?.subjects ?? []).map((s) => `entity:${s}`)])];
+  // Every item has its section (aba): the editor's, else the structure step's, else its tags'.
+  const area = typeof f.area === "string" ? f.area : areaOf(analysis?.area, tags);
   const score = typeof f.score === "number" ? f.score : analysis?.score ?? null;
   const relevance = typeof f.relevance === "string" ? (f.relevance as string) : analysis?.relevance ?? null;
   const judgedSelected = typeof f.selected === "boolean" ? (f.selected as boolean) : analysis?.selected ?? null;
@@ -323,7 +328,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const next = {
     source_id: source.id, first_party: source.tier === "T1",
     visibility, eligible, selected, selection_candidate: selectionCandidate, title: title ?? collapseWhitespace(article.title), original_title: originalTitle, summary, reason,
-    category, tags, score: round1(score), body_mode: bodyMode, story_id: membership?.story_id ?? null, fact_id: membership?.fact_id ?? null,
+    category, area, tags, score: round1(score), body_mode: bodyMode, story_id: membership?.story_id ?? null, fact_id: membership?.fact_id ?? null,
     indexable, url: article.url, channel, syndicate, published_at: article.published_at, discovered_at: article.discovered_at,
     timeline_at: article.timeline_at, backfill: article.backfill, sort_at: sortAt, visible_after: visibleAfter,
   };
@@ -336,7 +341,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     && (previous.story_id === null || previous.story_id === next.story_id)
     && (previous.fact_id === null || previous.fact_id === next.fact_id)
     && changedFields.every((key) => admissionFields.has(key));
-  const firstAnalysisFields = new Set<keyof typeof after>([...admissionFields, "eligible", "selection_candidate", "title", "original_title", "summary", "category", "tags", "score"]);
+  const firstAnalysisFields = new Set<keyof typeof after>([...admissionFields, "eligible", "selection_candidate", "title", "original_title", "summary", "category", "area", "tags", "score"]);
   const firstAnalysis = previous && !previous.eligible && !previous.summary && previous.visibility === "public" && visibility === "public" && eligible
     && (previous.story_id === null || previous.story_id === next.story_id)
     && (previous.fact_id === null || previous.fact_id === next.fact_id)
@@ -352,16 +357,16 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
 
   await tx`
     INSERT INTO publications (article_id, analysis_id, revision, visibility, eligible, selected, selection_candidate, title, original_title, summary,
-      reason, category, tags, score, source_id, channel, first_party, url, published_at, discovered_at, timeline_at, backfill,
+      reason, category, area, tags, score, source_id, channel, first_party, url, published_at, discovered_at, timeline_at, backfill,
       selected_ready_at, visible_after, body_mode, syndicate, indexable, story_id, fact_id, search_text, sort_at, updated_at)
     VALUES (${articleId}, ${analysis?.id ?? null}, ${revision}, ${visibility}, ${eligible}, ${selected}, ${selectionCandidate}, ${next.title},
-      ${originalTitle}, ${summary}, ${reason}, ${category}, ${tags}, ${next.score}, ${source.id}, ${channel}, ${source.tier === "T1"},
+      ${originalTitle}, ${summary}, ${reason}, ${category}, ${area}, ${tags}, ${next.score}, ${source.id}, ${channel}, ${source.tier === "T1"},
       ${article.url}, ${article.published_at}, ${article.discovered_at}, ${article.timeline_at}, ${article.backfill},
       ${selectedReadyAt}, ${visibleAfter}, ${bodyMode}, ${syndicate}, ${indexable}, ${next.story_id}, ${next.fact_id}, ${searchText}, ${sortAt}, now())
     ON CONFLICT (article_id) DO UPDATE SET
       analysis_id = EXCLUDED.analysis_id, revision = EXCLUDED.revision, visibility = EXCLUDED.visibility,
       eligible = EXCLUDED.eligible, selected = EXCLUDED.selected, selection_candidate = EXCLUDED.selection_candidate, title = EXCLUDED.title, original_title = EXCLUDED.original_title,
-      summary = EXCLUDED.summary, reason = EXCLUDED.reason, category = EXCLUDED.category, tags = EXCLUDED.tags,
+      summary = EXCLUDED.summary, reason = EXCLUDED.reason, category = EXCLUDED.category, area = EXCLUDED.area, tags = EXCLUDED.tags,
       score = EXCLUDED.score, source_id = EXCLUDED.source_id, channel = EXCLUDED.channel, first_party = EXCLUDED.first_party,
       url = EXCLUDED.url, published_at = EXCLUDED.published_at, discovered_at = EXCLUDED.discovered_at,
       timeline_at = EXCLUDED.timeline_at, backfill = EXCLUDED.backfill, selected_ready_at = EXCLUDED.selected_ready_at,
@@ -370,7 +375,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
       search_text = EXCLUDED.search_text, sort_at = EXCLUDED.sort_at, updated_at = now()
     WHERE (publications.analysis_id, publications.revision, publications.visibility, publications.eligible,
         publications.selected, publications.selection_candidate, publications.title, publications.original_title, publications.summary,
-        publications.reason, publications.category, publications.tags, publications.score,
+        publications.reason, publications.category, publications.area, publications.tags, publications.score,
         publications.source_id, publications.channel, publications.first_party, publications.url,
         publications.published_at, publications.discovered_at, publications.timeline_at, publications.backfill,
         publications.selected_ready_at, publications.visible_after, publications.body_mode, publications.syndicate,
@@ -378,7 +383,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
         publications.sort_at)
       IS DISTINCT FROM (EXCLUDED.analysis_id, EXCLUDED.revision, EXCLUDED.visibility, EXCLUDED.eligible,
         EXCLUDED.selected, EXCLUDED.selection_candidate, EXCLUDED.title, EXCLUDED.original_title, EXCLUDED.summary,
-        EXCLUDED.reason, EXCLUDED.category, EXCLUDED.tags, EXCLUDED.score,
+        EXCLUDED.reason, EXCLUDED.category, EXCLUDED.area, EXCLUDED.tags, EXCLUDED.score,
         EXCLUDED.source_id, EXCLUDED.channel, EXCLUDED.first_party, EXCLUDED.url,
         EXCLUDED.published_at, EXCLUDED.discovered_at, EXCLUDED.timeline_at, EXCLUDED.backfill,
         EXCLUDED.selected_ready_at, EXCLUDED.visible_after, EXCLUDED.body_mode, EXCLUDED.syndicate,

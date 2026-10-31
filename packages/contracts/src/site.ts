@@ -1,6 +1,6 @@
 // First-party site API (/api/site/*). Not a public API: it may evolve with the website,
 // but it is served from the same public read layer as v1, RSS and MCP.
-import type { CategoryKey, ChannelKey } from "./taxonomy.ts";
+import type { AreaKey, CategoryKey, ChannelKey } from "./taxonomy.ts";
 
 export interface SourceRef {
   /** The name readers see (publication/rules.ts publicSourceName), as is every source name here. */
@@ -97,6 +97,8 @@ export interface HotStripEntry {
 export interface TimelineFilters {
   channel: ChannelKey;
   category: CategoryKey | null;
+  /** The site's section (aba); none means every section. */
+  area?: AreaKey | null;
   tag: string | null;
 }
 

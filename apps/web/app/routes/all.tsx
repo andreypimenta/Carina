@@ -7,7 +7,8 @@ import { beijingTime } from "@aihot/contracts/time";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { filterParams, hasFeedFilters, itemListLd, listPath, pageMeta, readFilters } from "../lib/seo";
-import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
+import { ActiveFilters, AreaTabs, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
+import { AREA_LABELS } from "@aihot/contracts/taxonomy";
 import { PillTabs } from "../components/ui/Tabs";
 import { DayList, Pagination } from "../features/feed/DayList";
 import { EmptyState } from "../components/ui/Page";
@@ -73,8 +74,8 @@ export default function AllPage() {
   const navigation = useNavigation();
   const f = data.filters;
   const busy = navigation.state === "loading" && navigation.location?.pathname === "/all";
-  const { channel, category } = filterParams(f);
-  const keep = { channel, category };
+  const { channel, category, area } = filterParams(f);
+  const keep = { channel, category, area };
   const searchTabHref = (tab: "time" | "relevance") => {
     const sp = new URLSearchParams(params);
     sp.delete("page");
@@ -82,7 +83,7 @@ export default function AllPage() {
     else sp.delete("tab");
     return `/all?${sp}`;
   };
-  const title = f.q ? `Busca: “${f.q}”` : f.tag ? `#${f.tag}` : null;
+  const title = f.q ? `Busca: “${f.q}”` : f.tag ? `#${f.tag}` : f.area ? AREA_LABELS[f.area] : null;
   const updated = beijingTime(data.freshness);
   // Searches are remembered in this browser for the phone search (listed in the privacy notice).
   useEffect(() => {
@@ -109,11 +110,13 @@ export default function AllPage() {
       ) : (
         <FeedBar base="/all" category={f.category} channel={f.channel} />
       )}
+      <AreaTabs base="/all" area={f.area} layoutId="all-area-phone" className="mb-3 lg:hidden" />
       <ActiveFilters base="/all" category={f.category} channel={f.channel} tag={f.tag} />
 
       {/* Desktop, as on 精选: the title, then one filter row with the search field aligned on the right. */}
       <div className="hidden lg:block">
         <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title ?? ALL_TITLE}</h1>
+        <AreaTabs base="/all" area={f.area} layoutId="all-area-desk" className="mt-4" />
         <div className="mb-5 mt-4 flex items-center justify-between gap-4">
           <CategoryTabs base="/all" category={f.category} channel={f.channel} layoutId="all-cat-desk" className="min-w-0" />
           <SearchField defaultValue={f.q ?? ""} keep={keep} />

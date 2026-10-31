@@ -4,25 +4,52 @@
 // the event's other developments listed under it; an event an earlier issue covered comes back only
 // with a new fact; an event with an official post and three or more independent participants is
 // carried even when none of its reports was selected; entries rank by importance (score, the day's
-// independent participants, first-hand), and the first one leads. Sections are the industry pack's
-// (industry/taxonomy.ts TAG_SECTIONS, then CATEGORIES).
+// independent participants, first-hand), and the first one leads. Sections are the site's sections (abas,
+// industry/taxonomy.ts AREAS), each held to its share of an issue.
 import { addDays } from "@aihot/contracts/time";
-import { CATEGORIES, TAG_SECTIONS, UNCAPPED_SOURCES } from "@aihot/industry/taxonomy";
+import { AREAS, CATEGORIES, UNCAPPED_SOURCES } from "@aihot/industry/taxonomy";
 import { sql } from "../db.ts";
 import { currentSignals } from "../events/hot.ts";
 import { pickRepresentative, representativePriority, REPRESENTATIVE_COLUMNS, type RepresentativeIdentity } from "../publication/representative.ts";
 import { factSources } from "../publication/coverage.ts";
 import { evidenceCondition, listedCondition, ownFactEvidenceCondition } from "../publication/scope.ts";
+import { areaOf } from "../editorial/vocabulary.ts";
 
-/** Each category's section; several categories may share one, in the order the pack lists them. */
-export const SECTION_OF: Record<string, string> = Object.fromEntries(CATEGORIES.map((c) => [c.key, c.section]));
-/** The tag sections first, then the categories'. */
-export const SECTION_ORDER: readonly string[] = [...new Set([...TAG_SECTIONS.map((t) => t.section), ...CATEGORIES.map((c) => c.section)])];
-/** An item without a category goes into the section of the industry category, else into the last one. */
-const DEFAULT_SECTION = SECTION_OF.industry ?? CATEGORIES.at(-1)!.section;
-/** An item's one section: the first tag section among its tags, else its category's. */
-export const sectionOf = (category: string | null, tags: readonly string[]) =>
-  TAG_SECTIONS.find((t) => tags.includes(t.tag))?.section ?? SECTION_OF[category ?? ""] ?? DEFAULT_SECTION;
+/** The issue's sections: the site's sections (abas), in the pack's order. */
+export const SECTION_ORDER: readonly string[] = AREAS.map((a) => a.label);
+/** An item's one section: its own, else the one its tags point to (an item published before sections had none). */
+export const sectionOf = (area: string | null | undefined, tags: readonly string[]) => {
+  const key = areaOf(area, tags);
+  return AREAS.find((a) => a.key === key)!.label;
+};
+
+type IssueKind = "daily" | "weekly" | "monthly";
+const AREA_MAX: Record<string, Partial<Record<IssueKind, number>>> = Object.fromEntries(AREAS.map((a) => [a.key, "max" in a ? a.max : {}]));
+
+/**
+ * The first `total` of the ranked entries `fits` admits, no section above its share (AREAS max) of a `kind`
+ * issue, in rank order; places the other sections leave empty go to the entries held back. Also returns the
+ * entries left out, in rank order.
+ */
+export function takeBySection<T>(ranked: readonly T[], total: number, kind: IssueKind, area: (e: T) => string, fits: (e: T, taken: readonly T[]) => boolean = () => true): { taken: T[]; left: T[] } {
+  const taken: T[] = [];
+  const held: T[] = [];
+  const per = new Map<string, number>();
+  for (const e of ranked) {
+    if (taken.length >= total || !fits(e, taken)) continue;
+    const n = per.get(area(e)) ?? 0;
+    if (n >= (AREA_MAX[area(e)]?.[kind] ?? Infinity)) held.push(e);
+    else {
+      taken.push(e);
+      per.set(area(e), n + 1);
+    }
+  }
+  for (const e of held) if (taken.length < total && fits(e, taken)) taken.push(e);
+  const order = new Map(ranked.map((e, i) => [e, i]));
+  taken.sort((a, b) => order.get(a)! - order.get(b)!);
+  const kept = new Set(taken);
+  return { taken, left: ranked.filter((e) => !kept.has(e)) };
+}
 
 /** A daily's size: the entries readers get in full, and the one-line flashes after them. */
 export const MAIN_ENTRIES = 16;
@@ -54,6 +81,7 @@ export interface ReportEntry {
 
 export interface Candidate extends ReportEntry {
   category: string | null;
+  area: string | null;
   tags: string[];
   factKey: string;
 }
@@ -76,6 +104,7 @@ export interface DailyEntry extends ReportEntry {
 export interface EditionEntry {
   entry: DailyEntry;
   category: string | null;
+  area?: string | null;
   tags: string[];
   storyId: number | null;
   /** For an entry without an event of its own (a roundup): the events it mentions. */
@@ -89,13 +118,13 @@ export interface EditionEntry {
 }
 
 type ReportRow = RepresentativeIdentity & {
-  id: string; title: string; summary: string | null; url: string; category: string | null; tags: string[]; score: number | null;
+  id: string; title: string; summary: string | null; url: string; category: string | null; area: string | null; tags: string[]; score: number | null;
   first_party: boolean; body_mode: "full" | "summary"; timeline_at: Date;
   source_id: string; source_name: string; source_kind: string;
   fact_id: number | null; fact_public_id: string | null; story_id: number | null; story_public_id: string | null;
 };
 
-const REPORT_FIELDS = sql`p.article_id AS id, p.title, p.summary, p.url, p.category, p.tags, p.score, (s.tier = 'T1') AS first_party, p.body_mode, p.timeline_at,
+const REPORT_FIELDS = sql`p.article_id AS id, p.title, p.summary, p.url, p.category, p.area, p.tags, p.score, (s.tier = 'T1') AS first_party, p.body_mode, p.timeline_at,
   ${REPRESENTATIVE_COLUMNS}, s.id AS source_id, s.name AS source_name, s.kind AS source_kind,
   f.id AS fact_id, f.public_id AS fact_public_id, st.id AS story_id, st.public_id::text AS story_public_id`;
 
@@ -162,7 +191,7 @@ export async function candidates(start: Date, end: Date): Promise<Candidate[]> {
   return [...groupBy(rows, factKeyOf)]
     .map(([factKey, members]): Candidate => {
       const r = pickRepresentative(members);
-      return { ...reportEntry(r), category: r.category, tags: r.tags, factKey };
+      return { ...reportEntry(r), category: r.category, area: r.area, tags: r.tags, factKey };
     })
     .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
 }
@@ -200,7 +229,7 @@ export async function periodEntries(startDate: string, endDate: string): Promise
     const main = byId.get([...cs].sort((a, b) => b.sources - a.sources || a.key.localeCompare(b.key) || authority(a) - authority(b))[0]!.id)!;
     const rank = Math.max(...cs.map((c) => byId.get(c.id)!.score ?? 0)) + 5 * Math.log2(1 + Math.max(...cs.map((c) => c.sources)))
       + (cs.some((c) => c.lead) ? 6 : 0) + (cs.some((c) => c.highlight) ? 3 : 0) + 4 * (new Set(cs.map((c) => c.key)).size - 1);
-    return { candidate: { ...reportEntry(main), category: main.category, tags: main.tags, factKey: factKeyOf(main) }, rank };
+    return { candidate: { ...reportEntry(main), category: main.category, area: main.area, tags: main.tags, factKey: factKeyOf(main) }, rank };
   });
   ranked.sort((a, b) => b.rank - a.rank || a.candidate.itemId.localeCompare(b.candidate.itemId));
   return { entries: ranked.map((r) => r.candidate), issues: issues.length, hasEntries: true };
@@ -361,7 +390,7 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
     };
     const ids = new Set(fs.flatMap((f) => f.rows.map((r) => r.id)));
     return {
-      entry, category: rep.category, tags: rep.tags, storyId, sourceIds, authority: representativePriority(rep), previous,
+      entry, category: rep.category, area: rep.area, tags: rep.tags, storyId, sourceIds, authority: representativePriority(rep), previous,
       mentions: new Set(storyId === null ? named.filter((n) => ids.has(n.article_id)).map((n) => n.story_id) : []),
       importance: importance({
         score,
@@ -382,8 +411,9 @@ export async function dailyEdition(date: string, start: Date, end: Date): Promis
  * The issue from the ranked entries, by rule: a roundup that mentions events of this issue is listed
  * under the most important of them; a follow-up of a covered event takes a full entry only when the
  * party itself acted (not as commentary) or four or more sources carry its new facts, else it is a flash;
- * then the most important entries in full, at most two per source (the pack's uncapped sources aside), and
- * the next ones as flashes. The first entry leads the issue and the next three are its highlights.
+ * then the most important entries in full, at most two per source (the pack's uncapped sources aside) and
+ * no section above its share (takeBySection), and the next ones as flashes. The first entry leads the issue
+ * and the next three are its highlights.
  */
 export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; flashes: EditionEntry[]; stats: Record<string, number> } {
   const byStory = new Map(entries.filter((e) => e.storyId !== null).map((e) => [e.storyId!, e]));
@@ -405,16 +435,9 @@ export function arrangeDaily(entries: EditionEntry[]): { main: EditionEntry[]; f
   const earned = (e: EditionEntry) => !e.previous || (e.authority < 3 && !COMMENTARY.has(e.category ?? "")) || e.entry.sources >= FOLLOW_UP_SOURCES;
   // A day of nothing but follow-ups still has entries in full.
   const full = live.some(earned) ? earned : () => true;
-  const main: EditionEntry[] = [];
-  const rest: EditionEntry[] = [];
-  const perSource = new Map<string, number>();
-  for (const e of live) {
-    const n = perSource.get(e.entry.sourceId) ?? 0;
-    if (main.length < MAIN_ENTRIES && (n < PER_SOURCE || UNCAPPED.has(e.entry.sourceId)) && full(e)) {
-      main.push(e);
-      perSource.set(e.entry.sourceId, n + 1);
-    } else rest.push(e);
-  }
+  const perSource = (e: EditionEntry, taken: readonly EditionEntry[]) =>
+    UNCAPPED.has(e.entry.sourceId) || taken.filter((t) => t.entry.sourceId === e.entry.sourceId).length < PER_SOURCE;
+  const { taken: main, left: rest } = takeBySection(live, MAIN_ENTRIES, "daily", (e) => areaOf(e.area, e.tags), (e, taken) => full(e) && perSource(e, taken));
   const flashes = rest.slice(0, FLASH_ENTRIES);
   return { main, flashes, stats: { roundupsFolded: folded.size, followUpsAsFlashes: live.filter((e) => !full(e)).length, left: rest.length - flashes.length } };
 }

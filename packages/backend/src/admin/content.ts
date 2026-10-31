@@ -5,7 +5,7 @@
 import { z } from "zod";
 import { correctReportClassification } from "../reports/correct.ts";
 import type { AdminContentChain, AdminContentRow, AdminPublication, BeforeJson } from "@aihot/contracts/admin";
-import { ARTICLE_ID_PATTERN, CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
+import { AREA_KEYS, ARTICLE_ID_PATTERN, CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { sql, type Tx } from "../db.ts";
 import { enqueue, QUEUES } from "../jobs/queue.ts";
 import { queueProcessing } from "../jobs/content.ts";
@@ -219,6 +219,7 @@ const FieldsSchema = z
     summary: z.string().max(2000),
     reason: z.string().max(1000),
     category: z.enum(CATEGORY_KEYS as unknown as [string, ...string[]]),
+    area: z.enum(AREA_KEYS),
     tags: z.array(z.string().max(60)).max(20),
     selected: z.boolean(),
     silent: z.boolean(),
@@ -242,9 +243,10 @@ export async function overrideFields(id: string, input: { fields: unknown; clear
     if (published?.changed) {
       await emit("articleChanged", { id, kind: "content", reduced: published.reduced, reason: "manual correction" }, tx);
       const changedFields = new Set([...Object.keys(fields), ...(input.clear ?? [])]);
-      if (changedFields.has("category") || changedFields.has("tags")) await correctReportClassification(tx, id, input.reason);
+      const classification = ["category", "area", "tags"];
+      if (classification.some(k => changedFields.has(k))) await correctReportClassification(tx, id, input.reason);
       const [st] = await tx<{ story_id: number | null }[]>`SELECT story_id FROM publications WHERE article_id = ${id}`;
-      if (st?.story_id && [...changedFields].some(k => k !== "category" && k !== "tags")) {
+      if (st?.story_id && [...changedFields].some(k => !classification.includes(k))) {
         await enqueue(QUEUES.digest, { storyId: st.story_id }, { singletonKey: `story:${st.story_id}` }, tx);
       }
     }

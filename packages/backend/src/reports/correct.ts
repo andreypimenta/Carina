@@ -10,10 +10,10 @@ interface Entry { itemId: string; followUp?: string; firstParty?: boolean; role?
 interface Group { label?: string; heading?: string; summary?: unknown; items?: Entry[]; storyRefs?: Entry[]; [key: string]: unknown }
 interface Content { sections?: Group[]; themes?: Group[]; metrics?: Record<string, number>; [key: string]: unknown }
 
-/** Moves the item to its new section (by category and tags) in every issue that carries it; says whether any issue changed. */
+/** Moves the item to its new section (abas, by its section or tags) in every issue that carries it; says whether any issue changed. */
 export async function correctReportClassification(tx: Tx, articleId: string, reason: string): Promise<boolean> {
-  const [item] = await tx<{ category: string | null; tags: string[] }[]>`SELECT category,tags FROM publications WHERE article_id=${articleId}`;
-  if (!item?.category) return false;
+  const [item] = await tx<{ area: string | null; tags: string[] }[]>`SELECT area,tags FROM publications WHERE article_id=${articleId}`;
+  if (!item) return false;
   const reports = await tx<{ id: number; kind: string; content: Content; revision: number; generated_at: Date }[]>`
     SELECT id,kind,content,revision,generated_at FROM reports
     WHERE content @> ${tx.json({ sections: [{ items: [{ itemId: articleId }] }] })}
@@ -27,9 +27,9 @@ export async function correctReportClassification(tx: Tx, articleId: string, rea
     const labelKey = daily ? "label" : "heading";
     const entriesKey = daily ? "items" : "storyRefs";
     const from = groups.find(g => g[entriesKey]?.some(e => e.itemId === articleId));
-    // Older, hand-written theme headings are not taxonomy columns; do not reinterpret their prose.
+    // Older headings (hand-written themes, the category sections before abas) are not sections now; leave them.
     if (!from || !SECTION_ORDER.includes(from[labelKey] ?? "")) continue;
-    const label = sectionOf(item.category, item.tags);
+    const label = sectionOf(item.area, item.tags);
     if (from[labelKey] !== label) {
       const moving = from[entriesKey]!.filter(e => e.itemId === articleId);
       from[entriesKey] = from[entriesKey]!.filter(e => e.itemId !== articleId);

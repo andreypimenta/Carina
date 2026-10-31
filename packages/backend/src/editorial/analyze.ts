@@ -4,12 +4,12 @@
 //      item; a BLOCK given while material is missing counts as UNKNOWN. Without material or a
 //      displayable original post, UNKNOWN waits for a new material revision before later steps;
 //   2. score: two independent scores against the source tier's threshold (industry/selection.ts) decide 精选;
-//   3. structure: category, tags, subjects and the current news fact, beside scoring;
+//   3. structure: category, section (aba), tags, subjects and the current news fact, beside scoring;
 //   4. writing, once the structure is in: the Chinese title, summary and reason by the content
 //      understanding for selected and near-selected items, by the cheaper title/summary prompts for the rest.
 // Material with only a title or a feed summary has its article page fetched before it is judged.
 import { z } from "zod";
-import { CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
+import { AREA_KEYS, CATEGORY_KEYS } from "@aihot/contracts/taxonomy";
 import { CATEGORIES } from "@aihot/industry/taxonomy";
 import { SELECTION } from "@aihot/industry/selection";
 import { sql } from "../db.ts";
@@ -25,7 +25,7 @@ import {
   needsShortTweetTranslation, parseTranslateOutput, PREFILTER_SYSTEM, prefilterUser, translateInputOf, UNDERSTAND_SYSTEM, understandUser,
   type IdentityGuard,
 } from "./writing.ts";
-import { CATEGORY_GUIDE, CATEGORY_TAGS, ENTITIES, ENTITY_TAGS, ITEM_TYPES, normalizeTags, TOPIC_TAGS } from "./vocabulary.ts";
+import { AREA_GUIDE, CATEGORY_GUIDE, CATEGORY_TAGS, ENTITIES, ENTITY_TAGS, ITEM_TYPES, normalizeTags, TOPIC_TAGS } from "./vocabulary.ts";
 import { promptText, promptVersion } from "./prompts.ts";
 import { originalPostCopy } from "../content/posts.ts";
 import { SITE_TIME_ZONE, SITE_UTC_OFFSET } from "@aihot/contracts/time";
@@ -132,6 +132,7 @@ const FactSchema = z
 export const StructureSchema = z.object({
   scope: z.enum(["single", "composite", "unknown"]).catch("unknown"),
   category: z.enum(CATEGORY_KEYS).nullable().catch(null),
+  area: z.enum(AREA_KEYS).nullable().catch(null),
   tags: z.array(z.string()).max(12).catch([]),
   subjects: z.array(z.string()).max(6).catch([]),
   fact: FactSchema,
@@ -156,6 +157,7 @@ export const STRUCTURE_SYSTEM = promptText("structure", {
   categoryCount: COUNT_WORDS[CATEGORIES.length] ?? String(CATEGORIES.length),
   categoryGuide: CATEGORY_GUIDE,
   categoryTags: CATEGORY_TAGS.join(", "),
+  areaGuide: AREA_GUIDE,
   topicTags: TOPIC_TAGS.join(", "),
   entityTags: ENTITY_TAGS.join(", "),
   entities: Object.entries(ENTITIES).map(([id, e]) => `${id} (${e.aliases.slice(0, 3).join("/")})`).join(", "),
@@ -183,7 +185,7 @@ export function normalizeStructure(data: z.infer<typeof StructureSchema>, a: Ana
     }).slice(0, 4),
   };
   return {
-    category: data.category, tags: normalizeTags(data.tags),
+    category: data.category, area: data.area, tags: normalizeTags(data.tags),
     subjects: [...new Set(data.subjects.map((s) => s.trim().toLowerCase()).filter((s) => s in ENTITIES))],
     scope, fact,
   };
@@ -463,6 +465,7 @@ export function normalizeAnalysis(run: AnalysisRun) {
     scoreRefused: run.scores?.refused ?? false,
     threshold,
     category: run.structure?.category ?? null,
+    area: run.structure?.area ?? null,
     tags,
     subjects,
     titleZh,
@@ -509,10 +512,10 @@ export async function analyzeArticle(articleId: string, opts: StepOpts = {}): Pr
     const [current] = await tx<{ revision: number }[]>`SELECT revision FROM articles WHERE id = ${articleId} FOR UPDATE`;
     const stale = !current || current.revision !== input.revision;
     const [row] = await tx<{ id: number }[]>`
-      INSERT INTO analyses (article_id, input_revision, origin, model, prompt_version, receipt_ids, relevance, category, tags,
+      INSERT INTO analyses (article_id, input_revision, origin, model, prompt_version, receipt_ids, relevance, category, area, tags,
         subjects, title_zh, summary_zh, reason_zh, score, selected, output)
       VALUES (${articleId}, ${input.revision}, 'model', ${w?.model ?? run.prefilter.model}, ${ANALYZE_PROMPT_VERSION}, ${receiptIds},
-        ${out.relevance}, ${out.category}, ${out.tags}, ${out.subjects}, ${out.titleZh}, ${out.summaryZh}, ${out.reasonZh},
+        ${out.relevance}, ${out.category}, ${out.area}, ${out.tags}, ${out.subjects}, ${out.titleZh}, ${out.summaryZh}, ${out.reasonZh},
         ${out.score}, ${out.selected}, ${tx.json(detail as never)})
       RETURNING id`;
     for (const id of receiptIds) await completeReceipt(tx, id);

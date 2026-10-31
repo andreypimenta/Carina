@@ -8,7 +8,8 @@ import { inNav } from "../components/shell/nav";
 import type { Screen } from "../components/shell/screens";
 import { Timeline } from "../features/feed/Timeline";
 import { HotTopics } from "../features/feed/HotTopics";
-import { ActiveFilters, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
+import { ActiveFilters, AreaTabs, CategoryTabs, FeedBar, SearchField } from "../features/feed/Filters";
+import { AREA_LABELS } from "@aihot/contracts/taxonomy";
 
 export const handle: Screen = { tab: "featured", name: "Seleção" };
 export { pageHeaders as headers } from "../lib/api.server";
@@ -33,17 +34,19 @@ export function meta({ loaderData }: Route.MetaArgs) {
 
 export default function Home() {
   const { data, filters } = useLoaderData<typeof loader>();
-  const title = filters.tag ? `#${filters.tag}` : "Seleção";
+  const title = filters.tag ? `#${filters.tag}` : filters.area ? AREA_LABELS[filters.area] : "Seleção";
   return (
     <div className="pb-6">
       {/* Phones: the bar (精选 | 全部, filter, search), the filter in use, today's hot topics, the feed. */}
       <FeedBar base="/" category={filters.category} channel={filters.channel} />
+      <AreaTabs base="/" area={filters.area} layoutId="home-area-phone" className="mb-3 lg:hidden" />
       <ActiveFilters base="/" category={filters.category} channel={filters.channel} tag={filters.tag} />
       <div className="hidden lg:block">
         <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title}</h1>
+        <AreaTabs base="/" area={filters.area} layoutId="home-area-desk" className="mt-4" />
         <div className="mb-5 mt-4 flex items-center justify-between gap-4">
           <CategoryTabs base="/" category={filters.category} channel={filters.channel} layoutId="home-cat-desk" className="min-w-0" />
-          <SearchField keep={{ category: filters.category }} />
+          <SearchField keep={{ category: filters.category, area: filters.area ?? null }} />
         </div>
       </div>
 

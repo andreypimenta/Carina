@@ -3,7 +3,7 @@
 //; its address from SITE_URL.
 import type { MetaDescriptor } from "react-router";
 import type { ReportDetail, StoryDetail, TimelineFilters } from "@aihot/contracts/site";
-import { isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
+import { isAreaKey, isCategoryKey, isChannelKey } from "@aihot/contracts/taxonomy";
 import { SITE, withSubject } from "@aihot/site";
 import { KIND_LABEL, reportDateLabel } from "../features/report/format.ts";
 
@@ -49,21 +49,23 @@ export function listPath(path: string, params: Record<string, string | number | 
 export function readFilters(params: URLSearchParams): TimelineFilters {
   const channel = params.get("channel") ?? "all";
   const category = params.get("category");
+  const area = params.get("area");
   return {
     channel: isChannelKey(channel) ? channel : "all",
     category: category && isCategoryKey(category) ? category : null,
+    area: area && isAreaKey(area) ? area : null,
     tag: params.get("tag")?.trim() || null,
   };
 }
 
 /** Feed filters as list address parameters: the default channel and unset filters are left out. */
 export function filterParams(f: TimelineFilters) {
-  return { channel: f.channel === "all" ? null : f.channel, category: f.category, tag: f.tag };
+  return { channel: f.channel === "all" ? null : f.channel, category: f.category, area: f.area ?? null, tag: f.tag };
 }
 
 /** Filter combinations are browsing views; the unfiltered feed and its archive pages remain indexable. */
 export function hasFeedFilters(filters: TimelineFilters | undefined): boolean {
-  return !!filters && (filters.channel !== "all" || !!filters.category || !!filters.tag);
+  return !!filters && (filters.channel !== "all" || !!filters.category || !!filters.area || !!filters.tag);
 }
 
 /** "Title · Site". */

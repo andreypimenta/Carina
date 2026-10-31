@@ -1,6 +1,6 @@
 // Public read layer, item level. Every exit (site API, v1, RSS, MCP, sitemap) reads
 // items through these columns and views; which rows are public is decided by scope.ts.
-import { CATEGORY_KEYS, toPublicApiCategory, type CategoryKey, type ChannelKey, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
+import { CATEGORY_KEYS, toPublicApiCategory, type AreaKey, type CategoryKey, type ChannelKey, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
 import type { FeedItemSummary, ItemSummary, MediaView, XPostView } from "@aihot/contracts/site";
 import { POLICY } from "@aihot/site";
 import { sql, type Db } from "../db.ts";
@@ -87,6 +87,12 @@ export function channelCondition(channel: ChannelKey | null | undefined) {
 export function categoryCondition(category: CategoryKey | null | undefined) {
   if (!category) return sql``;
   return sql`AND p.category = ${category}`;
+}
+
+/** The website's section (aba) filter. */
+export function areaCondition(area: AreaKey | null | undefined) {
+  if (!area) return sql``;
+  return sql`AND p.area = ${area}`;
 }
 
 /** The public API's, RSS's and MCP's filter: every category the site publishes as this one (PUBLIC_CATEGORIES). */

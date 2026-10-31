@@ -153,6 +153,7 @@ export interface AdminPublication {
   summary: string | null;
   reason: string | null;
   category: string | null;
+  area: string | null;
   tags: string[];
   score: number | null;
   source_id: string;
