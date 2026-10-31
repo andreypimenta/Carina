@@ -5,7 +5,7 @@ import { renderSVG } from "uqr";
 import { SITE } from "@aihot/site";
 import { brandMark, clamp, h, nameMark, renderPng, SITE_HOST, type Node } from "./og.ts";
 
-export const POSTER_TEMPLATE_VERSION = "poster-2026-10-30.1";
+export const POSTER_TEMPLATE_VERSION = "poster-2026-10-31.1";
 const WIDTH = 1080;
 const HEIGHT = 1440;
 
@@ -44,7 +44,7 @@ async function tree(p: Poster): Promise<Node> {
     },
     [
       h("div", { display: "flex", alignItems: "center", justifyContent: "space-between" }, [
-        (await brandMark("wordmark.svg", 50)) ?? nameMark(44, INK, ACCENT),
+        (await brandMark("wordmark.svg", 50)) ?? nameMark(44, INK, "#0e7c86"),
         h("div", { display: "flex", fontSize: 26, color: "#66757a" }, p.date),
       ]),
       h("div", { display: "flex", alignItems: "center", marginTop: 96 }, [
