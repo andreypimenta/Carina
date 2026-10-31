@@ -22,7 +22,7 @@ import { fetchPapers, pmidsForDoi, searchPmids, skippable, authorLine, isPreprin
 import { onSubject, paperFromItem, pubmedTerm, readSumario, type Revistas } from "./revistas.ts";
 import { papersOfPost, readPosts, type Pista, type Post } from "./pistas.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
-import { confiancaDaMateria, confiancaDaTraducao, creditBlock, preprintNote, referenceBlock, renderMateria, textoLido, writeMateria, type XCredit } from "./materia.ts";
+import { confiancaDaMateria, confiancaDaTraducao, creditBlock, preprintNote, referenceBlock, renderMateria, readTrust, textoLido, writeMateria, type XCredit } from "./materia.ts";
 import { saveConfianca } from "./confianca.ts";
 
 export const INTEGRAL_SOURCE = "literatura-integral";
@@ -122,7 +122,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
 
   if (sources.integral && isFull && republishable(full!.license)) {
     if (!config.modelCallsEnabled) return { pmid: keyOf(paper), status: "aguardando-modelo" };
-    const { materia, receiptId } = await writeMateria(paper, full!.text);
+    const { trust, receiptId } = await readTrust(paper, full!.text);
     const html = sanitizeBody(integralBody(paper, full!, access, pmcid!) + credited, url);
     const articleId = await sql.begin(async (tx) => {
       const res = await upsertMaterial({
@@ -131,7 +131,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
         bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok", raw, via: "literatura", staleOnDiscovery: false,
       }, tx);
       await completeReceipt(tx, receiptId);
-      await saveConfianca(tx, res.articleId, confiancaDaTraducao(materia, paper, now));
+      await saveConfianca(tx, res.articleId, confiancaDaTraducao(trust, paper, now));
       if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });
       return res.articleId;
     });

@@ -25,6 +25,18 @@ const grade = z.string().nullish().transform((v): Implicacao => ((IMPLICACOES as
 const design = z.string().nullish().transform((v): Desenho => ((DESENHOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Desenho) : "outro"));
 /** "Em um minuto" (industry/prompts/materia.md, materia-fonte.md). */
 const minuto = { achado: optional, paraQuem: optional, mudaAlgo: grade, diretriz: optional };
+/** Why the piece can be trusted: what a matéria and a translated full text both store (confiancaDaMateria). */
+const trust = {
+  ...minuto,
+  populacaoIdade: optional,
+  populacaoDoenca: optional,
+  populacaoCenario: optional,
+  desenho: design,
+  desenhoDetalhe: optional,
+  limitacaoPrincipal: optional,
+};
+const TrustOutput = z.object(trust);
+export type Trust = z.infer<typeof TrustOutput>;
 const Output = z.object({
   titulo: z.string().min(10),
   linhaFina: optional,
@@ -35,13 +47,7 @@ const Output = z.object({
   limitacoes: optional,
   paraOPediatra: optional,
   paraOEspecialista: optional,
-  ...minuto,
-  populacaoIdade: optional,
-  populacaoDoenca: optional,
-  populacaoCenario: optional,
-  desenho: design,
-  desenhoDetalhe: optional,
-  limitacaoPrincipal: optional,
+  ...trust,
 });
 export type Materia = z.infer<typeof Output>;
 
@@ -76,7 +82,7 @@ function datas(publicado: string | null, revisado: string | null, now: Date): Co
 }
 
 /** Why the matéria about a paper can be trusted, as stored for its page (backend/confianca.ts). */
-export function confiancaDaMateria(m: Materia, paper: Paper, lido: TextoLido, now: Date): Confianca {
+export function confiancaDaMateria(m: Trust, paper: Paper, lido: TextoLido, now: Date): Confianca {
   const preprint = isPreprint(paper);
   const field = (v: string, missing: string) => v.trim() || missing;
   return {
@@ -93,7 +99,7 @@ export function confiancaDaMateria(m: Materia, paper: Paper, lido: TextoLido, no
 }
 
 /** A paper's text republished in full and translated: the same record as a matéria's, from the full text the model read. */
-export function confiancaDaTraducao(m: Materia, paper: Paper, now: Date): Confianca {
+export function confiancaDaTraducao(m: Trust, paper: Paper, now: Date): Confianca {
   return { ...confiancaDaMateria(m, paper, "texto-completo", now), feitura: "traducao" };
 }
 
@@ -122,20 +128,33 @@ export function materiaInput(paper: Paper, fullText: string | null): string {
 }
 
 export async function writeMateria(paper: Paper, fullText: string | null): Promise<{ materia: Materia; receiptId: number }> {
-  const res = await chatJson({
+  const res = await askMateria(paper, fullText, Output);
+  return { materia: res.data, receiptId: res.receiptId };
+}
+
+/**
+ * The same call as writeMateria on a full text republished in full, kept only for its trust fields: an answer
+ * without the matéria's own sections still gives the translation its record.
+ */
+export async function readTrust(paper: Paper, fullText: string): Promise<{ trust: Trust; receiptId: number }> {
+  const res = await askMateria(paper, fullText, TrustOutput);
+  return { trust: res.data, receiptId: res.receiptId };
+}
+
+async function askMateria<S extends z.ZodType>(paper: Paper, fullText: string | null, schema: S) {
+  return chatJson({
     model: await modelFor(MATERIA_STEP),
     purpose: MATERIA_PURPOSE,
     subject: `${paper.pmid ? `pubmed:${paper.pmid}` : paper.doi ? `doi:${paper.doi}` : `url:${paper.url}`}${fullText ? ":full" : ":abstract"}`,
     promptVersion: VERSION(),
     system: promptText("materia"),
     user: materiaInput(paper, fullText),
-    schema: Output,
+    schema,
     temperature: 0.3,
     maxTokens: 4000,
     // Inside the worker's shutdown drain (jobs/queue.ts), so a stop never leaves the receipt unknown.
     timeoutMs: 180_000,
   });
-  return { materia: res.data, receiptId: res.receiptId };
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

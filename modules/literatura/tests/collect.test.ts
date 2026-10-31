@@ -270,6 +270,28 @@ test("each new matéria stores why it can be trusted, with the text the pipeline
   assert.equal(((await itemParts([copyRead.articleId!])).get(copyRead.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "manuscrito-aceito");
 });
 
+test("a translation keeps its trust record when the model answers only the trust fields, without a matéria's title or sections", async () => {
+  const [, paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const saved = { titulo: materia.titulo, lide: materia.lide, resultados: materia.resultados };
+  Object.assign(materia, { titulo: "", lide: "", resultados: null });
+  try {
+    const calls = modelInputs.length;
+    const out = await takePaper({ ...paper!, pmid: `trust-${T}`, doi: `10.9999/trust-${T}`, pmcid: "PMC12345678" });
+    assert.equal(out.status, "integral");
+    assert.equal(modelInputs.length, calls + 1);
+    const c = ((await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart).confianca!;
+    assert.equal(c.feitura, "traducao");
+    assert.equal(c.textoLido, "texto-completo");
+    assert.equal(c.desenho, "coorte");
+    assert.equal(c.limitacao, "Centro único.");
+    assert.equal(c.minuto!.achado, materia.achado);
+    const [receipt] = await sql<{ status: string }[]>`SELECT status FROM receipts WHERE subject = ${`pubmed:trust-${T}:full`}`;
+    assert.equal(receipt!.status, "completed");
+  } finally {
+    Object.assign(materia, saved);
+  }
+});
+
 test("design and main limitation are always on a matéria: an unknown design is 'outro', a missing limitation says so; a translation waits for the model like a matéria", async () => {
   const [, paper] = parsePubmedXml(fixture("pubmed.xml"));
   const saved = { desenho: materia.desenho, limitacaoPrincipal: materia.limitacaoPrincipal };
