@@ -10,6 +10,7 @@ import { Sheet } from "../../components/ui/Sheet";
 import { Wordmark } from "@aihot/site/brand/Logo.tsx";
 import { BarButton, PhoneBar } from "../../components/shell/PhoneBar";
 import { openSearch } from "../search/SearchOverlay";
+import { centeredScrollLeft } from "../../lib/scroll-row.ts";
 
 /** Same page with some query parameters changed (paging state dropped). */
 function hrefWith(base: string, params: URLSearchParams, patch: Record<string, string | null>) {
@@ -51,7 +52,18 @@ export function AreaTabs({ base, area, layoutId, className = "" }: { base: strin
     { key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), prefetch: "intent" as const },
     ...AREA_KEYS.map((k) => ({ key: k, label: AREA_LABELS[k], to: hrefWith(base, params, { area: k }), prefetch: "intent" as const })),
   ];
-  return <PillTabs items={items} active={area ?? "all"} layoutId={layoutId} label="Área" className={className} />;
+  const ref = useRef<HTMLDivElement>(null);
+  // On a phone the row scrolls sideways; bring the chosen section into view without moving the page.
+  useEffect(() => {
+    const scroller = ref.current?.firstElementChild as HTMLElement | null;
+    const tab = scroller?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (scroller && tab) scroller.scrollLeft = centeredScrollLeft(scroller, tab);
+  }, [area]);
+  return (
+    <div ref={ref} className={className}>
+      <PillTabs items={items} active={area ?? "all"} layoutId={layoutId} label="Área" />
+    </div>
+  );
 }
 
 /** Desktop: the filter as a row of tabs beside the search field. */
