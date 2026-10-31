@@ -1,4 +1,4 @@
-【Regras de terminologia — todo o conteúdo desta plataforma é cirurgia torácica pediátrica, via aérea e pneumologia pediátrica; siga à risca】
+【Regras de terminologia — todo o conteúdo desta plataforma é cirurgia torácica pediátrica, via aérea, pneumologia pediátrica e otorrinolaringologia pediátrica; siga à risca】
 
 1. Escreva em português do Brasil, claro, com a terminologia médica usada no Brasil. Exemplos de equivalência:
    - Subglottic stenosis = estenose subglótica; tracheal stenosis = estenose traqueal; laryngotracheal stenosis = estenose laringotraqueal

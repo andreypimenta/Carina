@@ -15,7 +15,7 @@ export interface AdminSubscriber {
   status: "pending" | "confirmed" | "unsubscribed";
   /** The group whose link brought it (/assine?g=), if any. */
   group_tag: string | null;
-  /** The section it reads first (interest.ts); null: both. */
+  /** The sections it reads first (interest.ts); null: all in the journal's order. */
   interest: string | null;
   created_at: string;
   confirmed_at: string | null;

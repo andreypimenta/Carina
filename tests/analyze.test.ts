@@ -84,7 +84,7 @@ test("a selected item: prefilter, two scores, the content understanding and the 
   // Failure case: the writer's independent labels contradict the structural category.
   assert.deepEqual(r.tags, ["Revisão narrativa", "Estenose subglótica", "SBPT"], "category and tags come from the same structural judgement, plus the verified subject tag");
   assert.deepEqual(r.subjects, ["sbpt"]);
-  assert.equal(r.area, "pneumologia", "the section is the structure step's, even where a tag points to the other one");
+  assert.equal(r.area, "pneumologia", "the section is the structure step's, even where a tag points to another one");
   assert.deepEqual([r.output.writer, r.output.itemType, r.output.prefilter.label, r.output.fact.title], ["understand", "narrative_review", "PASS", "Fato CLEAR"]);
   assert.equal(r.output.scope, "single");
   assert.equal(r.output.fact.evidence, "a lab released a model");

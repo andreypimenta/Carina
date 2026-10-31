@@ -13,7 +13,8 @@ import { dailyMetrics } from "@aihot/backend/reports/compose";
 import type { EditionEntry } from "@aihot/backend/reports/edition";
 import { QUEUES, getBoss, stopBoss } from "@aihot/backend/jobs/queue";
 
-const SURGERY = "Cirurgia torácica pediátrica e via aérea";
+const SURGERY = "Cirurgia torácica pediátrica";
+const AIRWAY = "Via aérea pediátrica";
 const PULMONOLOGY = "Pneumologia pediátrica";
 
 after(async () => { await stopBoss(); await closeDb(); });
@@ -101,16 +102,16 @@ test("an editor's section (aba) wins over the model's and moves the item, even o
   await sql`INSERT INTO sources (id,name,kind,tier,participation_mode) VALUES (${sourceId},'Area fixture','rss','T1','editorial')`;
   const { articleId } = await upsertMaterial({ sourceId, url: `https://example.com/${sourceId}`, title: "Estenose subglótica em lactentes", bodyText: "Texto", bodyStatus: "ok", via: "fetch", publishedAt: new Date() });
   await sql`INSERT INTO analyses (article_id,input_revision,origin,relevance,category,area,tags,title_zh,summary_zh,score,selected)
-    VALUES (${articleId},1,'rule','pass',NULL,'cirurgia',ARRAY['Diretriz/consenso','Fibrose cística'],'Estenose subglótica em lactentes','Resumo',80,true)`;
+    VALUES (${articleId},1,'rule','pass',NULL,'via-aerea',ARRAY['Diretriz/consenso','Fibrose cística'],'Estenose subglótica em lactentes','Resumo',80,true)`;
   await publishArticle(articleId, { releasedAt: new Date() });
   const area = async () => (await sql`SELECT area FROM publications WHERE article_id=${articleId}`)[0]!.area;
-  assert.equal(await area(), "cirurgia");
+  assert.equal(await area(), "via-aerea");
   const entry = { itemId: articleId, title: "Título congelado", summary: "Resumo", sourceId, firstParty: true, role: "Oficial" };
   const keys = { daily: "2097-02-02", weekly: "2097-W05", monthly: "2097-02" } as const;
   for (const [kind, key] of Object.entries(keys)) {
     const content = kind === "daily"
-      ? { leadItemId: articleId, highlights: [articleId], flashes: [], sections: [{ label: SURGERY, items: [entry] }], metrics: { totalEvents: 1, modelsReleased: 1 } }
-      : { headline: "Manchete", leadItemId: articleId, storyOrder: [articleId], overview: "Panorama", themes: [{ heading: SURGERY, summary: "Introdução", storyRefs: [entry] }], metrics: { totalStories: 1 } };
+      ? { leadItemId: articleId, highlights: [articleId], flashes: [], sections: [{ label: AIRWAY, items: [entry] }], metrics: { totalEvents: 1, modelsReleased: 1 } }
+      : { headline: "Manchete", leadItemId: articleId, storyOrder: [articleId], overview: "Panorama", themes: [{ heading: AIRWAY, summary: "Introdução", storyRefs: [entry] }], metrics: { totalStories: 1 } };
     await sql`INSERT INTO reports (kind,key,window_start,window_end,content,generated_at,origin)
       VALUES (${kind},${key},now(),now(),${sql.json(content as never)},now(),'imported')`;
   }
@@ -122,7 +123,7 @@ test("an editor's section (aba) wins over the model's and moves the item, even o
   assert.equal(await area(), "pneumologia");
   assert.deepEqual(await sections(), [[PULMONOLOGY], [PULMONOLOGY], [PULMONOLOGY]]);
   await overrideFields(articleId, { fields: {}, clear: ["area"], version: 1, reason: "volta ao modelo" }, "test-area");
-  assert.equal(await area(), "cirurgia");
-  assert.deepEqual(await sections(), [[SURGERY], [SURGERY], [SURGERY]]);
+  assert.equal(await area(), "via-aerea");
+  assert.deepEqual(await sections(), [[AIRWAY], [AIRWAY], [AIRWAY]]);
   await assert.rejects(overrideFields(articleId, { fields: { area: "adulto" }, version: 2, reason: "aba inexistente" }, "test-area"));
 });
