@@ -279,8 +279,8 @@ test("a paper PubMed does not have yet waits by its DOI and is written from the 
   const before = modelInputs.length;
   const subjectsBefore = subjectInputs.length;
   await researchXPosts();
-  assert.deepEqual(await sql`SELECT status, pmid, doi FROM literatura_x_posts WHERE article_id = ${id}`, [{ status: "aguardando-pubmed", pmid: null, doi: "10.1186/s12890-026-01234-5" }]);
-  assert.deepEqual(await sql`SELECT status, pmid, doi FROM literatura_x_posts WHERE article_id = ${publisher.id}`, [{ status: "aguardando-pubmed", pmid: null, doi: "10.1002/lary.77777" }]);
+  assert.deepEqual([...await sql`SELECT status, pmid, doi FROM literatura_x_posts WHERE article_id = ${id}`], [{ status: "aguardando-pubmed", pmid: null, doi: "10.1186/s12890-026-01234-5" }]);
+  assert.deepEqual([...await sql`SELECT status, pmid, doi FROM literatura_x_posts WHERE article_id = ${publisher.id}`], [{ status: "aguardando-pubmed", pmid: null, doi: "10.1002/lary.77777" }]);
   assert.equal(modelInputs.length, before, "nothing is written from the post or the publisher's page");
   assert.equal(subjectInputs.length, subjectsBefore);
 
@@ -336,7 +336,7 @@ test("when the window ends with PubMed still lacking the DOI, the paper's publis
   const before = modelInputs.length;
   await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
 
-  assert.deepEqual(await sql`SELECT status, doi FROM literatura_x_posts WHERE article_id = ${publisher!.article_id}`, [{ status: "materia-editora", doi: "10.1002/lary.77777" }]);
+  assert.deepEqual([...await sql`SELECT status, doi FROM literatura_x_posts WHERE article_id = ${publisher!.article_id}`], [{ status: "materia-editora", doi: "10.1002/lary.77777" }]);
   assert.equal(modelInputs.length, before + 1, "one article, written as a paper");
   assert.match(modelInputs.at(-1)!, /^Título original: Airway stenting in infants with severe tracheomalacia/);
   assert.match(modelInputs.at(-1)!, /Revista: The Laryngoscope \(2026\)/);
@@ -349,7 +349,7 @@ test("when the window ends with PubMed still lacking the DOI, the paper's publis
   assert.match(article!.body_html, /a partir do resumo publicado/, "a paid paper's page is not its full text");
   assert.match(modelInputs.at(-1)!, /Texto disponível: somente o resumo/);
 
-  assert.deepEqual(await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${bare.id}`, [{ status: "sem-fonte" }], "nothing left waiting");
+  assert.deepEqual([...await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${bare.id}`], [{ status: "sem-fonte" }], "nothing left waiting");
 });
 
 test("past the window, a publisher page with only a site blurb is not written up, and a failure gives the post up", async () => {
@@ -359,8 +359,8 @@ test("past the window, a publisher page with only a site blurb is not written up
   const before = modelInputs.length;
   await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
   assert.equal(modelInputs.length, before, "nothing is written from a blurb or a reference list");
-  assert.deepEqual(await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${teaser.id}`, [{ status: "sem-fonte" }]);
-  assert.deepEqual(await sql`SELECT status, attempts FROM literatura_x_posts WHERE article_id = ${flaky.id}`, [{ status: "falhou", attempts: 1 }], "no retryable status is left past the window");
+  assert.deepEqual([...await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${teaser.id}`], [{ status: "sem-fonte" }]);
+  assert.deepEqual([...await sql`SELECT status, attempts FROM literatura_x_posts WHERE article_id = ${flaky.id}`], [{ status: "falhou", attempts: 1 }], "no retryable status is left past the window");
 });
 
 test("a post whose last try inside the window failed still gets the window-end research; a publisher page is full text only when it is the open copy", async () => {
@@ -368,7 +368,7 @@ test("a post whose last try inside the window failed still gets the window-end r
   await sql`INSERT INTO literatura_x_posts (article_id, status, doi, attempts) VALUES (${failed.id}, 'erro', '10.1002/lary.22222', 1)`;
   const before = modelInputs.length;
   await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
-  assert.deepEqual(await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${failed.id}`, [{ status: "materia-editora" }]);
+  assert.deepEqual([...await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${failed.id}`], [{ status: "materia-editora" }]);
   assert.equal(modelInputs.length, before + 1);
   assert.match(modelInputs.at(-1)!, /^Título original: Laryngeal cleft repair outcomes/);
   assert.match(modelInputs.at(-1)!, /Texto disponível: somente o resumo/, "the open copy is in a repository, not this page");
@@ -382,7 +382,7 @@ test("past the window, an open paper's own publisher page (Unpaywall gives its D
   await sql`INSERT INTO literatura_x_posts (article_id, status, doi) VALUES (${gold.id}, 'aguardando-pubmed', '10.1002/lary.11111')`;
   const before = modelInputs.length;
   await researchXPosts({ now: new Date(Date.now() + (X_WINDOW_DAYS + 1) * 86_400_000) });
-  assert.deepEqual(await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${gold.id}`, [{ status: "materia-editora" }]);
+  assert.deepEqual([...await sql`SELECT status FROM literatura_x_posts WHERE article_id = ${gold.id}`], [{ status: "materia-editora" }]);
   assert.equal(modelInputs.length, before + 1);
   assert.match(modelInputs.at(-1)!, /Texto disponível: texto completo\n/);
   assert.match(modelInputs.at(-1)!, /capped trial of at least twelve hours/);
