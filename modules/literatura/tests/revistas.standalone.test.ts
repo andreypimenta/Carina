@@ -21,17 +21,6 @@ test("the PubMed search names every indexed journal and asks for a word of each 
   assert.equal(pubmedTerm({ ...cfg, revistas: [cfg.revistas[1]!] }), null);
 });
 
-test("a journal with its own subject list is searched apart, with the age list and its own list in place of the subject list", () => {
-  const own: Revistas = { ...cfg, revistas: [...cfg.revistas, { id: "d", name: "Journal D", nlm: "J D", tema: ["trache*"] }] };
-  assert.equal(pubmedTerm(own),
-    '((("J A"[ta] OR "J C"[ta]) AND (child*[tiab] OR infan*[tiab] OR pediatric*[tiab] OR neonat*[tiab]) AND (trache*[tiab] OR airway*[tiab] OR "chest wall"[tiab] OR lung*[tiab])) OR ("J D"[ta] AND (child*[tiab] OR infan*[tiab] OR pediatric*[tiab] OR neonat*[tiab]) AND (trache*[tiab]))) NOT "Published Erratum"[pt]');
-  assert.equal(pubmedTerm({ ...cfg, revistas: [own.revistas[3]!] }),
-    '("J D"[ta] AND (child*[tiab] OR infan*[tiab] OR pediatric*[tiab] OR neonat*[tiab]) AND (trache*[tiab])) NOT "Published Erratum"[pt]');
-  assert.ok(onSubject(cfg, "Lung ultrasound in children"));
-  assert.ok(!onSubject(cfg, "Lung ultrasound in children", own.revistas[3]), "off the journal's own list");
-  assert.ok(onSubject(cfg, "Tracheostomy care at home for children", own.revistas[3]));
-});
-
 test("a table of contents item is on the subjects with a word of each list, as the search reads them", () => {
   assert.ok(onSubject(cfg, "Slide tracheoplasty in infants with long-segment stenosis"));
   assert.ok(onSubject(cfg, "Pectus repair: chest-wall outcomes in children"), "a hyphen joins a phrase's words");
@@ -102,14 +91,4 @@ test("the watched journals' filter takes pediatric pulmonology too, and still le
     assert.ok(!onSubject(cfg, adult!), adult);
   }
   assert.ok(!onSubject(cfg, "Arterial switch in neonates: late outcomes"), "a child, but cardiac");
-});
-
-test("from the pediatric nursing journal only the airway and tracheostomy papers enter", () => {
-  const cfg = revistas();
-  const nursing = cfg.revistas.find((r) => r.id === "j-pediatr-nurs")!;
-  assert.ok(onSubject(cfg, "Caregiver training before discharge of children with a tracheostomy", nursing));
-  assert.ok(onSubject(cfg, "Nurse-led airway clearance in infants after extubation", nursing));
-  assert.ok(!onSubject(cfg, "An asthma education program for school-age children", nursing), "pediatric pulmonology, but not the airway");
-  assert.ok(!onSubject(cfg, "Pain assessment in hospitalized children", nursing));
-  assert.ok(!onSubject(cfg, "Tracheostomy care by nurses in adult intensive care", nursing), "adult only");
 });

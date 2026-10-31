@@ -203,7 +203,7 @@ async function readSumarios(cfg: Revistas, since: Date): Promise<{ pmids: string
   for (const revista of cfg.revistas.filter((r) => r.sumario)) {
     try {
       for (const item of await readSumario(revista, since)) {
-        if (!/^https?:\/\//.test(item.url) || !onSubject(cfg, `${item.title} ${item.abstract}`, revista)) continue;
+        if (!/^https?:\/\//.test(item.url) || !onSubject(cfg, `${item.title} ${item.abstract}`)) continue;
         const paper = paperFromItem(revista, item);
         if (!candidates.has(keyOf(paper))) candidates.set(keyOf(paper), paper);
       }

@@ -19,8 +19,6 @@ export interface Revista {
   name: string;
   /** NLM title abbreviation, for the PubMed search by [ta]; absent when PubMed does not index the journal. */
   nlm?: string;
-  /** The journal's own subject list, read in place of `filtro.tema`: for a journal whose papers are on the site's subjects only in part. */
-  tema?: string[];
   /** The open table of contents: the publisher's RSS or Atom feed, or the Crossref listing of an ISSN. */
   sumario?: { rss: string } | { crossref: string };
 }
@@ -42,21 +40,17 @@ const tiab = (words: string[]) => `(${words.map((w) => (w.includes(" ") ? `"${w}
 
 /** The PubMed search of every indexed journal, with the subject filter; null when no journal is indexed. */
 export function pubmedTerm(cfg: Revistas): string | null {
-  const journals = cfg.revistas.flatMap((r) => (r.nlm && !r.tema ? [`"${r.nlm}"[ta]`] : []));
-  const clauses = [
-    ...(journals.length ? [`(${journals.join(" OR ")}) AND ${tiab(cfg.filtro.idade)} AND ${tiab(cfg.filtro.tema)}`] : []),
-    ...cfg.revistas.flatMap((r) => (r.nlm && r.tema ? [`"${r.nlm}"[ta] AND ${tiab(cfg.filtro.idade)} AND ${tiab(r.tema)}`] : [])),
-  ];
-  if (!clauses.length) return null;
-  return `(${clauses.map((c) => (clauses.length > 1 ? `(${c})` : c)).join(" OR ")}) NOT "Published Erratum"[pt]`;
+  const journals = cfg.revistas.flatMap((r) => (r.nlm ? [`"${r.nlm}"[ta]`] : []));
+  if (!journals.length) return null;
+  return `((${journals.join(" OR ")}) AND ${tiab(cfg.filtro.idade)} AND ${tiab(cfg.filtro.tema)}) NOT "Published Erratum"[pt]`;
 }
 
 const pattern = (words: string[]) =>
   new RegExp(`\\b(?:${words.map((w) => w.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*$/, "\\w*").replace(/ /g, "[\\s-]+")).join("|")})\\b`, "i");
 
-/** Whether a title and abstract meet the subject filter, as the PubMed search reads it; a journal's own list replaces the subject list. */
-export function onSubject(cfg: Revistas, text: string, revista?: Revista): boolean {
-  return pattern(cfg.filtro.idade).test(text) && pattern(revista?.tema ?? cfg.filtro.tema).test(text);
+/** Whether a title and abstract meet the subject filter, as the PubMed search reads it. */
+export function onSubject(cfg: Revistas, text: string): boolean {
+  return pattern(cfg.filtro.idade).test(text) && pattern(cfg.filtro.tema).test(text);
 }
 
 export interface SumarioItem {
