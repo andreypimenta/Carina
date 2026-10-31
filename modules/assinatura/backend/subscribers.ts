@@ -10,6 +10,7 @@ import { sql } from "@aihot/backend/db";
 import { feedbackSourceHash } from "@aihot/backend/operations/feedback";
 import { normalizeEmail, phoneVariants, type Channel } from "../address.ts";
 import { CONSENT, JOIN_TEXT, LEAVE_WORDS, WHATSAPP_CONSENT } from "../copy.ts";
+import { groupTag } from "../group.ts";
 import { channelReady, sendEmail, sendWhatsapp, whatsappNumber, type Outcome } from "./channels.ts";
 import { confirmationEmail, welcomeWhatsapp } from "./messages.ts";
 
@@ -41,6 +42,8 @@ export interface SignupInput {
   consent?: unknown;
   /** The hidden field: people leave it empty. */
   trap?: string | null;
+  /** The tag of the group whose link the reader came by (/assine?g=). */
+  group?: unknown;
   ip: string;
   userAgent: string;
 }
@@ -65,11 +68,13 @@ export async function subscribe(input: SignupInput): Promise<boolean> {
   if (input.trap?.trim()) return true;
   rateLimit(feedbackSourceHash(input.ip, input.userAgent));
   // A confirmed address stays confirmed; any other becomes pending, and is due a confirmation unless one went
-  // out in the last ten minutes, or its attempts ran out in the last day (then they start again).
+  // out in the last ten minutes, or its attempts ran out in the last day (then they start again). The group that
+  // first brought the address stays its group.
   const [row] = await sql<{ id: number; status: string; confirm_sent_at: Date | null; confirm_attempts: number }[]>`
-    INSERT INTO assinatura_subscribers (channel, address, status, token, consent, consent_at)
-    VALUES ('email', ${email}, 'pending', ${randomBytes(18).toString("base64url")}, ${CONSENT}, now())
+    INSERT INTO assinatura_subscribers (channel, address, status, token, consent, consent_at, group_tag)
+    VALUES ('email', ${email}, 'pending', ${randomBytes(18).toString("base64url")}, ${CONSENT}, now(), ${groupTag(input.group)})
     ON CONFLICT (channel, address) DO UPDATE SET
+      group_tag = coalesce(assinatura_subscribers.group_tag, EXCLUDED.group_tag),
       status = CASE WHEN assinatura_subscribers.status = 'confirmed' THEN 'confirmed' ELSE 'pending' END,
       consent = EXCLUDED.consent, consent_at = EXCLUDED.consent_at,
       unsubscribed_at = NULL, left_by = NULL,

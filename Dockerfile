@@ -22,6 +22,7 @@ COPY modules/assinatura/package.json modules/assinatura/
 COPY modules/agenda/package.json modules/agenda/
 COPY modules/instagram/package.json modules/instagram/
 COPY modules/caso/package.json modules/caso/
+COPY modules/expediente/package.json modules/expediente/
 RUN npm ci --no-audit --no-fund ${NPM_REGISTRY:+--registry=$NPM_REGISTRY}
 COPY . .
 RUN npm run build -w @aihot/web && npm prune --omit=dev --no-audit --no-fund

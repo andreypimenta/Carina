@@ -1,9 +1,9 @@
 // The ways to sign up, only those open now: the e-mail form (with the consent the reader ticks and a field
 // people never see that bots fill), and a button that opens WhatsApp with JOIN_TEXT ready to send to the
-// journal's number, the consent written beside it. The api decides; the form only says early what it would
-// refuse.
+// journal's number, the consent written beside it. The tag of the group whose link brought the reader
+// (?g=) goes with the e-mail. The api decides; the form only says early what it would refuse.
 import { useId, useState } from "react";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { EDITION_WHEN } from "@aihot/site";
 import { IconCheck, IconMessage } from "@aihot/web/components/icons";
 import { normalizeEmail } from "../address.ts";
@@ -33,6 +33,7 @@ function WhatsappJoin({ number }: { number: string }) {
 
 export function SignupForm({ channels, title }: { channels: SignupChannels; title: string }) {
   const id = useId();
+  const [params] = useSearchParams();
   const [email, setEmail] = useState("");
   const [trap, setTrap] = useState("");
   const [consent, setConsent] = useState(false);
@@ -74,7 +75,7 @@ export function SignupForm({ channels, title }: { channels: SignupChannels; titl
       const res = await fetch("/api/assinatura", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email: e1, consent, website: trap }),
+        body: JSON.stringify({ email: e1, consent, website: trap, group: params.get("g") }),
       });
       const body = (await res.json().catch(() => ({}))) as { sent?: boolean; detail?: string };
       if (!res.ok || typeof body.sent !== "boolean") return setState({ kind: "error", message: body.detail ?? "Não foi possível concluir a inscrição. Tente de novo daqui a pouco." });

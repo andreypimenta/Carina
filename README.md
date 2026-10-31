@@ -13,6 +13,7 @@ O Fôlego acompanha a literatura (buscas salvas no PubMed) e as notícias de soc
 - **Critério editorial**: prompts em `industry/prompts/` (pré-triagem, nota, matéria, estrutura), taxonomia em `industry/taxonomy.ts` e tópicos em `industry/topics.json`.
 - **Redes sociais**: perfis e pesquisas do X (fontes `x_search`, pela SocialData) e hashtags e perfis do Instagram (módulo `modules/instagram`, pela ScrapeCreators, configurado em `industry/instagram.json`); o LinkedIn é acompanhado pelos sites das organizações. Detalhes em [docs/fontes.md](docs/fontes.md#redes-sociais-x-instagram-e-linkedin).
 - **Assinatura**: a página `/assine` (só a edição e o formulário, para mandar em grupos) e o envio da edição por e-mail (Resend) e WhatsApp (Evolution API), no módulo `modules/assinatura`. Detalhes em [docs/assinatura.md](docs/assinatura.md).
+- **Expediente**: a página `/expediente` (quem edita o jornal e como as matérias são escolhidas e escritas), no módulo `modules/expediente`; o texto fica em `site/pages/expediente.md` e os dados do editor em `EXPEDIENTE`, em `site/site.ts`.
 - **Identidade e textos do site**: `site/site.ts`.
 
 ## Rodar

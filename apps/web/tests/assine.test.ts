@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { after, before, test } from "node:test";
-import { chromium, type Browser } from "@playwright/test";
+import { chromium, expect, type Browser, type Locator } from "@playwright/test";
 import type { ReportCitation, ReportDetail, SiteItemDetail } from "@aihot/contracts/site";
 import { startWebServer, type WebServer } from "./web-server.ts";
 
@@ -57,6 +57,12 @@ let chrome: Browser | undefined;
 // The browser starts with the first test that needs it.
 const browser = async () => (chrome ??= await chromium.launch({ channel: "chromium" }));
 before(async () => { web = await startWebServer(api); });
+// The page may still be hydrating after it loads, and a click before that does nothing: click until it answers.
+const clickUntil = (button: Locator, answer: Locator) =>
+  expect(async () => {
+    await button.click();
+    await expect(answer).toBeVisible({ timeout: 1000 });
+  }).toPass();
 after(async () => {
   await chrome?.close();
   await web?.stop();
@@ -119,8 +125,7 @@ test("the weekly issue's page copies its /assine address for the groups; a daily
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: web.origin });
   const tab = await context.newPage();
   await tab.goto(`${web.origin}/weekly/${WEEK}`);
-  await tab.getByRole("button", { name: "Copiar link para grupos" }).click();
-  await tab.getByText("Link copiado").waitFor();
+  await clickUntil(tab.getByRole("button", { name: "Copiar link para grupos" }), tab.getByText("Link copiado"));
   assert.equal(await tab.evaluate(() => navigator.clipboard.readText()), `${web.origin}/assine/${WEEK}`);
   await context.close();
 });
@@ -133,8 +138,22 @@ test("where the browser refuses to copy, the button shows the address to select"
     document.execCommand = () => false;
   });
   await tab.goto(`${web.origin}/weekly/${WEEK}`);
-  await tab.getByRole("button", { name: "Copiar link para grupos" }).click();
+  await clickUntil(tab.getByRole("button", { name: "Copiar link para grupos" }), tab.getByLabel("Link para grupos"));
   assert.equal(await tab.getByLabel("Link para grupos").inputValue(), `${web.origin}/assine/${WEEK}`);
+  await context.close();
+});
+
+test("where the browser can neither share nor copy, Indique a um colega shows the sign-up link to select", async () => {
+  const context = await (await browser()).newContext();
+  const tab = await context.newPage();
+  await tab.addInitScript(() => {
+    Object.defineProperty(navigator, "share", { value: undefined });
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: () => Promise.reject(new Error("denied")) } });
+    document.execCommand = () => false;
+  });
+  await tab.goto(`${web.origin}/assine/${WEEK}`);
+  await clickUntil(tab.getByRole("button", { name: "Enviar o link" }), tab.getByLabel("Link da inscrição"));
+  assert.equal(await tab.getByLabel("Link da inscrição").inputValue(), `${web.origin}/assine?g=indique`);
   await context.close();
 });
 

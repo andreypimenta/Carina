@@ -17,6 +17,7 @@ import { passwordLogin, sessionPrincipal, SESSION_COOKIE } from "@aihot/backend/
 import { buildApp } from "../../../apps/api/src/app.ts";
 import server from "../server.ts";
 import { normalizeEmail, phoneVariants } from "../address.ts";
+import { groupTag, signupPath } from "../group.ts";
 import { runSends } from "../backend/send.ts";
 import { expireSubscribers } from "../backend/subscribers.ts";
 import { adminOverview } from "../backend/admin.ts";
@@ -193,6 +194,37 @@ test("an e-mail is confirmed by the button its link opens, before anything is se
   assert.equal((await button("/api/assinatura/confirmar", "not-a-real-token-at-all")).statusCode, 404);
 });
 
+test("a sign-up keeps the tag of the group whose link brought it, the first one, and the admin counts them by group", async () => {
+  assert.equal(groupTag("Residentes SP 2026"), "residentes-sp-2026");
+  assert.equal(groupTag("  Cirurgia Torácica — Pediátrica! "), "cirurgia-toracica-pediatrica");
+  assert.equal(groupTag("---"), null);
+  assert.equal(groupTag(42), null);
+  assert.equal(groupTag("a".repeat(60))?.length, 40);
+  assert.equal(signupPath(groupTag("Grupo A")), "/assine?g=grupo-a");
+  assert.equal(signupPath(null), "/assine");
+  assert.equal(signupPath("grupo-a", "/assine/2026-W43/abc"), "/assine/2026-W43/abc?g=grupo-a");
+  assert.equal(signupPath(null, "/assine/2026-W43"), "/assine/2026-W43");
+
+  const group = groupTag(`grupo-${T}`)!;
+  const tagOf = async (address: string) => (await sql<{ group_tag: string | null }[]>`SELECT group_tag FROM assinatura_subscribers WHERE channel = 'email' AND address = ${address}`)[0]?.group_tag;
+  assert.equal((await signup({ email: `g1-${T}@example.com`, consent: true, group })).statusCode, 202);
+  assert.equal((await signup({ email: `g2-${T}@example.com`, consent: true, group: group.toUpperCase() })).statusCode, 202);
+  assert.equal((await signup({ email: `g3-${T}@example.com`, consent: true })).statusCode, 202);
+  assert.equal(await tagOf(`g1-${T}@example.com`), group);
+  assert.equal(await tagOf(`g2-${T}@example.com`), group, "the tag is read the way the admin's link writes it");
+  assert.equal(await tagOf(`g3-${T}@example.com`), null);
+  await signup({ email: `g1-${T}@example.com`, consent: true, group: "outro-grupo" });
+  await signup({ email: `g3-${T}@example.com`, consent: true, group: "indique" });
+  assert.equal(await tagOf(`g1-${T}@example.com`), group, "the group that first brought the address keeps it");
+  assert.equal(await tagOf(`g3-${T}@example.com`), "indique", "an address with no group takes the one it comes back with");
+  await sql`UPDATE assinatura_subscribers SET status = 'confirmed', confirmed_at = now() WHERE address = ${`g1-${T}@example.com`}`;
+
+  const overview = await adminOverview({});
+  const counts = Object.fromEntries(overview.groups.filter((g) => g.group === group).map((g) => [g.status, g.n]));
+  assert.deepEqual(counts, { confirmed: 1, pending: 1 });
+  assert.equal(overview.subscribers.find((s) => s.address === `g2-${T}@example.com`)?.group_tag, group);
+});
+
 test("an e-mail whose confirmations ran out gets none for a day, and the reader is told so; then they start again", async () => {
   const email = `spam-${T}@example.com`;
   const row = await add("email", email, "pending");
@@ -230,6 +262,9 @@ test("each confirmed reader gets the edition once; a failure that may pass is tr
   assert.match(edition[0]!.headers!["List-Unsubscribe"]!, new RegExp(`/assine/sair\\?t=${reader.token}`));
   assert.equal(edition[0]!.headers!["List-Unsubscribe-Post"], "List-Unsubscribe=One-Click");
   assert.ok(edition[0]!.html.includes(`https://folego.example/assine/${WEEK}`), "it links the edition's page");
+  assert.match(edition[0]!.html, /Indique a um colega[^]*https:\/\/folego\.example\/assine\?g=indique[^]*mailto:\?subject=/, "it ends with the link to pass on, and a new e-mail carrying it");
+  assert.ok(!/mailto:[^"]*sair/.test(edition[0]!.html), "the e-mail to a colleague does not carry the reader's way out");
+  assert.match(edition[0]!.text, /INDIQUE A UM COLEGA[^\n]*https:\/\/folego\.example\/assine\?g=indique/);
   assert.equal(mails.filter((m) => m.to === `pendente-${T}@example.com` || m.to === `saiu-${T}@example.com`).length, 0, "only confirmed addresses get it");
   assert.equal(texts.filter((t) => t.number === "5511966660001" && t.text.includes(`/assine/${WEEK}`)).length, 1);
 
