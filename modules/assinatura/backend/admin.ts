@@ -45,8 +45,9 @@ export async function readingOverview(): Promise<Reading> {
           count(r.left_at)::int AS left_after, count(r.complained_at)::int AS complained
         FROM assinatura_sends s JOIN assinatura_subscribers sub ON sub.id = s.subscriber_id AND sub.channel = 'email' LEFT JOIN assinatura_reads r ON r.send_id = s.id
         WHERE s.edition_key IN (${lastEditions(12)}) GROUP BY s.edition_key)
-      SELECT e.edition_key, e.caso, coalesce(l.scanned, 0) AS scanned,
+      SELECT e.edition_key, e.caso,
         coalesce(l.delivered, 0) + coalesce(x.delivered, 0) AS delivered, coalesce(l.clicked, 0) + coalesce(x.clicked, 0) AS clicked,
+        coalesce(l.scanned, 0) + coalesce(x.scanned, 0) AS scanned,
         coalesce(l.answered, 0) + coalesce(x.answered, 0) AS answered, coalesce(l.indique, 0) + coalesce(x.indique, 0) AS indique,
         coalesce(l.left_after, 0) + coalesce(x.left_after, 0) AS left_after, coalesce(l.complained, 0) + coalesce(x.complained, 0) AS complained
       FROM assinatura_editions e LEFT JOIN live l ON l.edition_key = e.edition_key LEFT JOIN assinatura_erased x ON x.edition_key = e.edition_key AND x.channel = 'email'

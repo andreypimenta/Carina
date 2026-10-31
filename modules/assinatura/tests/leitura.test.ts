@@ -153,7 +153,7 @@ test("the chosen section comes first; clicks of people count, scanners' do not; 
   await expireSubscribers(new Date());
   assert.equal((await sql`SELECT 1 FROM assinatura_subscribers WHERE id = ${bia.id}`).length, 0);
   reading = await readingOverview();
-  assert.deepEqual({ ...reading.editions[0] }, { ...expected, scanned: 2 }, "only the scanners' tally, a live view, loses her");
+  assert.deepEqual({ ...reading.editions[0] }, expected, "her edition's figures do not change");
   assert.deepEqual({ ...reading.retention.find((r) => r.group === null) }, { group: null, cohort: 3, retained: 2 }, "Ana and Caio stayed 8 weeks, Bia did not");
 
   // Ana's own link reads and changes her choice; a token that is not one changes nothing.

@@ -242,14 +242,15 @@ export async function expireSubscribers(now: Date): Promise<Record<string, numbe
   const cutoff = new Date(now.getTime() - 30 * 86400_000);
   return sql.begin(async (tx) => {
     const gone = () => tx`SELECT id FROM assinatura_subscribers WHERE (status = 'pending' AND consent_at < ${cutoff}) OR (status = 'unsubscribed' AND unsubscribed_at < ${cutoff})`;
-    await tx`INSERT INTO assinatura_erased (edition_key, channel, delivered, clicked, answered, indique, left_after, complained)
+    await tx`INSERT INTO assinatura_erased (edition_key, channel, delivered, clicked, scanned, answered, indique, left_after, complained)
       SELECT s.edition_key, sub.channel,
         count(*) FILTER (WHERE s.status = 'sent' AND r.bounced_at IS NULL)::int, count(*) FILTER (WHERE r.clicks > 0)::int,
+        count(*) FILTER (WHERE r.clicks = 0 AND r.bot_clicks > 0)::int,
         count(r.answered_at)::int, count(r.indique_at)::int, count(r.left_at)::int, count(r.complained_at)::int
       FROM assinatura_sends s JOIN assinatura_subscribers sub ON sub.id = s.subscriber_id LEFT JOIN assinatura_reads r ON r.send_id = s.id
       WHERE s.subscriber_id IN (${gone()}) GROUP BY s.edition_key, sub.channel
       ON CONFLICT (edition_key, channel) DO UPDATE SET delivered = assinatura_erased.delivered + EXCLUDED.delivered,
-        clicked = assinatura_erased.clicked + EXCLUDED.clicked, answered = assinatura_erased.answered + EXCLUDED.answered,
+        clicked = assinatura_erased.clicked + EXCLUDED.clicked, scanned = assinatura_erased.scanned + EXCLUDED.scanned, answered = assinatura_erased.answered + EXCLUDED.answered,
         indique = assinatura_erased.indique + EXCLUDED.indique, left_after = assinatura_erased.left_after + EXCLUDED.left_after,
         complained = assinatura_erased.complained + EXCLUDED.complained`;
     await tx`INSERT INTO assinatura_departed (channel, group_tag, confirmed_on, left_on)
