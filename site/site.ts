@@ -40,7 +40,7 @@ export const SITE = {
   /** llms.txt 里一句话介绍下面的一段详细介绍（选填）。 */
   llmsIntro: null as string | null,
   /** 一行小字：分享图、海报下方。 */
-  tagline: "Cirurgia torácica e via aérea, toda semana",
+  tagline: "A literatura que muda a conduta, toda segunda",
   /** 搜索引擎读到的关键词（首页结构化数据）。 */
   keywords: ["cirurgia torácica pediátrica", "via aérea pediátrica", "estenose subglótica", "laringotraqueoplastia", "traqueostomia", "broncoscopia", "pneumologia pediátrica", "estenose traqueal", "otorrinolaringologia pediátrica"] as string[],
   /** 网站开始收录的年份（结构化数据的时间范围，选填）。 */
