@@ -2,8 +2,8 @@
 // publisher's RSS, PubMed, Unpaywall and the model. Failure cases: a paper on the site's subjects that only a
 // table of contents lists is not written up, or shows no journal; an off-subject paper is paid for; a paper of
 // an indexed journal is written from its title alone instead of waiting for PubMed's abstract; the PubMed record
-// of a paper first read in a table of contents becomes a second article (paying twice); a journal whose listing
-// fails stops the others.
+// of a paper first read in a table of contents becomes a second article (paying twice), or is dropped when the
+// table of contents paper failed; a journal whose listing fails stops the others.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -19,7 +19,7 @@ import type { Revistas } from "../backend/revistas.ts";
 const T = tag();
 const NOW = new Date("2026-10-30T12:00:00Z");
 const doi = (name: string) => `10.5555/${T.toLowerCase()}-${name}`;
-const pmidOf = { early: "42000001" } as Record<string, string>;
+const pmidOf = { early: "42000001", lost: "42000002" } as Record<string, string>;
 let pubmedHas = new Set<string>();
 const modelInputs: string[] = [];
 const searches: string[] = [];
@@ -60,7 +60,10 @@ const stubServer = http.createServer((req, res) => {
       const ids = aid ? (pubmedHas.has(aid) ? [pmidOf[aid.split("-").pop()!]!] : []) : [...pubmedHas].map((d) => pmidOf[d.split("-").pop()!]!);
       return send(200, "application/json", JSON.stringify({ esearchresult: { idlist: ids } }));
     }
-    if (url.pathname === "/eutils/efetch.fcgi") return send(200, "text/xml", pubmedXml(pmidOf.early!, doi("early")));
+    if (url.pathname === "/eutils/efetch.fcgi") {
+      const id = url.searchParams.get("id")!;
+      return send(200, "text/xml", pubmedXml(id, doi(Object.keys(pmidOf).find((k) => pmidOf[k] === id)!)));
+    }
     if (url.pathname.startsWith("/unpaywall/")) return send(200, "application/json", JSON.stringify({ is_oa: false }));
     if (url.pathname.startsWith("/epmc/")) return send(200, "application/json", JSON.stringify({ resultList: { result: [] } }));
     if (url.pathname === "/v1/chat/completions") {
@@ -137,4 +140,16 @@ test("papers on the subjects that only a table of contents lists are written up 
   const third = await collectLiterature({ now: NOW, revistas: cfg() });
   assert.equal(third.new, 0);
   assert.equal(modelInputs.length, 2);
+});
+
+test("the PubMed record of a table of contents paper that failed is written up, not joined to an article it never had", async () => {
+  await sql`INSERT INTO literatura_papers (pmid, doi, status, attempts) VALUES (${`doi:${doi("lost")}`}, ${doi("lost")}, 'falhou', 3)`;
+  pubmedHas = new Set([doi("lost")]);
+  const calls = modelInputs.length;
+  const out = await collectLiterature({ now: NOW, revistas: cfg() });
+  assert.equal(out["materia-abstract"], 1);
+  assert.equal(modelInputs.length, calls + 1);
+  const [row] = await sql<{ status: string; article_id: string | null }[]>`SELECT status, article_id FROM literatura_papers WHERE pmid = ${pmidOf.lost!}`;
+  assert.equal(row!.status, "materia-abstract");
+  assert.ok(row!.article_id);
 });

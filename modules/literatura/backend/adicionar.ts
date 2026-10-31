@@ -47,10 +47,16 @@ export async function findPaper(input: string): Promise<PubmedPaper> {
   return paper;
 }
 
-/** The paper's earlier outcome; one that failed ('erro') is taken again, as the run does. */
-export async function earlier(pmid: string): Promise<{ status: string; articleId: string | null } | null> {
-  const [row] = await sql<{ status: string; article_id: string | null }[]>`SELECT status, article_id FROM literatura_papers WHERE pmid = ${pmid}`;
-  return row && row.status !== "erro" ? { status: row.status, articleId: row.article_id } : null;
+/**
+ * The paper's earlier outcome, by its PMID or by an article written under its DOI (from a journal's table of
+ * contents, before PubMed had it); one that failed ('erro') is taken again, as the run does.
+ */
+export async function earlier(paper: { pmid: string; doi: string | null }): Promise<{ status: string; articleId: string | null } | null> {
+  const [row] = await sql<{ status: string; article_id: string | null }[]>`
+    SELECT status, article_id FROM literatura_papers
+    WHERE (pmid = ${paper.pmid} AND status <> 'erro') OR (doi = ${paper.doi} AND article_id IS NOT NULL)
+    ORDER BY pmid = ${paper.pmid} DESC LIMIT 1`;
+  return row ? { status: row.status, articleId: row.article_id } : null;
 }
 
 /** Seleção = sim, as the admin's manual correction does it. */
@@ -61,7 +67,7 @@ async function select(articleId: string, reason: string, actor: string) {
 
 /** Takes the paper (unless taken before) and, asked to, selects its article; the outcome is audited. */
 export async function addPaper(paper: PubmedPaper, opts: { select: boolean; reason: string; actor: string; now?: Date }): Promise<Omit<Adicionado, "at" | "actor">> {
-  const before = await earlier(paper.pmid);
+  const before = await earlier(paper);
   const out = before ?? (await takePaper(paper, opts.now ?? new Date(), await enabledSources()));
   const articleId = out.articleId ?? null;
   if (opts.select && articleId) await select(articleId, opts.reason, opts.actor);
@@ -98,7 +104,7 @@ const Request = z.object({ id: z.string().trim().min(1).max(300), select: z.bool
 export async function requestAdd(input: unknown, actor: string): Promise<AdicionarPedido> {
   const b = Request.parse(input);
   const paper = await findPaper(b.id);
-  const existing = await earlier(paper.pmid);
+  const existing = await earlier(paper);
   // A paper taken before is still selected when asked; that is quick and calls no model.
   if (existing) {
     if (b.select) await addPaper(paper, { select: true, reason: b.reason || defaultReason(paper.pmid), actor });

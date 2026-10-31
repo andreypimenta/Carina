@@ -1,6 +1,7 @@
 // A paper the editor adds by PMID or DOI, against local stand-ins for PubMed, Unpaywall, Europe PMC and the
 // model. Failure cases: a DOI is not found, or finds another paper; a paper months old enters as history and
-// never reaches a daily; a paper already taken is written (and paid for) again; Seleção = sim is not the
+// never reaches a daily; a paper already taken is written (and paid for) again, also one first written from a
+// journal's table of contents under its DOI; Seleção = sim is not the
 // admin's audited manual correction; the admin's request calls the model in the api instead of the worker.
 import "../../../tests/setup.ts";
 import assert from "node:assert/strict";
@@ -18,13 +19,14 @@ import { INTEGRAL_SOURCE, MATERIA_SOURCE } from "../backend/collect.ts";
 const PMID = "42215001";
 const DOI = "10.1016/j.ijporl.2026.112853";
 const LATER = "42215002";
+const INDEXED_LATER = "42215003";
 // The fixture's first paper, entered in PubMed in May, under the PMID and DOI asked for.
 const record = (pmid: string, doi: string) => readFileSync(new URL("./fixtures/pubmed.xml", import.meta.url), "utf8")
   .match(/<PubmedArticle>[\s\S]*?<\/PubmedArticle>/)![0]
   .replaceAll("41000001", pmid)
   .replace("10.1016/J.JPEDSURG.2026.161999", doi)
   .replace('<PubMedPubDate PubStatus="entrez"><Year>2026</Year><Month>10</Month><Day>19</Day>', '<PubMedPubDate PubStatus="entrez"><Year>2026</Year><Month>5</Month><Day>29</Day>');
-const RECORDS: Record<string, string> = { [PMID]: record(PMID, DOI), [LATER]: record(LATER, "10.5555/later") };
+const RECORDS: Record<string, string> = { [PMID]: record(PMID, DOI), [LATER]: record(LATER, "10.5555/later"), [INDEXED_LATER]: record(INDEXED_LATER, "10.5555/sumario") };
 
 const modelInputs: string[] = [];
 const searches: string[] = [];
@@ -39,7 +41,7 @@ const stubServer = http.createServer((req, res) => {
     if (url.pathname === "/eutils/esearch.fcgi") {
       const term = url.searchParams.get("term")!;
       searches.push(term);
-      return send(200, "application/json", JSON.stringify({ esearchresult: { idlist: term === `"${DOI}"[aid]` ? [PMID] : [] } }));
+      return send(200, "application/json", JSON.stringify({ esearchresult: { idlist: term === `"${DOI}"[aid]` ? [PMID] : term === `"10.5555/sumario"[aid]` ? [INDEXED_LATER] : [] } }));
     }
     if (url.pathname === "/eutils/efetch.fcgi") {
       const ids = url.searchParams.get("id")!.split(",");
@@ -170,4 +172,17 @@ test("the admin's request queues the paper for the worker, which takes it; one t
   assert.equal(repeat.queued, false);
   assert.equal(repeat.existing!.status, "materia-abstract");
   await assert.rejects(() => requestAdd({ id: "not an id" }, "admin:editor"), /PMID .* ou um DOI/);
+});
+
+test("a paper first written from a journal's table of contents, under its DOI, is not taken again by its PMID", async () => {
+  const [taken] = await sql<{ article_id: string }[]>`SELECT article_id FROM literatura_papers WHERE pmid = ${PMID}`;
+  await sql`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES ('doi:10.5555/sumario', '10.5555/sumario', 'materia-abstract', ${taken!.article_id})`;
+  const calls = modelInputs.length;
+  const asked = await requestAdd({ id: "10.5555/sumario" }, "admin:editor");
+  assert.equal(asked.queued, false);
+  assert.deepEqual(asked.existing, { status: "materia-abstract", articleId: taken!.article_id });
+  const out = await addPaper(await findPaper(INDEXED_LATER), { select: false, reason: "de novo", actor: "test:editor" });
+  assert.equal(out.existing, true);
+  assert.equal(out.articleId, taken!.article_id);
+  assert.equal(modelInputs.length, calls, "not written (nor paid for) twice");
 });

@@ -255,12 +255,12 @@ export async function collectLiterature(opts: { budgetMs?: number; now?: Date; r
     const papers = await fetchPapers(pending.slice(i, i + 100));
     // A paper first taken from a journal's table of contents: its PubMed record joins that article.
     const dois = papers.flatMap((p) => (p.doi ? [p.doi] : []));
-    const early = new Map((await sql<{ doi: string; article_id: string | null }[]>`
-      SELECT doi, article_id FROM literatura_papers WHERE doi = ANY(${dois}) AND pmid LIKE 'doi:%' AND status <> 'erro'`).map((r) => [r.doi, r.article_id]));
+    const early = new Map((await sql<{ doi: string; article_id: string }[]>`
+      SELECT doi, article_id FROM literatura_papers WHERE doi = ANY(${dois}) AND pmid LIKE 'doi:%' AND article_id IS NOT NULL`).map((r) => [r.doi, r.article_id]));
     for (const paper of papers) {
       if (opts.budgetMs && Date.now() - started > opts.budgetMs) break outer;
       let out: Outcome;
-      if (paper.doi && early.has(paper.doi)) out = await record(paper, "sumario", early.get(paper.doi) ?? undefined);
+      if (paper.doi && early.has(paper.doi)) out = await record(paper, "sumario", early.get(paper.doi));
       else if (langs.size && paper.languages.length && !paper.languages.some((l) => langs.has(l))) out = await record(paper, "idioma");
       else out = await take(paper);
       counts[out.status] = (counts[out.status] ?? 0) + 1;

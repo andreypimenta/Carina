@@ -74,3 +74,21 @@ test("every watched journal is read by its PubMed search or its table of content
   for (const r of cfg.revistas) assert.ok(r.nlm || r.sumario, `${r.id} is read somewhere`);
   assert.ok(pubmedTerm(cfg));
 });
+
+test("the watched journals' filter takes pediatric pulmonology too, and still leaves out the adult-only papers", () => {
+  const cfg = revistas();
+  const pairs = [
+    ["Biologic therapy for severe asthma in children", "Biologic therapy for severe asthma in adults"],
+    ["Childhood interstitial lung disease: a national registry", "Interstitial lung disease in older adults: a national registry"],
+    ["ECMO in neonates with congenital diaphragmatic hernia", "ECMO in adults after cardiac arrest"],
+    ["Home ventilation in children with neuromuscular disease", "Home ventilation in adults with neuromuscular disease"],
+    ["Obstructive sleep apnoea in preterm infants", "Obstructive sleep apnoea in middle-aged men"],
+    ["Acute respiratory failure in pediatric intensive care", "Acute respiratory failure in adult intensive care"],
+    ["Bronchopulmonary dysplasia after extreme prematurity", "Bronchopulmonary disease in smokers"],
+  ];
+  for (const [child, adult] of pairs) {
+    assert.ok(onSubject(cfg, child!), child);
+    assert.ok(!onSubject(cfg, adult!), adult);
+  }
+  assert.ok(!onSubject(cfg, "Arterial switch in neonates: late outcomes"), "a child, but cardiac");
+});
