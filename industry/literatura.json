@@ -45,11 +45,6 @@
       "term": "((\"Bronchoscopy\"[Mesh] OR bronchoscop*[tiab] OR \"airway endoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"balloon dilation\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
     },
     {
-      "id": "via-aerea-intervencionista-adulto",
-      "name": "Via aérea intervencionista do adulto",
-      "term": "(\"rigid bronchoscopy\"[tiab] OR \"airway stent\"[tiab] OR \"airway stents\"[tiab] OR \"central airway obstruction\"[tiab] OR \"tracheobronchial stent\"[tiab] OR \"post-intubation tracheal stenosis\"[tiab] OR \"postintubation tracheal stenosis\"[tiab] OR \"tracheal injury\"[tiab] OR \"tracheobronchial injury\"[tiab]) NOT \"Published Erratum\"[pt]"
-    },
-    {
       "id": "lesao-intubacao",
       "name": "Lesão de via aérea por intubação em neonatos e crianças",
       "term": "((intubation[tiab] OR extubation[tiab] OR \"endotracheal tube\"[tiab]) AND (subglottic[tiab] OR laryngeal[tiab] OR \"airway injury\"[tiab] OR stridor[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
@@ -95,16 +90,6 @@
       "term": "((\"Lung Transplantation\"[Mesh] OR \"lung transplant\"[tiab] OR \"lung transplantation\"[tiab]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR adolescen*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh])) NOT \"Published Erratum\"[pt]"
     },
     {
-      "id": "traqueostomia-adulto",
-      "name": "Traqueostomia no adulto e na UTI",
-      "term": "((tracheostom*[ti] OR tracheotom*[ti] OR decannulation[tiab] OR \"Tracheostomy\"[majr]) AND (adult*[tiab] OR \"Adult\"[Mesh] OR \"Critical Care\"[Mesh] OR \"Intensive Care Units\"[Mesh] OR \"intensive care\"[tiab] OR ICU[tiab] OR \"mechanical ventilation\"[tiab])) NOT \"Published Erratum\"[pt]"
-    },
-    {
-      "id": "via-aerea-dificil-adulto",
-      "name": "Via aérea difícil e acesso cirúrgico de emergência",
-      "term": "(\"difficult airway\"[tiab] OR \"difficult intubation\"[tiab] OR \"difficult laryngoscopy\"[tiab] OR \"awake intubation\"[tiab] OR \"awake tracheal intubation\"[tiab] OR \"front of neck access\"[tiab] OR \"front-of-neck access\"[tiab] OR cricothyroidotomy[tiab] OR cricothyrotomy[tiab] OR \"emergency surgical airway\"[tiab] OR \"failed intubation\"[tiab] OR \"cannot intubate\"[tiab]) NOT \"Published Erratum\"[pt]"
-    },
-    {
       "id": "trauma-laringotraqueal",
       "name": "Trauma e lesão laringotraqueal",
       "term": "(\"Larynx/injuries\"[Mesh] OR \"Trachea/injuries\"[Mesh] OR \"laryngeal trauma\"[tiab] OR \"laryngotracheal trauma\"[tiab] OR \"laryngotracheal injury\"[tiab] OR \"laryngeal injury\"[tiab] OR \"laryngeal fracture\"[tiab] OR \"tracheal rupture\"[tiab] OR \"tracheal laceration\"[tiab] OR \"tracheal tear\"[tiab]) NOT \"Published Erratum\"[pt]"
@@ -113,16 +98,6 @@
       "id": "via-aerea-anestesia-pediatrica",
       "name": "Via aérea na anestesia e na terapia intensiva pediátrica e neonatal",
       "term": "((intubation[ti] OR extubation[ti] OR laryngoscop*[ti] OR videolaryngoscop*[ti] OR \"supraglottic airway\"[ti] OR \"laryngeal mask\"[ti] OR airway*[ti] OR laryngospasm[ti] OR \"perioperative respiratory adverse\"[tiab] OR \"Airway Management\"[majr] OR \"Intubation, Intratracheal\"[majr]) AND (child*[tiab] OR infant*[tiab] OR pediatric[tiab] OR paediatric[tiab] OR neonat*[tiab] OR newborn*[tiab] OR \"Child\"[Mesh] OR \"Infant\"[Mesh]) AND (\"Anesthesia\"[Mesh] OR anesth*[tiab] OR anaesth*[tiab] OR \"Intensive Care Units, Pediatric\"[Mesh] OR \"Intensive Care Units, Neonatal\"[Mesh] OR PICU[tiab] OR NICU[tiab] OR \"intensive care\"[tiab] OR \"delivery room\"[tiab] OR \"emergency department\"[tiab])) NOT \"Published Erratum\"[pt]"
-    },
-    {
-      "id": "pneumologia-intervencionista-adulto",
-      "name": "Pneumologia intervencionista do adulto: colapso dinâmico, tumores e fístulas de via aérea",
-      "term": "(\"interventional pulmonology\"[tiab] OR \"excessive dynamic airway collapse\"[tiab] OR tracheobronchoplasty[tiab] OR \"malignant airway obstruction\"[tiab] OR \"malignant central airway obstruction\"[tiab] OR \"tracheobronchial tumor\"[tiab] OR \"tracheobronchial tumors\"[tiab] OR \"endobronchial cryotherapy\"[tiab] OR \"endobronchial cryoablation\"[tiab] OR \"endobronchial laser\"[tiab] OR \"airway ablation\"[tiab] OR \"silicone stent\"[tiab] OR \"silicone stents\"[tiab] OR \"Y-stent\"[tiab] OR \"airway fistula\"[tiab] OR \"bronchopleural fistula\"[tiab] OR \"tracheobronchial fistula\"[tiab] OR \"airway-esophageal fistula\"[tiab]) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
-    },
-    {
-      "id": "cirurgia-traqueia-adulto",
-      "name": "Cirurgia de traqueia e brônquio no adulto",
-      "term": "(\"tracheal resection\"[tiab] OR \"tracheal reconstruction\"[tiab] OR \"tracheal replacement\"[tiab] OR \"tracheal transplantation\"[tiab] OR \"carinal resection\"[tiab] OR \"tracheal surgery\"[tiab] OR bronchoplasty[tiab] OR \"tracheal tumor\"[tiab] OR \"tracheal tumour\"[tiab] OR \"tracheal neoplasm\"[tiab] OR \"Tracheal Neoplasms\"[Mesh]) NOT \"Published Erratum\"[pt] NOT (\"Animals\"[Mesh] NOT \"Humans\"[Mesh])"
     },
     {
       "id": "transplante-pulmonar-via-aerea",
@@ -183,11 +158,6 @@
       "id": "diretrizes-sociedades-pediatria",
       "name": "Diretrizes, consensos e declarações de ATS, ERS, Cystic Fibrosis Foundation e SBPT sobre crianças",
       "term": "((\"American Thoracic Society\"[tiab] OR \"European Respiratory Society\"[tiab] OR \"Cystic Fibrosis Foundation\"[tiab] OR \"Sociedade Brasileira de Pneumologia e Tisiologia\"[tiab] OR \"Brazilian Thoracic Association\"[tiab] OR \"Brazilian Society of Pulmonology\"[tiab]) AND (guideline[pt] OR \"practice guideline\"[pt] OR \"consensus development conference\"[pt] OR guideline*[ti] OR consensus[ti] OR statement[ti] OR recommendation*[ti] OR \"position paper\"[ti] OR Delphi[tiab]) AND (\"Infant\"[Mesh] OR \"Child\"[Mesh] OR \"Adolescent\"[Mesh] OR pediatric*[tiab] OR paediatric*[tiab] OR neonat*[tiab] OR newborn*[tiab] OR infant*[tiab] OR child*[tiab] OR adolescen*[tiab])) NOT \"Published Erratum\"[pt]"
-    },
-    {
-      "id": "scholar-estenose-adulto",
-      "name": "Google Scholar → PubMed: Estenose em adultos",
-      "term": "(\"subglottic stenosis\" AND adult AND treatment) NOT \"Published Erratum\"[pt]"
     },
     {
       "id": "scholar-ressecao-cricotraqueal",

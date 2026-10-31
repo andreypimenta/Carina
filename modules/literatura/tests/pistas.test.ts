@@ -1,7 +1,9 @@
 // The leads in the literature run, against local stand-ins for a hospital's news feed and pages, PubMed,
 // Unpaywall and the model. Failure cases: a hospital's post enters the site itself; the paper a post is about is
 // not written up; an older paper the post cites, or one off the site's subjects, is paid for; a post is opened
-// again on every run; a post that failed to open, or whose paper is still to be taken, is never opened again.
+// again on every run; a post that failed to open, or whose paper is still to be taken, is never opened again; a
+// Google News item (a news.google.com link) does not reach the hospital's page through its redirect, or fails
+// on Google's own page instead of being let go.
 import { tag } from "../../../tests/setup.ts";
 import assert from "node:assert/strict";
 import http from "node:http";
@@ -53,11 +55,18 @@ const stubServer = http.createServer((req, res) => {
         ${item("study", "Thu, 29 Oct 2026 10:00:00 GMT")}${item("award", "Wed, 28 Oct 2026 10:00:00 GMT")}${item("cites", "Tue, 27 Oct 2026 10:00:00 GMT")}
         ${item("flaky", "Mon, 26 Oct 2026 10:00:00 GMT")}${item("old", "Tue, 01 Sep 2026 10:00:00 GMT")}</channel></rss>`);
     }
+    if (url.pathname === "/gnews/rss") {
+      const item = (name: string) => `<item><title>News ${name} - Hospital</title><link>${base}/gnews/articles/${T}-${name}?oc=5</link><pubDate>Thu, 29 Oct 2026 08:00:00 GMT</pubDate><source url="${base}">Hospital</source></item>`;
+      return send(200, "application/rss+xml", `<rss><channel><title>Google News</title>${item("hop")}${item("page")}</channel></rss>`);
+    }
+    if (url.pathname === `/gnews/articles/${T}-hop`) { res.writeHead(302, { location: post("via-gnews") }); return res.end(); }
+    if (url.pathname === `/gnews/articles/${T}-page`) return send(200, "text/html", `<html><script>window.WIZ_global_data={"x":"AU_yqL"};</script><c-wiz data-p="%.@.[]"></c-wiz></html>`);
     if (url.pathname.startsWith(`/news/${T}/`)) {
       const name = url.pathname.split("/").pop()!;
       opened.push(name);
       if (name === "study") return send(200, "text/html", `<p>Published in <a href="https://doi.org/${DOI}">Pediatric Pulmonology</a>.</p>`);
       if (name === "cites") return send(200, "text/html", `<p>Earlier work: <a href="https://pubmed.ncbi.nlm.nih.gov/43000002/">2020</a>, <a href="https://pubmed.ncbi.nlm.nih.gov/43000003/">liver</a>.</p>`);
+      if (name === "via-gnews") return send(200, "text/html", `<p>Read the study on <a href="https://pubmed.ncbi.nlm.nih.gov/43000001/">PubMed</a>.</p>`);
       if (name === "flaky" && failing) return send(500, "text/plain", "busy");
       return send(200, "text/html", "<p>Our hospital won an award.</p>");
     }
@@ -77,7 +86,10 @@ const stubServer = http.createServer((req, res) => {
 });
 
 const revistas: Revistas = { filtro: { idade: ["child*", "infan*"], tema: ["trache*", "airway*"] }, revistas: [] };
-const pistas = (): Pista[] => [{ id: "hospital", name: "Hospital news", kind: "rss", config: { feedUrl: `${base}/news/feed.xml` } }];
+const pistas = (): Pista[] => [
+  { id: "hospital", name: "Hospital news", kind: "rss", config: { feedUrl: `${base}/news/feed.xml` } },
+  { id: "gnews-hospital", name: "Google News · site:hospital", kind: "rss", config: { feedUrl: `${base}/gnews/rss` } },
+];
 
 before(async () => {
   await new Promise<void>((resolve) => stubServer.listen(0, "127.0.0.1", () => resolve()));
@@ -104,18 +116,22 @@ after(async () => {
 
 test("a hospital's post leads to the recent paper on the subjects it names, which is written up; the post itself never enters, and is opened once", async () => {
   const first = await collectLiterature({ now: NOW, revistas, pistas: pistas() });
-  assert.equal(first.pistasLidas, 1);
-  assert.equal(first.pistasPosts, 3, "the three posts that opened; the one that failed waits, the one before the window is not read");
+  assert.equal(first.pistasLidas, 2);
+  assert.equal(first.pistasPosts, 5, "the five posts that opened; the one that failed waits, the one before the window is not read");
   assert.equal(first.pistasArtigos, 1);
   assert.equal(first["materia-abstract"], 1);
   assert.equal(modelCalls.length, 1, "only the paper the post is about is written: not the 2020 paper it cites, not the liver one");
-  assert.deepEqual([...opened].sort(), ["award", "cites", "flaky", "study"]);
+  assert.deepEqual([...opened].sort(), ["award", "cites", "flaky", "study", "via-gnews"], "the Google News redirect is followed to the hospital's page");
 
   const rows = await sql<{ pmid: string; status: string }[]>`SELECT pmid, status FROM literatura_papers WHERE pmid LIKE ${`pista:${base}/news/${T}/%`} OR pmid = '43000001' ORDER BY pmid`;
   assert.deepEqual(rows.map((r) => [r.pmid.replace(`${base}/news/${T}/`, ""), r.status]), [
     ["43000001", "materia-abstract"], ["pista:award", "pista-sem-artigo"], ["pista:cites", "pista-sem-artigo"], ["pista:study", "pista"],
   ]);
-  const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM articles WHERE url LIKE ${`${base}/news/%`}`;
+  const gnews = await sql<{ pmid: string; status: string }[]>`SELECT pmid, status FROM literatura_papers WHERE pmid LIKE ${`pista:${base}/gnews/articles/${T}-%`} ORDER BY pmid`;
+  assert.deepEqual(gnews.map((r) => [r.pmid.replace(`pista:${base}/gnews/articles/${T}-`, ""), r.status]), [
+    ["hop?oc=5", "pista"], ["page?oc=5", "pista-sem-artigo"],
+  ], "the item that reached the hospital's page led to its paper; the one left on Google's page is let go");
+  const [{ n }] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM articles WHERE url LIKE ${`${base}/news/%`} OR url LIKE ${`${base}/gnews/%`}`;
   assert.equal(n, 0, "no post is material of the site");
 
   // Next run: only the post that failed is opened again, and it names nothing.

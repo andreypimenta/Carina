@@ -85,11 +85,11 @@ docker compose run --rm setup && docker compose up -d
 
 #### 儿科期刊、学会共识与医院新闻线索（2026 年 10 月 31 日）
 
-没有新的环境变量或数据库迁移。
+没有新的环境变量。有一个数据库迁移 `modules/literatura/migrations/0067_literatura_pistas_sources_off.sql`，见下文“医院新闻只作线索”。
 
 - **儿科期刊**：`industry/revistas.json` 加了九本儿科期刊（Pediatric Pulmonology、IJPORL、Paediatric Respiratory Reviews、ERJ Open Research、Journal of Pediatric Surgery、European Journal of Pediatric Surgery、Pediatric Anesthesia、The Laryngoscope、JAMA Otolaryngology），和胸外科期刊一样经主题筛选、PubMed 和开放目录读取、按 DOI 去重。按 2026 年 10 月的量，每周多约 8 篇站内报道，每篇一次模型调用。
-- **检索**：`industry/literatura.json` 删掉了成人气道检索 `diretorio-adulto`；儿科气道检索并入成人检索的主题词，气管切开/拔管和结构性手术两条加上儿童年龄限定；新增 `consensos-grupos-pediatricos` 和 `diretrizes-sociedades-pediatria`，跟踪学会和儿科团体的共识与指南。检索配置从文件读，升级后即生效。
-- **医院新闻只作线索**：Cincinnati Children's、Boston Children's、CHOP、SickKids、Children's Colorado 的新闻改由文献模块读取（`industry/pistas.json`），只用来找原始论文，本身不再成为站内内容。对应的六个信源从 `industry/sources.json` 删除；已上线的站点导入只增不删，它们仍然登记且开着，**升级后在 Painel → Fontes 暂停** `rss-boston-childrens-answers`、`rss-cincinnati-research-horizons`、`web-cincinnati-releases`、`web-chop-news`、`web-sickkids-news`、`web-childrens-colorado`，否则这些新闻会照旧成为内容。已有的条目不受影响。
+- **检索**：本刊只覆盖儿童，`industry/literatura.json` 删掉了成人检索 `diretorio-adulto`、`via-aerea-intervencionista-adulto`、`traqueostomia-adulto`、`via-aerea-dificil-adulto`、`pneumologia-intervencionista-adulto`、`cirurgia-traqueia-adulto` 和 `scholar-estenose-adulto`；儿科气道检索并入成人检索的主题词，气管切开/拔管和结构性手术两条加上儿童年龄限定；新增 `consensos-grupos-pediatricos` 和 `diretrizes-sociedades-pediatria`，跟踪学会和儿科团体的共识与指南。检索配置从文件读，升级后即生效。
+- **医院新闻只作线索**：Cincinnati Children's、Boston Children's、CHOP、SickKids、Children's Colorado 的新闻，以及按这些医院网站搜索的三个 Google News 订阅，改由文献模块读取（`industry/pistas.json`），只用来找原始论文，本身不再成为站内内容。对应的九个信源从 `industry/sources.json` 删除；导入只增不删，所以升级时的迁移 `0067_literatura_pistas_sources_off.sql` 把已登记的这九个信源设为停用（`enabled = false`）：`rss-boston-childrens-answers`、`rss-cincinnati-research-horizons`、`web-cincinnati-releases`、`web-chop-news`、`web-sickkids-news`、`web-childrens-colorado`、`rss-gnews-site-cincinnati`、`rss-gnews-site-boston-answers`、`rss-gnews-site-chop`。不删除信源和已有的条目；要恢复某个信源，在 Painel → Fontes 重新打开即可。Google News 条目的链接指向 `news.google.com`，读取时跟随 HTTP 跳转；落到的页面没有 DOI 或 PubMed 链接时，该条目记为没有论文，不再重读。
 
 #### 搜索引擎（2026 年 10 月 30 日）
 

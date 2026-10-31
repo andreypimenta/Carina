@@ -84,6 +84,30 @@
           "https://www.childrenscolorado.org/advances-answers/recent-articles/"
         ]
       }
+    },
+    {
+      "id": "gnews-site-cincinnati",
+      "name": "Google News · site:cincinnatichildrens.org \"airway\" (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Acincinnatichildrens.org+%22airway%22&hl=en-US&gl=US&ceid=US:en"
+      }
+    },
+    {
+      "id": "gnews-site-boston-answers",
+      "name": "Google News · site:answers.childrenshospital.org tracheomalacia (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Aanswers.childrenshospital.org+tracheomalacia&hl=en-US&gl=US&ceid=US:en"
+      }
+    },
+    {
+      "id": "gnews-site-chop",
+      "name": "Google News · site:chop.edu \"airway\" reconstruction (EN)",
+      "kind": "rss",
+      "config": {
+        "feedUrl": "https://news.google.com/rss/search?q=site%3Achop.edu+%22airway%22+reconstruction&hl=en-US&gl=US&ceid=US:en"
+      }
     }
   ]
 }
