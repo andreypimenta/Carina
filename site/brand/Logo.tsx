@@ -1,13 +1,24 @@
 // 站点的字标和圆环标记：页面用 Wordmark 画站名（size 是高度，单位像素，或一个 CSS 长度），RingMark 是小标记，转起来就是加载动画。
-// 这里用站名排字；有自己的 Logo 时，把 Wordmark 换成你的 SVG（保持同样的参数）。
+// Wordmark 是 Logo（mark.svg 的形状，内联画出，不多一次请求）加站名排字。
 import { SITE } from "../site.ts";
+import { MARK_PATH, MARK_VIEWBOX } from "./mark.ts";
+
+/** The logo, in teal; a lighter teal on the dark theme. Sized by the caller (height; the width follows). */
+export function LogoMark({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox={MARK_VIEWBOX} className={`text-[#0e7c86] dark:text-[#3fb3bc] ${className}`} fill="none" aria-hidden="true">
+      <path d={MARK_PATH} stroke="currentColor" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 /** size: the height in pixels, or a CSS length (such as a clamp()) for a name that grows with the screen. */
 export function Wordmark({ size = 24, className = "", title = SITE.name }: { size?: number | string; className?: string; title?: string }) {
   const fontSize = typeof size === "number" ? Math.round(size * 0.92) : `calc(${size} * 0.92)`;
+  // The logo stands on the baseline and is as tall as the capitals.
   return (
-    <span className={`inline-flex items-center font-black leading-none tracking-[-0.03em] ${className}`} style={{ fontSize }} aria-label={title} role="img">
-      <span aria-hidden="true" className="mr-[0.3em] inline-block size-[0.42em] rounded-full bg-accent" />
+    <span className={`inline-flex items-baseline font-black leading-none tracking-[-0.03em] ${className}`} style={{ fontSize }} aria-label={title} role="img">
+      <LogoMark className="mr-[0.28em] h-[0.72em] w-auto shrink-0" />
       <span aria-hidden="true">{SITE.name}</span>
     </span>
   );

@@ -7,8 +7,9 @@ import satori from "satori";
 import sharp from "sharp";
 import { config, REPO_ROOT } from "../config.ts";
 import { SITE } from "@aihot/site";
+import { MARK_PATH, MARK_VIEWBOX } from "@aihot/site/brand/mark.ts";
 
-export const OG_TEMPLATE_VERSION = "og-2026-10-30.2";
+export const OG_TEMPLATE_VERSION = "og-2026-10-31.1";
 const WIDTH = 1200;
 const HEIGHT = 630;
 const CACHE_DIR = path.join(config.dataDir, "ogcache");
@@ -71,10 +72,14 @@ export async function brandMark(file: string, height: number): Promise<Node | nu
   return found && h("img", { height }, undefined, { src: found.src, height, width: Math.round(height * found.aspect) });
 }
 
-/** The site name as a wordmark: bold, with the accent dot the cards use. */
-export function nameMark(size: number, color: string, dot: string): Node {
+/** The site name as a wordmark: bold, after the logo (site/brand/Logo.tsx) in the given colour, as tall as the capitals. */
+export function nameMark(size: number, color: string, mark: string): Node {
+  const logo = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK_VIEWBOX}"><path d="${MARK_PATH}" fill="none" stroke="${mark}" stroke-width="7" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+  const height = Math.round(size * 0.72);
+  const [, , boxWidth, boxHeight] = MARK_VIEWBOX.split(" ").map(Number);
+  const width = Math.round((height * boxWidth!) / boxHeight!);
   return h("div", { display: "flex", alignItems: "center" }, [
-    h("div", { width: size * 0.36, height: size * 0.36, borderRadius: 999, backgroundColor: dot, marginRight: size * 0.28 }),
+    h("img", { width, height, marginRight: size * 0.28 }, undefined, { src: `data:image/svg+xml;base64,${Buffer.from(logo).toString("base64")}`, width, height }),
     h("div", { display: "flex", fontSize: size, fontWeight: 700, color, letterSpacing: 0.5 }, SITE.name),
   ]);
 }
@@ -105,7 +110,7 @@ async function tree(card: OgCard): Promise<Node> {
     },
     [
       h("div", { display: "flex", alignItems: "center", justifyContent: "space-between" }, [
-        (await brandMark("wordmark-dark.svg", 40)) ?? nameMark(34, "#e6eded", "#2ce2e8"),
+        (await brandMark("wordmark-dark.svg", 40)) ?? nameMark(34, "#e6eded", "#3fb3bc"),
         h("div", { display: "flex", fontSize: 24, color: "#82939a" }, SITE_HOST),
       ]),
       h("div", { display: "flex", marginTop: 56, alignItems: "center" }, [

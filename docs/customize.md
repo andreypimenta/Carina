@@ -113,8 +113,10 @@
 ## 6. 品牌：`site/brand/`
 
 - `logo.svg`、`icon.png`（512）、`icon-192.png`、`apple-icon.png`（180）、`favicon.ico`：站点图标。
-- `Logo.tsx`：网页顶部报头（`apps/web/app/components/shell/Masthead.tsx`）里的站名标志，默认用站名文字排出来；有自己的 Logo，把 `Wordmark` 换成你的 SVG，参数保持不变。
-- `wordmark.svg`、`wordmark-dark.svg`（可选）：分享图和海报上的字标，深色版用在深色的分享图上；没有就用站名文字。
+- `mark.svg`：本站的 Logo 原件；它的路径和裁到笔画的 viewBox 写在 `mark.ts`，网页和分享图都从这里取。
+- `Logo.tsx`：网页顶部报头（`apps/web/app/components/shell/Masthead.tsx`）里的站名标志：内联画出的 Logo（`LogoMark`，深色主题用浅一点的颜色）加站名文字；换 Logo 时改 `mark.svg` 和 `mark.ts`，参数保持不变。
+- `logo-email.png`：电子报邮件报头里的 Logo（邮件客户端不显示 SVG），列在 `SITE.rootIcons` 里发布在网站根目录。
+- `wordmark.svg`、`wordmark-dark.svg`（可选）：分享图和海报上的字标，深色版用在深色的分享图上；没有就用 Logo 加站名文字。
 - `nameplates/`：日报、周报、月报页顶部的报头字（比如“AI日报”）。换了行业词以后重新生成：
   ```bash
   npm pack @fontsource/noto-sans-sc@5.3.0 && tar xzf fontsource-noto-sans-sc-5.3.0.tgz

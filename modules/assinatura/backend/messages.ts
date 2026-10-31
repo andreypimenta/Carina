@@ -109,7 +109,7 @@ export function welcomeWhatsapp(token: string): string {
   ].join("\n");
 }
 
-/** The e-mail page around a body: the site's name above, and the reason for the message and the way out below. */
+/** The e-mail page around a body: the site's logo and name above, and the reason for the message and the way out below. */
 function frame(title: string, body: string, footer: string | null, preheader = ""): string {
   return `<!doctype html>
 <html lang="${esc(SITE.locale)}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title></head>
@@ -117,7 +117,7 @@ function frame(title: string, body: string, footer: string | null, preheader = "
 <span style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(preheader)}</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f2ec"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:12px;font-family:Georgia,'Times New Roman',serif">
-<tr><td style="padding:24px 28px 8px;border-bottom:2px solid #1f2a2e"><div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;letter-spacing:3px;font-weight:bold;color:#1f2a2e">${esc(SITE.name.toUpperCase())}</div></td></tr>
+<tr><td style="padding:24px 28px 8px;border-bottom:2px solid #1f2a2e"><div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:16px;letter-spacing:3px;font-weight:bold;color:#1f2a2e"><img src="${esc(config.siteUrl)}/logo-email.png" width="21" height="16" alt="" style="display:inline-block;vertical-align:top;margin-right:8px;border:0">${esc(SITE.name.toUpperCase())}</div></td></tr>
 <tr><td style="padding:20px 28px 28px">${body}</td></tr>
 ${footer ? `<tr><td style="padding:18px 28px 24px;border-top:1px solid #e3e0d7;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#6b7478">${footer}</td></tr>` : ""}
 </table></td></tr></table></body></html>`;
