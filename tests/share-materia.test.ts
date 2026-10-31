@@ -22,6 +22,12 @@ test("the share card's key number is a change's result or the title's first perc
   assert.equal(key("Mortalidade de 0,6% e complicações em 10% dos pacientes"), "0,6%");
   assert.equal(key("Sucesso de 63% a 98% com fibrinólise; drenagem isolada em 47%"), "47%");
   assert.equal(key("Redução com IC 95% estreito"), null);
+  assert.equal(key("Sucesso de 63 a 98% com fibrinólise"), null);
+  assert.equal(key("Sucesso em 63–98% dos casos"), null);
+  assert.equal(key("Mortalidade cai para 5% com ECMO"), "5%");
+  assert.equal(key("Taxa chega a 85% após VATS"), "85%");
+  assert.equal(key("Aumento 30% na sobrevida"), "30%");
+  assert.equal(key("Eficácia 90% com VATS"), "90%");
   assert.equal(key("LISA comparada com CPAP", "O MIST reduziu a intubação de 72,1% para 36,5% (IC 95%: 0,40-0,64)."), "36,5%");
   assert.equal(key("VATS supera a drenagem isolada", "Sucesso de 67% a 100% com VATS, contra 47% com drenagem."), null, "a summary's lone percentage says too little");
   assert.equal(key("Stent adaptado de tubo T de Montgomery", null), null);
