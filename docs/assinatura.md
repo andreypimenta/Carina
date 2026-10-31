@@ -20,7 +20,7 @@ Depois da edição e do formulário vêm o quadro **Indique a um colega** (abaix
 
 ## Link por grupo
 
-Para saber qual grupo de WhatsApp trouxe cada inscrito, mande a cada grupo o link com a marcação dele: `https://ofolego.com/assine?g=residentes-sp` (vale também em `/assine/2026-W43?g=…`). No Painel → **Inscritos**, o quadro **Por grupo** monta esse link a partir do nome que você digitar e mostra, para cada marcação, quantos estão confirmados, aguardando confirmação e quantos saíram. A marcação vira letras minúsculas, números e hífens, com até 40 caracteres (“Residentes SP 2026” vira `residentes-sp-2026`).
+Para saber qual grupo de WhatsApp trouxe cada inscrito, mande a cada grupo o link com a marcação dele: `https://ofolego.com/assine?g=residentes-sp` (vale também em `/assine/2026-W43?g=…`, e a marcação continua quando o leitor abre uma matéria dessa página e volta à edição). No Painel → **Inscritos**, o quadro **Por grupo** monta esse link a partir do nome que você digitar e mostra, para cada marcação, quantos estão confirmados, aguardando confirmação e quantos saíram. A marcação vira letras minúsculas, números e hífens, com até 40 caracteres (“Residentes SP 2026” vira `residentes-sp-2026`).
 
 A inscrição por e-mail guarda a marcação do link em que o leitor estava. Um endereço fica com a marcação que o trouxe primeiro; se ele não tinha nenhuma, fica com a da nova inscrição. A marcação nomeia um grupo, nunca uma pessoa: aparece só no painel, na lista e no CSV, e não em páginas públicas. Inscrições pelo WhatsApp não têm marcação.
 
