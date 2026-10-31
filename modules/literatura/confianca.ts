@@ -73,6 +73,9 @@ export function alertaTitleLabel(a: { orgao: string; categoria: CategoriaAlerta 
 
 export const PREPRINT_LABEL = "Preprint – não revisado por pares";
 
+/** What a trust field says when the text read gives nothing, or when it was not read for it (backend/materia.ts). */
+export const NAO_INFORMADO = "Não informado";
+
 /**
  * Where a study stands (backend/estudos.ts): a registry entry (registered, recruiting, or with results deposited
  * in the registry), a preprint, or an article a journal reviewed. A registry entry is a plan or raw numbers, never
@@ -105,7 +108,7 @@ export function estadoTitleLabel(e: Estado | null | undefined): string | null {
   return null;
 }
 
-/** Another version of the same study the site published (backend/estudos.ts). */
+/** Another version of the same study, or another paper of the same trial, the site published (backend/estudos.ts). */
 export interface Versao {
   id: string;
   title: string;
@@ -131,7 +134,7 @@ export interface Confianca {
   /** "coorte retrospectiva, centro único": the design in a few words. */
   desenhoDetalhe: string | null;
   limitacao: string | null;
-  /** Declared conflicts of interest and funding, from the text read; "não informado" when it gives none. Absent on older records. */
+  /** Declared conflicts of interest and funding, from the text read; NAO_INFORMADO when it gives none or was not read for them. Absent on older records. */
   conflitos?: string | null;
   /** "O que se transfere ao contexto brasileiro": cautious, never a recommendation. Absent on older records. */
   aplicabilidade?: string | null;
@@ -155,13 +158,15 @@ export interface Correcao {
 }
 
 /**
- * An article's part of its page (ServerModule.items): what it is trusted by, where its study stands and the
- * study's other versions, and its corrections.
+ * An article's part of its page (ServerModule.items): what it is trusted by, where its study stands, the study's
+ * other versions and the other papers of its trial, and its corrections.
  */
 export interface MateriaPart {
   confianca: Confianca | null;
   estado: Estado | null;
   versoes: Versao[];
+  /** Other papers of the same trial (secondary, post-hoc, follow-up analyses): not versions of this one. */
+  mesmoEnsaio: Versao[];
   correcoes: Correcao[];
 }
 
@@ -177,7 +182,7 @@ export function dataBr(day: string): string {
  */
 export function linhaRevisao(c: Confianca, editor: string | null): string {
   const and = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} e ${xs.at(-1)}` : xs.join(""));
-  const fichas = `extraiu ${and(["população", "desenho", "principal limitação", ...(c.conflitos ? ["conflitos declarados"] : [])])}`;
+  const fichas = `extraiu ${and(["população", "desenho", "principal limitação", ...(c.conflitos && c.conflitos !== NAO_INFORMADO ? ["conflitos declarados"] : [])])}`;
   const acts = (...first: string[]) => and([...first, "graduou se ele muda algo agora", ...(c.aplicabilidade ? ["apontou o que se transfere ao contexto brasileiro"] : [])]);
   const ia = {
     materia: `Matéria redigida com auxílio de inteligência artificial (IA) a partir da fonte original (o texto indicado em “Texto lido”) e selecionada automaticamente: a IA ${acts("resumiu o estudo", fichas)}.`,

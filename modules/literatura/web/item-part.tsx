@@ -1,5 +1,6 @@
 // Why a matéria can be trusted, on its page (backend/confianca.ts materiaParts): "Em um minuto" and the study's
-// card between the summary and the text, with where the study stands and its other versions, and at the end how
+// card between the summary and the text, with where the study stands, its other versions and the other papers of
+// its trial, and at the end how
 // it was made and its public corrections. A preprint's warning opens its body (backend/materia.ts preprintNote),
 // so here it is only its stage on the card. A registry entry has no card: only its stage and its versions.
 import { EXPEDIENTE, SITE } from "@aihot/site";
@@ -36,11 +37,11 @@ function EstadoBadge({ estado }: { estado: Estado }) {
   return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[13px] font-semibold ring-1 ring-inset ${ESTADO_TONE[estado]}`}>{ESTADO_LABEL[estado]}</span>;
 }
 
-function Versoes({ versoes }: { versoes: Versao[] }) {
+function Versoes({ id, title, note, versoes }: { id: string; title: string; note: string; versoes: Versao[] }) {
   return (
-    <section aria-labelledby="versoes" className="rounded-panel border border-line px-5 py-4">
-      <h2 id="versoes" className="text-[12px] font-semibold text-ink-3">Versões deste estudo</h2>
-      <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-4">O mesmo estudo em outras etapas: não são descobertas independentes.</p>
+    <section aria-labelledby={id} className="rounded-panel border border-line px-5 py-4">
+      <h2 id={id} className="text-[12px] font-semibold text-ink-3">{title}</h2>
+      <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-4">{note}</p>
       <ul className="mt-2 space-y-1.5">
         {versoes.map((v) => (
           <li key={v.id} className="text-[14px] leading-[1.6] text-ink-2">
@@ -54,10 +55,21 @@ function Versoes({ versoes }: { versoes: Versao[] }) {
   );
 }
 
+function Related({ versoes, mesmoEnsaio }: Pick<MateriaPart, "versoes" | "mesmoEnsaio">) {
+  return (
+    <>
+      {versoes.length > 0 && <Versoes id="versoes" title="Versões deste estudo" note="O mesmo estudo em outras etapas: não são descobertas independentes." versoes={versoes} />}
+      {mesmoEnsaio.length > 0 && (
+        <Versoes id="mesmo-ensaio" title="Outras publicações do mesmo ensaio" note="Outras análises do mesmo ensaio clínico: não são um ensaio novo nem versões deste artigo." versoes={mesmoEnsaio} />
+      )}
+    </>
+  );
+}
+
 function Top({ data }: { data: unknown }) {
-  const { confianca: c, estado, versoes } = data as MateriaPart;
+  const { confianca: c, estado, versoes, mesmoEnsaio } = data as MateriaPart;
   if (!c) {
-    if (!estado && !versoes.length) return null;
+    if (!estado && !versoes.length && !mesmoEnsaio.length) return null;
     return (
       <div className="mt-7 space-y-4">
         {estado && (
@@ -65,7 +77,7 @@ function Top({ data }: { data: unknown }) {
             <dl><Row label="Estágio da evidência"><EstadoBadge estado={estado} /><span className="mt-1.5 block text-[12.5px] leading-relaxed text-ink-4">{ESTADO_NOTA[estado]}{isRegistro(estado) ? " Não muda a prática." : ""}</span></Row></dl>
           </section>
         )}
-        {versoes.length > 0 && <Versoes versoes={versoes} />}
+        <Related versoes={versoes} mesmoEnsaio={mesmoEnsaio} />
       </div>
     );
   }
@@ -108,7 +120,7 @@ function Top({ data }: { data: unknown }) {
           )}
         </dl>
       </section>
-      {versoes.length > 0 && <Versoes versoes={versoes} />}
+      <Related versoes={versoes} mesmoEnsaio={mesmoEnsaio} />
     </div>
   );
 }

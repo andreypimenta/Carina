@@ -417,6 +417,26 @@ test("a trial register's entry is labelled registered at once, then by ClinicalT
   assert.deepEqual(part.versoes.map((v) => v.id), [art.articleId!]);
 });
 
+test("a second paper of a covered trial is written and listed as another publication of that trial, not as a version", async () => {
+  const nct = `NCT${String(Date.now() + 7).slice(-8)}`;
+  const [fixed] = parsePubmedXml(fixture("pubmed.xml"));
+  const day = new Date("2026-10-30T03:00:00Z");
+  const paper = { ...fixed!, pmcid: null, trialIds: [nct], versionPmids: [] };
+  const primary = await takePaper({ ...paper, title: `Nasal high flow in bronchiolitis: primary results ${T}`, pmid: `p-${T}`, doi: `10.9999/primary-${T}` }, day);
+  await publishArticle(primary.articleId!);
+  const secondary = await takePaper({ ...paper, title: `Cost of nasal high flow in bronchiolitis: secondary analysis ${T}`, pmid: `s-${T}`, doi: `10.9999/secondary-${T}` }, day);
+  assert.match(modelInputs.at(-1)!, /Outras publicações do mesmo ensaio já publicadas pelo jornal: “[^”]+” \(artigo revisado, /, "the writer knows the trial was covered");
+  assert.doesNotMatch(modelInputs.at(-1)!, /Outras versões deste estudo/);
+  await publishArticle(secondary.articleId!);
+  const parts = await itemParts([primary.articleId!, secondary.articleId!]);
+  const first = parts.get(primary.articleId!)!.literatura as MateriaPart;
+  const second = parts.get(secondary.articleId!)!.literatura as MateriaPart;
+  assert.deepEqual(second.versoes, []);
+  assert.deepEqual(second.mesmoEnsaio.map((v) => v.id), [primary.articleId!]);
+  assert.deepEqual(first.versoes, []);
+  assert.deepEqual(first.mesmoEnsaio.map((v) => v.id), [secondary.articleId!]);
+});
+
 test("regulatory alerts: an act naming no listed device is not read, one the model finds not pediatric is dropped, a relevant one is an alert labelled in its title", async () => {
   const calls = modelInputs.length;
   const out = await collectAlertas({ now: new Date("2026-10-25T12:00:00Z"), cfg: alertasSettings() });

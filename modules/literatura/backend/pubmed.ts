@@ -25,7 +25,7 @@ export interface Paper {
   publishedOn?: string | null;
   /** The paper's page, for a table-of-contents paper with neither PMID nor DOI. */
   url?: string;
-  /** Trial registrations it names (its record's data banks, its abstract): "NCT01234567", "ISRCTN12345678", "RBR-7x8y9z". */
+  /** Trial registrations its record's data banks name (not its abstract): "NCT01234567", "ISRCTN12345678", "RBR-7x8y9z". */
   trialIds?: string[];
   /** PMIDs of the other versions of the same paper PubMed links (a preprint's "update in", an article's "update of"). */
   versionPmids?: string[];
@@ -183,7 +183,7 @@ export function parsePubmedXml(xml: string): PubmedPaper[] {
       languages: article.children("Language").toArray().map((t: Element) => plain($, $(t))),
       enteredOn: /^\d{4}-\d{2}-\d{2}$/.test(enteredOn ?? "") ? enteredOn : null,
       publishedOn,
-      trialIds: trialIdsIn([...banked, ...abstract.map((t) => t.text)].join(" ")),
+      trialIds: trialIdsIn(banked.join(" ")),
       versionPmids: [...new Set(versionPmids)],
       coiStatement: plain($, citation.children("CoiStatement").first()) || null,
     });

@@ -9,7 +9,7 @@ import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
 import { beijingDate } from "@aihot/contracts/time";
 import { authorLine, isGuideline, isPreprint, type Paper } from "./pubmed.ts";
 import { LICENSE_NAMES, type Access } from "./access.ts";
-import { dataBr, DESENHOS, ESTADO_LABEL, IMPLICACOES, PREPRINT_LABEL, type Confianca, type Desenho, type EmUmMinuto, type Implicacao, type TextoLido } from "../confianca.ts";
+import { dataBr, DESENHOS, ESTADO_LABEL, IMPLICACOES, NAO_INFORMADO, PREPRINT_LABEL, type Confianca, type Desenho, type EmUmMinuto, type Implicacao, type TextoLido } from "../confianca.ts";
 import type { Anterior } from "./estudos.ts";
 
 export const MATERIA_STEP = "materia";
@@ -82,7 +82,6 @@ function datas(publicado: string | null, revisado: string | null, now: Date): Co
   return { publicado, revisado, conferido: beijingDate(now) };
 }
 
-const NAO_INFORMADO = "Não informado";
 
 /**
  * Why the matéria about a paper can be trusted, as stored for its page (backend/confianca.ts). The declared
@@ -119,14 +118,18 @@ export function preprintNote(): string {
 }
 
 /**
- * What the model reads: the record's data (its conflicts statement included), the versions of the study the site
- * already published, and the text, the full one when there is one, and whether it was cut.
+ * What the model reads: the record's data (its conflicts statement included), the versions of the study and the
+ * other papers of its trial the site already published, and the text, the full one when there is one, and whether
+ * it was cut.
  */
 export function materiaInput(paper: Paper, fullText: string | null, anteriores: Anterior[] = []): string {
   const abstract = paper.abstract.map((s) => (s.label ? `${s.label}: ${s.text}` : s.text)).join("\n");
   let text = fullText ?? abstract;
   const cut = text.length > MAX_INPUT;
   if (cut) text = `${text.slice(0, text.lastIndexOf(" ", MAX_INPUT))} […]`;
+  const listed = (as: Anterior[]) => as.map((a) => `“${a.title}” (${a.estado ? ESTADO_LABEL[a.estado].toLowerCase() : "matéria"}, ${dataBr(a.data)})`).join("; ");
+  const versoes = anteriores.filter((a) => !a.mesmoEnsaio);
+  const ensaio = anteriores.filter((a) => a.mesmoEnsaio);
   const available = !fullText ? "somente o resumo" : cut ? "texto completo, cortado no fim por tamanho (o que falta pode incluir parte da discussão; não afirme que algo não foi informado só porque não aparece aqui)" : "texto completo";
   return [
     `Título original: ${paper.title}`,
@@ -135,7 +138,8 @@ export function materiaInput(paper: Paper, fullText: string | null, anteriores: 
     `Preprint: ${isPreprint(paper) ? "sim (ainda não revisado por pares)" : "não"}`,
     `Autores: ${authorLine(paper.authors, 6) || "não informado"}`,
     ...(paper.coiStatement ? [`Declaração de conflitos de interesse (registro do PubMed): ${paper.coiStatement}`] : []),
-    ...(anteriores.length ? [`Outras versões deste estudo já publicadas pelo jornal: ${anteriores.map((a) => `“${a.title}” (${a.estado ? ESTADO_LABEL[a.estado].toLowerCase() : "matéria"}, ${dataBr(a.data)})`).join("; ")}`] : []),
+    ...(versoes.length ? [`Outras versões deste estudo já publicadas pelo jornal: ${listed(versoes)}`] : []),
+    ...(ensaio.length ? [`Outras publicações do mesmo ensaio já publicadas pelo jornal: ${listed(ensaio)}`] : []),
     `Texto disponível: ${available}`,
     "",
     text,

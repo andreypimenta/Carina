@@ -47,6 +47,7 @@ Estes campos abrem a matéria e ajudam o leitor a decidir quanto confiar nela. S
 - Não dê recomendação clínica individual nem diga ao leitor o que fazer com um paciente específico.
 - Se o material é um preprint (a entrada diz "Preprint: sim"), diga no lide que o estudo ainda não foi revisado por pares e trate os resultados como preliminares.
 - Se a entrada lista "Outras versões deste estudo já publicadas pelo jornal" (o registro do ensaio, um resumo de congresso, o preprint ou outro artigo do mesmo estudo), esta matéria não é uma descoberta nova e independente: diga no lide que é uma nova versão ou etapa do mesmo estudo (por exemplo, a publicação revisada por pares do preprint noticiado em tal data) e, quando o material permite, o que mudou em relação à versão anterior. Não conte as versões como estudos diferentes.
+- Se a entrada lista "Outras publicações do mesmo ensaio já publicadas pelo jornal", este artigo é outra análise de um ensaio que o jornal já noticiou (por exemplo, uma análise secundária, post hoc ou o seguimento), e não um ensaio novo e independente nem uma nova versão daquelas publicações: diga no lide que é uma nova análise desse ensaio, já noticiado em tal data, e o que ela examina de diferente.
 - Português do Brasil, frases claras, parágrafos de até 5 frases, sem marcadores, sem Markdown, sem emojis.
 
 {{> rules-domain}}

@@ -16,35 +16,42 @@ import { materiaInput } from "../backend/materia.ts";
 const record = `<?xml version="1.0"?><PubmedArticleSet><PubmedArticle><MedlineCitation><PMID>41000100</PMID>
 <Article><Journal><Title>Pediatric Pulmonology</Title><JournalIssue><PubDate><Year>2026</Year></PubDate></JournalIssue></Journal>
 <ArticleTitle>Balloon dilation versus open repair for subglottic stenosis in children: a randomized trial.</ArticleTitle>
-<Abstract><AbstractText>Registered at ClinicalTrials.gov (NCT01234567) and ReBEC (RBR-7X8Y9Z). Call 2024-123456-12 for details.</AbstractText></Abstract>
+<Abstract><AbstractText>Compared with the trial NCT01234567. Call 2024-123456-12 for details.</AbstractText></Abstract>
 <AuthorList><Author><LastName>Gonçalves</LastName><Initials>A</Initials></Author><Author><LastName>Lee</LastName><Initials>J</Initials></Author></AuthorList>
 <Language>eng</Language><PublicationTypeList><PublicationType>Randomized Controlled Trial</PublicationType></PublicationTypeList>
-<DataBankList><DataBank><DataBankName>ClinicalTrials.gov</DataBankName><AccessionNumberList><AccessionNumber>NCT07654321</AccessionNumber></AccessionNumberList></DataBank></DataBankList>
+<DataBankList><DataBank><DataBankName>ClinicalTrials.gov</DataBankName><AccessionNumberList><AccessionNumber>NCT07654321</AccessionNumber></AccessionNumberList></DataBank>
+<DataBank><DataBankName>ReBEC</DataBankName><AccessionNumberList><AccessionNumber>RBR-7X8Y9Z</AccessionNumber></AccessionNumberList></DataBank></DataBankList>
 </Article>
 <CommentsCorrectionsList><CommentsCorrections RefType="UpdateOf"><RefSource>medRxiv. 2025</RefSource><PMID Version="1">40999999</PMID></CommentsCorrections>
 <CommentsCorrections RefType="CommentIn"><RefSource>x</RefSource><PMID Version="1">41000200</PMID></CommentsCorrections></CommentsCorrectionsList>
 <CoiStatement>JL received consulting fees from Acme Airway.</CoiStatement>
 </MedlineCitation><PubmedData><ArticleIdList><ArticleId IdType="doi">10.1002/ppul.99999</ArticleId></ArticleIdList></PubmedData></PubmedArticle></PubmedArticleSet>`;
 
-test("a paper's record gives its trial registrations, the versions PubMed links and its conflicts statement", () => {
+test("a paper's record gives the trial registrations of its data banks, the versions PubMed links and its conflicts statement", () => {
   const [paper] = parsePubmedXml(record);
-  assert.deepEqual(paper!.trialIds!.sort(), ["NCT01234567", "NCT07654321", "RBR-7x8y9z"]);
+  assert.deepEqual(paper!.trialIds!.sort(), ["NCT07654321", "RBR-7x8y9z"], "a trial its abstract only mentions is not its own");
   assert.deepEqual(paper!.versionPmids, ["40999999"], "a comment is not a version");
   assert.equal(paper!.coiStatement, "JL received consulting fees from Acme Airway.");
   assert.deepEqual(paperIds(paper!, ["10.1101/2025.01.02.25300001"]).sort(), [
-    "doi:10.1002/ppul.99999", "doi:10.1101/2025.01.02.25300001", "pmid:40999999", "pmid:41000100", "trial:NCT01234567", "trial:NCT07654321", "trial:RBR-7X8Y9Z",
+    "doi:10.1002/ppul.99999", "doi:10.1101/2025.01.02.25300001", "pmid:40999999", "pmid:41000100", "trial:NCT07654321", "trial:RBR-7x8y9z",
   ]);
   assert.equal(estadoDoPaper(paper!), "artigo-revisado");
   assert.equal(estadoDoPaper({ ...paper!, doi: "10.1101/2025.01.02.25300001" }), "preprint");
   assert.equal(surname(paper!.authors), "goncalves");
   assert.deepEqual(trialIdsIn("https://clinicaltrials.gov/study/NCT07901946?cond=tracheomalacia"), ["NCT07901946"]);
   assert.deepEqual(trialIdsIn("NCT123 and ISRCTN12345678"), ["ISRCTN12345678"]);
+  const [rebec] = trialIdsIn("https://ensaiosclinicos.gov.br/rg/RBR-7X8Y9Z");
+  assert.ok(paperIds(paper!).includes(`trial:${rebec}`), "a ReBEC registry page and the paper its record lists share one key");
 });
 
-test("the writer is told the versions the site already published, so a later one is not a new finding", () => {
+test("the writer is told the versions and the trial's other papers the site already published, so a later one is not a new finding", () => {
   const [paper] = parsePubmedXml(record);
-  const input = materiaInput(paper!, null, [{ articleId: "a1", title: "Preprint – não revisado por pares: Dilatação com balão", estado: "preprint", data: "2026-03-02" }]);
-  assert.match(input, /Outras versões deste estudo já publicadas pelo jornal: “Preprint – não revisado por pares: Dilatação com balão” \(preprint, 02\/03\/2026\)/);
+  const input = materiaInput(paper!, null, [
+    { articleId: "a1", title: "Preprint – não revisado por pares: Dilatação com balão", estado: "preprint", data: "2026-03-02", mesmoEnsaio: false },
+    { articleId: "a2", title: "Dilatação com balão: resultado primário", estado: "artigo-revisado", data: "2026-01-10", mesmoEnsaio: true },
+  ]);
+  assert.match(input, /Outras versões deste estudo já publicadas pelo jornal: “Preprint – não revisado por pares: Dilatação com balão” \(preprint, 02\/03\/2026\)\n/);
+  assert.match(input, /Outras publicações do mesmo ensaio já publicadas pelo jornal: “Dilatação com balão: resultado primário” \(artigo revisado, 10\/01\/2026\)\n/);
   assert.match(input, /Declaração de conflitos de interesse \(registro do PubMed\): JL received consulting fees/);
   assert.doesNotMatch(materiaInput(paper!, null), /Outras versões/);
 });

@@ -3,11 +3,14 @@
 // REGISTRO_TAG in industry/sources.json) is registered until its register says it is recruiting or has its
 // results deposited: ClinicalTrials.gov's API is asked about each one for its first months (syncRegistros).
 // The registry entry, the congress abstract, the preprint and the article of one study share an identifier:
-// a trial registration the paper's record or abstract names, a DOI or PMID Crossref or PubMed give as another
-// version of it (Crossref's is-preprint-of / has-preprint / has-version, PubMed's "update in" / "update of"),
-// or, with no identifier, a preprint and an article with the same first author and nearly the same title.
-// A later version is written as the next step of the study the site already covered (materia.ts materiaInput),
-// and every version's page lists the others (confianca.ts materiaParts), so they are not read as separate findings.
+// a DOI or PMID Crossref or PubMed give as another version of it (Crossref's is-preprint-of / has-preprint /
+// has-version, PubMed's "update in" / "update of"), a trial registration the paper's record lists in its data
+// banks (linking it to the registry entry only), or, with no identifier, a preprint and an article with the same
+// first author and nearly the same title. A later version is written as the next step of the study the site
+// already covered (materia.ts materiaInput), and every version's page lists the others (confianca.ts materiaParts),
+// so they are not read as separate findings. Two papers that share only a trial registration (a secondary,
+// post-hoc or follow-up analysis) are not versions but other publications of the same trial, written and listed
+// as such.
 import { beijingDate } from "@aihot/contracts/time";
 import { sql, type Db } from "@aihot/backend/db";
 import { guardedFetch } from "@aihot/backend/lib/http-fetch";
@@ -16,6 +19,10 @@ import { publishArticle } from "@aihot/backend/publication/publish";
 import { isPreprint, trialIdsIn, type Paper } from "./pubmed.ts";
 import { CROSSREF, crossrefTurn } from "./revistas.ts";
 import type { Estado, Versao } from "../confianca.ts";
+
+/** The stages of a registry entry, as stored. */
+const REGISTROS = ["registrado", "recrutando", "resultados-depositados"];
+const isTrialKey = (id: string) => id.startsWith("trial:");
 
 /** The tag of the sources whose items are trial registry entries (industry/sources.json). */
 export const REGISTRO_TAG = "ensaio registrado";
@@ -55,7 +62,7 @@ export function paperIds(paper: Paper, versionDois: string[] = []): string[] {
   return uniq([
     ...(paper.pmid ? [`pmid:${paper.pmid}`] : []),
     ...(paper.doi ? [`doi:${paper.doi}`] : []),
-    ...(paper.trialIds ?? []).map((id) => `trial:${id.toUpperCase()}`),
+    ...(paper.trialIds ?? []).map((id) => `trial:${id}`),
     ...(paper.versionPmids ?? []).map((id) => `pmid:${id}`),
     ...versionDois.map((d) => `doi:${d}`),
   ]);
@@ -80,16 +87,18 @@ export function titleSimilarity(a: string, b: string): number {
   return shared / (x.size + y.size - shared);
 }
 
-/** A version of the study the site already published, as the writer is told about it. */
+/** A version of the study the site already published, or another publication of its trial, as the writer is told about it. */
 export interface Anterior {
   articleId: string;
   title: string;
   estado: Estado | null;
   /** When the site published it, YYYY-MM-DD. */
   data: string;
+  /** Another paper of the same trial (sharing only its registration), not a version of this one. */
+  mesmoEnsaio: boolean;
 }
 
-/** A paper's study as the site knows it before writing: its identifiers and the versions already published. */
+/** A paper's study as the site knows it before writing: its identifiers and what of it was already published. */
 export interface Estudo {
   ids: string[];
   estado: Estado;
@@ -106,32 +115,36 @@ export async function estudoDoPaper(paper: Paper): Promise<Estudo> {
   const estado = estadoDoPaper(paper);
   let anteriores = await versionsOf(ids);
   const autor = surname(paper.authors);
-  if (!anteriores.length && autor) {
+  if (!anteriores.some((a) => !a.mesmoEnsaio) && autor) {
     const other: Estado = estado === "preprint" ? "artigo-revisado" : "preprint";
     const candidates = await sql<{ article_id: string; ids: string[]; titulo: string }[]>`
       SELECT article_id, ids, titulo FROM literatura_estudos WHERE estado = ${other} AND autor = ${autor} AND titulo IS NOT NULL AND created_at > now() - interval '3 years'`;
-    const same = candidates.find((c) => titleSimilarity(c.titulo, paper.title) >= SAME_TITLE && c.ids.length);
-    if (same) {
-      ids.push(same.ids[0]!);
+    const key = candidates.filter((c) => titleSimilarity(c.titulo, paper.title) >= SAME_TITLE).map((c) => c.ids.find((id) => !isTrialKey(id))).find(Boolean);
+    if (key) {
+      ids.push(key);
       anteriores = await versionsOf(ids);
     }
   }
   return { ids, estado, anteriores };
 }
 
-/** The published articles whose study shares one of these identifiers, oldest first. */
+/**
+ * The published articles that share one of a paper's identifiers, oldest first: a version when they share one
+ * besides a trial registration or are the trial's registry entry, else another paper of the same trial.
+ */
 async function versionsOf(ids: string[]): Promise<Anterior[]> {
   if (!ids.length) return [];
-  const rows = await sql<{ article_id: string; title: string; estado: Estado | null; at: Date }[]>`
-    SELECT e.article_id, p.title, e.estado, p.timeline_at AS at FROM literatura_estudos e
-    JOIN publications p ON p.article_id = e.article_id AND p.visibility <> 'withdrawn'
+  const own = ids.filter((id) => !isTrialKey(id));
+  const rows = await sql<{ article_id: string; title: string; estado: Estado | null; at: Date; versao: boolean }[]>`
+    SELECT e.article_id, p.title, e.estado, p.timeline_at AS at, (e.ids && ${own}::text[] OR coalesce(e.estado = ANY(${REGISTROS}::text[]), false)) AS versao
+    FROM literatura_estudos e JOIN publications p ON p.article_id = e.article_id AND p.visibility <> 'withdrawn'
     WHERE e.ids && ${ids}::text[] ORDER BY p.timeline_at, e.article_id`;
-  return rows.map((r) => ({ articleId: r.article_id, title: r.title, estado: r.estado, data: beijingDate(r.at) }));
+  return rows.map((r) => ({ articleId: r.article_id, title: r.title, estado: r.estado, data: beijingDate(r.at), mesmoEnsaio: !r.versao }));
 }
 
 /**
- * Records a written paper's study with its article, in its transaction; the earlier versions' pages change, as
- * they now list this one.
+ * Records a written paper's study with its article, in its transaction; the pages of the earlier versions and
+ * publications of its trial change, as they now list this one.
  */
 export async function saveEstudo(tx: Db, articleId: string, paper: Paper, estudo: Estudo): Promise<void> {
   await tx`INSERT INTO literatura_estudos (article_id, ids, estado, titulo, autor) VALUES (${articleId}, ${estudo.ids}, ${estudo.estado}, ${paper.title}, ${surname(paper.authors)})
@@ -143,7 +156,7 @@ export async function saveEstudo(tx: Db, articleId: string, paper: Paper, estudo
 
 /** A registry page the site wrote up (apurar.ts takePage): registered, under the trials its address names. */
 export async function saveRegistroPage(tx: Db, articleId: string, url: string): Promise<void> {
-  const ids = trialIdsIn(url).map((id) => `trial:${id.toUpperCase()}`);
+  const ids = trialIdsIn(url).map((id) => `trial:${id}`);
   await tx`INSERT INTO literatura_estudos (article_id, ids, estado) VALUES (${articleId}, ${ids}, 'registrado')
     ON CONFLICT (article_id) DO UPDATE SET ids = EXCLUDED.ids, estado = EXCLUDED.estado`;
 }
@@ -177,7 +190,7 @@ export async function syncRegistros(): Promise<Record<string, unknown>> {
   const rows = await sql<{ id: string; url: string; title: string; estado: Estado | null; known: boolean; published: boolean }[]>`
     SELECT a.id, a.url, a.title, e.estado, e.article_id IS NOT NULL AS known, EXISTS (SELECT 1 FROM publications p WHERE p.article_id = a.id) AS published
     FROM articles a JOIN sources s ON s.id = a.source_id LEFT JOIN literatura_estudos e ON e.article_id = a.id
-    WHERE (${REGISTRO_TAG} = ANY(s.tags) OR e.estado IN ('registrado', 'recrutando', 'resultados-depositados'))
+    WHERE (${REGISTRO_TAG} = ANY(s.tags) OR e.estado = ANY(${REGISTROS}::text[]))
       AND a.discovered_at > now() - make_interval(days => ${REGISTRO_DAYS})
       AND (e.checked_at IS NULL OR e.checked_at < now() - interval '20 hours')
     ORDER BY a.discovered_at DESC LIMIT 1000`;
@@ -208,20 +221,29 @@ export async function syncRegistros(): Promise<Record<string, unknown>> {
   return counts;
 }
 
-/** Where each of these articles' studies stands and its other published versions, oldest first. */
-export async function estudosOf(ids: readonly string[]): Promise<Map<string, { estado: Estado | null; versoes: Versao[] }>> {
-  const out = new Map<string, { estado: Estado | null; versoes: Versao[] }>();
+/**
+ * Where each of these articles' studies stands, its other published versions and the other published papers of
+ * its trial, oldest first.
+ */
+export async function estudosOf(ids: readonly string[]): Promise<Map<string, { estado: Estado | null; versoes: Versao[]; mesmoEnsaio: Versao[] }>> {
+  const out = new Map<string, { estado: Estado | null; versoes: Versao[]; mesmoEnsaio: Versao[] }>();
   const list = [...ids];
   const own = await sql<{ id: string; estado: Estado | null; registro: boolean }[]>`
     SELECT a.id, e.estado, ${REGISTRO_TAG} = ANY(s.tags) AS registro FROM articles a JOIN sources s ON s.id = a.source_id
     LEFT JOIN literatura_estudos e ON e.article_id = a.id
     WHERE a.id = ANY(${list}) AND (e.article_id IS NOT NULL OR ${REGISTRO_TAG} = ANY(s.tags))`;
-  for (const r of own) out.set(r.id, { estado: r.estado ?? (r.registro ? "registrado" : null), versoes: [] });
-  const versions = await sql<{ of: string; id: string; title: string; estado: Estado | null; at: Date }[]>`
-    SELECT e.article_id AS of, o.article_id AS id, p.title, o.estado, p.timeline_at AS at FROM literatura_estudos e
+  for (const r of own) out.set(r.id, { estado: r.estado ?? (r.registro ? "registrado" : null), versoes: [], mesmoEnsaio: [] });
+  const versions = await sql<{ of: string; id: string; title: string; estado: Estado | null; at: Date; versao: boolean }[]>`
+    SELECT e.article_id AS of, o.article_id AS id, p.title, o.estado, p.timeline_at AS at,
+      (coalesce(e.estado = ANY(${REGISTROS}::text[]) OR o.estado = ANY(${REGISTROS}::text[]), false)
+        OR EXISTS (SELECT 1 FROM unnest(e.ids) k WHERE k NOT LIKE 'trial:%' AND k = ANY(o.ids))) AS versao
+    FROM literatura_estudos e
     JOIN literatura_estudos o ON o.ids && e.ids AND o.article_id <> e.article_id
     JOIN publications p ON p.article_id = o.article_id AND p.visibility <> 'withdrawn'
     WHERE e.article_id = ANY(${list}) ORDER BY p.timeline_at, o.article_id`;
-  for (const v of versions) out.get(v.of)?.versoes.push({ id: v.id, title: v.title, estado: v.estado, data: beijingDate(v.at) });
+  for (const v of versions) {
+    const e = out.get(v.of);
+    if (e) (v.versao ? e.versoes : e.mesmoEnsaio).push({ id: v.id, title: v.title, estado: v.estado, data: beijingDate(v.at) });
+  }
   return out;
 }

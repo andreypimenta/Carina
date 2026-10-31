@@ -1,6 +1,6 @@
 // Each new matéria's trust record (../confianca.ts), written with the matéria in its transaction, and the
 // article's part of its page and of the weekly e-mail (ServerModule.items): that record, where its study stands
-// and the study's other versions (backend/estudos.ts), and the corrections the editor added (backend/correcoes.ts).
+// and the study's other versions and other papers of its trial (backend/estudos.ts), and the corrections the editor added (backend/correcoes.ts).
 // A preprint's or a registry entry's public title starts with its stage's label (ServerModule.titleLabel).
 import { sql, type Db } from "@aihot/backend/db";
 import { alertaTitleLabel, DESENHO_LABEL, estadoTitleLabel, IMPLICACAO_LABEL, minutoCompacto, PREPRINT_LABEL, TEXTO_LIDO_LABEL, type Confianca, type Correcao, type Estado, type MateriaPart } from "../confianca.ts";
@@ -15,12 +15,12 @@ export async function saveConfianca(tx: Db, articleId: string, data: Confianca):
 export async function materiaParts(ids: readonly string[]): Promise<Map<string, MateriaPart>> {
   const out = new Map<string, MateriaPart>();
   const list = [...ids];
-  const empty = (): MateriaPart => ({ confianca: null, estado: null, versoes: [], correcoes: [] });
+  const empty = (): MateriaPart => ({ confianca: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [] });
   const records = await sql<{ article_id: string; data: Confianca }[]>`SELECT article_id, data FROM literatura_confianca WHERE article_id = ANY(${list})`;
   for (const r of records) out.set(r.article_id, { ...empty(), confianca: r.data, estado: r.data.preprint ? "preprint" : null });
   for (const [id, e] of await estudosOf(list)) {
     const part = out.get(id) ?? empty();
-    out.set(id, { ...part, estado: e.estado ?? part.estado, versoes: e.versoes });
+    out.set(id, { ...part, estado: e.estado ?? part.estado, versoes: e.versoes, mesmoEnsaio: e.mesmoEnsaio });
   }
   const fixes = await sql<{ id: string; article_id: string; corrected_on: string; what: string; why: string }[]>`
     SELECT id, article_id, to_char(corrected_on, 'YYYY-MM-DD') AS corrected_on, what, why FROM literatura_correcoes

@@ -107,7 +107,8 @@ test("the review line names the editor only once the site does; the e-mail line 
   const c = confiancaDaMateria(materia, paper!, "resumo", now);
   assert.match(linhaRevisao(c, null), /^Matéria redigida com auxílio de inteligência artificial \(IA\) a partir da fonte original .* e selecionada automaticamente: .* O editor responsável acompanha o que vai ao ar e corrige quando necessário;/);
   assert.match(linhaRevisao(c, "Dra. Fulana"), /O editor responsável, Dra\. Fulana, acompanha o que vai ao ar/);
-  assert.match(linhaRevisao(c, null), /a IA resumiu o estudo, extraiu população, desenho, principal limitação e conflitos declarados, graduou se ele muda algo agora e apontou o que se transfere ao contexto brasileiro\./);
+  assert.match(linhaRevisao(confiancaDaMateria(materia, paper!, "texto-completo", now), null), /a IA resumiu o estudo, extraiu população, desenho, principal limitação e conflitos declarados, graduou se ele muda algo agora e apontou o que se transfere ao contexto brasileiro\./);
+  assert.match(linhaRevisao(c, null), /a IA resumiu o estudo, extraiu população, desenho e principal limitação, graduou se ele muda algo agora e apontou/, "an abstract alone was not read for conflicts, so they are not claimed as extracted");
   assert.match(linhaRevisao({ ...c, conflitos: undefined, aplicabilidade: undefined }, null), /a IA resumiu o estudo, extraiu população, desenho e principal limitação e graduou se ele muda algo agora\./, "an older record says what was done then");
   assert.match(linhaRevisao({ ...c, feitura: "alerta" }, null), /não é evidência de eficácia/);
   assert.match(linhaRevisao({ ...c, feitura: "aviso" }, null), /sem leitura do documento/);
@@ -118,7 +119,7 @@ test("the review line names the editor only once the site does; the e-mail line 
   assert.match(linhaRevisao(traducao, null), /^Artigo traduzido na íntegra com inteligência artificial \(IA\) e selecionado automaticamente: .* O editor responsável acompanha/);
   for (const feitura of ["materia", "pagina", "traducao", "alerta", "aviso"] as const) assert.doesNotMatch(linhaRevisao({ ...c, feitura }, "Dra. Fulana"), /revisa|antes da publicação/, "nothing is reviewed before it goes live");
 
-  const part: MateriaPart = { confianca: c, estado: null, versoes: [], correcoes: [] };
+  const part: MateriaPart = { confianca: c, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [] };
   assert.equal(minutoCompacto(part), "Em um minuto: Decanulação semelhante entre os dois tempos cirúrgicos. Para quem: Cirurgiões de via aérea pediátrica. Muda algo agora? Pode informar a discussão.");
   const mail = materiaMail(part)!;
   assert.match(mail.html, /Em um minuto<\/b> Decanulação semelhante/);

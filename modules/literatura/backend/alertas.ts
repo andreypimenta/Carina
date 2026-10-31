@@ -3,7 +3,8 @@
 // sources a server can read openly (industry/alertas.json): openFDA's device recalls and 510(k) clearances, and
 // Anvisa's news on medical devices (its site's open search). FDA's RSS feeds (its device safety communications
 // among them) answer a server with a bot block, Anvisa's technovigilance alerts are a JavaScript app that refuses
-// one, and EMA publishes no device alerts: those are left out. An act that names a device of the list is read by
+// one, and EMA publishes no device alerts: those are left out, not worked around, so safety communications and
+// labeling changes reach the site only when openFDA's records or Anvisa's news carry them. An act that names a device of the list is read by
 // the model (industry/prompts/alerta.md), which keeps it only when the device is used in children's airway or
 // respiratory care and sorts it (recall or field action, safety communication, authorization, labeling change);
 // it becomes a short alert linking the official act, labelled as a regulatory act in its title and never
