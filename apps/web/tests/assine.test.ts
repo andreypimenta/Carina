@@ -143,6 +143,20 @@ test("where the browser refuses to copy, the button shows the address to select"
   await context.close();
 });
 
+test("where the browser can neither share nor copy, Indique a um colega shows the sign-up link to select", async () => {
+  const context = await (await browser()).newContext();
+  const tab = await context.newPage();
+  await tab.addInitScript(() => {
+    Object.defineProperty(navigator, "share", { value: undefined });
+    Object.defineProperty(navigator, "clipboard", { value: { writeText: () => Promise.reject(new Error("denied")) } });
+    document.execCommand = () => false;
+  });
+  await tab.goto(`${web.origin}/assine/${WEEK}`);
+  await clickUntil(tab.getByRole("button", { name: "Enviar o link" }), tab.getByLabel("Link da inscrição"));
+  assert.equal(await tab.getByLabel("Link da inscrição").inputValue(), `${web.origin}/assine?g=indique`);
+  await context.close();
+});
+
 const whatsapp = (html: string) => hrefs(html).filter((href) => href.startsWith("https://wa.me/?text="))
   .map((href) => decodeURIComponent(href.slice("https://wa.me/?text=".length).replace(/&amp;/g, "&")));
 
