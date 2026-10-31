@@ -246,7 +246,7 @@ docker compose exec worker node scripts/estreia-reclassificar.ts … --apply --r
 
 ### 按 PMID 或 DOI 加一篇论文
 
-文献模块的检索只看最近 7 天。`scripts/literatura-adicionar.ts` 和后台“Adicionar artigo”页做的是同一件事，只是立即执行：按 PMID 或 DOI（经 E-utilities 换成 PMID）取出论文，走检索到的论文同样的路（许可允许时用全文，否则写站内报道，经回执和预算熔断），`literatura_papers` 里已有的 PMID 不再写；论文作为新闻进入，时间线为加入的时刻，进下一期日报和周报。`--select` 与后台“人工修正”的“精选 = 是”相同（同样写审计）。不加 `--apply` 只显示论文和会做什么。
+文献模块的检索只看最近 7 天。`scripts/literatura-adicionar.ts` 和后台“Adicionar artigo”页做的是同一件事，只是立即执行：按 PMID 或 DOI（经 E-utilities 换成 PMID）取出论文，走检索到的论文同样的路（许可允许时用全文，否则写站内报道，经回执和预算熔断），`literatura_papers` 里已有的 PMID、或已按 DOI 从期刊目录写过的论文不再写；论文作为新闻进入，时间线为加入的时刻，进下一期日报和周报。`--select` 与后台“人工修正”的“精选 = 是”相同（同样写审计）。不加 `--apply` 只显示论文和会做什么。
 
 ```bash
 docker compose exec worker node scripts/literatura-adicionar.ts <pmid|doi> [--select]               # 预览
