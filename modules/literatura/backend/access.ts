@@ -115,6 +115,17 @@ export async function lookupPmcid(pmid: string): Promise<string | null> {
   return hit?.pmcid && /^PMC\d+$/i.test(hit.pmcid) ? hit.pmcid.toUpperCase() : null;
 }
 
+/** The PubMed record (PMID) Europe PMC has for a PMC id, or null. */
+export async function lookupPmid(pmcid: string): Promise<string | null> {
+  const query = encodeURIComponent(`PMCID:${pmcid}`);
+  const res = await guardedFetch(`${EUROPE_PMC()}/search?query=${query}&format=json&resultType=lite&pageSize=1`, { timeoutMs: 20_000 });
+  if (res.status === 404) return null;
+  if (res.status !== 200) throw new Error(`Europe PMC search HTTP ${res.status}`);
+  const data = JSON.parse(res.text()) as { resultList?: { result?: Array<{ pmid?: string; pmcid?: string }> } };
+  const hit = data.resultList?.result?.find((r) => r.pmcid?.toUpperCase() === pmcid.toUpperCase());
+  return hit?.pmid && /^\d+$/.test(hit.pmid) ? hit.pmid : null;
+}
+
 /** The full text Europe PMC holds for a PMC id; null when it has none. */
 export async function fetchFullText(pmcid: string): Promise<FullText | null> {
   const res = await guardedFetch(`${EUROPE_PMC()}/${encodeURIComponent(pmcid)}/fullTextXML`, { timeoutMs: 30_000, maxBytes: 16 * 1024 * 1024 });
@@ -139,15 +150,20 @@ export async function readOpenCopy(url: string, abstractChars: number): Promise<
   try {
     const res = await guardedFetch(url, { timeoutMs: 30_000, maxBytes: 6 * 1024 * 1024 });
     if (res.status !== 200 || !/html/.test(res.headers.get("content-type") ?? "")) return null;
-    const page = readable(res.text(), res.url);
-    if (!page) return null;
-    const end = BACK_MATTER.exec(page.html)?.index;
-    const text = blockText(end === undefined ? page.html : page.html.slice(0, end));
-    return { text, bodyChars: Math.max(0, text.length - abstractChars) };
+    return articleText(res.text(), res.url, abstractChars);
   } catch (error) {
     console.error(`literatura: cópia aberta ${url}: ${(error as Error).message}`);
     return null;
   }
+}
+
+/** The article's text on a publisher's or repository's page, up to its back matter, and what it has beyond the abstract. */
+export function articleText(html: string, url: string, abstractChars: number): { text: string; bodyChars: number } | null {
+  const page = readable(html, url);
+  if (!page) return null;
+  const end = BACK_MATTER.exec(page.html)?.index;
+  const text = blockText(end === undefined ? page.html : page.html.slice(0, end));
+  return { text, bodyChars: Math.max(0, text.length - abstractChars) };
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

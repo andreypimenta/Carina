@@ -94,6 +94,10 @@ docker compose run --rm setup && docker compose up -d
 
 日报缺期告警按北京时间的具体日期跟踪，跨午夜不会自动恢复；只有对应日报存在才发恢复通知。新缺期检查最近 7 个日历日（含今天），不早于最早的日报或 reports.compose 运行记录；没有历史记录时只检查今天。已告警的日期即使超出 7 天仍保留，关闭采集/模型或 worker 启动宽限期也不会把缺期当成恢复。旧的 report.daily 状态自动按首次告警时间迁移，保留提醒间隔。出刊后两小时告警、每小时提醒及飞书开关保持不变；无需数据库迁移。自定义 responder 若按旧 `report.daily` 精确匹配，需改为识别 `report.daily:YYYY-MM-DD` 日期键。
 
+#### X 帖子改写成论文报道（2026 年 10 月 31 日）
+
+新迁移 `modules/literatura/migrations/0065_literatura_x_posts.sql`（新表 `literatura_x_posts`）和 `0066_literatura_x_posts_doi.sql`（新列 `doi`：PubMed 还没收录的 DOI，帖子等待期间按它重查），没有新环境变量。模块多了一个插口 `ServerModule.takesXPosts`：装了 literatura 模块的站，编辑信源的 X 帖子不再单独进入全部动态、精选和日报周报（详情页保留，不收录）；升级后重新发布时，已在列表里的 X 帖子会退出。worker 每半小时（`literatura.apurar-x`，需 `COLLECT_ENABLED=true`）查帖子指向的论文（没有标识符时用模型读出期刊、作者和主题去 PubMed 检索并核对），按论文写报道；指南、会议、活动类帖子按其链接的官方页面写报道；文末署名帖子。两次模型调用都用 `MATERIA_MODEL`，见 [fontes.md](fontes.md#redes-sociais-x-instagram-e-linkedin)。
+
 #### 导航里可以不放某些入口（2026 年 10 月 30 日）
 
 没有迁移，没有新环境变量。`site/site.ts` 多了 `NAV.hidden`（不放进导航的引擎入口，见 [把它改成你的行业](customize.md)）；框架从 `@aihot/site` 读它，**自己维护 `site/site.ts` 的站，合并时加上 `NAV`**，不加通不过类型检查。本站写的是 `["/hot", "/topics"]`：热点榜和主题从导航里拿掉，页面和公开接口照旧；想放回导航就改成空数组。
