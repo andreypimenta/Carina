@@ -189,7 +189,7 @@ export const EXPEDIENTE = {
     /** Registro profissional, por exemplo "CRM-SP 123456 · RQE 7890". */
     crm: "CRM-MG 38977 · RQE 43050 (Cirurgia torácica) · RQE 43051 (Endoscopia respiratória) · RQE 43049 (Cirurgia geral)" as string | null,
     /** Uma ou duas frases sobre a formação e a atuação. */
-    bio: "Cirurgião torácico formado pela Faculdade de Medicina da UFMG, com residências em cirurgia geral e em cirurgia torácica e endoscopia respiratória. Atua no Serviço de Via Aérea Pediátrica do Hospital das Clínicas da UFMG e do Hospital Municipal de Contagem, na Rede Mater Dei de Saúde e no Hospital Vila da Serra, com foco em laringotraqueoplastia, estenose subglótica, decanulação e broncoscopia." as string | null,
+    bio: "Cirurgião torácico formado pela Faculdade de Medicina da UFMG, com residências em cirurgia geral e em cirurgia torácica e endoscopia respiratória. Atua nos serviços de cirurgia torácica e de via aérea pediátrica do Hospital das Clínicas da UFMG, do Hospital Municipal de Contagem, da Rede Mater Dei de Saúde e do Hospital Vila da Serra. Também integra a equipe de transplante pulmonar do Hospital das Clínicas da UFMG." as string | null,
     /** A foto: um arquivo de brand/ listado em SITE.rootIcons ("/editor.jpg") ou um endereço https. */
     photo: "/editor.jpg" as string | null,
   },
