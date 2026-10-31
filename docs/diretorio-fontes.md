@@ -254,11 +254,11 @@ Foi escolhido o PubMed, e não o Europe PMC, para que os artigos sigam o mesmo c
 | Trauma | "tracheobronchial injury" surgical management | `scholar-trauma` |
 | ECMO | ECMO "airway surgery" | `scholar-ecmo` |
 
-Todas estão ativas. Cada uma traz de 0 a 0,5 artigo por semana, e nenhum desses artigos ficava fora das buscas que já existiam.
+As que não saíram estão ativas. Cada uma traz de 0 a 0,5 artigo por semana, e nenhum desses artigos ficava fora das buscas que já existiam.
 
 ## Google Alerts
 
-Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-gnews-*` que já existiam, inclusive as com `site:`. Todas estão ativas, com nível T2. O Google News devolve os resultados por relevância, e muitos são antigos; a coleta só publica o que aparecer depois de a fonte ser importada.
+Cada consulta entrou como uma busca do Google News em RSS, como as fontes `rss-gnews-*` que já existiam, inclusive as com `site:`. Todas estão ativas, com nível T2, menos as três pelos sites de Cincinnati Children's, Boston Children's e CHOP, que saíram em 31/10/2026. O Google News devolve os resultados por relevância, e muitos são antigos; a coleta só publica o que aparecer depois de a fonte ser importada.
 
 | Finalidade | Consulta | Fonte |
 |---|---|---|
