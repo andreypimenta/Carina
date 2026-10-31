@@ -21,6 +21,10 @@ import { itemParts } from "@aihot/backend/publication/detail";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { addCorrection, listCorrections } from "../backend/correcoes.ts";
 import type { MateriaPart } from "../confianca.ts";
+import { REGISTRO_TAG, syncRegistros } from "../backend/estudos.ts";
+import { ALERTA_SOURCE, alertasSettings, collectAlertas } from "../backend/alertas.ts";
+import { ELSO_SOURCE, readElso } from "../backend/elso.ts";
+import { upsertMaterial } from "@aihot/backend/content/materials";
 
 
 const T = tag();
@@ -37,6 +41,9 @@ const materia = {
   // Text read is never taken from the model.
   textoLido: "texto-completo",
 };
+
+let elsoPage = `<div class="rounded-border"><p><a class="txt-blue" href="/a.pdf">ELSO Guidelines for Neonatal Respiratory Failure</a></p><p>Last updated: October 2020</p></div>
+<div class="rounded-border"><p><a class="txt-blue" href="/b.pdf">Adult Respiratory Failure</a></p></div>`;
 
 const stubServer = http.createServer((req, res) => {
   const chunks: Buffer[] = [];
@@ -63,9 +70,33 @@ const stubServer = http.createServer((req, res) => {
     if (url === "/epmc/PMC12345678/fullTextXML") return send(200, "text/xml", long(fixture("jats.xml")));
     if (url === "/epmc/PMC99/fullTextXML") return send(200, "text/xml", ndJats);
     if (url.startsWith("/epmc/")) return send(404, "text/plain", "not found");
+    // Crossref knows the article of the version-linking test as the published version of its preprint.
+    const crossref = /^\/crossref\/works\/(.+?)(?:\?|$)/.exec(url)?.[1];
+    if (crossref) {
+      const doi = decodeURIComponent(crossref);
+      return doi.startsWith("10.9999/publicado-") ? send(200, "application/json", JSON.stringify({ message: { relation: { "has-preprint": [{ "id-type": "doi", id: `https://doi.org/10.1101/2026.09.01.${doi.slice(18)}` }] } } })) : send(404, "text/plain", "Resource not found.");
+    }
+    if (url.startsWith("/ctgov/studies")) {
+      const ids = new URL(url, "http://x").searchParams.get("filter.ids")!.split(",");
+      return send(200, "application/json", JSON.stringify({ studies: ids.map((id) => ({ protocolSection: { identificationModule: { nctId: id }, statusModule: { overallStatus: "RECRUITING" } }, hasResults: false })) }));
+    }
+    if (url.startsWith("/openfda/device/recall.json")) return send(200, "application/json", JSON.stringify({ results: [
+      { product_res_number: `Z-1-${T}`, cfres_id: "1", res_event_number: `E1-${T}`, recalling_firm: "Medline", product_description: "DBD-CIRCUIT, VENT, INSPIRATORY, HEATED, NEO", reason_for_recall: "Leak", event_date_posted: "2026-10-20", product_code: "BTT" },
+      { product_res_number: `Z-3-${T}`, cfres_id: "3", res_event_number: `E1-${T}`, recalling_firm: "Medline", product_description: "DBD-CIRCUIT, VENT, HEATED, PED", reason_for_recall: "Leak", event_date_posted: "2026-10-20", product_code: "BTT" },
+      { product_res_number: `Z-2-${T}`, cfres_id: "2", res_event_number: `E2-${T}`, recalling_firm: "Dental Co", product_description: "Composite resin", reason_for_recall: "Color", event_date_posted: "2026-10-21", product_code: "EBF" },
+    ] }));
+    if (url.startsWith("/openfda/")) return send(404, "application/json", JSON.stringify({ error: { code: "NOT_FOUND" } }));
+    if (url.startsWith("/anvisa/pt-br/@search")) return send(200, "application/json", JSON.stringify({ items: [{ "@id": `https://www.gov.br/anvisa/pt-br/assuntos/noticias-anvisa/2026/canulas-${T}`, title: "Anvisa suspende dispositivos", effective: "2026-10-22T15:00:00+00:00" }] }));
+    if (url.startsWith("/anvisa/pt-br/assuntos/")) return send(200, "application/json", JSON.stringify({ title: "Anvisa suspende dispositivos", description: "Cânulas de uso adulto", blocks: { a: { plaintext: "Cânula de traqueostomia adulto, lotes 1 a 3." } }, blocks_layout: { items: ["a"] } }));
+    if (url === "/elso/guidelines") return send(200, "text/html", elsoPage);
     if (url.startsWith("/v1/chat/completions")) {
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { messages: Array<{ role: string; content: string }> };
-      modelInputs.push(body.messages.find((m) => m.role === "user")!.content);
+      const user = body.messages.find((m) => m.role === "user")!.content;
+      modelInputs.push(user);
+      if (user.startsWith("Órgão:")) {
+        const alerta = /NEO/.test(user) ? { relevante: true, categoria: "recolhimento", titulo: "FDA recolhe circuito respiratório neonatal da Medline", linhaFina: "Vazamento.", corpo: "A Medline recolheu o circuito." } : { relevante: false };
+        return send(200, "application/json", JSON.stringify({ id: `stub-${modelInputs.length}`, choices: [{ message: { content: JSON.stringify(alerta) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }));
+      }
       return send(200, "application/json", JSON.stringify({ id: `stub-${modelInputs.length}`, choices: [{ message: { content: JSON.stringify(materia) } }], usage: { prompt_tokens: 1, completion_tokens: 1 } }));
     }
     send(500, "text/plain", "unexpected");
@@ -81,9 +112,12 @@ before(async () => {
   Object.assign(process.env, {
     PUBMED_BASE_URL: `${base}/eutils`, UNPAYWALL_BASE_URL: `${base}/unpaywall`, EUROPE_PMC_BASE_URL: `${base}/epmc`, LITERATURA_EMAIL: "test@example.com",
     LLM_BASE_URL: `${base}/v1`, LLM_API_KEY: "test-key", LLM_MODEL: "one-model",
+    CROSSREF_BASE_URL: `${base}/crossref`, CTGOV_BASE_URL: `${base}/ctgov`, OPENFDA_BASE_URL: `${base}/openfda`, ANVISA_BASE_URL: `${base}/anvisa`,
   });
   installModules([server]);
-  for (const id of [MATERIA_SOURCE, INTEGRAL_SOURCE]) {
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at, tags)
+    VALUES ('ctgov-test', 'ClinicalTrials.gov', 'rss', 'T1', 'editorial', false, '2100-01-01', ${[REGISTRO_TAG]}) ON CONFLICT (id) DO NOTHING`;
+  for (const id of [MATERIA_SOURCE, INTEGRAL_SOURCE, ALERTA_SOURCE, ELSO_SOURCE]) {
     await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at)
       VALUES (${id}, ${id}, 'external', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
   }
@@ -334,4 +368,110 @@ test("a preprint is labelled in its public title, whatever wrote the title, and 
   await publishArticle(out.articleId!);
   const [again] = await sql<{ title: string }[]>`SELECT title FROM publications WHERE article_id = ${out.articleId!}`;
   assert.equal(again!.title, pub!.title, "labelled once");
+});
+
+test("the published article of a covered preprint is written as its next version, and each version's page lists the other", async () => {
+  const [fixed] = parsePubmedXml(fixture("pubmed.xml"));
+  // A title of its own: the fixture's is shared by the other tests' papers of the same first author.
+  const paper = { ...fixed!, title: `Airway stents in neonates with tracheomalacia ${T}`, pmcid: null, trialIds: [], versionPmids: [] };
+  const day = new Date("2026-10-30T03:00:00Z");
+  const n = String(Date.now());
+  const pre = await takePaper({ ...paper, pmid: null, doi: `10.1101/2026.09.01.${n}` }, day);
+  await publishArticle(pre.articleId!);
+  const calls = modelInputs.length;
+  const art = await takePaper({ ...paper, pmid: `v-${T}`, doi: `10.9999/publicado-${n}` }, day);
+  assert.equal(modelInputs.length, calls + 1);
+  assert.match(modelInputs.at(-1)!, /Outras versões deste estudo já publicadas pelo jornal: “Preprint – não revisado por pares: [^”]+” \(preprint, /, "the writer knows it is the next version");
+  await publishArticle(art.articleId!);
+  const parts = await itemParts([pre.articleId!, art.articleId!]);
+  const prePart = parts.get(pre.articleId!)!.literatura as MateriaPart;
+  const artPart = parts.get(art.articleId!)!.literatura as MateriaPart;
+  assert.equal(prePart.estado, "preprint");
+  assert.equal(artPart.estado, "artigo-revisado");
+  assert.deepEqual(prePart.versoes.map((v) => [v.id, v.estado]), [[art.articleId!, "artigo-revisado"]]);
+  assert.deepEqual(artPart.versoes.map((v) => [v.id, v.estado]), [[pre.articleId!, "preprint"]]);
+  const [pub] = await sql<{ title: string }[]>`SELECT title FROM publications WHERE article_id = ${art.articleId!}`;
+  assert.equal(pub!.title, materia.titulo, "a reviewed article's title carries no label");
+});
+
+test("a trial register's entry is labelled registered at once, then by ClinicalTrials.gov's status, and linked to the paper that names it", async () => {
+  const nct = `NCT${String(Date.now()).slice(-8)}`;
+  const { articleId } = await upsertMaterial({ sourceId: "ctgov-test", url: `https://clinicaltrials.gov/study/${nct}?cond=x`, title: "Balloon dilation in children", via: "fetch", publishedAt: new Date() });
+  await publishArticle(articleId);
+  const title = async () => (await sql<{ title: string }[]>`SELECT title FROM publications WHERE article_id = ${articleId}`)[0]!.title;
+  assert.equal(await title(), "Estudo registrado: Balloon dilation in children");
+  assert.equal(((await itemParts([articleId])).get(articleId)!.literatura as MateriaPart).estado, "registrado");
+
+  const out = await syncRegistros();
+  assert.ok((out.recrutando as number) >= 1);
+  assert.equal(await title(), "Estudo registrado – recrutando: Balloon dilation in children");
+  const again = await syncRegistros();
+  assert.equal(again.checked, 0, "checked once a day");
+
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const art = await takePaper({ ...paper!, title: `Balloon dilation trial results ${T}`, pmid: `t-${T}`, doi: `10.9999/trial-${T}`, pmcid: null, trialIds: [nct], versionPmids: [] }, new Date("2026-10-30T03:00:00Z"));
+  assert.match(modelInputs.at(-1)!, /Outras versões deste estudo já publicadas pelo jornal: “Estudo registrado – recrutando: Balloon dilation in children” \(recrutando, /);
+  await publishArticle(art.articleId!);
+  const part = (await itemParts([articleId])).get(articleId)!.literatura as MateriaPart;
+  assert.equal(part.confianca, null);
+  assert.deepEqual(part.versoes.map((v) => v.id), [art.articleId!]);
+});
+
+test("a second paper of a covered trial is written and listed as another publication of that trial, not as a version", async () => {
+  const nct = `NCT${String(Date.now() + 7).slice(-8)}`;
+  const [fixed] = parsePubmedXml(fixture("pubmed.xml"));
+  const day = new Date("2026-10-30T03:00:00Z");
+  const paper = { ...fixed!, pmcid: null, trialIds: [nct], versionPmids: [] };
+  const primary = await takePaper({ ...paper, title: `Nasal high flow in bronchiolitis: primary results ${T}`, pmid: `p-${T}`, doi: `10.9999/primary-${T}` }, day);
+  await publishArticle(primary.articleId!);
+  const secondary = await takePaper({ ...paper, title: `Cost of nasal high flow in bronchiolitis: secondary analysis ${T}`, pmid: `s-${T}`, doi: `10.9999/secondary-${T}` }, day);
+  assert.match(modelInputs.at(-1)!, /Outras publicações do mesmo ensaio já publicadas pelo jornal: “[^”]+” \(artigo revisado, /, "the writer knows the trial was covered");
+  assert.doesNotMatch(modelInputs.at(-1)!, /Outras versões deste estudo/);
+  await publishArticle(secondary.articleId!);
+  const parts = await itemParts([primary.articleId!, secondary.articleId!]);
+  const first = parts.get(primary.articleId!)!.literatura as MateriaPart;
+  const second = parts.get(secondary.articleId!)!.literatura as MateriaPart;
+  assert.deepEqual(second.versoes, []);
+  assert.deepEqual(second.mesmoEnsaio.map((v) => v.id), [primary.articleId!]);
+  assert.deepEqual(first.versoes, []);
+  assert.deepEqual(first.mesmoEnsaio.map((v) => v.id), [secondary.articleId!]);
+});
+
+test("regulatory alerts: an act naming no listed device is not read, one the model finds not pediatric is dropped, a relevant one is an alert labelled in its title", async () => {
+  const calls = modelInputs.length;
+  const out = await collectAlertas({ now: new Date("2026-10-25T12:00:00Z"), cfg: alertasSettings() });
+  assert.deepEqual(out.failed, []);
+  assert.equal(out["sem-dispositivo"], 1, "the dental recall never reaches the model; the neonatal circuit's product code is on the list");
+  assert.equal(out.alerta, 1);
+  assert.equal(out.irrelevante, 1, "the adult cannulas are read and dropped");
+  assert.equal(modelInputs.length, calls + 2);
+  assert.match(modelInputs.find((m) => m.includes(`E1-${T}`))!, /Produtos \(2\):[\s\S]*HEATED, NEO[\s\S]*HEATED, PED/, "one recall event with its products, not an alert per model");
+  const [row] = await sql<{ article_id: string }[]>`SELECT article_id FROM literatura_alertas WHERE key = ${`fda-recall:E1-${T}`}`;
+  const [article] = await sql<{ url: string; body_html: string; source_id: string }[]>`SELECT url, body_html, source_id FROM articles WHERE id = ${row!.article_id}`;
+  assert.equal(article!.source_id, ALERTA_SOURCE);
+  assert.equal(article!.url, "https://www.accessdata.fda.gov/scripts/cdrh/cfdocs/cfRES/res.cfm?id=1");
+  assert.match(article!.body_html, /não evidência de eficácia/);
+  await publishArticle(row!.article_id);
+  const [pub] = await sql<{ title: string }[]>`SELECT title FROM publications WHERE article_id = ${row!.article_id}`;
+  assert.equal(pub!.title, "Alerta regulatório (FDA) – recolhimento: FDA recolhe circuito respiratório neonatal da Medline");
+  const second = await collectAlertas({ now: new Date("2026-10-25T12:00:00Z"), cfg: alertasSettings() });
+  assert.equal(modelInputs.length, calls + 2, "each act is read once");
+  assert.equal(second.alerta, undefined);
+});
+
+test("ELSO: the guidelines on the page at the first read are the baseline; a new pediatric one becomes a notice with its dates", async () => {
+  const cfg = { ...alertasSettings(), elso: { url: `${process.env.CTGOV_BASE_URL!.replace(/\/ctgov$/, "")}/elso/guidelines`, pediatric: "pediatric|paediatric|neonat|child|infant" } };
+  await sql`DELETE FROM literatura_alertas WHERE key LIKE 'elso:%'`;
+  const calls = modelInputs.length;
+  const first = await readElso({ cfg, now: new Date("2026-10-30T12:00:00Z") });
+  assert.deepEqual(first, { guidelines: 2, pediatric: 1, written: 0, baseline: true });
+  elsoPage += `<div class="rounded-border"><p><a class="txt-blue" href="/c.pdf">Pediatric ECPR ${T}</a></p><p>Last updated: June 2026</p></div>`;
+  const second = await readElso({ cfg, now: new Date("2026-10-31T12:00:00Z") });
+  assert.equal(second.written, 1);
+  assert.equal(modelInputs.length, calls, "a notice needs no model");
+  const [row] = await sql<{ article_id: string }[]>`SELECT article_id FROM literatura_alertas WHERE key = ${`elso:Pediatric ECPR ${T}|2026-06`}`;
+  const c = ((await itemParts([row!.article_id])).get(row!.article_id)!.literatura as MateriaPart).confianca!;
+  assert.equal(c.feitura, "aviso");
+  assert.deepEqual(c.datas, { publicado: null, revisado: "2026-06", conferido: "2026-10-31" });
+  assert.equal((await readElso({ cfg })).written, 0);
 });

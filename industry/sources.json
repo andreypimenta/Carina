@@ -35,6 +35,38 @@
       "syndicate_fulltext": true
     },
     {
+      "id": "alertas-regulatorios",
+      "name": "Alertas regulatórios · FDA e Anvisa (dispositivos de via aérea e respiratórios)",
+      "kind": "external",
+      "config": {},
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "regulador",
+        "alerta regulatório"
+      ],
+      "site_fulltext": true,
+      "syndicate_fulltext": true
+    },
+    {
+      "id": "elso-diretrizes",
+      "name": "ELSO · diretrizes de ECMO pediátrica e neonatal",
+      "kind": "external",
+      "config": {},
+      "tier": "T1",
+      "owner_entity_id": null,
+      "participation_mode": "editorial",
+      "interval_minutes": 1440,
+      "tags": [
+        "sociedade",
+        "diretriz"
+      ],
+      "site_fulltext": true,
+      "syndicate_fulltext": true
+    },
+    {
       "id": "instagram-hashtags",
       "name": "Instagram · hashtags de via aérea",
       "kind": "external",

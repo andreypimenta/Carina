@@ -1,0 +1,20 @@
+{
+  "$comment": "Trilha de alertas regulatórios do módulo literatura (modules/literatura/backend/alertas.ts) e diretrizes da ELSO (backend/elso.ts). Só fontes oficiais abertas: a API aberta da FDA (openFDA: recolhimentos de dispositivos e autorizações 510(k)) e a busca aberta de notícias da Anvisa (gov.br). Não entram, porque não podem ser lidas abertamente por um servidor: os feeds RSS da FDA (inclusive as comunicações de segurança de dispositivos, bloqueados por detecção de robôs), a consulta de alertas de tecnovigilância da Anvisa (403 e só JavaScript) e a EMA, que não publica alertas de dispositivos. Por isso, comunicações de segurança e mudanças de rotulagem só chegam quando aparecem nos registros da openFDA ou nas notícias da Anvisa. productCodes são códigos de produto da FDA (BTO cânula de traqueostomia, BTR tubo traqueal, NOU ventilador domiciliar, CBK ventilador, EOQ broncoscópio, BZE e BZO aquecedor e circuito respiratório, BTT e BYE circuitos e reanimadores, DWF cânulas e tubos de circulação extracorpórea, DTZ oxigenador, KFM bomba de sangue); fdaTerms são termos buscados também na descrição do produto; devicePatterns é a lista de dispositivos que um ato precisa citar para ser lido pelo modelo (expressões regulares, sem diferenciar maiúsculas). days é a janela de cada execução; perRun limita quantos atos o modelo lê por execução.",
+  "days": 21,
+  "perRun": 20,
+  "productCodes": ["BTO", "BTR", "NOU", "CBK", "EOQ", "BZE", "BZO", "BTT", "BYE", "DWF", "DTZ", "KFM"],
+  "fdaTerms": ["tracheostomy", "endotracheal", "bronchoscope", "ventilator", "\"breathing circuit\"", "suction", "oxygenator", "extracorporeal", "ECMO", "choking"],
+  "anvisaSubject": "dispositivos médicos",
+  "devicePatterns": [
+    "traque[oó]stom", "tracheost", "c[aâ]nula", "cannula", "tubo (endo)?traqueal", "endotracheal", "tracheal tube",
+    "broncosc[oó]pi", "bronchoscop", "ventilador", "ventilator", "ventila[cç][aã]o (mec[aâ]nica|domiciliar|n[aã]o invasiva)", "home ventilation",
+    "circuito respirat[oó]rio", "breathing (circuit|system)", "umidificador", "humidifier", "reanimador", "resuscitat",
+    "aspira[cç][aã]o", "aspirador", "suction", "aspirator",
+    "ecmo", "oxigenador", "oxygenator", "extracorp[oó]re", "extracorporeal",
+    "engasgo", "desengasg", "choking", "obstru[cç][aã]o (de|da) via a[eé]rea", "airway obstruction", "airway clearance"
+  ],
+  "elso": {
+    "url": "https://www.elso.org/ecmo-resources/elso-ecmo-guidelines.aspx",
+    "pediatric": "pediatric|paediatric|neonat|child|infant"
+  }
+}

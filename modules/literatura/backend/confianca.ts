@@ -1,34 +1,51 @@
 // Each new matéria's trust record (../confianca.ts), written with the matéria in its transaction, and the
-// matéria's part of its page and of the weekly e-mail (ServerModule.items): that record and the corrections
-// the editor added (backend/correcoes.ts). A preprint's public title starts with its label (ServerModule.titleLabel).
+// article's part of its page and of the weekly e-mail (ServerModule.items): that record, where its study stands
+// and the study's other versions and other papers of its trial (backend/estudos.ts), and the corrections the editor added (backend/correcoes.ts).
+// A preprint's or a registry entry's public title starts with its stage's label (ServerModule.titleLabel).
 import { sql, type Db } from "@aihot/backend/db";
-import { DESENHO_LABEL, IMPLICACAO_LABEL, minutoCompacto, PREPRINT_LABEL, TEXTO_LIDO_LABEL, type Confianca, type Correcao, type MateriaPart } from "../confianca.ts";
+import { alertaTitleLabel, DESENHO_LABEL, estadoTitleLabel, IMPLICACAO_LABEL, minutoCompacto, PREPRINT_LABEL, TEXTO_LIDO_LABEL, type Confianca, type Correcao, type Estado, type MateriaPart } from "../confianca.ts";
+import { estudosOf, REGISTRO_TAG } from "./estudos.ts";
 
 export async function saveConfianca(tx: Db, articleId: string, data: Confianca): Promise<void> {
   await tx`INSERT INTO literatura_confianca (article_id, data) VALUES (${articleId}, ${tx.json(data as never)})
     ON CONFLICT (article_id) DO UPDATE SET data = EXCLUDED.data`;
 }
 
-/** The parts of these articles: those with a trust record or a correction. */
+/** The parts of these articles: those with a trust record, a study's stage or a correction. */
 export async function materiaParts(ids: readonly string[]): Promise<Map<string, MateriaPart>> {
   const out = new Map<string, MateriaPart>();
   const list = [...ids];
+  const empty = (): MateriaPart => ({ confianca: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [] });
   const records = await sql<{ article_id: string; data: Confianca }[]>`SELECT article_id, data FROM literatura_confianca WHERE article_id = ANY(${list})`;
-  for (const r of records) out.set(r.article_id, { confianca: r.data, correcoes: [] });
+  for (const r of records) out.set(r.article_id, { ...empty(), confianca: r.data, estado: r.data.preprint ? "preprint" : null });
+  for (const [id, e] of await estudosOf(list)) {
+    const part = out.get(id) ?? empty();
+    out.set(id, { ...part, estado: e.estado ?? part.estado, versoes: e.versoes, mesmoEnsaio: e.mesmoEnsaio });
+  }
   const fixes = await sql<{ id: string; article_id: string; corrected_on: string; what: string; why: string }[]>`
     SELECT id, article_id, to_char(corrected_on, 'YYYY-MM-DD') AS corrected_on, what, why FROM literatura_correcoes
     WHERE article_id = ANY(${list}) ORDER BY corrected_on, id`;
   for (const f of fixes) {
-    const part = out.get(f.article_id) ?? { confianca: null, correcoes: [] };
+    const part = out.get(f.article_id) ?? empty();
     part.correcoes.push({ id: Number(f.id), data: f.corrected_on, oQueMudou: f.what, porque: f.why } satisfies Correcao);
     out.set(f.article_id, part);
   }
   return out;
 }
 
+/**
+ * A regulatory act's label, else the stage's: the study's recorded stage, else a preprint's, else a registry
+ * source's item is registered.
+ */
 export async function titleLabel(articleId: string, tx: Db): Promise<string | null> {
-  const [row] = await tx<{ preprint: boolean | null }[]>`SELECT (data->>'preprint')::boolean AS preprint FROM literatura_confianca WHERE article_id = ${articleId}`;
-  return row?.preprint ? PREPRINT_LABEL : null;
+  const [row] = await tx<{ estado: Estado | null; preprint: boolean | null; registro: boolean; alerta: Confianca["alerta"] }[]>`
+    SELECT e.estado, (c.data->>'preprint')::boolean AS preprint, ${REGISTRO_TAG} = ANY(s.tags) AS registro, c.data->'alerta' AS alerta
+    FROM articles a JOIN sources s ON s.id = a.source_id
+    LEFT JOIN literatura_estudos e ON e.article_id = a.id LEFT JOIN literatura_confianca c ON c.article_id = a.id
+    WHERE a.id = ${articleId}`;
+  if (!row) return null;
+  if (row.alerta) return alertaTitleLabel(row.alerta);
+  return estadoTitleLabel(row.estado ?? (row.preprint ? "preprint" : row.registro ? "registrado" : null));
 }
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");

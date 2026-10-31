@@ -104,11 +104,11 @@ export function parseCrossref(json: string): SumarioItem[] {
   }));
 }
 
-const CROSSREF = () => (process.env.CROSSREF_BASE_URL ?? "https://api.crossref.org").replace(/\/$/, "");
+export const CROSSREF = () => (process.env.CROSSREF_BASE_URL ?? "https://api.crossref.org").replace(/\/$/, "");
 
-/** Crossref answers 429 to reads in quick succession from one address: one listing a second. */
+/** Crossref answers 429 to reads in quick succession from one address: one read a second (here and backend/estudos.ts). */
 let nextCrossref = 0;
-async function crossrefTurn() {
+export async function crossrefTurn() {
   const wait = nextCrossref - Date.now();
   nextCrossref = Math.max(Date.now(), nextCrossref) + 1000;
   if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait));

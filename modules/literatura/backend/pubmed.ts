@@ -25,6 +25,12 @@ export interface Paper {
   publishedOn?: string | null;
   /** The paper's page, for a table-of-contents paper with neither PMID nor DOI. */
   url?: string;
+  /** Trial registrations its record's data banks name (not its abstract): "NCT01234567", "ISRCTN12345678", "RBR-7x8y9z". */
+  trialIds?: string[];
+  /** PMIDs of the other versions of the same paper PubMed links (a preprint's "update in", an article's "update of"). */
+  versionPmids?: string[];
+  /** The authors' declaration of conflicts of interest as the record gives it. */
+  coiStatement?: string | null;
 }
 
 /** A paper as PubMed records it. */
@@ -157,6 +163,12 @@ export function parsePubmedXml(xml: string): PubmedPaper[] {
     const pubDate = article.find("Journal > JournalIssue > PubDate").first();
     const pubYear = pubDate.children("Year").text().trim() || (pubDate.children("MedlineDate").text().match(/\d{4}/)?.[0] ?? "");
     const publishedOn = pubmedDate(article.children("ArticleDate[DateType='Electronic']").first()) ?? pubmedDate(pubDate) ?? (pubYear || null);
+    const versionPmids: string[] = [];
+    citation.find("CommentsCorrectionsList > CommentsCorrections[RefType='UpdateIn'], CommentsCorrectionsList > CommentsCorrections[RefType='UpdateOf']").each((_j, c) => {
+      const id = plain($, $(c).children("PMID"));
+      if (/^\d+$/.test(id) && id !== pmid) versionPmids.push(id);
+    });
+    const banked = article.find("DataBankList > DataBank > AccessionNumberList > AccessionNumber").toArray().map((n: Element) => plain($, $(n)));
     papers.push({
       pmid,
       doi: doi ? doi.toLowerCase() : null,
@@ -171,9 +183,20 @@ export function parsePubmedXml(xml: string): PubmedPaper[] {
       languages: article.children("Language").toArray().map((t: Element) => plain($, $(t))),
       enteredOn: /^\d{4}-\d{2}-\d{2}$/.test(enteredOn ?? "") ? enteredOn : null,
       publishedOn,
+      trialIds: trialIdsIn(banked.join(" ")),
+      versionPmids: [...new Set(versionPmids)],
+      coiStatement: plain($, citation.children("CoiStatement").first()) || null,
     });
   });
   return papers;
+}
+
+/** Trial registration numbers of ClinicalTrials.gov, ISRCTN and ReBEC. */
+const TRIAL_ID = /\b(NCT\d{8}|ISRCTN\d{8}|RBR-[0-9a-z]{6,8})\b/gi;
+
+/** The registrations a text names, as each register writes them, once. */
+export function trialIdsIn(text: string): string[] {
+  return [...new Set([...text.matchAll(TRIAL_ID)].map((m) => (/^rbr-/i.test(m[1]!) ? `RBR-${m[1]!.slice(4).toLowerCase()}` : m[1]!.toUpperCase())))];
 }
 
 /** "Silva A, Souza B, Costa C, et al." */

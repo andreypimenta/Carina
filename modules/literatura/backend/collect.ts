@@ -24,6 +24,7 @@ import { papersOfPost, readPosts, type Pista, type Post } from "./pistas.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
 import { confiancaDaMateria, confiancaDaTraducao, creditBlock, preprintNote, referenceBlock, renderMateria, readTrust, textoLido, writeMateria, type XCredit } from "./materia.ts";
 import { saveConfianca } from "./confianca.ts";
+import { estudoDoPaper, saveEstudo } from "./estudos.ts";
 
 export const INTEGRAL_SOURCE = "literatura-integral";
 export const MATERIA_SOURCE = "literatura-materia";
@@ -122,7 +123,9 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
 
   if (sources.integral && isFull && republishable(full!.license)) {
     if (!config.modelCallsEnabled) return { pmid: keyOf(paper), status: "aguardando-modelo" };
-    const { trust, receiptId } = await readTrust(paper, full!.text);
+    // The study it belongs to: a later version (the article of a preprint, a registered trial's paper) is written as such.
+    const estudo = await estudoDoPaper(paper);
+    const { trust, receiptId } = await readTrust(paper, full!.text, estudo.anteriores);
     const html = sanitizeBody(integralBody(paper, full!, access, pmcid!) + credited, url);
     const articleId = await sql.begin(async (tx) => {
       const res = await upsertMaterial({
@@ -132,6 +135,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
       }, tx);
       await completeReceipt(tx, receiptId);
       await saveConfianca(tx, res.articleId, confiancaDaTraducao(trust, paper, now));
+      await saveEstudo(tx, res.articleId, paper, estudo);
       if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });
       return res.articleId;
     });
@@ -156,7 +160,8 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   const basis = fullText ? "full" : "abstract";
   const from = fullText ? (isFull ? "pmc" : "copy") : null;
   if (basis === "abstract" && !paper.abstract.length) return record(paper, "sem-texto");
-  const { materia, receiptId } = await writeMateria(paper, fullText);
+  const estudo = await estudoDoPaper(paper);
+  const { materia, receiptId } = await writeMateria(paper, fullText, estudo.anteriores);
   const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null, basis) + credited, url);
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
@@ -166,6 +171,7 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
     }, tx);
     await completeReceipt(tx, receiptId);
     await saveConfianca(tx, res.articleId, confiancaDaMateria(materia, paper, textoLido(from, access), now));
+    await saveEstudo(tx, res.articleId, paper, estudo);
     await tx`INSERT INTO literatura_papers (pmid, doi, status, article_id) VALUES (${keyOf(paper)}, ${paper.doi}, ${`materia-${basis}`}, ${res.articleId})
       ON CONFLICT (pmid) DO UPDATE SET status = EXCLUDED.status, doi = EXCLUDED.doi, article_id = EXCLUDED.article_id, updated_at = now()`;
     if (res.created || res.revised || res.processingNeeded) await queueProcessing(res.articleId, { db: tx });
