@@ -276,7 +276,8 @@ test("a translation keeps its trust record when the model answers only the trust
   Object.assign(materia, { titulo: "", lide: "", resultados: null });
   try {
     const calls = modelInputs.length;
-    const out = await takePaper({ ...paper!, pmid: `trust-${T}`, doi: `10.9999/trust-${T}`, pmcid: "PMC12345678" });
+    // Its own title, so the prompt differs from the first run's translation of this paper and the receipt is not reused.
+    const out = await takePaper({ ...paper!, title: `${paper!.title} (${T})`, pmid: `trust-${T}`, doi: `10.9999/trust-${T}`, pmcid: "PMC12345678" });
     assert.equal(out.status, "integral");
     assert.equal(modelInputs.length, calls + 1);
     const c = ((await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart).confianca!;
