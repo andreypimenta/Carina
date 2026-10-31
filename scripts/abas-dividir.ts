@@ -3,7 +3,8 @@
 // "Via aérea pediátrica" (via-aerea), and "Otorrinolaringologia pediátrica" (otorrino) was added.
 // - Items in cirurgia that an older structure prompt put there, or that took it from their tags, are sorted
 //   again between the two sections the old one split into: the first tag of Cirurgia torácica or Via aérea
-//   decides, cirurgia with none; they never go to Pneumologia or Otorrino.
+//   decides (the retired tag "Via aérea adulto", which old items carry, counts as Via aérea), cirurgia with none;
+//   they never go to Pneumologia or Otorrino.
 //   The latest analysis takes the section (also one that had none and stays in cirurgia, so republishing never
 //   sorts it by its tags into another section) and the item is published again without calling models; one
 //   transaction per item, safe to stop and run again. Issues already out keep the sections they were published with.
@@ -24,8 +25,8 @@ import { publishArticleTx } from "@aihot/backend/publication/publish";
 import { SERVER_MODULES } from "@aihot/site/modules/server";
 
 const { values } = parseArgs({ options: { apply: { type: "boolean", default: false } } });
-const split = AREAS.filter((a) => a.key === "cirurgia" || a.key === "via-aerea");
-const splitOf = (tags: string[]) => tags.flatMap((t) => split.filter((a) => (a.tags as readonly string[]).includes(t)))[0]?.key ?? "cirurgia";
+const split = AREAS.filter((a) => a.key === "cirurgia" || a.key === "via-aerea").map((a) => ({ key: a.key, tags: a.key === "via-aerea" ? [...a.tags, "Via aérea adulto"] : [...a.tags] }));
+const splitOf = (tags: string[]) => tags.flatMap((t) => split.filter((a) => a.tags.includes(t)))[0]?.key ?? "cirurgia";
 
 const rows = await sql<{ article_id: string; tags: string[]; analysis_id: number | null; area: string | null; current: boolean; edited: boolean; public: boolean }[]>`
   SELECT p.article_id, p.tags, a.id AS analysis_id, a.area, coalesce(a.prompt_version LIKE ${`%${PROMPT_VERSIONS.structure}%`}, false) AS current,
