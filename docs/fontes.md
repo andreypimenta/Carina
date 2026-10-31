@@ -30,7 +30,7 @@ No fim da matéria, a linha **Como esta matéria foi feita** diz o que a IA fez 
 - `NCBI_API_KEY` (opcional, gratuita): libera 10 requisições por segundo no PubMed.
 - `MATERIA_MODEL` (opcional): modelo da etapa que escreve as matérias; por padrão, o mesmo `LLM_MODEL`. Também pode ser trocado no Painel → Modelos.
 - `industry/literatura.json`: as buscas (`queries`, na sintaxe do PubMed), quantos dias para trás (`days`), quantos artigos novos por execução (`perRun`) e os idiomas aceitos (`languages`). Para testar uma busca, cole o `term` em pubmed.ncbi.nlm.nih.gov.
-- `industry/revistas.json`: as revistas vigiadas e o filtro de tema (veja [Revistas de cirurgia torácica vigiadas](#revistas-de-cirurgia-torácica-vigiadas) e [Revistas de pediatria vigiadas](#revistas-de-pediatria-vigiadas)).
+- `industry/revistas.json`: as revistas vigiadas e o filtro de tema (veja [Revistas de cirurgia torácica vigiadas](#revistas-de-cirurgia-torácica-vigiadas), [Revistas de pediatria vigiadas](#revistas-de-pediatria-vigiadas) e [Revistas de via aérea, otorrinolaringologia, pneumologia e terapia intensiva vigiadas](#revistas-de-via-aérea-otorrinolaringologia-pneumologia-e-terapia-intensiva-vigiadas)).
 - `industry/pistas.json`: as notícias dos centros pediátricos, lidas só para achar o artigo original (veja [Pistas: notícias dos centros pediátricos](#pistas-notícias-dos-centros-pediátricos)).
 
 Cada artigo tratado fica registrado na tabela `literatura_papers` (PMID, DOI, destino e artigo criado), e por isso não é escrito duas vezes. Se um serviço falha (PubMed, Unpaywall, Europe PMC ou o modelo), o artigo não é escrito com menos informação: ele é tentado de novo nas execuções seguintes, até 3 vezes, e depois fica marcado como `falhou`.
@@ -117,6 +117,39 @@ Em 31/10/2026 o dono recebeu um relatório sobre as fontes do jornal e pediu que
 | JAMA Otolaryngology–Head & Neck Surgery | `JAMA Otolaryngol Head Neck Surg` | Crossref (ISSN 2168-6181) | jamanetwork.com responde 403 ao coletor. |
 
 Volume medido em 31/10/2026 (busca do PubMed por data de entrada, últimos 42 dias, contra as 51 buscas de `industry/literatura.json`): as nove revistas registraram 406 artigos, 85 passaram no filtro, e 49 deles não vinham de nenhuma outra busca. São cerca de 8 artigos novos por semana, cada um com uma chamada ao modelo, quase todos de pneumologia pediátrica (fibrose cística, asma, bronquiolite e VSR, discinesia ciliar, ventilação domiciliar, apneia do sono), que as buscas por tema, feitas para a via aérea e a cirurgia, não traziam. Também passam alguns artigos de anestesia ou otorrinolaringologia que só citam a respiração (rinossinusite, tireoidectomia); a pré-triagem os descarta. A leitura dos sumários em 31/10/2026 (últimos 7 dias) achou 21 artigos no filtro, a maioria na Pediatric Anesthesia e na Laryngoscope.
+
+### Revistas de via aérea, otorrinolaringologia, pneumologia e terapia intensiva vigiadas
+
+Em 31/10/2026 o dono mandou um relatório de pesquisa consolidado e pediu que entrasse o que faltava. O apêndice do relatório lista as revistas ligadas à via aérea; as 18 abaixo, que publicam sobre a criança, entraram em `industry/revistas.json`, com o mesmo filtro de idade e tema, a mesma busca no PubMed por `[ta]` (dentro de `revistas-vigiadas`), o mesmo sumário aberto e a mesma junção pelo DOI e pelo PMID das outras revistas vigiadas. O jornal cobre só a criança: das revistas que publicam sobretudo sobre adultos (AORL, Respiratory Care, AnnalsATS, AJRCCM, CHEST, Lancet Respiratory Medicine, JBIP) só entra o que tem palavra de idade. Das revistas de otorrinolaringologia entra a otorrinolaringologia pediátrica pelo filtro comum, sem lista própria.
+
+- **Lista de tema própria.** Do Journal of Pediatric Nursing, que só publica sobre crianças, entram apenas os artigos de via aérea e traqueostomia. Por isso a revista tem `tema` próprio em `industry/revistas.json` (traqueia, via aérea, laringe, subglote, estridor, intubação, extubação, decanulação), que substitui a lista de tema do filtro: a asma e a doença respiratória em geral, que o filtro comum aceita, ficam de fora dessa revista. Na busca do PubMed, a revista forma uma cláusula à parte, com o bloco de idade e a lista dela.
+- **Busca longa.** Com estas revistas, a busca `revistas-vigiadas` ficou longa demais para ir no endereço (o PubMed respondia 414), e por isso todas as buscas do PubMed passaram a mandar o termo no corpo de um POST, como o NCBI recomenda para buscas longas.
+- **Mesma revista, nomes diferentes.** O *Journal of Bronchology* é o nome antigo do *Journal of Bronchology & Interventional Pulmonology*, e os títulos anteriores da *International Archives of Otorhinolaryngology* (*Arquivos Internacionais de Otorrinolaringologia*) são a mesma revista: cada uma entra uma vez, pelo nome e pelo ISSN atuais.
+
+| Revista | PubMed (`nlm`) | Sumário | Observação |
+|---|---|---|---|
+| Pediatric Surgery International | `Pediatr Surg Int` | Crossref (ISSN 1437-9813) | O endereço do feed da Springer (link.springer.com/search.rss) devolve uma página de verificação de robô, que o coletor não contorna. O Crossref só lista pelo ISSN eletrônico; traz resumo de cerca de 1 em cada 5 artigos. |
+| Journal of Pediatric Surgery Case Reports | não | Crossref (ISSN 2213-5766) | O NLM tem a abreviatura (`J Pediatr Surg Case Rep`), mas só 3 registros desde 2024 e nenhum em 2026; a revista entra como as que o PubMed não indexa. A Elsevier não deposita o resumo no Crossref: o filtro lê só o título, e o artigo é escrito a partir da cópia aberta que o Unpaywall indicar (a revista é de acesso aberto). |
+| Tracheostomy: Official Journal of the Global Tracheostomy Collaborative | `Tracheostomy` | Crossref (ISSN 2997-2531) | Revista do GTC (Scholastica), de 2024; 11 registros no PubMed em 2026. |
+| Journal of Bronchology & Interventional Pulmonology (JBIP) | `J Bronchology Interv Pulmonol` | Crossref (ISSN 1944-6586) | O Crossref traz o resumo. |
+| Respiratory Endoscopy | não | feed da editora (WebAPI do J-STAGE) | Revista da sociedade japonesa de endoscopia respiratória (eISSN 2758-3813), fora do PubMed; o J-STAGE lista os artigos do ano com DOI, sem resumo, como no ATCS. |
+| Annals of Otology, Rhinology & Laryngology (AORL) | `Ann Otol Rhinol Laryngol` | feed da editora (SAGE) | O feed traz DOI e resumo. |
+| Laryngoscope Investigative Otolaryngology | `Laryngoscope Investig Otolaryngol` | Crossref (ISSN 2378-8038) | O feed da Wiley traz só o número corrente (5 itens); a revista publica em fluxo contínuo, e o Crossref traz quase todos os artigos com resumo. |
+| The Journal of Laryngology & Otology | `J Laryngol Otol` | Crossref (ISSN 0022-2151) |  |
+| Brazilian Journal of Otorhinolaryngology | `Braz J Otorhinolaryngol` | Crossref (ISSN 1808-8694) | Elsevier: sem resumo no Crossref, o artigo espera pela busca do PubMed. |
+| International Archives of Otorhinolaryngology | `Int Arch Otorhinolaryngol` | Crossref (ISSN 1809-9777) | Thieme; o Crossref traz o resumo. |
+| Airway | não | Crossref (ISSN 2665-9425) | Revista da AIDAA (Wolters Kluwer–Medknow), fora do PubMed. O Crossref recebe os artigos em lotes (o último, em 04/09/2026) e traz o resumo de cerca de 3 em cada 4. |
+| Respiratory Care | `Respir Care` | Crossref (ISSN 1943-3654) |  |
+| Annals of the American Thoracic Society (AnnalsATS) | `Ann Am Thorac Soc` | Crossref (ISSN 2325-6621) | As revistas da ATS passaram à Oxford (prefixo 10.1093); o Crossref só lista pelo ISSN eletrônico. |
+| American Journal of Respiratory and Critical Care Medicine (AJRCCM) | `Am J Respir Crit Care Med` | Crossref (ISSN 1535-4970) | Pelo ISSN eletrônico o Crossref lista mais artigos do que pelo impresso. |
+| CHEST | `Chest` | Crossref (ISSN 0012-3692) | Elsevier: sem resumo no Crossref. |
+| The Lancet Respiratory Medicine | `Lancet Respir Med` | Crossref (ISSN 2213-2600) | Idem CHEST. |
+| Pediatric Critical Care Medicine | `Pediatr Crit Care Med` | Crossref (ISSN 1529-7535) |  |
+| Journal of Pediatric Nursing | `J Pediatr Nurs` | Crossref (ISSN 0882-5963) | Só via aérea e traqueostomia (lista de tema própria). Elsevier: sem resumo no Crossref. |
+
+Nenhuma das 18 ficou de fora: todas têm busca no PubMed, sumário aberto, ou os dois.
+
+Volume medido em 31/10/2026 (busca do PubMed por data de entrada, de 19/09 a 31/10/2026): as 18 revistas registraram 42 artigos no filtro (a busca `revistas-vigiadas` passou de 94 para 136), e 28 deles não vinham de nenhuma outra busca, nem de `industry/literatura.json` nem das outras revistas vigiadas. São cerca de 5 artigos novos por semana, cada um com uma chamada ao modelo. A Pediatric Surgery International (11: malformação pulmonar, hérnia diafragmática, estenose de esôfago) e a Pediatric Critical Care Medicine (6: ventilação não invasiva, ECMO, pneumonia associada à ventilação) dão a maior parte. Passam também alguns artigos que só citam a idade ou a respiração (câncer de pulmão em adolescentes e adultos jovens, poluição e tuberculose, a vacina de HPV), que a pré-triagem descarta. Da Journal of Pediatric Nursing, com a lista própria, passaram 2 (a manobra de Heimlich ensinada a crianças e um artigo de recém-nascidos), contra os 74 artigos da revista no período. A leitura dos sumários em 31/10/2026 (últimos 7 dias) achou 2 artigos no filtro (estenose cáustica de esôfago na Pediatric Surgery International e válvulas endobrônquicas em crianças no JBIP). O Crossref respondeu 429 a algumas listas nessa leitura (JLO, AJRCCM, CHEST); uma lista que falha é lida de novo na execução seguinte, como as outras.
 
 ### Consensos e diretrizes das sociedades e dos grupos pediátricos
 

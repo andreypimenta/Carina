@@ -83,6 +83,14 @@ docker compose run --rm setup && docker compose up -d
 
 后台登录和飞书登录的 cookie 是否带 Secure，改为按请求实际的协议判断（读反向代理转来的 `X-Forwarded-Proto`），不再看 `SITE_URL` 是不是 https。自带的 Caddy 默认会转发这个头，不用改；自己用 Nginx 或 CDN 反向代理的站，升级前在代理配置里补上 `proxy_set_header X-Forwarded-Proto $scheme;`（CDN 按其文档转发同名请求头），否则 HTTPS 下仍能登录，但 cookie 会丢掉 Secure。无需数据库迁移。
 
+#### 气道、耳鼻喉、呼吸与重症期刊（2026 年 10 月 31 日）
+
+没有新的环境变量或数据库迁移。
+
+- **新增期刊**：`industry/revistas.json` 加了 18 本期刊（Pediatric Surgery International、Journal of Pediatric Surgery Case Reports、Tracheostomy、JBIP、Respiratory Endoscopy、AORL、Laryngoscope Investigative Otolaryngology、Journal of Laryngology & Otology、Brazilian Journal of Otorhinolaryngology、International Archives of Otorhinolaryngology、Airway、Respiratory Care、AnnalsATS、AJRCCM、CHEST、Lancet Respiratory Medicine、Pediatric Critical Care Medicine、Journal of Pediatric Nursing），同样经主题筛选、PubMed 和开放目录读取、按 DOI 和 PMID 去重。按 2026 年 10 月的量，每周多约 5 篇站内报道，每篇一次模型调用。
+- **期刊自己的主题词**：期刊可以写 `tema`，代替筛选里的主题词表；Journal of Pediatric Nursing 用它只收气道和气管切开。
+- **PubMed 检索改用 POST**：被关注期刊的检索太长，放在地址里 PubMed 返回 414，所以所有 esearch 请求改为 POST，检索式放在请求体里。用 `PUBMED_BASE_URL` 接了自己的 PubMed 代理的站，代理要能转发 POST 请求。
+
 #### 儿科期刊、学会共识与医院新闻线索（2026 年 10 月 31 日）
 
 没有新的环境变量。有一个数据库迁移 `modules/literatura/migrations/0067_literatura_pistas_sources_off.sql`，见下文“医院新闻只作线索”。

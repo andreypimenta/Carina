@@ -39,7 +39,7 @@ const stubServer = http.createServer((req, res) => {
     const url = new URL(req.url ?? "/", "http://stub");
     const send = (status: number, type: string, body: string) => { res.writeHead(status, { "content-type": type }); res.end(body); };
     if (url.pathname === "/eutils/esearch.fcgi") {
-      const term = url.searchParams.get("term")!;
+      const term = new URLSearchParams(Buffer.concat(chunks).toString()).get("term")!;
       searches.push(term);
       return send(200, "application/json", JSON.stringify({ esearchresult: { idlist: term === `"${DOI}"[aid]` ? [PMID] : term === `"10.5555/sumario"[aid]` ? [INDEXED_LATER] : [] } }));
     }
