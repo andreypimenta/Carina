@@ -25,7 +25,7 @@ try {
   const paper = await findPaper(positionals[0]!);
   const reason = values.reason?.trim() || defaultReason(paper.pmid);
   console.log(`PMID ${paper.pmid}  ${paper.doi ?? "sem DOI"}  entrou no PubMed em ${paper.enteredOn ?? "?"}  ${paper.title}`);
-  const before = await earlier(paper.pmid);
+  const before = await earlier(paper);
   if (!values.apply) {
     console.log(before
       ? `already taken (${before.status}${before.articleId ? `, item ${before.articleId}` : ""}): not written again${values.select && before.articleId ? "; would select it" : ""}`

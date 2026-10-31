@@ -22,14 +22,78 @@ Para o leitor, a fonte de cada artigo é a revista que o publicou (o título do 
 - `NCBI_API_KEY` (opcional, gratuita): libera 10 requisições por segundo no PubMed.
 - `MATERIA_MODEL` (opcional): modelo da etapa que escreve as matérias; por padrão, o mesmo `LLM_MODEL`. Também pode ser trocado no Painel → Modelos.
 - `industry/literatura.json`: as buscas (`queries`, na sintaxe do PubMed), quantos dias para trás (`days`), quantos artigos novos por execução (`perRun`) e os idiomas aceitos (`languages`). Para testar uma busca, cole o `term` em pubmed.ncbi.nlm.nih.gov.
+- `industry/revistas.json`: as revistas vigiadas e o filtro de tema (veja [Revistas de cirurgia torácica vigiadas](#revistas-de-cirurgia-torácica-vigiadas)).
 
-Cada artigo tratado fica registrado na tabela `literatura_papers` (PMID, destino e artigo criado), e por isso não é escrito duas vezes. Se um serviço falha (PubMed, Unpaywall, Europe PMC ou o modelo), o artigo não é escrito com menos informação: ele é tentado de novo nas execuções seguintes, até 3 vezes, e depois fica marcado como `falhou`.
+Cada artigo tratado fica registrado na tabela `literatura_papers` (PMID, DOI, destino e artigo criado), e por isso não é escrito duas vezes. Se um serviço falha (PubMed, Unpaywall, Europe PMC ou o modelo), o artigo não é escrito com menos informação: ele é tentado de novo nas execuções seguintes, até 3 vezes, e depois fica marcado como `falhou`.
 
 A republicação vale pela URL de licença que o próprio artigo declara no PMC, nunca só pela frase de licença. Figuras cuja legenda indica material de terceiros ("reprinted with permission", "©") são omitidas, e o crédito avisa. Quando o Unpaywall diz que o artigo é aberto com licença que permite republicar mas o PMC ainda não tem o texto (o PMC costuma chegar dias depois do PubMed), o artigo espera até 36 horas; passado isso, vira matéria. As duas fontes do PubMed não seguem a regra do motor que arquiva como histórico o que é encontrado mais de 48 horas depois da data do material: um artigo de alguns dias ainda entra na nota diária e na edição semanal.
 
+### Revistas de cirurgia torácica vigiadas
+
+Em 31/10/2026 o dono mandou um levantamento das revistas de cirurgia torácica do mundo e pediu que o Fôlego não ficasse só no que as buscas temáticas do PubMed trazem: as 41 revistas do núcleo do levantamento, mais o *Journal of Thoracic Disease*, o *Journal of Thoracic Oncology* e o *Journal of Heart and Lung Transplantation*, ficam vigiadas, sempre nos temas do jornal (cirurgia torácica e via aérea da criança, pneumologia pediátrica). Os artigos só de adultos ficam de fora. As revistas complementares, as de verificação pendente e os títulos históricos do levantamento não entram. A lista está em `industry/revistas.json`, e a mesma execução de 6 em 6 horas do módulo literatura as lê:
+
+- **Filtro de tema.** Um artigo só é considerado se o título ou o resumo tiver uma palavra de cada lista de `filtro`: uma de idade (criança, lactente, recém-nascido, adolescente, prematuro, feto…) e uma de tema (traqueia, via aérea, laringe, brônquio, pulmão, pleura, empiema, pneumotórax, toracoscopia, parede torácica, pectus, mediastino, esôfago, diafragma, lobectomia, CPAM, sequestro, fibrose cística, bronquiectasia, estridor, intubação, corpo estranho…), que cobre a cirurgia torácica e a via aérea, e também a pneumologia pediátrica: asma, `respirat*` (insuficiência respiratória, doença respiratória), apneia do sono, ventilação domiciliar ou prolongada e ECMO; displasia broncopulmonar, discinesia ciliar primária, doença pulmonar intersticial da criança, pneumonia e transplante pulmonar já entram por `bronch*`, `ciliary dyskinesia`, `lung*` e `pneumon*`. `child*` quer dizer a palavra e as que começam por ela. A sigla chILD não está na lista, porque o filtro não diferencia maiúsculas e ela leria "child" como tema. A lista de tema não tem "cardíaco" nem "thoracic" sozinho: a cirurgia cardíaca congênita, que é a maior parte do que essas revistas publicam sobre crianças, fica de fora.
+- **Busca no PubMed por revista.** As revistas que o PubMed indexa (`nlm`, a abreviatura do título no NLM) formam uma busca a mais, `revistas-vigiadas`: as revistas em `[ta]`, com as duas listas do filtro em `[tiab]`. Ela se soma às buscas de `industry/literatura.json` e segue as mesmas regras (últimos 7 dias, idiomas, `perRun`).
+- **Sumário aberto.** As revistas com `sumario` são lidas também no sumário: o feed RSS ou Atom da editora (`rss`), ou, quando a editora não tem feed que o coletor leia, a lista pública do Crossref pelo ISSN (`crossref`), que traz os artigos com DOI na ordem em que o DOI foi criado. Só se lê o que está aberto, como o robô do site, sem login e sem contornar bloqueio. O Crossref é lido uma revista por segundo, porque responde 429 a leituras seguidas. Um sumário que falha não impede os outros e é lido de novo na execução seguinte.
+- **Um artigo só.** Cada artigo do sumário que passa no filtro é procurado no PubMed pelo DOI. Se o PubMed já o tem, entra pelo registro do PubMed, como os outros. Se não tem e o sumário traz o resumo, o artigo é escrito já, a partir do resumo ou da cópia gratuita que o Unpaywall indicar, e fica em `literatura_papers` com a chave `doi:<DOI>`. Quando o registro do PubMed chega depois, o DOI o liga ao mesmo artigo, com o estado `sumario`, e nada é escrito de novo. Se o sumário de uma revista indexada não traz resumo (Elsevier, AME e J-STAGE não o depositam), o artigo espera pela busca do PubMed, que traz o resumo. Um artigo de revista fora do PubMed sem DOI (a africana) é identificado pelo endereço da página (`url:<endereço>`), e a referência da matéria aponta para essa página.
+- **Nome da revista.** O artigo que entra pelo sumário mostra o nome da revista como está em `name`, e o que entra pelo PubMed mostra o título do periódico no registro, como os outros artigos científicos.
+
+Depois disso, o artigo segue o caminho de todo artigo científico: matéria do Fôlego (ou texto integral, se a licença permitir), pré-triagem, duas notas, os mesmos limiares, seleção e edição.
+
+Volume medido em 31/10/2026 (busca do PubMed, por data de entrada, seis janelas de 7 dias, de 10/09 a 21/10/2026, com o filtro de idioma): as revistas indexadas registraram 863 artigos; 45 tinham palavra de idade (quase todos de cardiopatia congênita), e 13 passaram no filtro inteiro, cerca de 2 por semana. Exemplos: lobectomia robótica pediátrica, torção pulmonar numa criança, pectus excavatum com várias barras, as considerações pediátricas do consenso da ISHLT sobre fragilidade no transplante pulmonar. A leitura dos sumários em 31/10/2026 (últimos 7 dias) achou 2 artigos no filtro (uma traqueia comprimida por duplo arco aórtico no JTCVS Techniques e pneumonia em crianças no JTD). Com os termos de pneumologia pediátrica acrescentados no mesmo dia (asma, `respirat*`, apneia, ventilação domiciliar ou prolongada, ECMO), a mesma busca passou de 13 para 16 artigos nas seis semanas; os 3 a mais eram de cirurgia cardíaca pediátrica (dois sobre dispositivo de assistência ventricular, um sobre valva mitral), que entraram por citar ECMO ou complicação respiratória no resumo. São cerca de 2 a 3 matérias por semana, cada uma com uma chamada ao modelo.
+
+| Nº | Revista | PubMed (`nlm`) | Sumário | X | Observação |
+|---|---|---|---|---|---|
+| 1 | The Annals of Thoracic Surgery | `Ann Thorac Surg` | feed da editora | [@annalsthorsurg](https://x.com/annalsthorsurg) | A conta do X está na página da revista no site da STS. |
+| 2 | The Journal of Thoracic and Cardiovascular Surgery | `J Thorac Cardiovasc Surg` | feed da editora |  |  |
+| 3 | European Journal of Cardio-Thoracic Surgery | `Eur J Cardiothorac Surg` | Crossref (ISSN 1010-7940) |  | O site da Oxford (academic.oup.com) responde 403 (Cloudflare) e não mostra o endereço do feed. |
+| 4 | Interdisciplinary CardioVascular and Thoracic Surgery | `Interdiscip Cardiovasc Thorac Surg` | Crossref (ISSN 2753-670X) |  | Idem EJCTS. |
+| 5 | Journal of Cardiothoracic Surgery | `J Cardiothorac Surg` | feed da editora |  |  |
+| 6 | General Thoracic and Cardiovascular Surgery | `Gen Thorac Cardiovasc Surg` | feed da editora |  |  |
+| 7 | Annals of Thoracic and Cardiovascular Surgery | `Ann Thorac Cardiovasc Surg` | feed da editora (WebAPI do J-STAGE) | [@ATCS_journal](https://x.com/ATCS_journal) | O RSS de novidades do J-STAGE traz só 4 itens; a WebAPI lista todos os artigos do ano. |
+| 8 | Annals of Cardiothoracic Surgery | `Ann Cardiothorac Surg` | Crossref (ISSN 2225-319X) |  | O feed (OJS da AME) não traz DOI. |
+| 9 | Asian Cardiovascular and Thoracic Annals | `Asian Cardiovasc Thorac Ann` | feed da editora |  |  |
+| 10 | The Thoracic and Cardiovascular Surgeon | `Thorac Cardiovasc Surg` | feed da editora |  |  |
+| 11 | Thoracic Surgery Clinics | `Thorac Surg Clin` | feed da editora |  |  |
+| 12 | Seminars in Thoracic and Cardiovascular Surgery | `Semin Thorac Cardiovasc Surg` | feed da editora |  |  |
+| 13 | Operative Techniques in Thoracic and Cardiovascular Surgery | não | feed da editora |  | Sem registros de 2026 no PubMed. |
+| 14 | Multimedia Manual of Cardio-Thoracic Surgery | `Multimed Man Cardiothorac Surg` | Crossref (ISSN 1813-9175) | [@MMCTS_Manual](https://x.com/MMCTS_Manual) | Sem feed encontrado; a conta do X está na etiqueta `twitter:site` do site da revista. |
+| 15 | Innovations: Technology and Techniques in Cardiothoracic and Vascular Surgery | `Innovations (Phila)` | feed da editora | [@Innovationsjour](https://x.com/Innovationsjour) |  |
+| 16 | Annals of Thoracic Surgery Short Reports | `Ann Thorac Surg Short Rep` | Crossref (ISSN 2772-9931) |  | Só há o feed do ScienceDirect, sem data e sem DOI. |
+| 17 | JTCVS Open | `JTCVS Open` | feed da editora |  |  |
+| 18 | JTCVS Techniques | `JTCVS Tech` | feed da editora |  |  |
+| 19 | General Thoracic and Cardiovascular Surgery Cases | `Gen Thorac Cardiovasc Surg Cases` | feed da editora |  |  |
+| 20 | The Thoracic and Cardiovascular Surgeon Reports | `Thorac Cardiovasc Surg Rep` | feed da editora |  |  |
+| 21 | Kardiochirurgia i Torakochirurgia Polska / Polish Journal of Thoracic and Cardiovascular Surgery | `Kardiochir Torakochirurgia Pol` | Crossref (ISSN 1731-5530) |  | Sem feed encontrado. |
+| 22 | Turkish Journal of Thoracic and Cardiovascular Surgery | `Turk Gogus Kalp Damar Cerrahisi Derg` | Crossref (ISSN 1301-5680) |  | Sem feed encontrado. |
+| 23 | Current Thoracic Surgery | não | Crossref (ISSN 2548-0316) |  | Sem feed encontrado. |
+| 24 | Portuguese Journal of Cardiac Thoracic and Vascular Surgery | `Port J Card Thorac Vasc Surg` | — |  | O feed (OJS) não traz DOI, e o artigo do sumário não se juntaria ao registro do PubMed; fica só a busca do PubMed. |
+| 25 | Russian Journal of Thoracic and Cardiovascular Surgery | não | Crossref (ISSN 0236-2791) |  | Sem registros de 2026 no PubMed; o Crossref recebe os artigos em lotes. |
+| 26 | Journal of Chest Surgery | `J Chest Surg` | Crossref (ISSN 2765-1606) | [@Jchestsurg](https://x.com/Jchestsurg) | Sem feed encontrado. |
+| 27 | Kyobu Geka (The Japanese Journal of Thoracic Surgery) | `Kyobu Geka` | — |  | Sem sumário aberto. |
+| 28 | Journal of the Japanese Society of Thoracic Surgeons | não | feed da editora (WebAPI do J-STAGE) |  |  |
+| 29 | Chinese Journal of Thoracic and Cardiovascular Surgery (中华胸心血管外科杂志) | não | — |  | Fora do PubMed e do Crossref; não há sumário aberto que o coletor leia. |
+| 30 | Chinese Journal of Clinical Thoracic and Cardiovascular Surgery (中国胸心血管外科临床杂志) | não | — |  | Fora do PubMed e do Crossref; o site (tcsurg.org) responde 405 com página de bloqueio. |
+| 31 | Chinese Journal of Thoracic Surgery (Electronic Edition) (中华胸部外科电子杂志) | não | — |  | Fora do PubMed e do Crossref; não há sumário aberto que o coletor leia. |
+| 32 | Indian Journal of Thoracic and Cardiovascular Surgery | `Indian J Thorac Cardiovasc Surg` | feed da editora |  |  |
+| 33 | The Vietnam Journal of Cardiovascular and Thoracic Surgery | não | — |  | O feed (OJS) só tem títulos e resumos em vietnamita, que o filtro, em inglês, não lê; fora do PubMed e do Crossref. |
+| 34 | Sri Lanka Journal of Cardiothoracic Surgery (SLJCTS) | não | — |  | A página da associação só tem PDFs, sem sumário nem DOI. |
+| 35 | The Cardiothoracic Surgeon | não | feed da editora |  | Sem registros de 2026 no PubMed. |
+| 36 | African Annals of Thoracic and Cardiovascular Surgery | não | feed da editora, sem DOI: o artigo é identificado pelo endereço |  |  |
+| 37 | Revista Mexicana de Cirugía Torácica General | não | — |  | O feed do site da sociedade é de notícias (última em 2024), não de sumário. |
+| 38 | Current Challenges in Thoracic Surgery | não | Crossref (ISSN 2664-3278) |  | O feed (OJS da AME) não traz DOI; sem registros de 2026 no PubMed. |
+| 39 | Video-Assisted Thoracic Surgery | não | Crossref (ISSN 2519-0792) |  | Idem CCTS. |
+| 40 | Journal of Visualized Surgery | `J Vis Surg` | Crossref (ISSN 2221-2965) |  | O feed (OJS da AME) não traz DOI. |
+| 41 | Shanghai Chest | não | Crossref (ISSN 2521-3768) |  | Idem CCTS. |
+| JTD | Journal of Thoracic Disease | `J Thorac Dis` | Crossref (ISSN 2072-1439) |  | Os feeds respondem 200 sem nenhum item. |
+| JTO | Journal of Thoracic Oncology | `J Thorac Oncol` | feed da editora |  | O feed de artigos no prelo (`inpress.rss`); o da edição traz os resumos de congresso. |
+| JHLT | The Journal of Heart and Lung Transplantation | `J Heart Lung Transplant` | feed da editora |  |  |
+
+Os números são os do levantamento do dono. As revistas sem PubMed e sem sumário (29 a 31, 33, 34 e 37) não estão em `industry/revistas.json`. Uma revista sai do PubMed (`nlm` ausente) quando o NLM a lista mas ela não tem registro de 2026.
+
 ### Acrescentar um artigo por PMID ou DOI
 
-As buscas só olham os últimos 7 dias. Para um artigo mais antigo ou que elas não trouxeram, o editor usa o Painel → Conteúdo → **Adicionar artigo** (botão *Adicionar artigo*, com PMID, DOI ou o link doi.org; o DOI é procurado no PubMed). O artigo segue o mesmo caminho dos outros (texto integral se a licença permitir, senão matéria própria, com recibo e teto de orçamento), escrito pelo worker em instantes; a página lista os últimos acrescentados e o que virou cada um. Diferente das buscas, nada retoma um artigo acrescentado que não pôde ser escrito porque o PMC ainda não tem o texto aberto, porque o Unpaywall ainda não conhece o DOI, porque as chamadas de modelo estão desligadas ou porque a fonte está pausada: a página e o script o mostram como *Não incluído*, com o motivo, e o editor o acrescenta de novo mais tarde. Um PMID que já está em `literatura_papers` não é escrito de novo. O artigo entra como notícia de agora (linha do tempo no momento da inclusão), então vai para a próxima nota diária e para a edição semanal se for selecionado; a opção *Marcar Seleção = sim* faz a mesma correção manual da página do item, com auditoria. Pela linha de comando, veja `scripts/literatura-adicionar.ts` em [deploy.md](deploy.md#按-pmid-或-doi-加一篇论文).
+As buscas só olham os últimos 7 dias. Para um artigo mais antigo ou que elas não trouxeram, o editor usa o Painel → Conteúdo → **Adicionar artigo** (botão *Adicionar artigo*, com PMID, DOI ou o link doi.org; o DOI é procurado no PubMed). O artigo segue o mesmo caminho dos outros (texto integral se a licença permitir, senão matéria própria, com recibo e teto de orçamento), escrito pelo worker em instantes; a página lista os últimos acrescentados e o que virou cada um. Diferente das buscas, nada retoma um artigo acrescentado que não pôde ser escrito porque o PMC ainda não tem o texto aberto, porque o Unpaywall ainda não conhece o DOI, porque as chamadas de modelo estão desligadas ou porque a fonte está pausada: a página e o script o mostram como *Não incluído*, com o motivo, e o editor o acrescenta de novo mais tarde. Um PMID que já está em `literatura_papers`, ou um artigo já escrito pelo DOI a partir do sumário de uma revista vigiada, não é escrito de novo. O artigo entra como notícia de agora (linha do tempo no momento da inclusão), então vai para a próxima nota diária e para a edição semanal se for selecionado; a opção *Marcar Seleção = sim* faz a mesma correção manual da página do item, com auditoria. Pela linha de comando, veja `scripts/literatura-adicionar.ts` em [deploy.md](deploy.md#按-pmid-或-doi-加一篇论文).
 
 ### Custo
 
@@ -124,7 +188,7 @@ Os itens das redes passam pela mesma pré-triagem, pelas mesmas notas e pelos me
 
 Num site que já está no ar, estas fontes entram na próxima atualização, porque a importação só acrescenta as fontes novas.
 
-**X.** As 20 fontes `x_search` (11 perfis e 9 pesquisas) entram desligadas, porque sem chave a coleta só falharia. Para ligar:
+**X.** As 25 fontes `x_search` (16 perfis e 9 pesquisas) entram desligadas, porque sem chave a coleta só falharia. Para ligar:
 
 1. Crie uma conta na SocialData, faça um depósito pequeno (US$ 10–20 duram meses) e ponha `SOCIALDATA_API_KEY=` no `.env` do servidor.
 2. Reinicie a API e o worker e confira o limite da SocialData em Painel → Configurações (o padrão é 10 por minuto, 100 por hora e 1000 por dia).
@@ -166,6 +230,18 @@ Ressalva editorial: hashtags genéricas (`#ECMO`, `#ThoracicSurgery`, `#Tracheos
 | Ali Abedi, [@DocAbedi](https://x.com/DocAbedi) | `x-docabedi` | T2 (pesquisador) | desligada até a chave da SocialData |
 | ENT Papers, [@ENT_Papers](https://x.com/ENT_Papers) | `x-ent-papers` | T2 (curadoria) | desligada até a chave da SocialData |
 | VisionAir Solutions, [@VisionAirStents](https://x.com/VisionAirStents) | `x-visionairstents` | T2, comercial | desligada até a chave da SocialData |
+
+**Perfis das revistas de cirurgia torácica vigiadas.** Em 31/10/2026 o dono pediu que as revistas vigiadas (veja [Revistas de cirurgia torácica vigiadas](#revistas-de-cirurgia-torácica-vigiadas)) também fossem acompanhadas no X. Só entram as contas que o site da revista, da editora ou da sociedade dona da revista apresenta como conta da revista. Uma conta só da sociedade (EACTS, AATS, STS, ISHLT, IASLC) ou só da editora (AME) não conta. Os posts passam pela mesma pré-triagem e pelos mesmos limiares.
+
+| Revista | Perfil | Fonte | Onde a conta aparece | Situação |
+|---|---|---|---|---|
+| The Annals of Thoracic Surgery | [@annalsthorsurg](https://x.com/annalsthorsurg) | `x-annalsthorsurg` | botão "Follow @annalsthorsurg" na página da revista no site da STS | desligada até a chave da SocialData |
+| Annals of Thoracic and Cardiovascular Surgery | [@ATCS_journal](https://x.com/ATCS_journal) | `x-atcs-journal` | linha do tempo da conta no site da revista (atcs.jp) | desligada até a chave da SocialData |
+| Multimedia Manual of Cardio-Thoracic Surgery | [@MMCTS_Manual](https://x.com/MMCTS_Manual) | `x-mmcts-manual` | etiqueta `twitter:site` do site da revista (mmcts.org) | desligada até a chave da SocialData |
+| Innovations | [@Innovationsjour](https://x.com/Innovationsjour) | `x-innovationsjour` | "Follow INNOVATIONS on X", no site da ISMICS, a sociedade dona da revista | desligada até a chave da SocialData |
+| Journal of Chest Surgery | [@Jchestsurg](https://x.com/Jchestsurg) | `x-jchestsurg` | botão do X no site da revista (jchestsurg.org) | desligada até a chave da SocialData |
+
+As outras 39 revistas ficaram sem conta. Os sites das revistas da Elsevier (Annals, JTCVS e família, Clinics, Seminars, Operative Techniques, JTO, JHLT), da Sage e da Thieme bloqueiam a leitura automática (403 ou desafio), e não foi possível confirmar nelas uma conta própria. Uma conta que apareça depois no site da revista entra como as de cima.
 
 As listas temáticas do diretório (Airway guidelines, Pediatric airway, Bronchoscopy / devices) não viram fontes: os mesmos perfis já entram um a um. As duas publicações de exemplo da DAS chegam pela fonte `x-dasairway`.
 

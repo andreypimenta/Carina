@@ -52,7 +52,7 @@ export async function writeMateria(paper: Paper, fullText: string | null): Promi
   const res = await chatJson({
     model: await modelFor(MATERIA_STEP),
     purpose: MATERIA_PURPOSE,
-    subject: `pubmed:${paper.pmid}${fullText ? ":full" : ":abstract"}`,
+    subject: `${paper.pmid ? `pubmed:${paper.pmid}` : paper.doi ? `doi:${paper.doi}` : `url:${paper.url}`}${fullText ? ":full" : ":abstract"}`,
     promptVersion: VERSION(),
     system: promptText("materia"),
     user: materiaInput(paper, fullText),
@@ -82,7 +82,8 @@ export function referenceBlock(paper: Paper, access: Access, pmcid: string | nul
   const cite = [authors ? `${esc(authors)}.` : "", esc(paper.title) + ".", `<em>${esc(paper.journalAbbrev ?? paper.journal)}</em>${paper.year ? ` ${esc(paper.year)}` : ""}.`].filter(Boolean).join(" ");
   const links = [
     paper.doi ? `DOI: <a href="https://doi.org/${esc(paper.doi)}">${esc(paper.doi)}</a>` : "",
-    `PubMed: <a href="https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/">${paper.pmid}</a>`,
+    paper.pmid ? `PubMed: <a href="https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/">${paper.pmid}</a>` : "",
+    !paper.doi && !paper.pmid && paper.url ? `Artigo: <a href="${esc(paper.url)}">${esc(paper.url.replace(/^https?:\/\//, "").split("/")[0]!)}</a>` : "",
   ].filter(Boolean).join(" · ");
   const copy = access.kind === "open" ? access.copy : pmcid ? { url: `https://europepmc.org/article/PMC/${pmcid}`, license: null, host: "repository", version: null } : null;
   const accessLine = copy
