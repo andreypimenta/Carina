@@ -4,6 +4,7 @@
 // opens its body (backend/materia.ts preprintNote), so here it is only its stage on the card. A registry entry has
 // no card: only its stage and its versions. A matéria written before the single structure shows only what its
 // stored body does not say (confianca.ts corpoJaDiz).
+import type { SiteItemDetail } from "@aihot/contracts/site";
 import { EXPEDIENTE, SITE } from "@aihot/site";
 import type { ItemPagePart } from "@aihot/web/modules";
 import {
@@ -67,10 +68,10 @@ function Related({ versoes, mesmoEnsaio }: Pick<MateriaPart, "versoes" | "mesmoE
   );
 }
 
-function Minuto({ part }: { part: MateriaPart }) {
+function Minuto({ part, semCorpo }: { part: MateriaPart; semCorpo: boolean }) {
   const c = part.confianca;
   const m = c?.minuto;
-  const achado = achadoVisivel(part);
+  const achado = achadoVisivel(part) ?? (semCorpo ? m?.achado ?? null : null);
   if (!achado && !m) return null;
   return (
     <section aria-label={achado ? "Em um minuto" : "Muda algo agora?"} className="rounded-panel bg-accent-soft/50 px-5 py-4 ring-1 ring-inset ring-accent/15">
@@ -92,14 +93,14 @@ function Minuto({ part }: { part: MateriaPart }) {
   );
 }
 
-function Top({ data }: { data: unknown }) {
+function Top({ data, item }: { data: unknown; item: SiteItemDetail }) {
   const part = data as MateriaPart;
   const { confianca: c, estado, versoes, mesmoEnsaio, resumoEditor } = part;
   if (!c) {
     if (!estado && !versoes.length && !mesmoEnsaio.length && !resumoEditor) return null;
     return (
       <div className="mt-7 space-y-4">
-        <Minuto part={part} />
+        <Minuto part={part} semCorpo={!item.body} />
         {estado && (
           <section aria-label="Estágio da evidência" className="rounded-panel border border-line px-5 py-4">
             <dl><Row label="Estágio da evidência"><EstadoBadge estado={estado} /><span className="mt-1.5 block text-[12.5px] leading-relaxed text-ink-4">{ESTADO_NOTA[estado]}{isRegistro(estado) ? " Não muda a prática." : ""}</span></Row></dl>
@@ -118,7 +119,7 @@ function Top({ data }: { data: unknown }) {
           <p className="mt-1 text-[17px] leading-[1.6] text-ink">{c.perguntaClinica}</p>
         </section>
       )}
-      <Minuto part={part} />
+      <Minuto part={part} semCorpo={!item.body} />
       {rows.length > 0 && (
         <section aria-label={fichaTitulo(c)} className="rounded-panel border border-line px-5 py-4">
           <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">

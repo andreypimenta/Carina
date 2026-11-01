@@ -50,6 +50,11 @@ const semConferir: SiteItemDetail = {
 
 const semTraducao: SiteItemDetail = { ...item, id: "sem-traducao", ownText: true, summary: "Resumo em português do texto integral", bodyLanguage: "original", body: { zh: null, original: "<p>English full text.</p>", zhKind: null, complete: false } } as SiteItemDetail;
 
+const resumoSo: SiteItemDetail = {
+  ...item, id: "resumo-so", ownText: true, summaryCovered: true, readingMode: "summary-only", body: null, summary: "Achado guardado. Muda algo agora? Não.",
+  modules: { literatura: literaturaPart({ feitura: "materia", confianca: { feitura: "materia", minuto: { achado: "Achado guardado.", mudaAlgo: "nao", diretriz: null }, populacao: null, desenho: null, desenhoDetalhe: null, limitacao: null, preprint: false, datas: null } }) },
+} as SiteItemDetail;
+
 const api = createServer((req, res) => {
   const path = new URL(req.url!, "http://api.local").pathname;
   res.setHeader("Content-Type", "application/json");
@@ -62,6 +67,7 @@ const api = createServer((req, res) => {
   if (/^\/api\/site\/reports\/(weekly|daily)\/navigation\//.test(path)) return res.end(JSON.stringify({ items: [] }));
   if (path === "/api/site/items/sec-1") return res.end(JSON.stringify(item));
   if (path === "/api/site/items/tr-1") return res.end(JSON.stringify(translated));
+  if (path === "/api/site/items/resumo-so") return res.end(JSON.stringify(resumoSo));
   if (path === "/api/site/items/sem-traducao") return res.end(JSON.stringify(semTraducao));
   if (path === "/api/site/items/sem-ficha") return res.end(JSON.stringify(semFicha));
   if (path === "/api/site/items/sem-conferir") return res.end(JSON.stringify(semConferir));
@@ -168,6 +174,14 @@ for (const at of [`/assine/${WEEK}/`, "/items/"]) {
     const visible = async (id: string) => (await page(`${at}${id}`)).replace(/<script[\s\S]*?<\/script>/g, "");
     assert.match(await visible("sem-traducao"), /Resumo por IA[\s\S]*Resumo em português do texto integral/);
     assert.doesNotMatch(await visible("sem-ficha"), /Resumo por IA/);
+  });
+
+  test(`${at}: a summary-only page says an older matéria's finding and grade once`, async () => {
+    const html = await page(`${at}resumo-so`);
+    const body = html.slice(html.indexOf("<body")).replace(/<script[\s\S]*?<\/script>/g, "");
+    assert.equal(body.split("Achado guardado.").length - 1, 1);
+    assert.equal(body.split("Muda algo agora?").length - 1, 1);
+    if (at === "/items/") assert.match(body, /A pedido da fonte/);
   });
 }
 

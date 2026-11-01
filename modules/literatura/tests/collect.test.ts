@@ -624,6 +624,26 @@ test("a model answer whose results are all blank fails the attempt instead of pu
   assert.equal((await sql`SELECT 1 FROM articles WHERE url LIKE ${`%${pmid}%`}`).length, 0);
 });
 
+test("a summary-only matéria says its finding in Em um minuto, not apart, unless it has none", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const id = (await takePaper({ ...paper!, pmid: `so-resumo-${T}`, doi: `10.9999/so-resumo-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"))).articleId!;
+  await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  await sql`UPDATE publications SET visibility = 'summary-only', visible_after = now() - interval '1 minute' WHERE article_id = ${id}`;
+  const shown = async () => {
+    const detail = await loadItemDetail(id);
+    assert.ok(detail.kind === "found");
+    assert.equal(detail.item.readingMode, "summary-only");
+    return detail.item.summaryCovered;
+  };
+
+  assert.equal(await shown(), true);
+  await sql`UPDATE literatura_confianca SET data = data - 'estrutura' WHERE article_id = ${id}`;
+  assert.equal(await shown(), true, "an older record: without a body, Top shows its stored finding");
+  await sql`UPDATE literatura_confianca SET data = data - 'minuto' WHERE article_id = ${id}`;
+  assert.equal(await shown(), false, "no finding to show: the summary stays");
+});
+
 test("an integral text keeps its summary on the page and in Markdown until an Em um minuto or a translation says it", async () => {
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const id = (await takePaper({ ...paper!, pmid: `integral-${T}`, doi: `10.9999/integral-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"))).articleId!;

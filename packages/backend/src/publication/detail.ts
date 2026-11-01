@@ -114,10 +114,12 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
 
   const summary = toItemSummary(row);
   if (row.visibility === "summary-only") {
+    const modules = await modulesOf(id);
+    const ownText = OWN_TEXT_SOURCES.includes(row.source_id);
     const item: SiteItemDetail = {
       ...summary,
-      ownText: OWN_TEXT_SOURCES.includes(row.source_id),
-      summaryCovered: false,
+      ownText,
+      summaryCovered: ownText && saysSummary(modules.modules),
       selected: false,
       score: null,
       category: null,
@@ -137,7 +139,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
       hasTranslation: false,
       bodyLanguage: "original",
       weekly: await weeklyOf(id),
-      ...(await modulesOf(id)),
+      ...modules,
     };
     return { kind: "found", item, row };
   }
