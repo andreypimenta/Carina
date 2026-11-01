@@ -36,8 +36,8 @@ const prospect: Materia = {
     { desfecho: "Mortalidade em 28 dias", resultado: "10%, sem diferença entre os grupos", efeito: "" },
   ],
   aFavor: ["Randomizado, multicêntrico e com desfecho clínico; os intervalos estreitos em torno de zero tornam improvável um benefício relevante perdido."],
-  naoInformado: ["O resumo não traz o seguimento após o período principal nem os subgrupos por gravidade; não informado não quer dizer que não foi feito."],
-  naPratica: "Para quem cuida de crianças ventiladas com SDRA no início do quadro, o estudo não dá base para pronar ou passar para HFOV de rotina buscando menos tempo de ventilador. O estudo não testou a prona como resgate na hipoxemia refratária. Para o Brasil, o resultado depende de equipe e ventiladores comparáveis aos dos centros participantes, que o resumo não descreve.",
+  naoInformado: ["Não informados o seguimento após o período principal e os subgrupos por gravidade."],
+  naPratica: "Para quem cuida de crianças ventiladas com SDRA no início do quadro, o estudo não dá base para pronar ou passar para HFOV de rotina buscando menos tempo de ventilador. O estudo não testou a prona como resgate na hipoxemia refratária. Para o Brasil, o resultado depende de equipe e ventiladores comparáveis aos dos centros participantes, que não foram descritos.",
   contexto: "",
 };
 
@@ -64,7 +64,7 @@ test("a sample matéria shows each key number in one block of the page, and Na p
   }
   for (const [key, where] of [["424", "Desenho"], ["75", "População"], ["17,9", "O que encontraram"], ["10%", "O que encontraram"]] as const) assert.equal(seen.get(key), where);
   assert.equal(numbers(blocks["Na prática"]!).size, 0);
-  assert.deepEqual(Object.keys(blocks), ["Título", "Pergunta clínica", "Em um minuto", "População", "Desenho", "Texto lido", "Conflitos de interesse declarados", "Principal limitação", "O que fizeram", "O que encontraram", "Quanto confiar", "Na prática"]);
+  assert.deepEqual(Object.keys(blocks), ["Título", "Pergunta clínica", "Em um minuto", "População", "Desenho", "Conflitos de interesse declarados", "Principal limitação", "O que fizeram", "O que encontraram", "Quanto confiar", "Na prática"]);
 });
 
 test("the length cap: about 1.2x the abstract's words, 900 from a full text; the model is told", () => {

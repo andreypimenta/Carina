@@ -7,7 +7,7 @@ import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { sql, type Db } from "@aihot/backend/db";
 import type { ItemExit } from "@aihot/backend/modules";
 import { EXPEDIENTE } from "@aihot/site";
-import { achadoDoResumo, achadoVisivel, alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
+import { achadoDoResumo, achadoVisivel, alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, semNotaDeOrigem, semNotaDeOrigemNoTexto, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
 import { estudosOf, REGISTRO_TAG } from "./estudos.ts";
 
 const MATERIA_SOURCE = "literatura-materia";
@@ -17,13 +17,28 @@ export async function saveConfianca(tx: Db, articleId: string, data: Confianca):
     ON CONFLICT (article_id) DO UPDATE SET data = EXCLUDED.data`;
 }
 
+/** Removes the line saying what was read from the bodies of older matérias, with no model call; returns how many changed. */
+export async function removeNotasDeOrigem(): Promise<number> {
+  const rows = await sql<{ id: string; body_html: string; body_text: string | null }[]>`
+    SELECT id, body_html, body_text FROM articles WHERE source_id = ${MATERIA_SOURCE} AND body_html LIKE '%Matéria escrita pelo %'`;
+  let changed = 0;
+  for (const r of rows) {
+    const html = semNotaDeOrigem(r.body_html);
+    if (html === r.body_html) continue;
+    await sql`UPDATE articles SET body_html = ${html}, body_text = ${r.body_text === null ? null : semNotaDeOrigemNoTexto(r.body_text)} WHERE id = ${r.id}`;
+    changed++;
+  }
+  return changed;
+}
+
 /** The parts of these articles: those with a trust record, a study's stage or a correction. */
 export async function materiaParts(ids: readonly string[]): Promise<Map<string, MateriaPart>> {
   const out = new Map<string, MateriaPart>();
   const list = [...ids];
   const empty = (): MateriaPart => ({ confianca: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null });
   const records = await sql<{ article_id: string; data: Confianca }[]>`SELECT article_id, data FROM literatura_confianca WHERE article_id = ANY(${list})`;
-  for (const r of records) out.set(r.article_id, { ...empty(), confianca: r.data, estado: r.data.preprint ? "preprint" : null });
+  // What was read stays in the stored record: this part reaches the browser in the page's data.
+  for (const { article_id, data: { textoLido: _read, ...confianca } } of records) out.set(article_id, { ...empty(), confianca, estado: confianca.preprint ? "preprint" : null });
   for (const [id, e] of await estudosOf(list)) {
     const part = out.get(id) ?? empty();
     out.set(id, { ...part, estado: e.estado ?? part.estado, versoes: e.versoes, mesmoEnsaio: e.mesmoEnsaio });

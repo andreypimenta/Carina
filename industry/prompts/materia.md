@@ -27,7 +27,7 @@ Antes de escrever, leia o material procurando cada sinal desta lista e preencha 
 - `n-pequeno`: poucos pacientes para a pergunta.
 - `conflito-fabricante`: autor ou financiamento ligado ao fabricante do que foi estudado.
 
-Só marque o que o material mostra. Não informado não é o mesmo que não feito: se o resumo não diz se houve mascaramento, isso não é o sinal `sem-mascaramento`; vai em `naoInformado`.
+Só marque o que o material mostra. Não informado não é o mesmo que não feito: se o material não diz se houve mascaramento, isso não é o sinal `sem-mascaramento`; vai em `naoInformado`.
 
 ## Os campos, na ordem em que o leitor os vê
 
@@ -55,9 +55,9 @@ Corpo:
 - `oQueFizeram`: 1 parágrafo, só se houver detalhe que não coube na ficha: o que cada grupo recebeu, o comparador, o desfecho principal, o seguimento. Se não há nada a acrescentar, string vazia.
 - `resultados` ("O que encontraram"): a lista por desfecho, na ordem de importância, com os outros números da matéria. Cada item tem `desfecho`, `resultado` e `efeito` (string vazia quando não se aplica). Inclua complicações e eventos adversos quando o artigo os relata. O número que já está em `achado` não se repete: aqui entra o que o completa.
 - `aFavor` ("Quanto confiar"): até 2 frases curtas, cada uma com um ponto que fortalece o estudo, tirado do que o material mostra. Sem elogio genérico. Lista vazia se nada se destaca.
-- `naoInformado`: até 2 frases curtas com o que o resumo ou o texto não informa e que importa para interpretar o estudo. Isso não quer dizer que não foi feito; escreva "não informado", nunca "não foi feito". Lista vazia se nada importante faltar.
+- `naoInformado`: até 2 frases curtas com o que não foi informado e que importa para interpretar o estudo. Isso não quer dizer que não foi feito; escreva "não informado", nunca "não foi feito". Lista vazia se nada importante faltar.
 - `naPratica`: 1 parágrafo **sem nenhum número**: para quem isso importa, o que muda ou não muda à beira do leito, e o que se transfere ao contexto brasileiro. Sempre com base no que o artigo informa. Se o estudo não testou algo que o leitor poderia supor, diga assim: "o estudo não testou X". Sobre o Brasil, compare só o que o material informa do cenário do estudo (país, nível de atenção, recursos, equipamentos, técnica e população) e diga de que isso depende para valer aqui; não afirme números, disponibilidade nem regras do Brasil ou do SUS. Não recomende nada nem diga o que o leitor deve fazer.
-- `contexto`: opcional, 2 a 3 frases, em geral só com o texto completo: o que já se sabia, só com o que o próprio artigo diz na introdução ou na discussão. Se o material não traz, string vazia.
+- `contexto`: opcional, 2 a 3 frases, o que já se sabia, só com o que o próprio artigo diz na introdução ou na discussão. Se o material não traz, string vazia.
 
 ## O corpo muda conforme o desenho
 
@@ -69,6 +69,7 @@ Corpo:
 
 ## Regras
 
+- O leitor nunca fica sabendo se você leu o resumo ou o texto completo: em nenhum campo escreva "o resumo", "o texto completo", "segundo o resumo" ou algo parecido. Diga "o estudo" ou "não informado". Isso não muda o que você pode afirmar: nunca diga mais do que o material lido sustenta.
 - Escreva só a partir do material fornecido. Todo número, nome de técnica, classificação, instituição e conclusão tem de estar no material. Se o material não informa algo (por exemplo, o seguimento), não preencha.
 - Não exagere a força da evidência: estudo retrospectivo mostra associação, não causa; série sem controle não prova superioridade; relato de caso não estabelece conduta. Use verbos compatíveis ("associou-se a", "sugere", "neste grupo").
 - `titulo`, `perguntaClinica`, `achado`, `resultados` e os campos da ficha são sempre preenchidos (com "não informado" quando for o caso), menos `diretriz`. Os demais ficam vazios quando não há material.

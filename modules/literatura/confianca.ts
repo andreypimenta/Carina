@@ -37,15 +37,8 @@ export const DESENHO_LABEL: Record<Desenho, string> = {
   outro: "Outro",
 };
 
-/** The text the pipeline gave the model, never the model's own account of it. */
+/** The text the pipeline gave the model, never the model's own account of it. Internal: readers never see whether it was the abstract or the full text. */
 export type TextoLido = "texto-completo" | "manuscrito-aceito" | "resumo" | "pagina-oficial";
-export const TEXTO_LIDO_LABEL: Record<TextoLido, string> = {
-  "texto-completo": "Texto completo aberto",
-  "manuscrito-aceito": "Manuscrito aceito, em cópia legal aberta",
-  resumo: "Somente o resumo",
-  "pagina-oficial": "Página oficial da organização",
-};
-
 /**
  * How the piece was made: written by the model from a paper or an official page, a paper's text translated in
  * full, a regulatory act summed up by the model (backend/alertas.ts), or a notice of a guideline's new version
@@ -158,6 +151,9 @@ export interface Confianca {
   datas: { publicado: string | null; revisado: string | null; conferido: string } | null;
 }
 
+/** The record as it leaves the backend: everything but what was read. */
+export type ConfiancaPublica = Omit<Confianca, "textoLido">;
+
 export interface Correcao {
   id: number;
   /** YYYY-MM-DD. */
@@ -171,7 +167,7 @@ export interface Correcao {
  * other versions and the other papers of its trial, and its corrections.
  */
 export interface MateriaPart {
-  confianca: Confianca | null;
+  confianca: ConfiancaPublica | null;
   estado: Estado | null;
   versoes: Versao[];
   /** Other papers of the same trial (secondary, post-hoc, follow-up analyses): not versions of this one. */
@@ -189,9 +185,9 @@ export function dataBr(day: string): string {
 
 /**
  * A matéria written before the single structure: its stored body, which is never rewritten, already has the
- * finding, the population, the design, the limitation and the text it was written from, so its card leaves them out.
+ * finding, the population, the design and the limitation, so its card leaves them out.
  */
-export function corpoJaDiz(c: Confianca): boolean {
+export function corpoJaDiz(c: ConfiancaPublica): boolean {
   return c.feitura === "materia" && c.estrutura !== "unica";
 }
 
@@ -204,7 +200,7 @@ export interface FichaRow {
 }
 
 /** The card's name, in every exit that shows it. */
-export function fichaTitulo(c: Confianca): string {
+export function fichaTitulo(c: ConfiancaPublica): string {
   return c.feitura === "materia" || c.feitura === "traducao" ? "Ficha do estudo" : "Sobre a fonte";
 }
 
@@ -217,7 +213,6 @@ export function fichaRows({ confianca: c, estado }: Pick<MateriaPart, "confianca
     c.alerta ? { label: "Ato regulatório", text: `${CATEGORIA_ALERTA_LABEL[c.alerta.categoria]} (${c.alerta.orgao})`, note: "Não é evidência de eficácia nem de segurança clínica do produto." } : null,
     c.populacao && !antiga ? { label: "População", text: [c.populacao.idade, c.populacao.doenca, c.populacao.cenario].join(" · ") } : null,
     c.desenho && !antiga ? { label: study ? "Desenho" : "Documento", text: c.desenhoDetalhe ? `${DESENHO_LABEL[c.desenho]} (${c.desenhoDetalhe})` : DESENHO_LABEL[c.desenho] } : null,
-    antiga ? null : { label: "Texto lido", text: TEXTO_LIDO_LABEL[c.textoLido] },
     estado ? { label: "Estágio da evidência", estado, note: ESTADO_NOTA[estado] } : null,
     c.conflitos ? { label: "Conflitos de interesse declarados", text: c.conflitos } : null,
     c.limitacao && !antiga ? { label: "Principal limitação", text: c.limitacao } : null,
@@ -229,10 +224,9 @@ export function fichaRows({ confianca: c, estado }: Pick<MateriaPart, "confianca
 
 /**
  * The one line of transparency at the end of the piece: made with AI and published without a human review first,
- * so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE). What it was
- * written from is on the card ("Texto lido").
+ * so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE).
  */
-export function linhaTransparencia(c: Confianca, editor: string | null): string {
+export function linhaTransparencia(c: ConfiancaPublica, editor: string | null): string {
   const how = {
     materia: "Matéria escrita com inteligência artificial e publicada automaticamente",
     pagina: "Matéria escrita com inteligência artificial e publicada automaticamente",
@@ -264,6 +258,12 @@ export function achadoVisivel({ confianca: c, resumoEditor }: Pick<MateriaPart, 
 export function minutoCompacto(part: MateriaPart): string | null {
   return part.confianca?.minuto ? `Em um minuto: ${minutoEmLinha(part.confianca.minuto)}` : null;
 }
+
+/** The line older matérias keep in their stored body saying whether the abstract or the full text was read. */
+const NOTA_DE_ORIGEM = /<p><em>Matéria escrita pelo [^<]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\.<\/em><\/p>/g;
+const NOTA_DE_ORIGEM_TEXTO = /\s*Matéria escrita pelo [^.]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\./g;
+export const semNotaDeOrigem = (html: string): string => html.replace(NOTA_DE_ORIGEM, "");
+export const semNotaDeOrigemNoTexto = (text: string): string => text.replace(NOTA_DE_ORIGEM_TEXTO, "");
 
 /** A correction as the admin lists it: the matéria it belongs to, who added it and when. */
 export interface AdminCorrecao extends Correcao {

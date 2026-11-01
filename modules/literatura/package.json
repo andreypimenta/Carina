@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./adicionar": "./backend/adicionar.ts",
+    "./confianca": "./backend/confianca.ts",
     "./module": "./module.ts",
     "./server": "./server.ts",
     "./web": "./web.tsx"

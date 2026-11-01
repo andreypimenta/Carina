@@ -103,7 +103,7 @@ docker compose exec worker node scripts/abas-dividir.ts --apply
 
 新报道按 `industry/prompts/materia.md` 的结构写，字段名变了，长度有上限（只有摘要时约为摘要的 1.2 倍，有全文时约 900 词）。**旧报道的正文不会被模型重写**，只改显示。发布后页面立刻隐藏摘要、原标题和“Fonte”一行，已有可信信息的旧报道只显示正文里没有的那几项；但存下的入选理由（“Por que importa”）和引擎写的标题还留在旧报道的页面上，运行下面的 `scripts/materias-republicar.ts --apply` 之后才会消失。
 
-发布后运行一次（只发布，不调用模型；不加 `--apply` 只统计；一篇一个事务，可以停下再跑），让已存的标题和摘要换成报道自己的，并清掉已存的入选理由，页面、卡片、列表、RSS 和搜索才会跟着变。已经发出的期次保留当时的内容：
+发布后运行一次（只发布，不调用模型；不加 `--apply` 只统计；一篇一个事务，可以停下再跑），并删除旧报道正文里“Matéria escrita pelo … a partir do resumo publicado / do texto completo”这句话（不调用模型；在此之前各出口也不显示它），让已存的标题和摘要换成报道自己的，并清掉已存的入选理由，页面、卡片、列表、RSS 和搜索才会跟着变。已经发出的期次保留当时的内容：
 
 ```bash
 docker compose exec worker node scripts/materias-republicar.ts [--apply]

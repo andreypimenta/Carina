@@ -148,7 +148,7 @@ test("the exits follow the page: an older matéria keeps only what its body does
   const whole = materiaExit(part(record))!;
   assert.match(whole.before, /^<h2>Pergunta clínica<\/h2><p>[^<]+<\/p><h2>Em um minuto<\/h2><p>[^<]+<\/p><p><strong>Muda algo agora\?<\/strong> [^<]+<\/p><h2>Ficha do estudo<\/h2><ul>/);
   assert.equal(whole.hasSummary, true);
-  assert.match(whole.before, /<strong>Texto lido:<\/strong> Somente o resumo/);
+  assert.doesNotMatch(whole.before, /Texto lido|resumo/);
   assert.match(whole.before, /<strong>Estágio da evidência:<\/strong> Artigo revisado\. Artigo publicado em revista/);
   assert.match(whole.after, /^<p>Matéria escrita com inteligência artificial/);
   const { estrutura: _estrutura, ...older } = record;
