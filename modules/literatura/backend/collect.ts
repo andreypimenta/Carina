@@ -97,15 +97,15 @@ const keyOf = (paper: Paper) => paper.pmid ?? (paper.doi ? `doi:${paper.doi}` : 
 
 interface Outcome { pmid: string; status: string; articleId?: string }
 
-/** Where the paper can be read: its open copy, its PMC record and PMC's text, kept only when it is a full text. */
-export async function paperAccess(paper: Paper): Promise<{ access: Access; pmcid: string | null; full: FullText | null }> {
+/** Where the paper can be read: its open copy, its PMC record and PMC's text, and whether that text is long enough to be a full text. A short one still gives the reader a free link and a licence. */
+export async function paperAccess(paper: Paper): Promise<{ access: Access; pmcid: string | null; full: FullText | null; isFull: boolean }> {
   const access: Access = paper.doi ? await findOpenCopy(paper.doi) : { kind: "unknown" };
   const pmcid = paper.pmcid ?? (paper.pmid ? await lookupPmcid(paper.pmid) : null);
   const full = pmcid ? await fetchFullText(pmcid) : null;
-  return { access, pmcid, full: full && full.bodyChars >= MIN_FULL_TEXT ? full : null };
+  return { access, pmcid, full, isFull: !!full && full.bodyChars >= MIN_FULL_TEXT };
 }
 
-/** The full text a matéria is written from: PMC's, else the free copy Unpaywall points to; none means the abstract. */
+/** The full text a matéria is written from: PMC's when it is one (`full`), else the free copy Unpaywall points to; none means the abstract. */
 export async function materiaFullText(paper: Paper, access: Access, full: FullText | null): Promise<{ fullText: string | null; from: FullTextFrom | null }> {
   if (full) return { fullText: full.text, from: "pmc" };
   const abstractChars = paper.abstract.reduce((n, s) => n + s.text.length, 0);
@@ -128,8 +128,7 @@ export async function enabledSources(): Promise<{ integral: boolean; materia: bo
 export async function takePaper(paper: Paper, now = new Date(), sources = { integral: true, materia: true }, credit?: XCredit): Promise<Outcome> {
   const skip = skippable(paper);
   if (skip) return record(paper, skip);
-  const { access, pmcid, full } = await paperAccess(paper);
-  const isFull = !!full;
+  const { access, pmcid, full, isFull } = await paperAccess(paper);
   const url = paper.doi ? `https://doi.org/${paper.doi}` : paper.pmid ? `https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/` : paper.url!;
   const publishedAt = entryTime(paper.enteredOn, now);
   const language = LANGUAGES[paper.languages[0] ?? "eng"] ?? null;
@@ -169,12 +168,12 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
 
   if (!sources.materia) return { pmid: keyOf(paper), status: "fonte-pausada" };
   if (!config.modelCallsEnabled) return { pmid: keyOf(paper), status: "aguardando-modelo" };
-  const { fullText, from } = await materiaFullText(paper, access, full);
+  const { fullText, from } = await materiaFullText(paper, access, isFull ? full : null);
   const basis = fullText ? "full" : "abstract";
   if (basis === "abstract" && !paper.abstract.length) return record(paper, "sem-texto");
   const estudo = await estudoDoPaper(paper);
   const { materia, receiptId } = await writeMateria(paper, fullText, estudo.anteriores);
-  const html = sanitizeBody(renderMateria(materia, paper, access, isFull ? pmcid : null) + credited, url);
+  const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null) + credited, url);
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url, title: materia.titulo.trim(), author: authorLine(paper.authors) || null, language: "pt",

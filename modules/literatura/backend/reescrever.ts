@@ -11,6 +11,7 @@
 // audit log first, and restoreItems puts it back.
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { beijingDate } from "@aihot/contracts/time";
 import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { audit } from "@aihot/backend/audit";
 import { sql, type Tx } from "@aihot/backend/db";
@@ -41,7 +42,7 @@ export type Mode = "plan" | "generate" | "apply";
 interface Row {
   id: string; source_id: string; url: string; title: string; excerpt: string | null; body_html: string | null; body_text: string | null; content_hash: string | null;
   raw: Record<string, unknown> | null; confianca: Confianca | null; estudo: Record<string, unknown> | null; pub_title: string | null; pub_summary: string | null;
-  paper_statuses: Array<{ pmid: string; status: string }> | null; overrides: Record<string, unknown> | null;
+  paper_statuses: Array<{ pmid: string; status: string }> | null; overrides: Record<string, unknown> | null; timeline_at: Date;
 }
 
 export interface ItemResult {
@@ -80,9 +81,9 @@ const sameFigure = (a: string, b: string) => {
   return valueOf(a).toFixed(d) === valueOf(b).toFixed(d);
 };
 
-/** The figures of a text that can be a study's number: not a confidence level, a year or a bare single digit. Percentages first, then decimals. */
+/** The figures of a text that can be a study's number: not a confidence level, a year, a bare single digit or digits in a name (COVID-19, T21, 22q11). Percentages first, then decimals. */
 function figures(text: string): string[] {
-  const found = [...text.replace(/\b(?:IC|CI)\s*(?:de\s*)?95\s*%|95\s*%\s*(?:IC|CI)\b/gi, " ").matchAll(/(\d+(?:[.,]\d+)*)(\s*%)?/g)]
+  const found = [...text.replace(/\b(?:IC|CI)\s*(?:de\s*)?95\s*%|95\s*%\s*(?:IC|CI)\b/gi, " ").matchAll(/(?<!\d)(?<!\p{L}[-–]?)(\d+(?:[.,]\d+)*)(?!\d|\p{L}\d)(\s*%)?/gu)]
     .map((m) => ({ f: m[1]!, percent: !!m[2] }))
     .filter(({ f, percent }) => percent || decimalsOf(f) > 0 || (valueOf(f) >= 10 && !(valueOf(f) >= 1900 && valueOf(f) <= 2099)));
   const rank = (x: { f: string; percent: boolean }) => (x.percent ? 0 : decimalsOf(x.f) > 0 ? 1 : 2);
@@ -100,8 +101,21 @@ export function mainNumbers(headline: string, source: string): string[] {
 
 export const hasNumber = (text: string, number: string) => figures(text).some((f) => sameFigure(f, number));
 
-/** Words that tell the reader what was read. The site never says it (industry/prompts/materia.md). */
-const SAYS_WHAT_WAS_READ = /\b(?:o|os|do|dos|no|nos|pelo|pelos|ao|aos|um|este|esse|neste|nesse|deste|desse|seu|apenas|só|somente|com|sem|de|por|via)\s+resumos?\b(?!\s+(?:de|do|em)\s+(?:congresso|conferência|evento))|\bresumo\s+(?:publicado|do artigo|do estudo)\b|\b(?:texto|artigo)\s+(?:completo|integral)\b|(?<!\p{L})íntegra(?!\p{L})|\bna\s+integra\b|\bfull[- ]text\b|\babstract\b/iu;
+/** A paper's abstract or full text, named as such; a congress abstract or a guideline's executive summary is another thing. */
+const READ_TEXT = String.raw`(?:resumo(?!\s+(?:executivo|(?:de|do|em)\s+(?:congresso|conferência|evento)))|abstract|(?:texto|artigo)\s+(?:completo|integral|na\s+[ií]ntegra)|full[- ]text)(?!\p{L})`;
+/**
+ * Words that tell the reader what the journal read: that text as the journal's source, or what it says or lacks. The
+ * site never says it (industry/prompts/materia.md). A study's own methods (reviewers screening abstracts and reading
+ * full texts) are the study's, and stay.
+ */
+const SAYS_WHAT_WAS_READ = new RegExp([
+  String.raw`\b(?:segundo|conforme|de\s+acordo\s+com|(?:apenas|somente|só)(?:\s+com)?|a\s+partir(?:\s+de)?|com\s+base(?:\s+em)?|basead[oa](?:\s+em)?)\s+(?:(?:o|um|este|esse|seu|do|no|deste|desse|neste|nesse)\s+)?${READ_TEXT}`,
+  String.raw`\b(?:neste|nesse|deste|desse|este|esse|seu)\s+${READ_TEXT}`,
+  String.raw`(?<!\be\s)\bno\s+${READ_TEXT}`,
+  String.raw`\bo\s+${READ_TEXT}\s+(?:não|informa|relata|diz|traz|descreve|menciona|cita|indica|mostra|aponta|apresenta|afirma|(?:estava|está|foi)\s+(?:disponível|consultado|lido|acessado|obtido))\b`,
+  String.raw`\b(?:lemos|consultamos|tivemos\s+acesso\s+ao?)\s+(?:o\s+)?${READ_TEXT}`,
+  String.raw`\bresumo\s+(?:publicado|do\s+artigo|do\s+estudo)\b`,
+].join("|"), "iu");
 
 /** All the model's text a reader sees. */
 function trustWords(t: Trust): string[] {
@@ -135,7 +149,7 @@ async function editionIds(key: string): Promise<string[]> {
   return [...new Set((report.themes ?? []).flatMap((t) => t.storyRefs ?? []).flatMap((r) => (r.itemId ? [r.itemId] : [])))];
 }
 
-const COLUMNS = sql`a.id, a.source_id, a.url, a.title, a.excerpt, a.body_html, a.body_text, a.content_hash, a.raw, c.data AS confianca, to_jsonb(e) AS estudo, p.title AS pub_title, p.summary AS pub_summary, o.fields AS overrides,
+const COLUMNS = sql`a.id, a.source_id, a.url, a.title, a.excerpt, a.body_html, a.body_text, a.content_hash, a.raw, c.data AS confianca, to_jsonb(e) AS estudo, p.title AS pub_title, p.summary AS pub_summary, p.timeline_at, o.fields AS overrides,
   (SELECT json_agg(json_build_object('pmid', lp.pmid, 'status', lp.status)) FROM literatura_papers lp WHERE lp.article_id = a.id) AS paper_statuses`;
 
 async function readItems(ids: string[]): Promise<Row[]> {
@@ -183,10 +197,10 @@ interface Prepared { paper: Paper; access: Access; pmcid: string | null; pmcText
 async function prepare(r: Row, paper: PubmedPaper): Promise<Prepared | string> {
   const skip = skippable(paper);
   if (skip) return `paper is not rewritten: ${skip}`;
-  const { access, pmcid, full } = await paperAccess(paper);
+  const { access, pmcid, full, isFull } = await paperAccess(paper);
   const integral = r.source_id === INTEGRAL_SOURCE;
-  if (integral && !full) return "the translated full text cannot be read again";
-  const { fullText, from } = integral ? { fullText: full!.text, from: "pmc" as const } : await materiaFullText(paper, access, full);
+  if (integral && !isFull) return "the translated full text cannot be read again";
+  const { fullText, from } = integral ? { fullText: full!.text, from: "pmc" as const } : await materiaFullText(paper, access, isFull ? full : null);
   if (!fullText && !paper.abstract.length) return "the paper has neither a full text nor an abstract";
   return { paper, access, pmcid, pmcText: !!full, fullText, from, estudo: await estudoOf(r, paper) };
 }
@@ -213,10 +227,11 @@ async function preparePage(r: Row): Promise<PreparedPage | string> {
   return { page, post: postText(post), credit: postCredit(post) };
 }
 
-/** The study the paper belongs to; the item itself is no earlier version of it. */
+/** The study the paper belongs to; only what came out before the item, as for a new one, is an earlier version of it. */
 async function estudoOf(r: Row, paper: Paper): Promise<Estudo> {
   const estudo = await estudoDoPaper(paper);
-  return { ...estudo, anteriores: estudo.anteriores.filter((a) => a.articleId !== r.id) };
+  const day = beijingDate(r.timeline_at);
+  return { ...estudo, anteriores: estudo.anteriores.filter((a) => a.data < day) };
 }
 
 /** A matéria: the writer's text in the row, under its own record; refused text leaves the row as it is. */

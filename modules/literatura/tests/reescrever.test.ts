@@ -32,7 +32,7 @@ const POST_URL = `https://x.com/testes/status/${T}`;
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
 const jats = fixture("jats.xml").replace("<sec id=\"s1\"><title>Background</title>", `<sec id="s1"><title>Background</title><p>${"Children with persistent wheeze were assessed in clinic. ".repeat(40)}</p>`);
 
-const PMID = { good: "47000001", bad: "47000002", integral: "47000003", outside: "47000004", edited: "47000005" };
+const PMID = { good: "47000001", bad: "47000002", integral: "47000003", outside: "47000004", edited: "47000005", versioned: "47000006", short: "47000007" };
 const paper = (pmid: string, title: string, abstract: string, pmc = "") => `<PubmedArticle><MedlineCitation><PMID Version="1">${pmid}</PMID><Article>
   <Journal><JournalIssue><PubDate><Year>2026</Year></PubDate></JournalIssue><Title>Journal of tests</Title></Journal><ArticleTitle>${title}</ArticleTitle>
   <ELocationID EIdType="doi" ValidYN="Y">10.5555/${pmid}</ELocationID><Abstract><AbstractText>${abstract}</AbstractText></Abstract>
@@ -45,6 +45,8 @@ const PUBMED = `<PubmedArticleSet>${[
   paper(PMID.integral, "Translated paper", "Tracheomalacia was found in 31% of 120 children.", "PMC12345678"),
   paper(PMID.outside, "Outside paper", "An outcome of 12% in 40 children."),
   paper(PMID.edited, "Edited paper", "Stridor resolved in 64% of 25 infants."),
+  paper(PMID.versioned, "Versioned paper", "Stenosis was treated in a cohort."),
+  paper(PMID.short, "Short paper", "Stenosis was followed in a cohort.", "PMC87654321"),
 ].join("")}</PubmedArticleSet>`;
 
 const materia = (titulo: string, achado: string, resultado: string) => ({
@@ -62,12 +64,14 @@ let saysRead = false;
 let writerFails = false;
 const calls = { materia: 0, report: 0, other: 0 };
 const paths: string[] = [];
+const writerInputs: string[] = [];
 const llm = (user: string) => {
   if (user.startsWith("Esta edição:")) {
     calls.report++;
     return { overview: "A edição traz a decanulação em oitenta e oito por cento e o uso de 999 cânulas.", sections: {} };
   }
   calls.materia++;
+  writerInputs.push(user);
   if (user.includes("Good paper")) return materia("Decanulação em crianças é parecida entre as técnicas comparadas", saysRead ? "Segundo o resumo, decanulação em 88% das crianças." : "A decanulação ocorreu em 88% das crianças.", "Sem diferença entre grupos.");
   if (user.startsWith("Endereço da página")) return fonte;
   if (user.includes("Publisher paper")) return materia("Stent em lactentes teve sucesso na maior parte dos casos da série", "O stent teve sucesso em 75% dos lactentes.", "Sucesso em 75%.");
@@ -80,7 +84,7 @@ const llm = (user: string) => {
     return materia(titulo, "Entre 58 lactentes, a sobrevida aumentou.", "Com aumento.");
   }
   if (user.includes("Translated paper")) return materia("Título que a tradução ignora, com tamanho bastante", "Traqueomalácia em 31% das crianças.", "Lista.");
-  return materia("Título que ninguém pediu, com tamanho bastante", "Nada aqui.", "Nada.");
+  return materia("Título que ninguém pediu, com tamanho bastante", "A série não traz um número principal.", "Nada.");
 };
 const stubServer = http.createServer((req, res) => {
   const chunks: Buffer[] = [];
@@ -97,6 +101,7 @@ const stubServer = http.createServer((req, res) => {
     if (url.startsWith("/unpaywall/")) return send(200, "application/json", fixture("unpaywall-closed.json"));
     if (url.startsWith("/epmc/search")) return send(200, "application/json", JSON.stringify({ resultList: { result: [] } }));
     if (url === "/epmc/PMC12345678/fullTextXML") return send(200, "text/xml", jats);
+    if (url === "/epmc/PMC87654321/fullTextXML") return send(200, "text/xml", fixture("jats.xml"));
     if (url.startsWith("/crossref/")) return send(404, "application/json", "{}");
     if (url.startsWith("/v1/chat/completions")) {
       const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as { messages: Array<{ role: string; content: string }> };
@@ -111,7 +116,7 @@ const stubServer = http.createServer((req, res) => {
 const tmp = mkdtempSync(path.join(os.tmpdir(), "reescrever-"));
 const previewPath = path.join(tmp, "preview.md");
 const run = (mode: "plan" | "generate" | "apply", log?: (line: string) => void) => rewriteEdition(KEY, { mode, reason: REASON, actor: ACTOR, previewPath, log });
-const ids = {} as Record<"good" | "bad" | "integral" | "third" | "noSource" | "outside" | "publisher" | "page" | "pageGone" | "edited", string>;
+const ids = {} as Record<"good" | "bad" | "integral" | "third" | "noSource" | "outside" | "publisher" | "page" | "pageGone" | "edited" | "earlierVersion" | "laterVersion" | "versioned" | "short" | "shortIntegral", string>;
 const EDITED_SUMMARY = "Resumo ajustado pelo editor.";
 
 /** An item already selected and grouped, as an edition carries it. */
@@ -184,6 +189,29 @@ test("the main number is taken from the old lead line, in either notation, when 
   assert.deepEqual(mainNumbers("Sobrevida de 45%", "Survival rose."), [], "a figure the source does not have is no study's number");
   assert.ok(hasNumber("A sobrevida chegou a 70,8%.", "70.8"));
   assert.ok(!hasNumber("A sobrevida chegou a 58 casos.", "70,8"));
+});
+
+test("digits inside a name are no figure; a range's bounds and a dose are", () => {
+  for (const [line, source] of [["Bronquiolite pós-COVID-19 em lactentes", "COVID-19 in infants"], ["Crianças com T21", "Children with T21"], ["Níveis de IL-10", "IL-10 levels"], ["Deleção 22q11", "22q11 deletion"]]) {
+    assert.deepEqual(mainNumbers(line!, source!), [], line);
+  }
+  assert.deepEqual(mainNumbers("Sucesso de 60-70% dos casos", "Success in 60-70%."), ["70", "60"], "both bounds of a range stay");
+  assert.deepEqual(mainNumbers("Dose de 10mg", "A dose of 10 mg."), ["10"], "a unit after the figure does not make it a name");
+  assert.ok(hasNumber("Em 19 crianças com COVID-19.", "19"));
+  assert.ok(!hasNumber("Crianças com COVID-19.", "19"));
+  const ok = { required: { achado: "Achado" }, text: ["Achado."], achado: "Achado.", numbers: [] };
+  assert.equal(refusal({ ...ok, noFigures: "Em crianças com COVID-19 ou T21, não muda a conduta." }), null);
+  assert.equal(refusal({ ...ok, achado: "Bronquiolite em lactentes.", numbers: mainNumbers("Bronquiolite pós-COVID-19", "COVID-19") }), null);
+});
+
+test("wording about what the journal read is refused; a study's own methods are not", () => {
+  const ok = { required: { achado: "Achado" }, text: [""], achado: "Achado.", numbers: [] };
+  for (const said of ["A partir do resumo, 88%.", "O resumo não informa o seguimento.", "Só o resumo estava à mão.", "O artigo na íntegra não foi consultado.", "O artigo completo não estava disponível."]) {
+    assert.match(refusal({ ...ok, text: [said] })!, /says what was read/, said);
+  }
+  for (const fine of ["Triagem de resumos e leitura do texto completo por dois revisores.", "Artigos em texto completo foram avaliados.", "Títulos e resumos foram lidos por dois revisores.", "O resumo executivo da diretriz recomenda treinar os cuidadores."]) {
+    assert.equal(refusal({ ...ok, text: [fine] }), null, fine);
+  }
 });
 
 test("text that says what was read, leaves a required field empty, misses the number in achado or has figures in naPratica is refused", () => {
@@ -372,6 +400,38 @@ test("rewriting an edition: plan, generate, apply, a failed item, a re-run, a re
   assert.equal((await state(ids.page)).title, "Título velho da página oficial");
   assert.equal(statusOf(await run("plan"), ids.page).status, "would-write", "a restored page can be rewritten again");
   await run("apply");
+});
+
+test("an item is told only of the versions before it, and a short PMC text gives a link but is not written from", { timeout: 60_000 }, async () => {
+  const key = "2026-W02";
+  await item("earlierVersion", MATERIA_SOURCE, {}, "Versão anterior do estudo", "Antes.");
+  await item("versioned", MATERIA_SOURCE, { pmid: PMID.versioned, basis: "abstract" }, "Título velho da versão", "Agora.");
+  await item("laterVersion", MATERIA_SOURCE, {}, "Versão posterior do estudo", "Depois.");
+  await item("short", MATERIA_SOURCE, { pmid: PMID.short, basis: "abstract" }, "Título velho do texto curto", "Curto.");
+  await item("shortIntegral", INTEGRAL_SOURCE, { pmid: PMID.short }, "Tradução sem texto completo", "Curto.");
+  for (const [name, daysAgo] of [["earlierVersion", 10], ["versioned", 5], ["laterVersion", 1]] as const) {
+    await sql`UPDATE publications SET timeline_at = now() - make_interval(days => ${daysAgo}) WHERE article_id = ${ids[name]}`;
+  }
+  const study = [`doi:10.5555/${PMID.versioned}`];
+  await sql`INSERT INTO literatura_estudos (article_id, ids, estado) VALUES (${ids.earlierVersion}, ${study}, 'preprint'), (${ids.laterVersion}, ${study}, 'artigo-revisado')`;
+  const storyRefs = (["versioned", "short", "shortIntegral"] as const).map((k) => ({ itemId: ids[k], title: k, summary: k }));
+  await sql`INSERT INTO reports (kind, key, window_start, window_end, content, generated_at, model, origin)
+    VALUES ('weekly', ${key}, now() - interval '7 days', now(), ${sql.json({ kind: "weekly", periodStart: "2026-01-05", periodEnd: "2026-01-11", headline: "Edição", themes: [{ heading: "Estudos", summary: null, storyRefs }] } as never)}, now(), 'default', 'model')`;
+  writerInputs.length = 0;
+  const out = await rewriteEdition(key, { mode: "generate", reason: REASON, actor: ACTOR, previewPath });
+
+  const versioned = writerInputs.find((u) => u.includes("Versioned paper"))!;
+  assert.match(versioned, /Versão anterior do estudo/);
+  assert.doesNotMatch(versioned, /Versão posterior do estudo/, "what came after the item is not given as earlier");
+
+  const short = writerInputs.find((u) => u.includes("Short paper"))!;
+  assert.doesNotMatch(short, /Texto disponível: texto completo/);
+  const shortResult = statusOf(out, ids.short);
+  assert.equal(shortResult.status, "generated", shortResult.why ?? "");
+  assert.match(shortResult.newText!, /Texto completo gratuito:.*europepmc\.org/);
+  assert.doesNotMatch(shortResult.newText!, /pago na editora/);
+  assert.equal(statusOf(out, ids.shortIntegral).type, "sem-fonte", "a translation needs the full text itself");
+  assert.match(statusOf(out, ids.shortIntegral).why!, /cannot be read again/);
 });
 
 test("the script needs a reason to write, and without --apply writes only the preview", { timeout: 90_000 }, async () => {
