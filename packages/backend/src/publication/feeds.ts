@@ -11,7 +11,7 @@ import { proxyBodyImages } from "../media/imgproxy.ts";
 import { DAILY_ISSUE_NAME, feedIssues, PERIOD_ISSUE_NAMES, type FeedIssue, type ReportKind } from "./reports.ts";
 import { textToHtml } from "../content/sanitize.ts";
 import type { FeedNotice, ItemExit } from "../modules.ts";
-import { itemExits, shownBody } from "./detail.ts";
+import { itemExits } from "./detail.ts";
 import { JOURNAL, publicCategoryCondition, exportTranslation, xView, type ItemRow } from "./items.ts";
 import { publicSourceName } from "./rules.ts";
 import { listedCondition, seatedCondition } from "./scope.ts";
@@ -120,7 +120,7 @@ function fullContent(r: FeedRow, aihot: string, exit: ItemExit | undefined): str
         : `<p><img src="${escapeXml(url)}" alt="${escapeXml(String(media.alt ?? ""))}"></p>`;
     }
   } else if (r.body_html) {
-    html = exportTranslation(r) ?? shownBody(r.body_html);
+    html = exportTranslation(r) ?? r.body_html;
   }
   if (!html) return null;
   return `${exit?.before ?? ""}${proxyBodyImages(html, true, FEED_IMAGE_SECONDS)}${exit?.after ?? ""}<p>— Reunido e organizado pelo ${escapeXml(SITE.bareName)}; a versão completa e ${escapeXml(subjectAfter("mais", "notícias"))} em <a href="${aihot}">${aihot}</a></p>`;

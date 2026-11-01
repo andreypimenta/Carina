@@ -137,11 +137,11 @@ function Top({ data }: { data: unknown }) {
 }
 
 function End({ data }: { data: unknown }) {
-  const { confianca, correcoes } = data as MateriaPart;
-  if (!confianca && !correcoes.length) return null;
+  const { feitura, correcoes } = data as MateriaPart;
+  if (!feitura && !correcoes.length) return null;
   return (
     <div className="mt-6 space-y-5 border-t border-line pt-5">
-      {confianca && <p className="text-[13.5px] leading-[1.7] text-ink-3">{linhaTransparencia(confianca, EXPEDIENTE.editor.name)}</p>}
+      {feitura && <p className="text-[13.5px] leading-[1.7] text-ink-3">{linhaTransparencia(feitura, EXPEDIENTE.editor.name)}</p>}
       {correcoes.length > 0 && (
         <section aria-labelledby="correcoes">
           <h2 id="correcoes" className="text-[13px] font-semibold text-ink">Correções</h2>

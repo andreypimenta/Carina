@@ -36,8 +36,8 @@ const prospect: Materia = {
     { desfecho: "Mortalidade em 28 dias", resultado: "10%, sem diferença entre os grupos", efeito: "" },
   ],
   aFavor: ["Randomizado, multicêntrico e com desfecho clínico; os intervalos estreitos em torno de zero tornam improvável um benefício relevante perdido."],
-  naoInformado: ["Não informados o seguimento após o período principal e os subgrupos por gravidade."],
-  naPratica: "Para quem cuida de crianças ventiladas com SDRA no início do quadro, o estudo não dá base para pronar ou passar para HFOV de rotina buscando menos tempo de ventilador. O estudo não testou a prona como resgate na hipoxemia refratária. Para o Brasil, o resultado depende de equipe e ventiladores comparáveis aos dos centros participantes, que não foram descritos.",
+  naoInformado: ["Seguimento após o período principal e subgrupos por gravidade."],
+  naPratica: "Para quem cuida de crianças ventiladas com SDRA no início do quadro, o estudo não dá base para pronar ou passar para HFOV de rotina buscando menos tempo de ventilador. O estudo não testou a prona como resgate na hipoxemia refratária. Para o Brasil, o resultado depende de equipe e ventiladores comparáveis aos dos centros participantes.",
   contexto: "",
 };
 
@@ -64,7 +64,7 @@ test("a sample matéria shows each key number in one block of the page, and Na p
   }
   for (const [key, where] of [["424", "Desenho"], ["75", "População"], ["17,9", "O que encontraram"], ["10%", "O que encontraram"]] as const) assert.equal(seen.get(key), where);
   assert.equal(numbers(blocks["Na prática"]!).size, 0);
-  assert.deepEqual(Object.keys(blocks), ["Título", "Pergunta clínica", "Em um minuto", "População", "Desenho", "Conflitos de interesse declarados", "Principal limitação", "O que fizeram", "O que encontraram", "Quanto confiar", "Na prática"]);
+  assert.deepEqual(Object.keys(blocks), ["Título", "Pergunta clínica", "Em um minuto", "População", "Desenho", "Principal limitação", "O que fizeram", "O que encontraram", "Quanto confiar", "Na prática"]);
 });
 
 test("the length cap: about 1.2x the abstract's words, 900 from a full text; the model is told", () => {
@@ -89,7 +89,8 @@ test("Quanto confiar: the flags present, by name, with the study's strengths and
   assert.match(html, /<strong>Interrupção precoce:<\/strong> Parou por futilidade/);
   assert.match(html, /<strong>Sem mascaramento:<\/strong>/);
   assert.match(html, /<strong>A favor:<\/strong> Randomizado/);
-  assert.match(html, /<strong>Não informado:<\/strong>/);
+  assert.match(html, /<strong>Não localizado no material consultado:<\/strong> Seguimento/);
+  assert.doesNotMatch(html, /Não informad/);
   assert.doesNotMatch(html, /Centro único|Retrospectivo/, "only the flags present");
   assert.doesNotMatch(renderMateria({ ...prospect, aFavor: [], sinaisDeAlerta: [], naoInformado: [] }, paper, { kind: "unknown" }, null), /Quanto confiar/);
   assert.doesNotMatch(html, /Matéria escrita|Como foi feito|Limitações|Para o pediatra/);
@@ -113,7 +114,7 @@ test("a matéria written before the single structure shows on its card only what
     desenho: "coorte", desenhoDetalhe: "coorte retrospectiva", limitacao: "Centro único.", conflitos: "Não informado", aplicabilidade: "Depende de estrutura.", textoLido: "resumo", preprint: false, datas: null,
   };
   assert.equal(corpoJaDiz(old), true);
-  assert.deepEqual(fichaRows({ confianca: old, estado: "artigo-revisado" }).map((r) => r.label), ["Estágio da evidência", "Conflitos de interesse declarados", "O que se transfere ao contexto brasileiro"]);
+  assert.deepEqual(fichaRows({ confianca: old, estado: "artigo-revisado" }).map((r) => r.label), ["Estágio da evidência", "O que se transfere ao contexto brasileiro"]);
   assert.equal(corpoJaDiz({ ...old, feitura: "traducao" }), false);
   assert.ok(fichaRows({ confianca: { ...old, feitura: "traducao" }, estado: null }).some((r) => r.label === "População"));
   assert.equal(corpoJaDiz(confiancaDaMateria(prospect, paper, "resumo", now)), false);

@@ -13,7 +13,6 @@
 import type { ServerModule } from "@aihot/backend/modules";
 import { registerCorrecoes } from "./api/correcoes.ts";
 import { registerEspeciais } from "./api/especiais.ts";
-import { semNotaDeOrigem } from "./confianca.ts";
 import { materiaExit, materiaMail, materiaParts, ownSummary, titleLabel } from "./backend/confianca.ts";
 import { ADICIONAR_QUEUE } from "./backend/adicionar.ts";
 import { ALERTA_PURPOSE, collectAlertas } from "./backend/alertas.ts";
@@ -36,7 +35,7 @@ const server: ServerModule = {
   },
   titleLabel,
   ownSummary,
-  items: { parts: materiaParts, mail: materiaMail, shownBody: semNotaDeOrigem, exit: materiaExit },
+  items: { parts: materiaParts, mail: materiaMail, exit: materiaExit },
   models: {
     [MATERIA_STEP]: {
       label: "Matéria sobre artigo científico (texto próprio do site a partir do resumo ou do texto completo em acesso aberto), apuração dos posts do X (assunto, busca no PubMed, matéria a partir da página oficial) e alertas regulatórios de dispositivos (FDA, Anvisa)",

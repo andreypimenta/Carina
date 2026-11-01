@@ -42,18 +42,13 @@ function withOutline(html: string): { html: string; outline: OutlineEntry[] } {
   return { html: out, outline };
 }
 
-/** An article's stored body as readers get it (ServerModule.items.shownBody). */
-export function shownBody(html: string): string {
-  return serverModules().reduce((out, m) => m.items?.shownBody?.(out) ?? out, html);
-}
-
 async function loadRow(id: string): Promise<DetailRow | null> {
   const [row] = await sql<DetailRow[]>`
     SELECT ${ITEM_COLUMNS}, a.body_html, a.body_text, a.body_status, tr.body_html AS tr_html, tr.complete AS tr_complete,
       ${topicMembership()} AS topics
     ${ITEM_FROM}
     WHERE p.article_id = ${id}`;
-  return row ? { ...row, body_html: row.body_html && shownBody(row.body_html) } : null;
+  return row ?? null;
 }
 
 /**

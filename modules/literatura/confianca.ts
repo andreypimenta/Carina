@@ -2,7 +2,7 @@
 // question, "Em um minuto" (the finding, and whether it changes anything now, graded from what the material itself
 // supports and never the journal's own recommendation), the population, the study design and its main
 // limitation and the declared conflicts as the model read them (backend/materia.ts);
-// the text the pipeline actually read; preprints; the dates of a guideline or consensus; where the study stands
+// preprints; the dates of a guideline or consensus; where the study stands
 // (registered, recruiting, results deposited, preprint, reviewed article) and its other versions the site has
 // (backend/estudos.ts); and the public corrections the editor added (backend/correcoes.ts).
 // Shared by the backend and the web, so nothing here imports either.
@@ -66,7 +66,7 @@ export function alertaTitleLabel(a: { orgao: string; categoria: CategoriaAlerta 
 
 export const PREPRINT_LABEL = "Preprint – não revisado por pares";
 
-/** What a trust field says when the text read gives nothing, or when it was not read for it (backend/materia.ts). */
+/** What a trust field stores when the text read gives nothing, or when it was not read for it (backend/materia.ts). The card never prints it (`fichaRows`). */
 export const NAO_INFORMADO = "Não informado";
 
 /**
@@ -120,7 +120,7 @@ export interface EmUmMinuto {
   diretriz: string | null;
 }
 
-/** What is stored for each new matéria (literatura_confianca). Old matérias have none and show nothing. */
+/** What is stored for each new matéria (literatura_confianca). Old matérias have none and show only the transparency line (`MateriaPart.feitura`). */
 export interface Confianca {
   feitura: Feitura;
   /**
@@ -168,6 +168,8 @@ export interface Correcao {
  */
 export interface MateriaPart {
   confianca: ConfiancaPublica | null;
+  /** How the piece was made, for its transparency line: the record's, or "materia" for an older matéria without one; null for anything else without a record. */
+  feitura: Feitura | null;
   estado: Estado | null;
   versoes: Versao[];
   /** Other papers of the same trial (secondary, post-hoc, follow-up analyses): not versions of this one. */
@@ -204,18 +206,22 @@ export function fichaTitulo(c: ConfiancaPublica): string {
   return c.feitura === "materia" || c.feitura === "traducao" ? "Ficha do estudo" : "Sobre a fonte";
 }
 
+/** A field the model or the pipeline left as "not informed": a reader would take it as a statement about the paper, which may not have been checked, so it is not shown. */
+const informado = (s: string | null | undefined): s is string => !!s && !/^não informad[oa]\.?$/i.test(s.trim());
+
 /** The card: each row says something nothing else on the page does. */
 export function fichaRows({ confianca: c, estado }: Pick<MateriaPart, "confianca" | "estado">): FichaRow[] {
   if (!c) return [];
   const antiga = corpoJaDiz(c);
   const study = c.feitura === "materia" || c.feitura === "traducao";
+  const populacao = c.populacao ? [c.populacao.idade, c.populacao.doenca, c.populacao.cenario].filter(informado).join(" · ") : "";
   const rows: Array<FichaRow | null> = [
     c.alerta ? { label: "Ato regulatório", text: `${CATEGORIA_ALERTA_LABEL[c.alerta.categoria]} (${c.alerta.orgao})`, note: "Não é evidência de eficácia nem de segurança clínica do produto." } : null,
-    c.populacao && !antiga ? { label: "População", text: [c.populacao.idade, c.populacao.doenca, c.populacao.cenario].join(" · ") } : null,
+    populacao && !antiga ? { label: "População", text: populacao } : null,
     c.desenho && !antiga ? { label: study ? "Desenho" : "Documento", text: c.desenhoDetalhe ? `${DESENHO_LABEL[c.desenho]} (${c.desenhoDetalhe})` : DESENHO_LABEL[c.desenho] } : null,
     estado ? { label: "Estágio da evidência", estado, note: ESTADO_NOTA[estado] } : null,
-    c.conflitos ? { label: "Conflitos de interesse declarados", text: c.conflitos } : null,
-    c.limitacao && !antiga ? { label: "Principal limitação", text: c.limitacao } : null,
+    informado(c.conflitos) ? { label: "Conflitos de interesse declarados", text: c.conflitos } : null,
+    informado(c.limitacao) && !antiga ? { label: "Principal limitação", text: c.limitacao } : null,
     c.aplicabilidade ? { label: c.estrutura === "unica" ? "Na prática" : "O que se transfere ao contexto brasileiro", text: c.aplicabilidade } : null,
     c.datas ? { label: "Datas do documento", text: `Publicado: ${c.datas.publicado ? dataBr(c.datas.publicado) : "não informado"} · Revisado: ${c.datas.revisado ? dataBr(c.datas.revisado) : "não informado pela fonte"} · Verificado pelo jornal em ${dataBr(c.datas.conferido)}` } : null,
   ];
@@ -226,14 +232,14 @@ export function fichaRows({ confianca: c, estado }: Pick<MateriaPart, "confianca
  * The one line of transparency at the end of the piece: made with AI and published without a human review first,
  * so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE).
  */
-export function linhaTransparencia(c: ConfiancaPublica, editor: string | null): string {
+export function linhaTransparencia(feitura: Feitura, editor: string | null): string {
   const how = {
     materia: "Matéria escrita com inteligência artificial e publicada automaticamente",
     pagina: "Matéria escrita com inteligência artificial e publicada automaticamente",
     traducao: "Artigo traduzido na íntegra com inteligência artificial e publicado automaticamente",
     alerta: "Alerta escrito com inteligência artificial a partir do ato oficial e publicado automaticamente",
     aviso: "Aviso gerado automaticamente a partir da página oficial, sem leitura do documento",
-  }[c.feitura];
+  }[feitura];
   return `${how}; ${editor ? `o editor responsável, ${editor},` : "o editor responsável"} acompanha o que vai ao ar e corrige quando necessário.`;
 }
 
@@ -258,12 +264,6 @@ export function achadoVisivel({ confianca: c, resumoEditor }: Pick<MateriaPart, 
 export function minutoCompacto(part: MateriaPart): string | null {
   return part.confianca?.minuto ? `Em um minuto: ${minutoEmLinha(part.confianca.minuto)}` : null;
 }
-
-/** The line older matérias keep in their stored body saying whether the abstract or the full text was read. */
-const NOTA_DE_ORIGEM = /<p><em>Matéria escrita pelo [^<]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\.<\/em><\/p>/g;
-const NOTA_DE_ORIGEM_TEXTO = /\s*Matéria escrita pelo [^.]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\./g;
-export const semNotaDeOrigem = (html: string): string => html.replace(NOTA_DE_ORIGEM, "");
-export const semNotaDeOrigemNoTexto = (text: string): string => text.replace(NOTA_DE_ORIGEM_TEXTO, "");
 
 /** A correction as the admin lists it: the matéria it belongs to, who added it and when. */
 export interface AdminCorrecao extends Correcao {

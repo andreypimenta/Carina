@@ -338,8 +338,6 @@ export interface ServerModule {
      * before and after the body, converted by the exit where it needs to; null for nothing. The page does not read it.
      */
     exit?: (part: unknown) => ItemExit | null;
-    /** The stored body as readers get it, in every exit that carries it (publication/detail.ts shownBody). */
-    shownBody?: (html: string) => string;
   };
   /** More keys a feedback sender is known by; a ban under any of them holds (operations/feedback.ts). */
   feedbackKeys?: (ip: string) => string[];

@@ -36,6 +36,18 @@ const translated: SiteItemDetail = {
   body: { zh: "<p>Começo traduzido.</p>", original: "<p>Full original text.</p>", zhKind: "translation", complete: false },
 } as SiteItemDetail;
 
+const literaturaPart = (fields: Record<string, unknown>) => ({ confianca: null, feitura: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null, ...fields });
+const semFicha: SiteItemDetail = { ...item, id: "sem-ficha", ownText: true, modules: { literatura: literaturaPart({ feitura: "materia" }) } } as SiteItemDetail;
+const semConferir: SiteItemDetail = {
+  ...item, id: "sem-conferir", ownText: true,
+  modules: {
+    literatura: literaturaPart({
+      feitura: "materia",
+      confianca: { feitura: "materia", estrutura: "unica", minuto: null, populacao: { idade: "não informada", doenca: "Sibilância", cenario: "não informado" }, desenho: "coorte", desenhoDetalhe: null, limitacao: "não informada", conflitos: "Não informado", preprint: false, datas: null },
+    }),
+  },
+} as SiteItemDetail;
+
 const api = createServer((req, res) => {
   const path = new URL(req.url!, "http://api.local").pathname;
   res.setHeader("Content-Type", "application/json");
@@ -48,6 +60,8 @@ const api = createServer((req, res) => {
   if (/^\/api\/site\/reports\/(weekly|daily)\/navigation\//.test(path)) return res.end(JSON.stringify({ items: [] }));
   if (path === "/api/site/items/sec-1") return res.end(JSON.stringify(item));
   if (path === "/api/site/items/tr-1") return res.end(JSON.stringify(translated));
+  if (path === "/api/site/items/sem-ficha") return res.end(JSON.stringify(semFicha));
+  if (path === "/api/site/items/sem-conferir") return res.end(JSON.stringify(semConferir));
   res.statusCode = 404;
   res.end(JSON.stringify({ code: "not_found" }));
 });
@@ -136,6 +150,17 @@ test("an article opened from /assine says when its text is an incomplete AI tran
   assert.match(html, /A tradução ainda está incompleta; veja o texto completo no original\./);
   assert.doesNotMatch(await page(`/assine/${WEEK}/sec-1`), /tradução por IA|tradução ainda está incompleta/);
 });
+
+for (const at of [`/assine/${WEEK}/`, "/items/"]) {
+  test(`${at}: a matéria without a trust record says it was written with AI, and the card never states what nobody checked`, async () => {
+    assert.match(await page(`${at}sem-ficha`), /Matéria escrita com inteligência artificial e publicada automaticamente/);
+    const html = (await page(`${at}sem-conferir`)).replace(/<script[\s\S]*?<\/script>/g, "");
+    assert.match(html, /Matéria escrita com inteligência artificial/);
+    assert.match(html, /População/);
+    assert.match(html, /Sibilância/);
+    assert.doesNotMatch(html, /Conflitos de interesse|Principal limitação|[Nn]ão informad/);
+  });
+}
 
 test("an article page under /assine needs a week in its address", async () => {
   const response = await fetch(`${web.origin}/assine/semana/sec-1`);

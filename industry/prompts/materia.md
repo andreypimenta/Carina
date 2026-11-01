@@ -27,7 +27,7 @@ Antes de escrever, leia o material procurando cada sinal desta lista e preencha 
 - `n-pequeno`: poucos pacientes para a pergunta.
 - `conflito-fabricante`: autor ou financiamento ligado ao fabricante do que foi estudado.
 
-Só marque o que o material mostra. Não informado não é o mesmo que não feito: se o material não diz se houve mascaramento, isso não é o sinal `sem-mascaramento`; vai em `naoInformado`.
+Só marque o que o material mostra. Não aparecer no material não é o mesmo que não ter sido feito: se o material não diz se houve mascaramento, isso não é o sinal `sem-mascaramento`; vai em `naoInformado`.
 
 ## Os campos, na ordem em que o leitor os vê
 
@@ -42,12 +42,12 @@ Só marque o que o material mostra. Não informado não é o mesmo que não feit
 
 Ficha (cada item em poucas palavras; é aqui, e só aqui, que moram a população, o desenho e o número de pacientes):
 
-- `populacaoIdade`: a faixa de idade dos pacientes estudados (por exemplo, "recém-nascidos a 2 anos", "1 a 17 anos, mediana de 4 anos"); "não informada" se o material não diz.
+- `populacaoIdade`: a faixa de idade dos pacientes estudados (por exemplo, "recém-nascidos a 2 anos", "1 a 17 anos, mediana de 4 anos"); string vazia se o material não diz.
 - `populacaoDoenca`: a doença, condição ou procedimento estudado.
-- `populacaoCenario`: o cenário de atendimento (UTI neonatal, UTI pediátrica, centro cirúrgico, ambulatório, emergência, comunidade; um ou vários centros, e o país quando o material diz); "não informado" se o material não diz.
+- `populacaoCenario`: o cenário de atendimento (UTI neonatal, UTI pediátrica, centro cirúrgico, ambulatório, emergência, comunidade; um ou vários centros, e o país quando o material diz); string vazia se o material não diz.
 - `desenho`: o desenho do estudo, só um destes valores: `"ensaio-clinico"`, `"meta-analise"`, `"revisao-sistematica"`, `"coorte"`, `"caso-controle"`, `"transversal"`, `"serie-de-casos"`, `"relato-de-caso"`, `"revisao-narrativa"`, `"diretriz"`, `"consenso"`, `"estudo-experimental"` (laboratório ou animais), `"outro"`.
 - `desenhoDetalhe`: o desenho e o número total de pacientes, em poucas palavras, como o material os descreve (por exemplo, "coorte retrospectiva de um centro, 84 crianças", "ensaio randomizado multicêntrico, não cego, 424 de 600 planejados").
-- `conflitos`: uma frase com os conflitos de interesse e o financiamento que os autores declaram (por exemplo, "Os autores declaram não ter conflitos; estudo financiado pelo NIH." ou "Um autor é consultor do fabricante do dispositivo estudado."), a partir do texto completo ou da declaração de conflitos da entrada. Se o material não traz declaração, "Não informado". Não deduza conflitos de nomes de instituições ou empresas.
+- `conflitos`: uma frase com os conflitos de interesse e o financiamento que os autores declaram (por exemplo, "Os autores declaram não ter conflitos; estudo financiado pelo NIH." ou "Um autor é consultor do fabricante do dispositivo estudado."), a partir do texto completo ou da declaração de conflitos da entrada. Se o material não traz declaração, string vazia. Não deduza conflitos de nomes de instituições ou empresas.
 - `limitacaoPrincipal`: uma frase com a principal limitação para interpretar o achado (a que os autores reconhecem ou a que decorre do desenho). Ela não volta em `sinaisDeAlerta`.
 
 Corpo:
@@ -55,7 +55,7 @@ Corpo:
 - `oQueFizeram`: 1 parágrafo, só se houver detalhe que não coube na ficha: o que cada grupo recebeu, o comparador, o desfecho principal, o seguimento. Se não há nada a acrescentar, string vazia.
 - `resultados` ("O que encontraram"): a lista por desfecho, na ordem de importância, com os outros números da matéria. Cada item tem `desfecho`, `resultado` e `efeito` (string vazia quando não se aplica). Inclua complicações e eventos adversos quando o artigo os relata. O número que já está em `achado` não se repete: aqui entra o que o completa.
 - `aFavor` ("Quanto confiar"): até 2 frases curtas, cada uma com um ponto que fortalece o estudo, tirado do que o material mostra. Sem elogio genérico. Lista vazia se nada se destaca.
-- `naoInformado`: até 2 frases curtas com o que não foi informado e que importa para interpretar o estudo. Isso não quer dizer que não foi feito; escreva "não informado", nunca "não foi feito". Lista vazia se nada importante faltar.
+- `naoInformado`: até 2 itens curtos, cada um só com o nome do que não aparece no material e importa para interpretar o estudo (por exemplo, "Seguimento após o período principal"). O site os mostra sob o rótulo "Não localizado no material consultado": não escreva que o estudo não informou, nem que não foi feito. Lista vazia se nada importante faltar.
 - `naPratica`: 1 parágrafo **sem nenhum número**: para quem isso importa, o que muda ou não muda à beira do leito, e o que se transfere ao contexto brasileiro. Sempre com base no que o artigo informa. Se o estudo não testou algo que o leitor poderia supor, diga assim: "o estudo não testou X". Sobre o Brasil, compare só o que o material informa do cenário do estudo (país, nível de atenção, recursos, equipamentos, técnica e população) e diga de que isso depende para valer aqui; não afirme números, disponibilidade nem regras do Brasil ou do SUS. Não recomende nada nem diga o que o leitor deve fazer.
 - `contexto`: opcional, 2 a 3 frases, o que já se sabia, só com o que o próprio artigo diz na introdução ou na discussão. Se o material não traz, string vazia.
 
@@ -69,10 +69,11 @@ Corpo:
 
 ## Regras
 
-- O leitor nunca fica sabendo se você leu o resumo ou o texto completo: em nenhum campo escreva "o resumo", "o texto completo", "segundo o resumo" ou algo parecido. Diga "o estudo" ou "não informado". Isso não muda o que você pode afirmar: nunca diga mais do que o material lido sustenta.
+- O leitor nunca fica sabendo se você leu o resumo ou o texto completo: em nenhum campo escreva "o resumo", "o texto completo", "segundo o resumo" ou algo parecido. Isso não muda o que você pode afirmar: nunca diga mais do que o material lido sustenta.
+- Só diga que o estudo não informou, não relatou ou não descreveu algo se a entrada diz exatamente "Texto disponível: texto completo". Nos outros casos, você não viu o estudo inteiro: o que falta vai só em `naoInformado`, e nenhum outro campo fala disso.
 - Escreva só a partir do material fornecido. Todo número, nome de técnica, classificação, instituição e conclusão tem de estar no material. Se o material não informa algo (por exemplo, o seguimento), não preencha.
 - Não exagere a força da evidência: estudo retrospectivo mostra associação, não causa; série sem controle não prova superioridade; relato de caso não estabelece conduta. Use verbos compatíveis ("associou-se a", "sugere", "neste grupo").
-- `titulo`, `perguntaClinica`, `achado`, `resultados` e os campos da ficha são sempre preenchidos (com "não informado" quando for o caso), menos `diretriz`. Os demais ficam vazios quando não há material.
+- `titulo`, `perguntaClinica`, `achado`, `resultados` e `desenho` são sempre preenchidos. Os demais ficam vazios quando não há material; nunca escreva "não informado" num campo.
 - Não copie frases do artigo: reescreva com suas palavras. Citações literais, se houver, no máximo uma, curta e entre aspas.
 - Não dê recomendação clínica individual nem diga ao leitor o que fazer com um paciente específico.
 - Se o material é um preprint (a entrada diz "Preprint: sim"), trate os resultados como preliminares em `achado`. O site já avisa o leitor de que ele não foi revisado por pares.

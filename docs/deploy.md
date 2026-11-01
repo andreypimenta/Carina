@@ -99,11 +99,11 @@ docker compose exec worker node scripts/abas-dividir.ts --apply
 
 #### 报道改用单一结构，每个事实只出现一次（2026 年 11 月 1 日）
 
-没有迁移，没有新环境变量，不删任何数据。本站自己的两个信源（`literatura-materia`、`literatura-integral`，`industry/taxonomy.ts` 的 `OWN_TEXT_SOURCES`）不再用引擎写的标题、“Resumo por IA”和“Por que importa”；`understand` 仍然运行，给类型、标签和分区用。模块多了两个插口：`ServerModule.ownSummary`，以及 `ServerModule.items.exit`（不经过页面就带正文的出口，也就是 Markdown 导出和全文 RSS，用它在正文前后带上临床问题、Em um minuto、卡片和透明度说明）。
+没有迁移，没有新环境变量。唯一删除的数据是旧报道正文里的一句话（见下）。本站自己的两个信源（`literatura-materia`、`literatura-integral`，`industry/taxonomy.ts` 的 `OWN_TEXT_SOURCES`）不再用引擎写的标题、“Resumo por IA”和“Por que importa”；`understand` 仍然运行，给类型、标签和分区用。模块多了两个插口：`ServerModule.ownSummary`，以及 `ServerModule.items.exit`（不经过页面就带正文的出口，也就是 Markdown 导出和全文 RSS，用它在正文前后带上临床问题、Em um minuto、卡片和透明度说明）。
 
-新报道按 `industry/prompts/materia.md` 的结构写，字段名变了，长度有上限（只有摘要时约为摘要的 1.2 倍，有全文时约 900 词）。**旧报道的正文不会被模型重写**，只改显示。发布后页面立刻隐藏摘要、原标题和“Fonte”一行，已有可信信息的旧报道只显示正文里没有的那几项；但存下的入选理由（“Por que importa”）和引擎写的标题还留在旧报道的页面上，运行下面的 `scripts/materias-republicar.ts --apply` 之后才会消失。
+新报道按 `industry/prompts/materia.md` 的结构写，字段名变了，长度有上限（只有摘要时约为摘要的 1.2 倍，有全文时约 900 词）。**旧报道的正文不会被模型重写**，只改显示。发布后页面立刻隐藏摘要、原标题和“Fonte”一行，已有可信信息的旧报道只显示正文里没有的那几项，没有可信信息的旧报道（`literatura-materia`）在页面、`/assine`、Markdown 和 RSS 上加一行透明度说明；卡片不再显示“Não informado”的项（包括旧记录里存的，不改记录）；但存下的入选理由（“Por que importa”）和引擎写的标题还留在旧报道的页面上，运行下面的 `scripts/materias-republicar.ts --apply` 之后才会消失。
 
-发布后运行一次（只发布，不调用模型；不加 `--apply` 只统计；一篇一个事务，可以停下再跑），并删除旧报道正文里“Matéria escrita pelo … a partir do resumo publicado / do texto completo”这句话（不调用模型；在此之前各出口也不显示它），让已存的标题和摘要换成报道自己的，并清掉已存的入选理由，页面、卡片、列表、RSS 和搜索才会跟着变。已经发出的期次保留当时的内容：
+**发布后马上运行一次**（只发布，不调用模型；不加 `--apply` 只统计；一篇一个事务，可以停下再跑），并删除旧报道正文里“Matéria escrita pelo … a partir do resumo publicado / do texto completo”这句话（在它跑完之前，这句话还留在页面、Markdown 和 RSS 上），让已存的标题和摘要换成报道自己的，并清掉已存的入选理由，页面、卡片、列表、RSS 和搜索才会跟着变。已经发出的期次保留当时的内容：
 
 ```bash
 docker compose exec worker node scripts/materias-republicar.ts [--apply]

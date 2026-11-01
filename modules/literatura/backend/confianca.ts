@@ -7,7 +7,7 @@ import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { sql, type Db } from "@aihot/backend/db";
 import type { ItemExit } from "@aihot/backend/modules";
 import { EXPEDIENTE } from "@aihot/site";
-import { achadoDoResumo, achadoVisivel, alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, semNotaDeOrigem, semNotaDeOrigemNoTexto, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
+import { achadoDoResumo, achadoVisivel, alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
 import { estudosOf, REGISTRO_TAG } from "./estudos.ts";
 
 const MATERIA_SOURCE = "literatura-materia";
@@ -17,28 +17,41 @@ export async function saveConfianca(tx: Db, articleId: string, data: Confianca):
     ON CONFLICT (article_id) DO UPDATE SET data = EXCLUDED.data`;
 }
 
+/** The line older matérias keep in their stored body saying whether the abstract or the full text was read. */
+const NOTA_DE_ORIGEM = /<p><em>Matéria escrita pelo [^<]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\.<\/em><\/p>/g;
+const NOTA_DE_ORIGEM_TEXTO = /\s*Matéria escrita pelo [^.]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\./g;
+
 /** Removes the line saying what was read from the bodies of older matérias, with no model call; returns how many changed. */
 export async function removeNotasDeOrigem(): Promise<number> {
   const rows = await sql<{ id: string; body_html: string; body_text: string | null }[]>`
     SELECT id, body_html, body_text FROM articles WHERE source_id = ${MATERIA_SOURCE} AND body_html LIKE '%Matéria escrita pelo %'`;
   let changed = 0;
   for (const r of rows) {
-    const html = semNotaDeOrigem(r.body_html);
+    const html = r.body_html.replace(NOTA_DE_ORIGEM, "");
     if (html === r.body_html) continue;
-    await sql`UPDATE articles SET body_html = ${html}, body_text = ${r.body_text === null ? null : semNotaDeOrigemNoTexto(r.body_text)} WHERE id = ${r.id}`;
+    await sql`UPDATE articles SET body_html = ${html}, body_text = ${r.body_text === null ? null : r.body_text.replace(NOTA_DE_ORIGEM_TEXTO, "")} WHERE id = ${r.id}`;
     changed++;
   }
   return changed;
 }
 
-/** The parts of these articles: those with a trust record, a study's stage or a correction. */
+/** The parts of these articles: those with a trust record, older matérias without one, a study's stage or a correction. */
 export async function materiaParts(ids: readonly string[]): Promise<Map<string, MateriaPart>> {
   const out = new Map<string, MateriaPart>();
   const list = [...ids];
-  const empty = (): MateriaPart => ({ confianca: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null });
-  const records = await sql<{ article_id: string; data: Confianca }[]>`SELECT article_id, data FROM literatura_confianca WHERE article_id = ANY(${list})`;
-  // What was read stays in the stored record: this part reaches the browser in the page's data.
-  for (const { article_id, data: { textoLido: _read, ...confianca } } of records) out.set(article_id, { ...empty(), confianca, estado: confianca.preprint ? "preprint" : null });
+  const empty = (): MateriaPart => ({ confianca: null, feitura: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null });
+  const records = await sql<{ id: string; data: Confianca | null }[]>`
+    SELECT a.id, c.data FROM articles a LEFT JOIN literatura_confianca c ON c.article_id = a.id
+    WHERE a.id = ANY(${list}) AND (c.article_id IS NOT NULL OR a.source_id = ${MATERIA_SOURCE})`;
+  for (const { id, data } of records) {
+    if (!data) {
+      out.set(id, { ...empty(), feitura: "materia" });
+      continue;
+    }
+    // What was read stays in the stored record: this part reaches the browser in the page's data.
+    const { textoLido: _read, ...confianca } = data;
+    out.set(id, { ...empty(), confianca, feitura: confianca.feitura, estado: confianca.preprint ? "preprint" : null });
+  }
   for (const [id, e] of await estudosOf(list)) {
     const part = out.get(id) ?? empty();
     out.set(id, { ...part, estado: e.estado ?? part.estado, versoes: e.versoes, mesmoEnsaio: e.mesmoEnsaio });
@@ -118,12 +131,12 @@ function minutoHtml(part: MateriaPart): string {
 
 /**
  * What the page shows around the text, where the text goes without the page (Markdown, RSS): the question,
- * "Em um minuto" and the card before it, the transparency line after it; nothing for a piece with neither a record nor an editor's summary.
+ * "Em um minuto" and the card before it, the transparency line after it; nothing for a piece with no line to show and no editor's summary.
  */
 export function materiaExit(part: unknown): ItemExit | null {
   const p = part as MateriaPart;
-  const { confianca: c, estado } = p;
-  if (!c && !p.resumoEditor) return null;
+  const { confianca: c, estado, feitura } = p;
+  if (!feitura && !p.resumoEditor) return null;
   const rows = fichaRows({ confianca: c, estado }).map((r) => `<li><strong>${esc(r.label)}:</strong> ${esc(r.estado ? ESTADO_LABEL[r.estado] : r.text ?? "")}${r.note ? `. ${esc(r.note)}` : ""}</li>`);
   return {
     before: [
@@ -131,7 +144,7 @@ export function materiaExit(part: unknown): ItemExit | null {
       minutoHtml(p),
       c && rows.length ? `<h2>${esc(fichaTitulo(c))}</h2><ul>${rows.join("")}</ul>` : "",
     ].join(""),
-    after: c ? `<p>${esc(linhaTransparencia(c, EXPEDIENTE.editor.name))}</p>` : "",
+    after: feitura ? `<p>${esc(linhaTransparencia(feitura, EXPEDIENTE.editor.name))}</p>` : "",
     hasSummary: !!c?.minuto || !!p.resumoEditor,
   };
 }

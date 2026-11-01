@@ -106,7 +106,7 @@ function datas(publicado: string | null, revisado: string | null, now: Date): Co
 /**
  * Why the matéria about a paper can be trusted, as stored for its page (backend/confianca.ts). The declared
  * conflicts come from a full text the model read or the conflicts statement of the paper's record; from an
- * abstract alone they are "não informado", whatever the model says.
+ * abstract alone they are NAO_INFORMADO, whatever the model says, and the card leaves them out.
  */
 export function confiancaDaMateria(m: Trust, paper: Paper, lido: TextoLido, now: Date): Confianca {
   const preprint = isPreprint(paper);
@@ -364,19 +364,19 @@ function resultadosTable(m: Pick<Materia, "resultados" | "desenho">): string {
   return `<h2>${heading}</h2><table><thead><tr>${cell("th", a)}${cell("th", b)}${third ? cell("th", c) : ""}</tr></thead><tbody>${rows.map((r) => `<tr>${cell("td", r.desfecho)}${cell("td", r.resultado)}${third ? cell("td", r.efeito) : ""}</tr>`).join("")}</tbody></table>`;
 }
 
-/** "Quanto confiar": what strengthens the study, the red flags present, and what the text read does not report. */
+/** "Quanto confiar": what strengthens the study, the red flags present, and what was not found in the text read, never said as a fact about the study. */
 function quantoConfiar(m: Pick<Materia, "aFavor" | "sinaisDeAlerta" | "naoInformado">): string {
   const items = [
     ...m.aFavor.map((x) => `<li><strong>A favor:</strong> ${esc(x)}</li>`),
     ...m.sinaisDeAlerta.map((f) => `<li><strong>${esc(SINAIS[f.sinal])}:</strong> ${esc(f.detalhe.trim())}</li>`),
-    ...m.naoInformado.map((x) => `<li><strong>Não informado:</strong> ${esc(x)}</li>`),
+    ...m.naoInformado.map((x) => `<li><strong>Não localizado no material consultado:</strong> ${esc(x)}</li>`),
   ];
   return items.length ? `<h2>Quanto confiar</h2><ul>${items.join("")}</ul>` : "";
 }
 
 /**
  * The stored body, what the page shows after the question, "Em um minuto" and the card (web/item-part.tsx): each
- * section says only what the others do not, and the origin of the text is said once, on the card.
+ * section says only what the others do not.
  */
 export function renderMateria(m: Pick<Materia, "oQueFizeram" | "resultados" | "desenho" | "aFavor" | "sinaisDeAlerta" | "naoInformado" | "naPratica" | "contexto">, paper: Paper, access: Access, pmcid: string | null): string {
   return [
