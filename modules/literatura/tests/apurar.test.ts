@@ -28,7 +28,7 @@ import { INTEGRAL_SOURCE, MATERIA_SOURCE } from "../backend/collect.ts";
 const T = tag();
 const X_SOURCE = `x-apurar-${T}`;
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
-const materia = { titulo: "Reconstrução em um tempo é tão segura quanto em dois na estenose grau III", linhaFina: "Coorte multicêntrica", lide: "Um estudo multicêntrico comparou as duas técnicas em crianças.", contexto: "", metodos: "Coorte.", resultados: "Decanulação semelhante.", limitacoes: "Observacional.", paraOPediatra: "Encaminhe cedo.", paraOEspecialista: "Ambas as técnicas são opções." };
+const materia = { titulo: "Reconstrução em um tempo é tão segura quanto em dois na estenose grau III", achado: "Um estudo multicêntrico comparou as duas técnicas em crianças.", perguntaClinica: "Qual o resultado nesta população?", oQueFizeram: "Coorte.", resultados: [{ desfecho: "Desfecho principal", resultado: "Decanulação semelhante.", efeito: "" }], sinaisDeAlerta: [{ sinal: "centro-unico", detalhe: "Observacional." }], aFavor: [], naoInformado: [], naPratica: "Encaminhe cedo.", contexto: "" };
 
 const guideline = `<p>The American Academy of Otolaryngology published today its clinical practice guideline on pediatric tracheostomy care. ${"The guideline recommends that caregivers of every child discharged with a tracheostomy be trained in tube changes and emergency care before discharge, and that two trained caregivers be available at home. ".repeat(4)}</p><p>${"It also recommends routine airway endoscopy before decannulation and a capped trial of at least twelve hours in children who tolerate it. ".repeat(3)}</p>`;
 const subjects: Record<string, object> = {
@@ -38,7 +38,7 @@ const subjects: Record<string, object> = {
   "guideline": { assunto: "diretriz", revista: "", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: [] },
   "congress": { assunto: "congresso", revista: "", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: [] },
 };
-const fonte = { fontePrimaria: true, organizacao: "American Academy of Otolaryngology", titulo: "Academia americana publica diretriz sobre cuidados com traqueostomia em crianças", linhaFina: "Treinamento de dois cuidadores antes da alta.", lide: "A academia americana de otorrinolaringologia publicou uma diretriz sobre o cuidado da criança traqueostomizada.", corpo: "A diretriz recomenda treinar os cuidadores antes da alta." };
+const fonte = { fontePrimaria: true, organizacao: "American Academy of Otolaryngology", titulo: "Academia americana publica diretriz sobre cuidados com traqueostomia em crianças", achado: "Treinamento de dois cuidadores antes da alta.", lide: "A academia americana de otorrinolaringologia publicou uma diretriz sobre o cuidado da criança traqueostomizada.", corpo: "A diretriz recomenda treinar os cuidadores antes da alta." };
 
 const modelInputs: string[] = [];
 const subjectInputs: string[] = [];
@@ -252,9 +252,11 @@ test("a guideline post is written up from the official page it links, naming the
   assert.match(modelInputs.at(-1)!, /^Endereço da página: .*\/guideline\/trach/);
   assert.match(modelInputs.at(-1)!, /capped trial of at least twelve hours/);
   assert.equal((await xStatus(id))!.status, "materia-pagina");
-  const [article] = await sql<{ source_id: string; title: string; body_html: string; x_post: string }[]>`
-    SELECT source_id, title, body_html, raw->>'xPost' AS x_post FROM articles WHERE url = ${`${base}/guideline/trach`}`;
+  const [article] = await sql<{ source_id: string; title: string; body_html: string; body_text: string; x_post: string }[]>`
+    SELECT source_id, title, body_html, body_text, raw->>'xPost' AS x_post FROM articles WHERE url = ${`${base}/guideline/trach`}`;
   assert.equal(article!.source_id, MATERIA_SOURCE);
+  assert.ok(article!.body_text.startsWith(fonte.achado), "the engine reads the finding the body does not repeat");
+  assert.ok(!article!.body_html.includes(fonte.achado));
   assert.equal(article!.title, fonte.titulo);
   assert.match(article!.body_html, /<h2>Fonte<\/h2><p>American Academy of Otolaryngology: <a href="[^"]*\/guideline\/trach"[^>]*>Pediatric Tracheostomy Care Guideline<\/a>/);
   assert.match(article!.body_html, /Pauta: o assunto foi destacado por ENT Papers/);
@@ -365,7 +367,6 @@ test("when the window ends with PubMed still lacking the DOI, the paper's publis
   assert.match(article!.body_html, /DOI: <a href="https:\/\/doi\.org\/10\.1002\/lary\.77777"/);
   assert.doesNotMatch(article!.body_html, /PubMed:/);
   assert.match(article!.body_html, /Pauta: o artigo foi destacado por ENT Papers/);
-  assert.match(article!.body_html, /a partir do resumo publicado/, "a paid paper's page is not its full text");
   assert.match(modelInputs.at(-1)!, /Texto disponível: somente o resumo/);
   const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE url = 'https://doi.org/10.1002/lary.77777'`;
   assert.deepEqual([...await sql`SELECT status, article_id FROM literatura_papers WHERE pmid = 'doi:10.1002/lary.77777'`], [{ status: "materia-abstract", article_id: taken!.id }], "recorded as taken, as the collector records a paper by its DOI");
@@ -394,7 +395,6 @@ test("a post whose last try inside the window failed still gets the window-end r
   assert.match(modelInputs.at(-1)!, /^Título original: Laryngeal cleft repair outcomes/);
   assert.match(modelInputs.at(-1)!, /Texto disponível: somente o resumo/, "the open copy is in a repository, not this page");
   const [article] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE url = 'https://doi.org/10.1002/lary.22222'`;
-  assert.match(article!.body_html, /a partir do resumo publicado/);
   assert.match(article!.body_html, /repository\.example\.org/);
 });
 
@@ -409,5 +409,5 @@ test("past the window, an open paper's own publisher page (Unpaywall gives its D
   assert.match(modelInputs.at(-1)!, /capped trial of at least twelve hours/);
   assert.doesNotMatch(modelInputs.at(-1)!, /Ref\. Ref\./, "the reference list is left out");
   const [article] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE url = 'https://doi.org/10.1002/lary.11111'`;
-  assert.match(article!.body_html, /a partir do texto completo em acesso aberto/);
+  assert.match(article!.body_html, /<h2>Referência<\/h2>/);
 });

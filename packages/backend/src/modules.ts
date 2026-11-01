@@ -200,6 +200,14 @@ export interface RequestNotices {
   feed: (req: FastifyRequest, feedPath: string) => FeedNotice | null;
 }
 
+/** What a module adds around an article's body in an exit without its page (ServerModule.items.exit). */
+export interface ItemExit {
+  before: string;
+  after: string;
+  /** It already says the article's public summary, so an exit that prints the summary as its own section leaves it out. */
+  hasSummary: boolean;
+}
+
 export interface ServerModule {
   /** Its folder under modules/. */
   name: string;
@@ -312,6 +320,11 @@ export interface ServerModule {
    */
   titleLabel?: (articleId: string, tx: Db) => Promise<string | null>;
   /**
+   * The public summary of an article whose text is the site's own (OWN_TEXT_SOURCES, industry/taxonomy.ts), or
+   * null for the engine's: read each time the article is published (publication/publish.ts), so keep it to one indexed lookup.
+   */
+  ownSummary?: (articleId: string, tx: Db) => Promise<string | null>;
+  /**
    * Its part of articles, by id, as they are now (publication/detail.ts itemParts): on the article's page
    * (SiteItemDetail.modules, drawn by its web module's itemPage) and, through `mail`, under the article in
    * an e-mail. Ids it has nothing for are left out.
@@ -320,6 +333,11 @@ export interface ServerModule {
     parts: (ids: readonly string[]) => Promise<Map<string, unknown>>;
     /** Its part under an article in an e-mail, compact: HTML with inline styles and the same as plain text; null for nothing. */
     mail?: (part: unknown) => { html: string; text: string } | null;
+    /**
+     * Its part in the exits that carry an article's text without its page (publication/detail.ts itemExits): HTML
+     * before and after the body, converted by the exit where it needs to; null for nothing. The page does not read it.
+     */
+    exit?: (part: unknown) => ItemExit | null;
   };
   /** More keys a feedback sender is known by; a ban under any of them holds (operations/feedback.ts). */
   feedbackKeys?: (ip: string) => string[];

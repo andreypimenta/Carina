@@ -58,6 +58,8 @@ export interface ItemSummary {
 
 /** The fields rendered by a site feed card; full original text lives in the item detail. */
 export interface FeedItemSummary extends Pick<ItemSummary, "id" | "title" | "summary" | "reason" | "source" | "publishedAt" | "timelineAt" | "category" | "tags" | "score" | "selected" | "channel"> {
+  /** The site's own text: its preview shows no "Resumo por IA" (SiteItemDetail.ownText). */
+  ownText?: boolean;
   x: (Pick<XPostView, "authorName" | "handle" | "avatarUrl" | "avatarSrcSet" | "media"> & {
     quoted: Omit<NonNullable<XPostView["quoted"]>, "url"> | null;
   }) | null;
@@ -131,6 +133,10 @@ export interface OutlineEntry {
  * unless …/original asks for the original. Only the body shown is sent, with its outline.
  */
 export interface SiteItemDetail extends ItemSummary {
+  /** The site's own text (OWN_TEXT_SOURCES, industry/taxonomy.ts): its page shows no source line. */
+  ownText: boolean;
+  /** Own text whose page already says its summary, in a module's "Em um minuto" or in a body in the site's language: the page does not show it apart. */
+  summaryCovered: boolean;
   /** The post with all its media; its text is the body. */
   x: Omit<XPostView, "text" | "translation"> | null;
   /** Selected, but its fact's seat is held by this report: marked 同新闻, without a reason of its own. */

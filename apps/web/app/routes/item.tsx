@@ -192,7 +192,7 @@ function ItemPreview({ preview }: { preview: FeedItemSummary }) {
           )}
         </div>
         {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink">{preview.title}</h1>}
-        {preview.summary && (
+        {preview.summary && !preview.ownText && (
           <section className={isX ? "mt-4" : "mt-7"}>
             <div className="mb-2 text-[12px] font-semibold text-accent">{isX && preview.summary.replace(/\s+/g, " ").trim() === preview.title ? "Original" : "Resumo por IA"}</div>
             <p className="text-[18px] leading-[1.7] text-ink">{preview.summary}</p>
@@ -475,9 +475,9 @@ function ItemView({ item }: { item: SiteItemDetail }) {
             )}
           </div>
           {!isX && <h1 data-page-title="" className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink lg:text-[32px] lg:leading-[1.34] xl:text-[36px] xl:leading-[1.3]">{item.title}</h1>}
-          {!isX && item.originalTitle && <p className="mt-2.5 text-[14px] leading-relaxed text-ink-4">{item.originalTitle}</p>}
+          {!isX && item.originalTitle && !item.ownText && <p className="mt-2.5 text-[14px] leading-relaxed text-ink-4">{item.originalTitle}</p>}
 
-          {item.summary && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
+          {item.summary && !item.summaryCovered && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className={isX ? "mt-4" : "mt-7 xl:mt-8"}>
               <div className="mb-2 text-[12px] font-semibold text-accent">{summaryOnly ? "Resumo" : "Resumo por IA"}</div>
               <p className="text-[18px] leading-[1.7] text-ink xl:text-[20px] xl:leading-[1.7]">{item.summary}</p>
@@ -538,13 +538,15 @@ function ItemView({ item }: { item: SiteItemDetail }) {
           {isX && item.x!.media.length > 0 && <MediaGallery media={item.x!.media} postUrl={item.links.original} />}
           {isX && item.x!.quoted?.text && <QuotedPost quoted={item.x!.quoted} original={lang === "original"} />}
 
-          <p className="mt-8 text-[13px] text-ink-4">
-            Fonte:{" "}
-            <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-accent">
-              {isX ? item.x!.authorName : item.source.name}
-            </a>
-            <span> · {hostOf(item.links.original)}</span>
-          </p>
+          {!(item.ownText && item.body) && (
+            <p className="mt-8 text-[13px] text-ink-4">
+              Fonte:{" "}
+              <a href={item.links.original} target="_blank" rel="noopener noreferrer" className="text-ink-3 hover:text-accent">
+                {isX ? item.x!.authorName : item.source.name}
+              </a>
+              <span> · {hostOf(item.links.original)}</span>
+            </p>
+          )}
 
           <ItemModuleParts at="end" item={item} />
 

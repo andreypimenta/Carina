@@ -1,5 +1,6 @@
 // Item detail and Markdown export, both behind the same visibility and licence rules.
 import type { OutlineEntry, SiteItemDetail, StoryRef } from "@aihot/contracts/site";
+import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { ITEM_COPY, SITE } from "@aihot/site";
 import { bodyToMarkdown } from "../content/markdown.ts";
 import { sql } from "../db.ts";
@@ -12,7 +13,7 @@ import { itemUrl, siteUrl } from "./links.ts";
 import { hasItemPage, publicSourceName } from "./rules.ts";
 import { topicLinks, topicMembership } from "./topics.ts";
 import { weeklyOf } from "./reports.ts";
-import { serverModules } from "../modules.ts";
+import { serverModules, type ItemExit } from "../modules.ts";
 
 interface DetailRow extends ItemRow {
   body_html: string | null;
@@ -88,6 +89,20 @@ export async function itemParts(ids: readonly string[]): Promise<Map<string, Rec
   return out;
 }
 
+/** What the installed modules add around these articles' bodies in the exits without their page (ServerModule.items.exit). */
+export async function itemExits(ids: readonly string[]): Promise<Map<string, ItemExit>> {
+  const out = new Map<string, ItemExit>();
+  for (const [id, parts] of await itemParts(ids)) {
+    for (const m of serverModules()) {
+      const exit = m.name in parts ? m.items?.exit?.(parts[m.name]) : null;
+      if (!exit) continue;
+      const seen = out.get(id);
+      out.set(id, { before: `${seen?.before ?? ""}${exit.before}`, after: `${seen?.after ?? ""}${exit.after}`, hasSummary: !!seen?.hasSummary || exit.hasSummary });
+    }
+  }
+  return out;
+}
+
 /**
  * Public detail (rules.hasItemPage) in one language, the site's unless the original is asked for: items the
  * lists leave out (low relevance, merged duplicates, no summary yet) keep a noindex page;
@@ -99,8 +114,12 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
 
   const summary = toItemSummary(row);
   if (row.visibility === "summary-only") {
+    const modules = await modulesOf(id);
+    const ownText = OWN_TEXT_SOURCES.includes(row.source_id);
     const item: SiteItemDetail = {
       ...summary,
+      ownText,
+      summaryCovered: ownText && saysSummary(modules.modules),
       selected: false,
       score: null,
       category: null,
@@ -120,7 +139,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
       hasTranslation: false,
       bodyLanguage: "original",
       weekly: await weeklyOf(id),
-      ...(await modulesOf(id)),
+      ...modules,
     };
     return { kind: "found", item, row };
   }
@@ -167,8 +186,12 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
 
   // The reason goes with the seat; a report yielding it points to the one holding it.
   const sameEvent = (await seatHolders([row], now)).get(row.id) ?? null;
+  const modules = await modulesOf(id);
+  const ownText = OWN_TEXT_SOURCES.includes(row.source_id);
   const item: SiteItemDetail = {
     ...summary,
+    ownText,
+    summaryCovered: ownText && (reading.bodyLanguage === "zh" || reading.hasTranslation || saysSummary(modules.modules)),
     x,
     ...(sameEvent ? { reason: null, sameEvent } : {}),
     readingMode: "full",
@@ -183,9 +206,14 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     hasTranslation: reading.hasTranslation,
     bodyLanguage: reading.bodyLanguage,
     weekly: await weeklyOf(id),
-    ...(await modulesOf(id)),
+    ...modules,
   };
   return { kind: "found", item, row };
+}
+
+/** Whether a module's part of the article already says its public summary (ItemExit.hasSummary). */
+function saysSummary(parts: Record<string, unknown> | undefined): boolean {
+  return !!parts && serverModules().some((m) => m.name in parts && m.items?.exit?.(parts[m.name])?.hasSummary);
 }
 
 async function modulesOf(id: string): Promise<Pick<SiteItemDetail, "modules">> {
@@ -215,7 +243,9 @@ export async function exportMarkdown(id: string): Promise<{ filename: string; bo
   lines.push(row.published_at ? `- Publicado em: ${row.published_at.toISOString()}` : `- Coletado em: ${row.discovered_at.toISOString()}`);
   lines.push(`- ${SITE.name}: ${itemUrl(row.id)}`);
   lines.push(`- Original: ${row.url}`, "");
-  if (row.summary) lines.push("## Resumo", "", row.summary, "");
+  const exit = (await itemExits([id])).get(id);
+  if (row.summary && !exit?.hasSummary) lines.push("## Resumo", "", row.summary, "");
+  if (exit?.before) lines.push(bodyToMarkdown(exit.before, row.url), "");
   if (row.selected && row.seat && row.reason) lines.push(`## ${ITEM_COPY.reasonLabel}`, "", row.reason, "");
   if (showsPost(row) && row.x_post) {
     const post = xView(row);
@@ -233,5 +263,6 @@ export async function exportMarkdown(id: string): Promise<{ filename: string; bo
     if (translation) lines.push("## Texto · Tradução", "", bodyToMarkdown(translation, row.url), "");
     lines.push(isChineseBody(row) ? "## Texto" : "## Texto · Original", "", bodyToMarkdown(row.body_html, row.url), "");
   }
+  if (exit?.after) lines.push(bodyToMarkdown(exit.after, row.url), "");
   return { filename: `${SITE.mcpPrefix}-${row.id}.md`, body: lines.join("\n").replace(/\n{3,}/g, "\n\n") };
 }

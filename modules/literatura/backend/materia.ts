@@ -2,13 +2,12 @@
 // or from a full text that may be read but not republished, and rendered here as the item's body. The
 // fields come back as plain text and are escaped here, so the model never writes HTML.
 import { z } from "zod";
-import { SITE } from "@aihot/site";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { modelFor } from "@aihot/backend/editorial/models";
 import { promptText, promptVersion } from "@aihot/backend/editorial/prompts";
 import { beijingDate } from "@aihot/contracts/time";
 import { authorLine, isGuideline, isPreprint, type Paper } from "./pubmed.ts";
-import { LICENSE_NAMES, type Access } from "./access.ts";
+import { blockText, LICENSE_NAMES, type Access } from "./access.ts";
 import { dataBr, DESENHOS, ESTADO_LABEL, IMPLICACOES, NAO_INFORMADO, PREPRINT_LABEL, type Confianca, type Desenho, type EmUmMinuto, type Implicacao, type TextoLido } from "../confianca.ts";
 import type { Anterior } from "./estudos.ts";
 
@@ -24,31 +23,52 @@ const optional = z.string().nullish().transform((v) => v ?? "");
 const grade = z.string().nullish().transform((v): Implicacao => ((IMPLICACOES as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Implicacao) : "nao"));
 /** An answer outside the list, or none, counts as "outro": every matéria shows a design. */
 const design = z.string().nullish().transform((v): Desenho => ((DESENHOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as Desenho) : "outro"));
-/** "Em um minuto" (industry/prompts/materia.md, materia-fonte.md), with the declared conflicts and what carries over to Brazil. */
-const minuto = { achado: optional, paraQuem: optional, mudaAlgo: grade, diretriz: optional, conflitos: optional, aplicabilidadeBrasil: optional };
+const list = z.array(z.string()).nullish().transform((v) => (v ?? []).map((x) => x.trim()).filter(Boolean));
+
+/** The red flags the model checks before writing (industry/prompts/materia.md), as "Quanto confiar" names them; only those present are shown. */
+const SINAIS = {
+  "sem-randomizacao": "Sem randomização",
+  "sem-mascaramento": "Sem mascaramento",
+  "interrupcao-precoce": "Interrupção precoce",
+  "desfecho-substituto": "Desfecho substituto",
+  "so-risco-relativo": "Só risco relativo",
+  subgrupo: "Conclusão em subgrupo",
+  "centro-unico": "Centro único",
+  retrospectivo: "Retrospectivo",
+  "n-pequeno": "Poucos pacientes",
+  "conflito-fabricante": "Ligação com o fabricante",
+} as const;
+type Sinal = keyof typeof SINAIS;
+const flags = z.array(z.object({ sinal: z.string(), detalhe: optional })).nullish()
+  .transform((v) => (v ?? []).filter((f): f is { sinal: Sinal; detalhe: string } => f.sinal in SINAIS));
+
+/** "Em um minuto" and the conflicts (industry/prompts/materia.md, materia-fonte.md). */
+const minuto = { achado: optional, mudaAlgo: grade, diretriz: optional, conflitos: optional };
 /** Why the piece can be trusted: what a matéria and a translated full text both store (confiancaDaMateria). */
 const trust = {
   ...minuto,
+  perguntaClinica: optional,
   populacaoIdade: optional,
   populacaoDoenca: optional,
   populacaoCenario: optional,
   desenho: design,
   desenhoDetalhe: optional,
   limitacaoPrincipal: optional,
+  naPratica: optional,
 };
 const TrustOutput = z.object(trust);
 export type Trust = z.infer<typeof TrustOutput>;
 const Output = z.object({
-  titulo: z.string().min(10),
-  linhaFina: optional,
-  lide: z.string().min(20),
-  contexto: optional,
-  metodos: optional,
-  resultados: z.string().min(10),
-  limitacoes: optional,
-  paraOPediatra: optional,
-  paraOEspecialista: optional,
   ...trust,
+  titulo: z.string().min(10),
+  achado: z.string().min(20),
+  sinaisDeAlerta: flags,
+  oQueFizeram: optional,
+  resultados: z.array(z.object({ desfecho: z.string(), resultado: z.string(), efeito: optional }))
+    .refine((rows) => rows.some((r) => r.desfecho.trim() || r.resultado.trim()), "a matéria sem nenhum resultado"),
+  aFavor: list,
+  naoInformado: list,
+  contexto: optional,
 });
 export type Materia = z.infer<typeof Output>;
 
@@ -56,10 +76,10 @@ export type Materia = z.infer<typeof Output>;
  * The grade the site shows: a preprint or a registry entry never changes anything yet (`naoMuda`), and
  * "alinhado a diretriz" needs the guideline the material names; without it the grade drops to "pode informar a discussão".
  */
-export function emUmMinuto(m: { achado: string; paraQuem: string; mudaAlgo: Implicacao; diretriz: string }, naoMuda: boolean): EmUmMinuto | null {
+export function emUmMinuto(m: { achado: string; paraQuem?: string; mudaAlgo: Implicacao; diretriz: string }, naoMuda: boolean): EmUmMinuto | null {
   const achado = m.achado.trim();
-  const paraQuem = m.paraQuem.trim();
-  if (!achado || !paraQuem) return null;
+  const paraQuem = m.paraQuem?.trim() || null;
+  if (!achado) return null;
   const diretriz = m.diretriz.trim() || null;
   const mudaAlgo: Implicacao = naoMuda ? "nao" : m.mudaAlgo === "alinhado-a-diretriz" && !diretriz ? "pode-informar-discussao" : m.mudaAlgo;
   return { achado, paraQuem, mudaAlgo, diretriz: mudaAlgo === "alinhado-a-diretriz" ? diretriz : null };
@@ -86,7 +106,7 @@ function datas(publicado: string | null, revisado: string | null, now: Date): Co
 /**
  * Why the matéria about a paper can be trusted, as stored for its page (backend/confianca.ts). The declared
  * conflicts come from a full text the model read or the conflicts statement of the paper's record; from an
- * abstract alone they are "não informado", whatever the model says.
+ * abstract alone they are NAO_INFORMADO, whatever the model says, and the card leaves them out.
  */
 export function confiancaDaMateria(m: Trust, paper: Paper, lido: TextoLido, now: Date): Confianca {
   const preprint = isPreprint(paper);
@@ -94,27 +114,51 @@ export function confiancaDaMateria(m: Trust, paper: Paper, lido: TextoLido, now:
   const declared = lido !== "resumo" || !!paper.coiStatement;
   return {
     feitura: "materia",
+    estrutura: "unica",
+    perguntaClinica: m.perguntaClinica.trim() || null,
     minuto: emUmMinuto(m, preprint),
     populacao: { idade: field(m.populacaoIdade, "não informada"), doenca: field(m.populacaoDoenca, "não informada"), cenario: field(m.populacaoCenario, "não informado") },
     desenho: m.desenho,
     desenhoDetalhe: m.desenhoDetalhe.trim() || null,
     limitacao: field(m.limitacaoPrincipal, "não informada"),
     conflitos: declared ? field(m.conflitos, NAO_INFORMADO) : NAO_INFORMADO,
-    aplicabilidade: m.aplicabilidadeBrasil.trim() || null,
     textoLido: lido,
     preprint,
     datas: isGuideline(paper) || m.desenho === "diretriz" || m.desenho === "consenso" ? datas(paper.publishedOn ?? paper.year, null, now) : null,
   };
 }
 
-/** A paper's text republished in full and translated: the same record as a matéria's, from the full text the model read. */
+/**
+ * A paper's text republished in full and translated: the same record as a matéria's, from the full text the
+ * model read. Its body is the paper's, so "Na prática" stays on its card.
+ */
 export function confiancaDaTraducao(m: Trust, paper: Paper, now: Date): Confianca {
-  return { ...confiancaDaMateria(m, paper, "texto-completo", now), feitura: "traducao" };
+  return { ...confiancaDaMateria(m, paper, "texto-completo", now), feitura: "traducao", aplicabilidade: m.naPratica.trim() || null };
 }
 
 /** The line that opens a preprint's body, in every exit that carries the body. */
 export function preprintNote(): string {
   return `<p><strong>${esc(PREPRINT_LABEL)}.</strong> Este estudo ainda não passou pela revisão por pares de uma revista: os resultados são preliminares, podem mudar e não devem orientar a prática.</p>`;
+}
+
+/** How much longer than the abstract a matéria written only from it may be, and the cap from a full text. */
+const CAP_FROM_ABSTRACT = 1.2;
+const CAP_FROM_FULL_TEXT = 900;
+const countWords = (s: string) => s.split(/\s+/).filter(Boolean).length;
+
+/** The most words this matéria may have (industry/prompts/materia.md): about 1.2x the abstract it was written from, or 900 from a full text. */
+export function limitePalavras(paper: Pick<Paper, "abstract">, fullText: string | null): number {
+  if (fullText) return CAP_FROM_FULL_TEXT;
+  return Math.ceil(paper.abstract.reduce((n, s) => n + countWords(s.text), 0) * CAP_FROM_ABSTRACT);
+}
+
+/**
+ * The text the engine reads and groups by (articles.body_text): the body and what the page shows above it. The
+ * population, the design and the sample live only there, and selection scores on them.
+ */
+export function materiaText(m: Materia, html: string): string {
+  return [m.perguntaClinica, m.achado, m.populacaoIdade, m.populacaoDoenca, m.populacaoCenario, m.desenhoDetalhe, m.limitacaoPrincipal, blockText(html)]
+    .map((x) => x.trim()).filter(Boolean).join(" ");
 }
 
 /**
@@ -141,6 +185,7 @@ export function materiaInput(paper: Paper, fullText: string | null, anteriores: 
     ...(versoes.length ? [`Outras versões deste estudo já publicadas pelo jornal: ${listed(versoes)}`] : []),
     ...(ensaio.length ? [`Outras publicações do mesmo ensaio já publicadas pelo jornal: ${listed(ensaio)}`] : []),
     `Texto disponível: ${available}`,
+    `Limite desta matéria: cerca de ${limitePalavras(paper, fullText)} palavras, somando todos os campos`,
     "",
     text,
   ].join("\n");
@@ -188,7 +233,7 @@ function section(title: string, body: string): string {
  * The reference and where to read the paper, at the foot of every article. Only what is known is said:
  * a free copy Unpaywall or PMC has, "paid" only when Unpaywall says there is no open copy, nothing otherwise.
  */
-export function referenceBlock(paper: Paper, access: Access, pmcid: string | null, basis: "full" | "abstract" | "integral"): string {
+export function referenceBlock(paper: Paper, access: Access, pmcid: string | null): string {
   const authors = authorLine(paper.authors);
   const cite = [authors ? `${esc(authors)}.` : "", esc(paper.title) + ".", `<em>${esc(paper.journalAbbrev ?? paper.journal)}</em>${paper.year ? ` ${esc(paper.year)}` : ""}.`].filter(Boolean).join(" ");
   const links = [
@@ -202,10 +247,7 @@ export function referenceBlock(paper: Paper, access: Access, pmcid: string | nul
     : access.kind === "closed"
       ? "<p><strong>Acesso:</strong> o artigo completo é pago na editora. Autores costumam enviar uma cópia a quem pede pelo e-mail de correspondência indicado no artigo.</p>"
       : "";
-  const note = basis === "integral" ? ""
-    : basis === "full" ? `<p><em>Matéria escrita pelo ${esc(SITE.bareName)} a partir do texto completo em acesso aberto.</em></p>`
-    : `<p><em>Matéria escrita pelo ${esc(SITE.bareName)} a partir do resumo publicado.</em></p>`;
-  return `<h2>Referência</h2><p>${cite}</p><p>${links}</p>${accessLine}${note}`;
+  return `<h2>Referência</h2><p>${cite}</p><p>${links}</p>${accessLine}`;
 }
 
 /** The X post that led the site to the paper (backend/apurar.ts): its account and its address. */
@@ -230,7 +272,8 @@ const FonteOutput = z.object({
   fontePrimaria: z.boolean(),
   organizacao: optional,
   titulo: optional,
-  linhaFina: optional,
+  paraQuem: optional,
+  aplicabilidadeBrasil: optional,
   lide: optional,
   corpo: optional,
   tipo: z.string().nullish().transform((v) => ((FONTE_TIPOS as readonly string[]).includes(v?.trim() ?? "") ? (v!.trim() as (typeof FONTE_TIPOS)[number]) : "outro")),
@@ -293,26 +336,56 @@ export async function writeFonteMateria(page: PrimaryPage, post: string): Promis
 export function renderFonteMateria(m: FonteMateria, page: PrimaryPage, credit: XCredit): string {
   const host = page.url.replace(/^https?:\/\//, "").split("/")[0]!;
   return [
-    m.linhaFina.trim() ? `<p><strong>${esc(m.linhaFina.trim())}</strong></p>` : "",
     paragraphs(m.lide),
     paragraphs(m.corpo),
     `<h2>Fonte</h2><p>${esc(m.organizacao.trim())}: <a href="${esc(page.url)}">${esc(page.title || host)}</a></p>`,
-    `<p><em>Matéria escrita pelo ${esc(SITE.bareName)} a partir da página oficial.</em></p>`,
     creditBlock(credit, "o assunto"),
   ].join("");
 }
 
-export function renderMateria(m: Pick<Materia, "titulo" | "linhaFina" | "lide" | "contexto" | "metodos" | "resultados" | "limitacoes" | "paraOPediatra" | "paraOEspecialista">, paper: Paper, access: Access, pmcid: string | null, basis: "full" | "abstract"): string {
+/** The columns of "O que encontraram": what each column holds changes with the study's design (industry/prompts/materia.md). */
+function colunas(desenho: Desenho): [string, string, string] {
+  switch (desenho) {
+    case "ensaio-clinico": return ["Desfecho", "Por grupo", "Diferença"];
+    case "coorte": case "caso-controle": case "transversal": return ["Desfecho", "Por grupo", "Associação"];
+    case "meta-analise": case "revisao-sistematica": return ["Desfecho", "Efeito combinado", "Estudos e certeza"];
+    case "diretriz": case "consenso": return ["Recomendação", "Força", "Observação"];
+    default: return ["Desfecho", "Resultado", "Observação"];
+  }
+}
+
+/** "O que encontraram": a table by outcome, the only place with the numbers; a column nothing fills is left out. */
+function resultadosTable(m: Pick<Materia, "resultados" | "desenho">): string {
+  const rows = m.resultados.map((r) => ({ desfecho: r.desfecho.trim(), resultado: r.resultado.trim(), efeito: r.efeito.trim() })).filter((r) => r.desfecho || r.resultado);
+  const [a, b, c] = colunas(m.desenho);
+  const third = rows.some((r) => r.efeito);
+  const cell = (tag: "th" | "td", text: string) => `<${tag}>${esc(text)}</${tag}>`;
+  const heading = m.desenho === "diretriz" || m.desenho === "consenso" ? "O que recomendam" : "O que encontraram";
+  return `<h2>${heading}</h2><table><thead><tr>${cell("th", a)}${cell("th", b)}${third ? cell("th", c) : ""}</tr></thead><tbody>${rows.map((r) => `<tr>${cell("td", r.desfecho)}${cell("td", r.resultado)}${third ? cell("td", r.efeito) : ""}</tr>`).join("")}</tbody></table>`;
+}
+
+/** "Quanto confiar": what strengthens the study, the red flags present, and what was not found in the text read, never said as a fact about the study. */
+function quantoConfiar(m: Pick<Materia, "aFavor" | "sinaisDeAlerta" | "naoInformado">): string {
+  const items = [
+    ...m.aFavor.map((x) => `<li><strong>A favor:</strong> ${esc(x)}</li>`),
+    ...m.sinaisDeAlerta.map((f) => `<li><strong>${esc(SINAIS[f.sinal])}:</strong> ${esc(f.detalhe.trim())}</li>`),
+    ...m.naoInformado.map((x) => `<li><strong>Não localizado no material consultado:</strong> ${esc(x)}</li>`),
+  ];
+  return items.length ? `<h2>Quanto confiar</h2><ul>${items.join("")}</ul>` : "";
+}
+
+/**
+ * The stored body, what the page shows after the question, "Em um minuto" and the card (web/item-part.tsx): each
+ * section says only what the others do not.
+ */
+export function renderMateria(m: Pick<Materia, "oQueFizeram" | "resultados" | "desenho" | "aFavor" | "sinaisDeAlerta" | "naoInformado" | "naPratica" | "contexto">, paper: Paper, access: Access, pmcid: string | null): string {
   return [
     isPreprint(paper) ? preprintNote() : "",
-    m.linhaFina.trim() ? `<p><strong>${esc(m.linhaFina.trim())}</strong></p>` : "",
-    paragraphs(m.lide),
+    section("O que fizeram", m.oQueFizeram),
+    resultadosTable(m),
+    quantoConfiar(m),
+    section("Na prática", m.naPratica),
     section("Contexto", m.contexto),
-    section("Como foi feito", m.metodos),
-    section("O que encontraram", m.resultados),
-    section("Limitações", m.limitacoes),
-    section("Para o pediatra", m.paraOPediatra),
-    section("Para o especialista", m.paraOEspecialista),
-    referenceBlock(paper, access, pmcid, basis),
+    referenceBlock(paper, access, pmcid),
   ].join("");
 }

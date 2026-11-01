@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./adicionar": "./backend/adicionar.ts",
+    "./confianca": "./backend/confianca.ts",
     "./module": "./module.ts",
     "./server": "./server.ts",
     "./web": "./web.tsx"
@@ -12,6 +13,7 @@
     "@aihot/api": "*",
     "@aihot/backend": "*",
     "@aihot/contracts": "*",
+    "@aihot/industry": "*",
     "cheerio": "1.2.0",
     "fastify": "5.12.7",
     "zod": "4.6.5",

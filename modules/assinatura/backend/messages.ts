@@ -124,12 +124,14 @@ ${footer ? `<tr><td style="padding:18px 28px 24px;border-top:1px solid #e3e0d7;f
 }
 
 function storyHtml(c: ReportCitation, summaryChars: number, parts: ItemParts): string {
+  // A module's part already says what the summary would (a matéria's "Em um minuto"): only one of them goes under the title.
+  const own = storyParts(c, parts);
   const meta = [esc(c.sourceName), c.firstParty ? "Oficial" : null].filter(Boolean).join(" · ");
   return `<tr><td style="padding:14px 0;border-bottom:1px solid #e3e0d7">
 <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;color:#6b7478">${meta}</div>
 <a href="${esc(itemUrl(c))}" style="display:block;margin-top:4px;font-size:18px;line-height:1.45;font-weight:bold;color:#1f2a2e;text-decoration:none">${esc(c.title)}</a>
-${c.summary ? `<p style="margin:6px 0 0;font-size:15px;line-height:1.7;color:#3b4649">${esc(clip(c.summary, summaryChars))}</p>` : ""}
-${storyParts(c, parts).map((p) => p.html).join("\n")}
+${c.summary && !own.length ? `<p style="margin:6px 0 0;font-size:15px;line-height:1.7;color:#3b4649">${esc(clip(c.summary, summaryChars))}</p>` : ""}
+${own.map((p) => p.html).join("\n")}
 <a href="${esc(c.sourceUrl)}" style="display:inline-block;margin-top:6px;font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#0f766e">Original ↗</a>
 </td></tr>`;
 }
@@ -155,6 +157,7 @@ function indiqueHtml(): string {
 export function editionEmail(report: ReportDetail, token: string, interest: string | null = null, itemParts: ItemParts = new Map()) {
   const parts = editionParts(report);
   parts.sections = orderSections(parts.sections, interest);
+  const leadParts = parts.lead ? storyParts(parts.lead, itemParts) : [];
   const extra = moduleParts(report);
   const span = weekSpan(report.key);
   const url = links.edition(report.key);
@@ -167,8 +170,8 @@ export function editionEmail(report: ReportDetail, token: string, interest: stri
     parts.lead
       ? `<a href="${esc(itemUrl(parts.lead))}" style="display:block;margin-top:6px;font-size:26px;line-height:1.3;font-weight:bold;color:#1f2a2e;text-decoration:none">${esc(parts.title)}</a>`
       : `<div style="margin-top:6px;font-size:26px;line-height:1.3;font-weight:bold;color:#1f2a2e">${esc(parts.title)}</div>`,
-    parts.dek ? `<p style="margin:10px 0 0;font-size:16px;line-height:1.75;color:#3b4649">${esc(parts.dek)}</p>` : "",
-    ...(parts.lead ? storyParts(parts.lead, itemParts).map((p) => p.html) : []),
+    parts.dek && !leadParts.length ? `<p style="margin:10px 0 0;font-size:16px;line-height:1.75;color:#3b4649">${esc(parts.dek)}</p>` : "",
+    ...leadParts.map((p) => p.html),
     parts.lead ? `<div style="margin-top:8px;font-family:Arial,Helvetica,sans-serif;font-size:12.5px;color:#6b7478">${esc(parts.lead.sourceName)} · <a href="${esc(parts.lead.sourceUrl)}" style="color:#0f766e">Original ↗</a></div>` : "",
     parts.highlights.length
       ? `<div style="margin-top:26px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:2px;font-weight:bold;color:#0f766e">DESTAQUES DA SEMANA</div>
@@ -187,8 +190,8 @@ ${s.summary ? `<p style="margin:10px 0 0;font-size:15px;line-height:1.7;color:#3
     "",
     ...(parts.overview ? [parts.overview, ""] : []),
     `MANCHETE: ${parts.title}`,
-    ...(parts.dek ? [parts.dek] : []),
-    ...(parts.lead ? [...storyParts(parts.lead, itemParts).map((p) => p.text), itemUrl(parts.lead)] : []),
+    ...(parts.dek && !leadParts.length ? [parts.dek] : []),
+    ...(parts.lead ? [...leadParts.map((p) => p.text), itemUrl(parts.lead)] : []),
     "",
     ...(parts.highlights.length ? ["DESTAQUES DA SEMANA", ...parts.highlights.map((h, i) => `${i + 1}. ${h.title} — ${itemUrl(h)}`), ""] : []),
     ...extra.flatMap((p) => [p.text, ""]),

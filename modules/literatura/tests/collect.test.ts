@@ -15,12 +15,16 @@ import { closeDb, sql } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
 import server from "../server.ts";
+import { removeNotasDeOrigem } from "../backend/confianca.ts";
 import { collectLiterature, INTEGRAL_SOURCE, MATERIA_SOURCE, MAX_ATTEMPTS, recordFailure, takePaper } from "../backend/collect.ts";
 import { parsePubmedXml } from "../backend/pubmed.ts";
-import { itemParts } from "@aihot/backend/publication/detail";
+import { exportMarkdown, itemParts, loadItemDetail } from "@aihot/backend/publication/detail";
+import { itemFeed } from "@aihot/backend/publication/feeds";
+import { overrideFields } from "@aihot/backend/admin/content";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { addCorrection, listCorrections } from "../backend/correcoes.ts";
-import type { MateriaPart } from "../confianca.ts";
+import { EXPEDIENTE } from "@aihot/site";
+import { achadoVisivel, linhaTransparencia, type MateriaPart } from "../confianca.ts";
 import { REGISTRO_TAG, syncRegistros } from "../backend/estudos.ts";
 import { ALERTA_SOURCE, alertasSettings, collectAlertas } from "../backend/alertas.ts";
 import { ELSO_SOURCE, readElso } from "../backend/elso.ts";
@@ -34,10 +38,11 @@ const ndJats = long(fixture("jats.xml")).replace("http://creativecommons.org/lic
 
 const modelInputs: string[] = [];
 const hits: string[] = [];
+const lido = async (id: string) => (await sql<{ lido: string }[]>`SELECT data->>'textoLido' AS lido FROM literatura_confianca WHERE article_id = ${id}`)[0]!.lido;
 const materia = {
-  titulo: "Broncoscopia em sibilância persistente achou traqueomalácia em 31%", linhaFina: "Coorte de 120 crianças", lide: "Um estudo brasileiro avaliou 120 crianças com sibilância persistente.", contexto: "", metodos: "Coorte.", resultados: "Traqueomalácia em 31%.", limitacoes: "Centro único.", paraOPediatra: "Sibilância que não melhora merece avaliação.", paraOEspecialista: "Reforça a broncoscopia.",
-  achado: "Traqueomalácia apareceu em 31% das crianças com sibilância persistente.", paraQuem: "Pediatras e pneumologistas pediátricos", mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024",
-  populacaoIdade: "1 a 5 anos", populacaoDoenca: "Sibilância persistente", populacaoCenario: "Ambulatório de um centro terciário", desenho: "coorte", desenhoDetalhe: "coorte retrospectiva", limitacaoPrincipal: "Centro único.",
+  titulo: "Broncoscopia em sibilância persistente achou traqueomalácia em 31%", perguntaClinica: "Qual o resultado nesta população?", oQueFizeram: "Coorte.", resultados: [{ desfecho: "Desfecho principal", resultado: "Traqueomalácia em 31%.", efeito: "" }], sinaisDeAlerta: [{ sinal: "centro-unico", detalhe: "Centro único." }], aFavor: [], naoInformado: [], naPratica: "Sibilância que não melhora merece avaliação.", contexto: "",
+  achado: "Traqueomalácia apareceu em 31% das crianças com sibilância persistente.", mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024",
+  conflitos: "Os autores declaram não ter conflitos.", populacaoIdade: "1 a 5 anos", populacaoDoenca: "Sibilância persistente", populacaoCenario: "Ambulatório de um centro terciário", desenho: "coorte", desenhoDetalhe: "coorte retrospectiva", limitacaoPrincipal: "Centro único.",
   // Text read is never taken from the model.
   textoLido: "texto-completo",
 };
@@ -150,7 +155,7 @@ test("a run republishes the open-licence paper, writes the closed one from its a
   assert.equal(closed!.title, materia.titulo);
   assert.equal(closed!.language, "pt");
   assert.equal(closed!.url, "https://doi.org/10.1016/j.jpedsurg.2026.161999");
-  assert.match(closed!.body_html!, /Para o pediatra/);
+  assert.match(closed!.body_html!, /<h2>Na prática<\/h2>/);
   assert.match(closed!.body_html!, /o artigo completo é pago na editora/);
   assert.equal(closed!.published_at!.toISOString(), "2026-10-19T03:00:00.000Z");
   for (const paper of [closed!, open!]) {
@@ -170,8 +175,8 @@ test("a run republishes the open-licence paper, writes the closed one from its a
   const [openRow] = await sql<{ article_id: string }[]>`SELECT article_id FROM literatura_papers WHERE pmid = '41000002'`;
   const translated = ((await itemParts([openRow!.article_id])).get(openRow!.article_id)!.literatura as MateriaPart).confianca!;
   assert.equal(translated.feitura, "traducao");
-  assert.equal(translated.textoLido, "texto-completo");
-  assert.deepEqual(translated.minuto, { achado: materia.achado, paraQuem: materia.paraQuem, mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024" });
+  assert.equal(await lido(openRow!.article_id), "texto-completo");
+  assert.deepEqual(translated.minuto, { achado: materia.achado, paraQuem: null, mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024" });
   assert.deepEqual(translated.populacao, { idade: "1 a 5 anos", doenca: "Sibilância persistente", cenario: "Ambulatório de um centro terciário" });
   assert.equal(translated.desenho, "coorte");
   assert.equal(translated.limitacao, "Centro único.");
@@ -194,7 +199,7 @@ test("a full text whose licence forbids translation is read to write the site's 
   assert.match(modelInputs.at(-1)!, /Children with persistent wheeze were assessed/);
   const [row] = await sql<{ source_id: string; body_html: string }[]>`SELECT source_id, body_html FROM articles WHERE id = ${out.articleId!}`;
   assert.equal(row!.source_id, MATERIA_SOURCE);
-  assert.match(row!.body_html, /a partir do texto completo em acesso aberto/);
+  assert.doesNotMatch(row!.body_html, /Matéria escrita/, "what was read is never said");
   assert.doesNotMatch(row!.body_html, /Children with persistent wheeze were assessed/);
 });
 
@@ -229,7 +234,7 @@ test("an open paper under a republishable licence waits for PMC for a while, the
   assert.equal(row!.source_id, MATERIA_SOURCE);
   assert.equal(row!.raw.basis, "full");
   assert.equal(row!.raw.fullTextFrom, "copy");
-  assert.match(row!.body_html, /a partir do texto completo em acesso aberto/);
+  assert.doesNotMatch(row!.body_html, /Matéria escrita/, "what was read is never said");
   assert.match(row!.body_html, /Texto completo gratuito:<\/strong> <a href="http:\/\/127\.0\.0\.1:\d+\/publisher\/open"/);
   assert.doesNotMatch(row!.body_html, /four days earlier/, "the copy is read, not republished");
 });
@@ -244,7 +249,6 @@ test("a free copy that shows only the abstract or refuses the site's crawler lea
     const [row] = await sql<{ body_html: string; raw: { basis: string; fullTextFrom?: string } }[]>`SELECT body_html, raw FROM articles WHERE id = ${out.articleId!}`;
     assert.equal(row!.raw.basis, "abstract");
     assert.equal(row!.raw.fullTextFrom, undefined);
-    assert.match(row!.body_html, /a partir do resumo publicado/);
   }
 });
 
@@ -277,9 +281,10 @@ test("each new matéria stores why it can be trusted, with the text the pipeline
   const parts = (await itemParts([out.articleId!, "nao-existe"]));
   assert.deepEqual([...parts.keys()], [out.articleId]);
   const part = parts.get(out.articleId!)!.literatura as MateriaPart;
-  assert.equal(part.confianca!.textoLido, "resumo", "the abstract was read, whatever the model says");
+  assert.equal(await lido(out.articleId!), "resumo", "the abstract was read, whatever the model says");
+  assert.doesNotMatch(JSON.stringify(part), /textoLido|"resumo"|texto-completo/, "the part reaches the browser: what was read stays in the record");
   assert.equal(part.confianca!.feitura, "materia");
-  assert.deepEqual(part.confianca!.minuto, { achado: materia.achado, paraQuem: materia.paraQuem, mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024" });
+  assert.deepEqual(part.confianca!.minuto, { achado: materia.achado, paraQuem: null, mudaAlgo: "alinhado-a-diretriz", diretriz: "Diretriz ERS de sibilância 2024" });
   assert.deepEqual(part.confianca!.populacao, { idade: "1 a 5 anos", doenca: "Sibilância persistente", cenario: "Ambulatório de um centro terciário" });
   assert.deepEqual(part.correcoes, []);
 
@@ -294,20 +299,20 @@ test("each new matéria stores why it can be trusted, with the text the pipeline
   assert.ok(audited, "the correction is audited");
 
   const full = await takePaper({ ...paper!, pmid: "41000012", doi: `10.9999/pmc-${T}`, pmcid: "PMC99" });
-  assert.equal(((await itemParts([full.articleId!])).get(full.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "texto-completo");
+  assert.equal(await lido(full.articleId!), "texto-completo");
   const pmcRead = await takePaper({ ...paper!, pmid: "41000013", doi: `10.5555/accepted-pmc-${T}`, pmcid: "PMC99" });
   assert.equal(pmcRead.status, "materia-full");
-  assert.equal(((await itemParts([pmcRead.articleId!])).get(pmcRead.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "texto-completo",
+  assert.equal(await lido(pmcRead.articleId!), "texto-completo",
     "PMC's text is not the accepted manuscript Unpaywall's open copy is");
   const copyRead = await takePaper({ ...paper!, pmid: "41000014", doi: `10.5555/accepted-copy-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
   assert.equal(copyRead.status, "materia-full");
-  assert.equal(((await itemParts([copyRead.articleId!])).get(copyRead.articleId!)!.literatura as MateriaPart).confianca!.textoLido, "manuscrito-aceito");
+  assert.equal(await lido(copyRead.articleId!), "manuscrito-aceito");
 });
 
 test("a translation keeps its trust record when the model answers only the trust fields, without a matéria's title or sections", async () => {
   const [, paper] = parsePubmedXml(fixture("pubmed.xml"));
-  const saved = { titulo: materia.titulo, lide: materia.lide, resultados: materia.resultados };
-  Object.assign(materia, { titulo: "", lide: "", resultados: null });
+  const saved = { titulo: materia.titulo, resultados: materia.resultados };
+  Object.assign(materia, { titulo: "", resultados: null });
   try {
     const calls = modelInputs.length;
     // Its own title, so the prompt differs from the first run's translation of this paper and the receipt is not reused.
@@ -316,7 +321,7 @@ test("a translation keeps its trust record when the model answers only the trust
     assert.equal(modelInputs.length, calls + 1);
     const c = ((await itemParts([out.articleId!])).get(out.articleId!)!.literatura as MateriaPart).confianca!;
     assert.equal(c.feitura, "traducao");
-    assert.equal(c.textoLido, "texto-completo");
+    assert.equal(await lido(out.articleId!), "texto-completo");
     assert.equal(c.desenho, "coorte");
     assert.equal(c.limitacao, "Centro único.");
     assert.equal(c.minuto!.achado, materia.achado);
@@ -474,4 +479,235 @@ test("ELSO: the guidelines on the page at the first read are the baseline; a new
   assert.equal(c.feitura, "aviso");
   assert.deepEqual(c.datas, { publicado: null, revisado: "2026-06", conferido: "2026-10-31" });
   assert.equal((await readElso({ cfg })).written, 0);
+});
+
+test("the journal's own text keeps its title and summary over the engine's; an older matéria takes its own line; a translation keeps its title in Portuguese; other sources are untouched", async () => {
+  const [paper, open] = parsePubmedXml(fixture("pubmed.xml"));
+  const analyse = async (id: string, relevance = "pass") => {
+    await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+    await sql`INSERT INTO analyses (article_id, input_revision, origin, relevance, title_zh, summary_zh, reason_zh, score, selected)
+      VALUES (${id}, 1000, 'rule', ${relevance}, 'Título reescrito pelo motor', 'Resumo escrito pelo motor', 'Por que importa escrito pelo motor', 90, true)`;
+    await publishArticle(id);
+    const [pub] = await sql<{ title: string; original_title: string | null; summary: string | null; reason: string | null; selected: boolean }[]>`
+      SELECT title, original_title, summary, reason, selected FROM publications WHERE article_id = ${id}`;
+    return pub!;
+  };
+  const novel = await takePaper({ ...paper!, pmid: `own-${T}`, doi: `10.9999/own-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  const own = await analyse(novel.articleId!);
+  assert.equal(own.title, materia.titulo);
+  assert.equal(own.original_title, null);
+  assert.equal(own.reason, null);
+  assert.equal(own.summary, `${materia.achado.replace(/\.$/, "")}. Muda algo agora? Alinhado a diretriz (Diretriz ERS de sibilância 2024).`);
+  assert.equal(own.selected, true, "selection still works from the engine's judgement");
+  const [engineStill] = await sql<{ n: number }[]>`SELECT count(*)::int AS n FROM analyses WHERE article_id = ${novel.articleId!} AND title_zh = 'Título reescrito pelo motor'`;
+  assert.equal(engineStill!.n, 1, "understand keeps its answer for type, tags and section");
+  const detail = await loadItemDetail(novel.articleId!);
+  assert.equal(detail.kind === "found" && detail.item.ownText, true, "the page leaves out the summary and the source line");
+
+  // A matéria from before the trust record: its body is not touched, its summary is its own line.
+  const older = await takePaper({ ...paper!, pmid: `old-${T}`, doi: `10.9999/old-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  await sql`DELETE FROM literatura_confianca WHERE article_id = ${older.articleId!}`;
+  await sql`UPDATE articles SET excerpt = 'Linha fina da matéria antiga', body_html = '<p>Corpo antigo</p>' WHERE id = ${older.articleId!}`;
+  const oldPub = await analyse(older.articleId!);
+  assert.equal(oldPub.title, materia.titulo);
+  assert.equal(oldPub.summary, "Linha fina da matéria antiga");
+  assert.equal(oldPub.reason, null);
+  const [body] = await sql<{ body_html: string }[]>`SELECT body_html FROM articles WHERE id = ${older.articleId!}`;
+  assert.equal(body!.body_html, "<p>Corpo antigo</p>");
+
+  const integral = await takePaper({ ...open!, title: `${open!.title} (own ${T})`, pmid: `int-${T}`, doi: `10.9999/int-${T}`, pmcid: "PMC12345678" });
+  assert.equal(integral.status, "integral");
+  const translated = await analyse(integral.articleId!);
+  assert.equal(translated.title, "Título reescrito pelo motor", "its own title is the paper's in English");
+  assert.match(translated.summary!, /Muda algo agora\?/);
+
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at) VALUES ('rss-own-test', 'Revista', 'rss', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
+  const { articleId } = await upsertMaterial({ sourceId: "rss-own-test", url: `https://example.org/${T}`, title: "An English headline", language: "en", publishedAt: new Date(), excerpt: "Abstract", bodyHtml: null, bodyText: null, bodyStatus: "pending", via: "rss", staleOnDiscovery: false });
+  const other = await analyse(articleId);
+  assert.equal(other.title, "Título reescrito pelo motor");
+  assert.equal(other.original_title, "An English headline");
+  assert.equal(other.summary, "Resumo escrito pelo motor");
+  assert.equal(other.reason, "Por que importa escrito pelo motor");
+  const otherDetail = await loadItemDetail(articleId);
+  assert.equal(otherDetail.kind === "found" && otherDetail.item.ownText, false);
+});
+
+test("Markdown and full RSS carry the question, Em um minuto, the card and the transparency line once, around the body; the page's stored body has none of them", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const { articleId } = await takePaper({ ...paper!, pmid: `exit-${T}`, doi: `10.9999/exit-${T}`, pmcid: null, coiStatement: "JL consults for X." }, new Date("2026-10-30T03:00:00Z"));
+  const id = articleId!;
+  assert.match(modelInputs.at(-1)!, /^Limite desta matéria: cerca de \d+ palavras, somando todos os campos$/m, "the cap reaches the model");
+  await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  await sql`UPDATE publications SET selected = true, seat = true, syndicate = true, body_mode = 'full', visible_after = now() - interval '1 minute', published_at = now() WHERE article_id = ${id}`;
+
+  const times = (text: string, what: string) => text.split(what).length - 1;
+  const carried = [materia.perguntaClinica, "Em um minuto", materia.achado, "Muda algo agora?", materia.diretriz, "Ficha do estudo", materia.populacaoCenario, materia.desenhoDetalhe, "Conflitos de interesse declarados", "inteligência artificial", "acompanha o que vai ao ar"];
+
+  const markdown = (await exportMarkdown(id))!.body;
+  for (const what of carried) assert.equal(times(markdown, what), 1, `Markdown: ${what}`);
+  assert.equal(times(markdown, "Texto lido"), 0, "readers never see what was read");
+  assert.equal(times(markdown, "## Resumo"), 0, "Em um minuto is the summary");
+  assert.ok(markdown.indexOf(materia.perguntaClinica) < markdown.indexOf("## Em um minuto") && markdown.indexOf("## Em um minuto") < markdown.indexOf("## Ficha do estudo"), "in the page's order");
+  assert.ok(markdown.indexOf("## Ficha do estudo") < markdown.indexOf("## O que encontraram"), "the card comes before the text");
+  assert.ok(markdown.indexOf("## Referência") < markdown.indexOf("inteligência artificial"), "the line comes after it");
+
+  const feed = await itemFeed("selected-full", null);
+  const feedItem = feed.split("<item>").find((i) => i.includes(`<guid isPermaLink="false">${id}</guid>`))!;
+  const content = /<content:encoded>([\s\S]*?)<\/content:encoded>/.exec(feedItem)![1]!;
+  assert.match(/<description>([\s\S]*?)<\/description>/.exec(feedItem)![1]!, /Muda algo agora\?/, "the description keeps the summary");
+  for (const what of carried) assert.equal(times(content, what), 1, `RSS: ${what}`);
+  assert.equal(times(content, "Texto lido"), 0, "readers never see what was read");
+  assert.ok(content.indexOf("Ficha do estudo") < content.indexOf("O que encontraram"));
+  assert.ok(content.indexOf("Referência") < content.indexOf("inteligência artificial"));
+
+  const detail = await loadItemDetail(id);
+  assert.ok(detail.kind === "found");
+  const page = detail.item.body!.zh ?? detail.item.body!.original!;
+  assert.match(page, /O que encontraram/);
+  for (const what of ["Pergunta clínica", "Em um minuto", "Muda algo agora?", "Ficha do estudo", "inteligência artificial"]) assert.equal(times(page, what), 0, `page body: ${what}`);
+});
+
+test("an editor's summary on the journal's own text takes the stored finding's place in Em um minuto, on the page's part, Markdown and RSS; clearing it brings the finding back", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const { articleId } = await takePaper({ ...paper!, pmid: `edit-${T}`, doi: `10.9999/edit-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  const id = articleId!;
+  await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  const seat = () => sql`UPDATE publications SET selected = true, seat = true, syndicate = true, body_mode = 'full', visible_after = now() - interval '1 minute', published_at = now() WHERE article_id = ${id}`;
+  const exits = async () => {
+    const feed = await itemFeed("selected-full", null);
+    const content = /<content:encoded>([\s\S]*?)<\/content:encoded>/.exec(feed.split("<item>").find((i) => i.includes(`<guid isPermaLink="false">${id}</guid>`))!)![1]!;
+    return [(await exportMarkdown(id))!.body, content];
+  };
+  const times = (text: string, what: string) => text.split(what).length - 1;
+  const corrected = `Traqueomalácia apareceu em 29% das crianças (${T}).`;
+  const published = `${corrected} Muda algo agora? Alinhado a diretriz (Diretriz ERS de sibilância 2024).`;
+
+  await overrideFields(id, { fields: { summary: published }, version: 0, reason: "número errado" }, "test-summary");
+  await seat();
+  const [pub] = await sql<{ summary: string }[]>`SELECT summary FROM publications WHERE article_id = ${id}`;
+  assert.equal(pub!.summary, published, "the card");
+  const detail = await loadItemDetail(id);
+  assert.ok(detail.kind === "found");
+  const part = detail.item.modules!.literatura as MateriaPart;
+  assert.equal(achadoVisivel(part), corrected, "the page and the lean page draw this part");
+  assert.equal(part.confianca!.minuto!.achado, corrected, "the e-mail's line");
+  for (const exit of await exits()) {
+    assert.equal(times(exit, corrected), 1);
+    assert.equal(times(exit, materia.achado), 0);
+    assert.equal(times(exit, "Muda algo agora?"), 1);
+  }
+
+  await overrideFields(id, { fields: {}, clear: ["summary"], version: 1, reason: "volta" }, "test-summary");
+  await seat();
+  assert.equal(achadoVisivel((await itemParts([id])).get(id)!.literatura as MateriaPart), materia.achado);
+  for (const exit of await exits()) assert.equal(times(exit, materia.achado), 1);
+
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at) VALUES ('rss-edit-test', 'Revista', 'rss', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
+  const other = await upsertMaterial({ sourceId: "rss-edit-test", url: `https://example.org/edit-${T}`, title: "An English headline", language: "en", publishedAt: new Date(), excerpt: "Abstract", bodyHtml: null, bodyText: null, bodyStatus: "pending", via: "rss", staleOnDiscovery: false });
+  await publishArticle(other.articleId);
+  await overrideFields(other.articleId, { fields: { summary: "Resumo editado" }, version: 0, reason: "ajuste" }, "test-summary");
+  assert.equal((await itemParts([other.articleId])).has(other.articleId), false, "other sources have no part from it");
+});
+
+test("a model answer whose results are all blank fails the attempt instead of publishing an empty table", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const pmid = `blank-${T}`;
+  const { resultados } = materia;
+  materia.resultados = [{ desfecho: " ", resultado: "", efeito: "" }];
+  try {
+    await assert.rejects(takePaper({ ...paper!, pmid, doi: `10.9999/${pmid}`, pmcid: null }, new Date("2026-10-30T03:00:00Z")));
+  } finally {
+    materia.resultados = resultados;
+  }
+  assert.equal((await sql`SELECT 1 FROM articles WHERE url LIKE ${`%${pmid}%`}`).length, 0);
+});
+
+test("a summary-only matéria says its finding in Em um minuto, not apart, unless it has none", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const id = (await takePaper({ ...paper!, pmid: `so-resumo-${T}`, doi: `10.9999/so-resumo-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"))).articleId!;
+  await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  await sql`UPDATE publications SET visibility = 'summary-only', visible_after = now() - interval '1 minute' WHERE article_id = ${id}`;
+  const shown = async () => {
+    const detail = await loadItemDetail(id);
+    assert.ok(detail.kind === "found");
+    assert.equal(detail.item.readingMode, "summary-only");
+    return detail.item.summaryCovered;
+  };
+
+  assert.equal(await shown(), true);
+  await sql`UPDATE literatura_confianca SET data = data - 'estrutura' WHERE article_id = ${id}`;
+  assert.equal(await shown(), true, "an older record: without a body, Top shows its stored finding");
+  await sql`UPDATE literatura_confianca SET data = data - 'minuto' WHERE article_id = ${id}`;
+  assert.equal(await shown(), false, "no finding to show: the summary stays");
+});
+
+test("an integral text keeps its summary on the page and in Markdown until an Em um minuto or a translation says it", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const id = (await takePaper({ ...paper!, pmid: `integral-${T}`, doi: `10.9999/integral-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"))).articleId!;
+  const [record] = await sql<{ data: never }[]>`SELECT data FROM literatura_confianca WHERE article_id = ${id}`;
+  await sql`DELETE FROM literatura_confianca WHERE article_id = ${id}`;
+  await sql`UPDATE articles SET source_id = ${INTEGRAL_SOURCE}, language = 'en', body_html = '<p>English full text.</p>', body_text = 'English full text.', grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  await sql`UPDATE publications SET summary = 'Resumo em português', body_mode = 'full', visibility = 'public', visible_after = now() - interval '1 minute' WHERE article_id = ${id}`;
+  const covered = async () => {
+    const detail = await loadItemDetail(id);
+    assert.ok(detail.kind === "found");
+    assert.equal(detail.item.ownText, true);
+    return detail.item.summaryCovered;
+  };
+
+  assert.equal(await covered(), false);
+  assert.match((await exportMarkdown(id))!.body, /## Resumo\n\nResumo em português/);
+
+  await sql`INSERT INTO translations (article_id, lang, revision, body_html, body_text, origin) SELECT id, 'pt', revision, '<p>Texto traduzido.</p>', 'Texto traduzido.', 'source' FROM articles WHERE id = ${id}`;
+  assert.equal(await covered(), true, "a translation is in the site's language");
+  await sql`DELETE FROM translations WHERE article_id = ${id}`;
+
+  await sql`INSERT INTO literatura_confianca (article_id, data) VALUES (${id}, ${sql.json(record!.data)})`;
+  assert.equal(await covered(), true, "Em um minuto is the summary");
+  assert.doesNotMatch((await exportMarkdown(id))!.body, /## Resumo/);
+});
+
+test("the cleanup removes the line saying what was read from an older matéria, without a model call, and one without a record still says it was written with AI on the page, in Markdown and in RSS", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const { articleId } = await takePaper({ ...paper!, pmid: `nota-${T}`, doi: `10.9999/nota-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  const id = articleId!;
+  const note = "Matéria escrita pelo Fôlego a partir do resumo publicado.";
+  await sql`DELETE FROM literatura_confianca WHERE article_id = ${id}`;
+  await sql`UPDATE articles SET body_html = ${`<h2>Como foi feito</h2><p>Métodos antigos.</p><h2>Referência</h2><p>Citação.</p><p><em>${note}</em></p>`}, body_text = ${`Métodos antigos. Citação. ${note}`}, grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  await sql`UPDATE publications SET selected = true, seat = true, syndicate = true, body_mode = 'full', visible_after = now() - interval '1 minute', published_at = now() WHERE article_id = ${id}`;
+
+  const calls = modelInputs.length;
+  assert.ok(await removeNotasDeOrigem() >= 1);
+  assert.equal(modelInputs.length, calls);
+  const [row] = await sql<{ body_html: string; body_text: string }[]>`SELECT body_html, body_text FROM articles WHERE id = ${id}`;
+  assert.equal(row!.body_html, "<h2>Como foi feito</h2><p>Métodos antigos.</p><h2>Referência</h2><p>Citação.</p>");
+  assert.equal(row!.body_text, "Métodos antigos. Citação.");
+  assert.equal(await removeNotasDeOrigem(), 0, "safe to run again");
+
+  const legacy = (await takePaper({ ...paper!, pmid: `nota-antiga-${T}`, doi: `10.9999/nota-antiga-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"))).articleId!;
+  const legacyNote = "Matéria escrita pelo Carina a partir do resumo publicado; o texto completo não estava disponível em acesso aberto.";
+  await sql`UPDATE articles SET body_html = ${`<p>Citação.</p><p><em>${legacyNote}</em></p>`}, body_text = ${`Citação. ${legacyNote}`} WHERE id = ${legacy}`;
+  assert.equal(await removeNotasDeOrigem(), 1, "the wording of the first version too");
+  const [cleaned] = await sql<{ body_html: string; body_text: string }[]>`SELECT body_html, body_text FROM articles WHERE id = ${legacy}`;
+  assert.deepEqual([cleaned!.body_html, cleaned!.body_text], ["<p>Citação.</p>", "Citação."]);
+
+  const line = linhaTransparencia("materia", EXPEDIENTE.editor.name);
+  const detail = await loadItemDetail(id);
+  assert.ok(detail.kind === "found");
+  const part = detail.item.modules!.literatura as MateriaPart;
+  assert.equal(part.confianca, null);
+  assert.equal(part.feitura, "materia", "the page's End draws the line from it");
+  const markdown = (await exportMarkdown(id))!.body;
+  const feedItem = (await itemFeed("selected-full", null)).split("<item>").find((i) => i.includes(`<guid isPermaLink="false">${id}</guid>`))!;
+  for (const [exit, text] of [["page", JSON.stringify(detail.item)], ["Markdown", markdown], ["RSS", feedItem]] as const) {
+    assert.match(text, /Métodos antigos/, exit);
+    assert.doesNotMatch(text, /Matéria escrita pelo|Texto lido|textoLido/, exit);
+  }
+  assert.equal(markdown.split(line).length - 1, 1, "Markdown: the transparency line, once");
+  assert.equal(feedItem.split(line).length - 1, 1, "RSS: the transparency line, once");
 });

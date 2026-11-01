@@ -1,11 +1,14 @@
-// Why a matéria can be trusted, as the site shows it (web/item-part.tsx, the weekly e-mail): "Em um minuto"
-// (the finding, who it matters to, and whether it changes anything now, graded from what the material itself
+// Why a matéria can be trusted, as the site shows it (web/item-part.tsx, the cards, the weekly e-mail): the clinical
+// question, "Em um minuto" (the finding, and whether it changes anything now, graded from what the material itself
 // supports and never the journal's own recommendation), the population, the study design and its main
-// limitation, the declared conflicts and what carries over to Brazil as the model read them (backend/materia.ts);
-// the text the pipeline actually read; preprints; the dates of a guideline or consensus; where the study stands
+// limitation and the declared conflicts as the model read them (backend/materia.ts);
+// preprints; the dates of a guideline or consensus; where the study stands
 // (registered, recruiting, results deposited, preprint, reviewed article) and its other versions the site has
 // (backend/estudos.ts); and the public corrections the editor added (backend/correcoes.ts).
 // Shared by the backend and the web, so nothing here imports either.
+
+/** The source of the site's own articles about papers and official pages. */
+export const MATERIA_SOURCE = "literatura-materia";
 
 /** "Muda algo agora?": a grade of what the material supports, not a recommendation of the journal. */
 export const IMPLICACOES = ["nao", "pode-informar-discussao", "alinhado-a-diretriz"] as const;
@@ -37,15 +40,8 @@ export const DESENHO_LABEL: Record<Desenho, string> = {
   outro: "Outro",
 };
 
-/** The text the pipeline gave the model, never the model's own account of it. */
+/** The text the pipeline gave the model, never the model's own account of it. Internal: readers never see whether it was the abstract or the full text. */
 export type TextoLido = "texto-completo" | "manuscrito-aceito" | "resumo" | "pagina-oficial";
-export const TEXTO_LIDO_LABEL: Record<TextoLido, string> = {
-  "texto-completo": "Texto completo aberto",
-  "manuscrito-aceito": "Manuscrito aceito, em cópia legal aberta",
-  resumo: "Somente o resumo",
-  "pagina-oficial": "Página oficial da organização",
-};
-
 /**
  * How the piece was made: written by the model from a paper or an official page, a paper's text translated in
  * full, a regulatory act summed up by the model (backend/alertas.ts), or a notice of a guideline's new version
@@ -73,7 +69,7 @@ export function alertaTitleLabel(a: { orgao: string; categoria: CategoriaAlerta 
 
 export const PREPRINT_LABEL = "Preprint – não revisado por pares";
 
-/** What a trust field says when the text read gives nothing, or when it was not read for it (backend/materia.ts). */
+/** What a trust field stores when the text read gives nothing, or when it was not read for it (backend/materia.ts). The card never prints it (`fichaRows`). */
 export const NAO_INFORMADO = "Não informado";
 
 /**
@@ -118,16 +114,25 @@ export interface Versao {
 }
 
 export interface EmUmMinuto {
+  /** The only summary of the piece: the answer to the clinical question, with its main number. */
   achado: string;
-  paraQuem: string;
+  /** Only on older records and official pages; a paper's matéria says it in "Na prática". */
+  paraQuem?: string | null;
   mudaAlgo: Implicacao;
   /** The guideline or consensus the material names, when the grade is "alinhado-a-diretriz". */
   diretriz: string | null;
 }
 
-/** What is stored for each new matéria (literatura_confianca). Old matérias have none and show nothing. */
+/** What is stored for each new matéria (literatura_confianca). Old matérias have none and show only the transparency line (`MateriaPart.feitura`). */
 export interface Confianca {
   feitura: Feitura;
+  /**
+   * "unica": written in the single structure (industry/prompts/materia.md), each fact in one place. Absent on the
+   * matérias written before it, whose stored body already says most of the card (`corpoJaDiz`).
+   */
+  estrutura?: "unica";
+  /** The clinical question in one PICO line. */
+  perguntaClinica?: string | null;
   minuto: EmUmMinuto | null;
   populacao: { idade: string; doenca: string; cenario: string } | null;
   desenho: Desenho | null;
@@ -149,6 +154,9 @@ export interface Confianca {
   datas: { publicado: string | null; revisado: string | null; conferido: string } | null;
 }
 
+/** The record as it leaves the backend: everything but what was read. */
+export type ConfiancaPublica = Omit<Confianca, "textoLido">;
+
 export interface Correcao {
   id: number;
   /** YYYY-MM-DD. */
@@ -162,12 +170,16 @@ export interface Correcao {
  * other versions and the other papers of its trial, and its corrections.
  */
 export interface MateriaPart {
-  confianca: Confianca | null;
+  confianca: ConfiancaPublica | null;
+  /** How the piece was made, for its transparency line: the record's, or "materia" for an older matéria without one; null for anything else without a record. */
+  feitura: Feitura | null;
   estado: Estado | null;
   versoes: Versao[];
   /** Other papers of the same trial (secondary, post-hoc, follow-up analyses): not versions of this one. */
   mesmoEnsaio: Versao[];
   correcoes: Correcao[];
+  /** The finding in the summary the editor set on the journal's own text (`achadoDoResumo`): it takes the stored finding's place in "Em um minuto". */
+  resumoEditor: string | null;
 }
 
 /** "2026-10-31" → "31/10/2026"; "2026-10" → "10/2026"; "2026" stays. */
@@ -177,34 +189,83 @@ export function dataBr(day: string): string {
 }
 
 /**
- * What the model did and who follows it, for the line at the end of the piece: published without a human review
- * first, so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE).
+ * A matéria written before the single structure: its stored body, which is never rewritten, already has the
+ * finding, the population, the design and the limitation, so its card leaves them out.
  */
-export function linhaRevisao(c: Confianca, editor: string | null): string {
-  const and = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} e ${xs.at(-1)}` : xs.join(""));
-  const fichas = `extraiu ${and(["população", "desenho", "principal limitação", ...(c.conflitos && c.conflitos !== NAO_INFORMADO ? ["conflitos declarados"] : [])])}`;
-  const acts = (...first: string[]) => and([...first, "graduou se ele muda algo agora", ...(c.aplicabilidade ? ["apontou o que se transfere ao contexto brasileiro"] : [])]);
-  const ia = {
-    materia: `Matéria redigida com auxílio de inteligência artificial (IA) a partir da fonte original (o texto indicado em “Texto lido”) e selecionada automaticamente: a IA ${acts("resumiu o estudo", fichas)}.`,
-    pagina: `Matéria redigida com auxílio de inteligência artificial (IA) a partir da página oficial indicada na fonte e selecionada automaticamente: a IA ${acts("resumiu o conteúdo")}.`,
-    traducao: `Artigo traduzido na íntegra com inteligência artificial (IA) e selecionado automaticamente: a IA ${acts("traduziu o texto", fichas)}; em caso de divergência, vale o original.`,
-    alerta: "Alerta redigido com auxílio de inteligência artificial (IA) a partir do ato oficial indicado na fonte e selecionado automaticamente: a IA resumiu o ato, classificou sua categoria e verificou se envolve dispositivos de via aérea ou respiratórios usados em crianças. Um ato regulatório não é evidência de eficácia nem de segurança clínica do produto.",
-    aviso: "Aviso gerado automaticamente a partir da página oficial indicada na fonte, sem leitura do documento: diz apenas o que a página informa (o título e a data de atualização).",
-  }[c.feitura];
-  const who = editor ? `O editor responsável, ${editor},` : "O editor responsável";
-  return `${ia} ${who} acompanha o que vai ao ar e corrige quando necessário; correções de substância são registradas no fim da página, com a data, o que mudou e por quê.`;
+export function corpoJaDiz(c: ConfiancaPublica): boolean {
+  return c.feitura === "materia" && c.estrutura !== "unica";
 }
 
-/** The compact "Em um minuto" of the weekly e-mail as one line of plain text, or null for a piece without one. */
+/** A row of the card under "Em um minuto" (web/item-part.tsx). `estado` draws the stage's badge. */
+export interface FichaRow {
+  label: string;
+  text?: string;
+  note?: string;
+  estado?: Estado;
+}
+
+/** The card's name, in every exit that shows it. */
+export function fichaTitulo(c: ConfiancaPublica): string {
+  return c.feitura === "materia" || c.feitura === "traducao" ? "Ficha do estudo" : "Sobre a fonte";
+}
+
+/** A field the model or the pipeline left as "not informed": a reader would take it as a statement about the paper, which may not have been checked, so it is not shown. */
+const informado = (s: string | null | undefined): s is string => !!s && !/^não informad[oa]\.?$/i.test(s.trim());
+
+/** The card: each row says something nothing else on the page does. */
+export function fichaRows({ confianca: c, estado }: Pick<MateriaPart, "confianca" | "estado">): FichaRow[] {
+  if (!c) return [];
+  const antiga = corpoJaDiz(c);
+  const study = c.feitura === "materia" || c.feitura === "traducao";
+  const populacao = c.populacao ? [c.populacao.idade, c.populacao.doenca, c.populacao.cenario].filter(informado).join(" · ") : "";
+  const rows: Array<FichaRow | null> = [
+    c.alerta ? { label: "Ato regulatório", text: `${CATEGORIA_ALERTA_LABEL[c.alerta.categoria]} (${c.alerta.orgao})`, note: "Não é evidência de eficácia nem de segurança clínica do produto." } : null,
+    populacao && !antiga ? { label: "População", text: populacao } : null,
+    c.desenho && !antiga ? { label: study ? "Desenho" : "Documento", text: c.desenhoDetalhe ? `${DESENHO_LABEL[c.desenho]} (${c.desenhoDetalhe})` : DESENHO_LABEL[c.desenho] } : null,
+    estado ? { label: "Estágio da evidência", estado, note: ESTADO_NOTA[estado] } : null,
+    informado(c.conflitos) ? { label: "Conflitos de interesse declarados", text: c.conflitos } : null,
+    informado(c.limitacao) && !antiga ? { label: "Principal limitação", text: c.limitacao } : null,
+    c.aplicabilidade ? { label: c.estrutura === "unica" ? "Na prática" : "O que se transfere ao contexto brasileiro", text: c.aplicabilidade } : null,
+    c.datas ? { label: "Datas do documento", text: `Publicado: ${c.datas.publicado ? dataBr(c.datas.publicado) : "não informado"} · Revisado: ${c.datas.revisado ? dataBr(c.datas.revisado) : "não informado pela fonte"} · Verificado pelo jornal em ${dataBr(c.datas.conferido)}` } : null,
+  ];
+  return rows.filter((r): r is FichaRow => r !== null);
+}
+
+/**
+ * The one line of transparency at the end of the piece: made with AI and published without a human review first,
+ * so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE).
+ */
+export function linhaTransparencia(feitura: Feitura, editor: string | null): string {
+  const how = {
+    materia: "Matéria escrita com inteligência artificial e publicada automaticamente",
+    pagina: "Matéria escrita com inteligência artificial e publicada automaticamente",
+    traducao: "Artigo traduzido na íntegra com inteligência artificial e publicado automaticamente",
+    alerta: "Alerta escrito com inteligência artificial a partir do ato oficial e publicado automaticamente",
+    aviso: "Aviso gerado automaticamente a partir da página oficial, sem leitura do documento",
+  }[feitura];
+  return `${how}; ${editor ? `o editor responsável, ${editor},` : "o editor responsável"} acompanha o que vai ao ar e corrige quando necessário.`;
+}
+
+const semPonto = (s: string) => s.replace(/[.\s]+$/, "");
+
+/** "Em um minuto" in one line: the finding, then whether it changes anything now. */
+export function minutoEmLinha(m: EmUmMinuto): string {
+  return `${semPonto(m.achado)}. Muda algo agora? ${IMPLICACAO_LABEL[m.mudaAlgo]}${m.diretriz ? ` (${m.diretriz})` : ""}.`;
+}
+
+/** The finding in a summary: the editor often starts from the published one, which ends in the grade (`minutoEmLinha`), shown apart. */
+export function achadoDoResumo(resumo: string): string {
+  return resumo.split(/\s*Muda algo agora\?/)[0]!.trim() || resumo.trim();
+}
+
+/** The finding "Em um minuto" shows: the editor's, else the stored one, except on an older matéria, whose body already has it. */
+export function achadoVisivel({ confianca: c, resumoEditor }: Pick<MateriaPart, "confianca" | "resumoEditor">): string | null {
+  return resumoEditor ?? (c?.minuto && !corpoJaDiz(c) ? c.minuto.achado : null);
+}
+
+/** "Em um minuto" under a piece in the weekly e-mail, as plain text, or null for a piece without one. */
 export function minutoCompacto(part: MateriaPart): string | null {
-  const c = part.confianca;
-  if (!c?.minuto) return null;
-  return [
-    c.preprint ? `${PREPRINT_LABEL}.` : "",
-    `Em um minuto: ${c.minuto.achado.replace(/[.\s]+$/, "")}.`,
-    `Para quem: ${c.minuto.paraQuem.replace(/[.\s]+$/, "")}.`,
-    `Muda algo agora? ${IMPLICACAO_LABEL[c.minuto.mudaAlgo]}.`,
-  ].filter(Boolean).join(" ");
+  return part.confianca?.minuto ? `Em um minuto: ${minutoEmLinha(part.confianca.minuto)}` : null;
 }
 
 /** A correction as the admin lists it: the matéria it belongs to, who added it and when. */

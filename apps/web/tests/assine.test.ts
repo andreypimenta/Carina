@@ -24,7 +24,7 @@ function report(kind: "weekly" | "daily", key: string): ReportDetail {
   } as ReportDetail;
 }
 const item: SiteItemDetail = {
-  id: "sec-1", title: "Matéria da seção", summary: "Resumo da matéria", reason: "Por que ler", source: { name: "Fonte" },
+  ownText: false, summaryCovered: false, id: "sec-1", title: "Matéria da seção", summary: "Resumo da matéria", reason: "Por que ler", source: { name: "Fonte" },
   publishedAt: at, timelineAt: at, discoveredAt: at, category: "reviews", tags: ["tag"], score: 80, selected: true,
   channel: "news", x: null, originalTitle: null, links: { original: "https://doi.org/10.1000/xyz" },
   story: null, readingMode: "full", author: null, outline: [], relatedStories: [], topics: [{ slug: "topico", name: "Tópico" }], indexable: true,
@@ -34,6 +34,25 @@ const item: SiteItemDetail = {
 const translated: SiteItemDetail = {
   ...item, id: "tr-1", hasTranslation: true,
   body: { zh: "<p>Começo traduzido.</p>", original: "<p>Full original text.</p>", zhKind: "translation", complete: false },
+} as SiteItemDetail;
+
+const literaturaPart = (fields: Record<string, unknown>) => ({ confianca: null, feitura: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null, ...fields });
+const semFicha: SiteItemDetail = { ...item, id: "sem-ficha", ownText: true, summaryCovered: true, modules: { literatura: literaturaPart({ feitura: "materia" }) } } as SiteItemDetail;
+const semConferir: SiteItemDetail = {
+  ...item, id: "sem-conferir", ownText: true, summaryCovered: true,
+  modules: {
+    literatura: literaturaPart({
+      feitura: "materia",
+      confianca: { feitura: "materia", estrutura: "unica", minuto: null, populacao: { idade: "não informada", doenca: "Sibilância", cenario: "não informado" }, desenho: "coorte", desenhoDetalhe: null, limitacao: "não informada", conflitos: "Não informado", preprint: false, datas: null },
+    }),
+  },
+} as SiteItemDetail;
+
+const semTraducao: SiteItemDetail = { ...item, id: "sem-traducao", ownText: true, summary: "Resumo em português do texto integral", bodyLanguage: "original", body: { zh: null, original: "<p>English full text.</p>", zhKind: null, complete: false } } as SiteItemDetail;
+
+const resumoSo: SiteItemDetail = {
+  ...item, id: "resumo-so", ownText: true, summaryCovered: true, readingMode: "summary-only", body: null, summary: "Achado guardado. Muda algo agora? Não.",
+  modules: { literatura: literaturaPart({ feitura: "materia", confianca: { feitura: "materia", minuto: { achado: "Achado guardado.", mudaAlgo: "nao", diretriz: null }, populacao: null, desenho: null, desenhoDetalhe: null, limitacao: null, preprint: false, datas: null } }) },
 } as SiteItemDetail;
 
 const api = createServer((req, res) => {
@@ -48,6 +67,10 @@ const api = createServer((req, res) => {
   if (/^\/api\/site\/reports\/(weekly|daily)\/navigation\//.test(path)) return res.end(JSON.stringify({ items: [] }));
   if (path === "/api/site/items/sec-1") return res.end(JSON.stringify(item));
   if (path === "/api/site/items/tr-1") return res.end(JSON.stringify(translated));
+  if (path === "/api/site/items/resumo-so") return res.end(JSON.stringify(resumoSo));
+  if (path === "/api/site/items/sem-traducao") return res.end(JSON.stringify(semTraducao));
+  if (path === "/api/site/items/sem-ficha") return res.end(JSON.stringify(semFicha));
+  if (path === "/api/site/items/sem-conferir") return res.end(JSON.stringify(semConferir));
   res.statusCode = 404;
   res.end(JSON.stringify({ code: "not_found" }));
 });
@@ -136,6 +159,31 @@ test("an article opened from /assine says when its text is an incomplete AI tran
   assert.match(html, /A tradução ainda está incompleta; veja o texto completo no original\./);
   assert.doesNotMatch(await page(`/assine/${WEEK}/sec-1`), /tradução por IA|tradução ainda está incompleta/);
 });
+
+for (const at of [`/assine/${WEEK}/`, "/items/"]) {
+  test(`${at}: a matéria without a trust record says it was written with AI, and the card never states what nobody checked`, async () => {
+    assert.match(await page(`${at}sem-ficha`), /Matéria escrita com inteligência artificial e publicada automaticamente/);
+    const html = (await page(`${at}sem-conferir`)).replace(/<script[\s\S]*?<\/script>/g, "");
+    assert.match(html, /Matéria escrita com inteligência artificial/);
+    assert.match(html, /População/);
+    assert.match(html, /Sibilância/);
+    assert.doesNotMatch(html, /Conflitos de interesse|Principal limitação|[Nn]ão informad/);
+  });
+
+  test(`${at}: own text shows its summary apart only when nothing else on the page says it`, async () => {
+    const visible = async (id: string) => (await page(`${at}${id}`)).replace(/<script[\s\S]*?<\/script>/g, "");
+    assert.match(await visible("sem-traducao"), /Resumo por IA[\s\S]*Resumo em português do texto integral/);
+    assert.doesNotMatch(await visible("sem-ficha"), /Resumo por IA/);
+  });
+
+  test(`${at}: a summary-only page says an older matéria's finding and grade once`, async () => {
+    const html = await page(`${at}resumo-so`);
+    const body = html.slice(html.indexOf("<body")).replace(/<script[\s\S]*?<\/script>/g, "");
+    assert.equal(body.split("Achado guardado.").length - 1, 1);
+    assert.equal(body.split("Muda algo agora?").length - 1, 1);
+    if (at === "/items/") assert.match(body, /A pedido da fonte/);
+  });
+}
 
 test("an article page under /assine needs a week in its address", async () => {
   const response = await fetch(`${web.origin}/assine/semana/sec-1`);
