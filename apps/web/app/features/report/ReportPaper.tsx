@@ -268,7 +268,7 @@ function LeadPicture({ cover, onError, priority = false, className = "" }: { cov
  */
 function Overview({ text }: { text: string }) {
   return (
-    <section aria-label="Panorama da edição" className="order-2 border-t border-line py-7 lg:order-none lg:border-b lg:border-t-0 @[880px]:col-span-full @[880px]:py-9">
+    <section aria-label="Panorama da edição" className="order-2 border-t border-line py-7 lg:order-none lg:border-b lg:border-t-0 @[880px]:order-none @[880px]:col-span-full @[880px]:border-b @[880px]:border-t-0 @[880px]:py-9">
       <Kicker>Panorama da edição</Kicker>
       <p className="mt-4 max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[560px]:text-justify @[880px]:text-[17.5px]">{text}</p>
     </section>
@@ -296,7 +296,7 @@ function FrontPage({ report, pages, leadStory, count, itemPath }: { report: Repo
     <section aria-label="Primeira página" className="grid @[880px]:grid-cols-[minmax(0,1fr)_300px] @[1040px]:grid-cols-[minmax(0,1fr)_340px]">
       {!daily && leadStory && report.overview && <Overview text={report.overview} />}
       {/* On a phone the headline comes before a landscape picture, so the first screen carries the news. */}
-      <div id={leadStory ? (anchorOf(leadStory) ?? undefined) : undefined} className="order-1 flex min-w-0 scroll-mt-[calc(var(--bar-h)+1.5rem)] flex-col py-7 lg:order-none @[880px]:border-r @[880px]:border-line @[880px]:py-10 @[880px]:pr-10">
+      <div id={leadStory ? (anchorOf(leadStory) ?? undefined) : undefined} className="order-1 flex min-w-0 scroll-mt-[calc(var(--bar-h)+1.5rem)] flex-col py-7 lg:order-none @[880px]:order-none @[880px]:border-r @[880px]:border-line @[880px]:py-10 @[880px]:pr-10">
         {/* The lead's headline needs no label; an issue led by its overview names it. */}
         {!byEvent && <Kicker>Panorama da edição</Kicker>}
         {cover && wide && <LeadPicture cover={cover} onError={() => setBroken(cover.url)} priority className={`order-2 mt-5 @[560px]:order-1 ${byEvent ? "@[560px]:mt-0" : ""}`} />}
@@ -326,7 +326,7 @@ function FrontPage({ report, pages, leadStory, count, itemPath }: { report: Repo
         {!!leadStory?.related?.length && <Related items={leadStory.related} itemPath={itemPath} className="order-5 mt-5 border-t border-line pt-4" />}
       </div>
 
-      <aside className="order-3 min-w-0 border-t border-line py-7 lg:order-none @[880px]:border-t-0 @[880px]:py-10 @[880px]:pl-8">
+      <aside className="order-3 min-w-0 border-t border-line py-7 lg:order-none @[880px]:order-none @[880px]:border-t-0 @[880px]:py-10 @[880px]:pl-8">
         {highlights.length > 0 && (
           <>
             <Kicker>{`Destaques ${period}`}</Kicker>

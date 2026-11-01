@@ -89,6 +89,31 @@ for (const path of ["/assine", `/assine/${WEEK}`]) {
   });
 }
 
+test("/assine sets the lead first on a phone, and under the overview beside the highlights once it has two columns below the desktop width", async () => {
+  const context = await (await browser()).newContext({ viewport: { width: 390, height: 844 } });
+  const tab = await context.newPage();
+  const box = async (locator: Locator) => (await locator.boundingBox())!;
+  const places = async () => ({
+    overview: await box(tab.getByRole("region", { name: "Panorama da edição" })),
+    lead: await box(tab.getByRole("heading", { name: "Manchete da semana", level: 2 })),
+    highlights: await box(tab.getByText("Destaques da semana", { exact: true })),
+  });
+  try {
+    await tab.goto(`${web.origin}/assine/${WEEK}`);
+    const phone = await places();
+    assert.ok(phone.lead.y < phone.overview.y, "the lead comes first");
+    assert.ok(phone.overview.y < phone.highlights.y, "then the overview, then the highlights");
+
+    await tab.setViewportSize({ width: 930, height: 844 });
+    const twoColumns = await places();
+    assert.ok(twoColumns.overview.y + twoColumns.overview.height <= twoColumns.lead.y, "the overview opens the issue");
+    assert.ok(twoColumns.highlights.x > twoColumns.lead.x, "the highlights sit in the right column");
+    assert.ok(twoColumns.highlights.y < twoColumns.lead.y + twoColumns.lead.height, "beside the lead");
+  } finally {
+    await context.close();
+  }
+});
+
 test("an article opened from /assine shows its text, the original and the form, and no way into the site", async () => {
   const html = await page(`/assine/${WEEK}/sec-1`);
   assert.match(html, /Matéria da seção/);
