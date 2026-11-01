@@ -18,8 +18,8 @@ export async function saveConfianca(tx: Db, articleId: string, data: Confianca):
 }
 
 /** The line older matérias keep in their stored body saying whether the abstract or the full text was read. */
-const NOTA_DE_ORIGEM = /<p><em>Matéria escrita pelo [^<]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\.<\/em><\/p>/g;
-const NOTA_DE_ORIGEM_TEXTO = /\s*Matéria escrita pelo [^.]* a partir d(?:o resumo publicado|o texto completo em acesso aberto)\./g;
+const NOTA_DE_ORIGEM = /<p><em>Matéria escrita pelo [^<]* a partir d(?:o resumo publicado(?:; o texto completo não estava disponível em acesso aberto)?|o texto completo em acesso aberto)\.<\/em><\/p>/g;
+const NOTA_DE_ORIGEM_TEXTO = /\s*Matéria escrita pelo [^.]* a partir d(?:o resumo publicado(?:; o texto completo não estava disponível em acesso aberto)?|o texto completo em acesso aberto)\./g;
 
 /** Removes the line saying what was read from the bodies of older matérias, with no model call; returns how many changed. */
 export async function removeNotasDeOrigem(): Promise<number> {

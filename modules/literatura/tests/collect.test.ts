@@ -624,6 +624,33 @@ test("a model answer whose results are all blank fails the attempt instead of pu
   assert.equal((await sql`SELECT 1 FROM articles WHERE url LIKE ${`%${pmid}%`}`).length, 0);
 });
 
+test("an integral text keeps its summary on the page and in Markdown until an Em um minuto or a translation says it", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const id = (await takePaper({ ...paper!, pmid: `integral-${T}`, doi: `10.9999/integral-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"))).articleId!;
+  const [record] = await sql<{ data: never }[]>`SELECT data FROM literatura_confianca WHERE article_id = ${id}`;
+  await sql`DELETE FROM literatura_confianca WHERE article_id = ${id}`;
+  await sql`UPDATE articles SET source_id = ${INTEGRAL_SOURCE}, language = 'en', body_html = '<p>English full text.</p>', body_text = 'English full text.', grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  await sql`UPDATE publications SET summary = 'Resumo em português', body_mode = 'full', visibility = 'public', visible_after = now() - interval '1 minute' WHERE article_id = ${id}`;
+  const covered = async () => {
+    const detail = await loadItemDetail(id);
+    assert.ok(detail.kind === "found");
+    assert.equal(detail.item.ownText, true);
+    return detail.item.summaryCovered;
+  };
+
+  assert.equal(await covered(), false);
+  assert.match((await exportMarkdown(id))!.body, /## Resumo\n\nResumo em português/);
+
+  await sql`INSERT INTO translations (article_id, lang, revision, body_html, body_text, origin) SELECT id, 'pt', revision, '<p>Texto traduzido.</p>', 'Texto traduzido.', 'source' FROM articles WHERE id = ${id}`;
+  assert.equal(await covered(), true, "a translation is in the site's language");
+  await sql`DELETE FROM translations WHERE article_id = ${id}`;
+
+  await sql`INSERT INTO literatura_confianca (article_id, data) VALUES (${id}, ${sql.json(record!.data)})`;
+  assert.equal(await covered(), true, "Em um minuto is the summary");
+  assert.doesNotMatch((await exportMarkdown(id))!.body, /## Resumo/);
+});
+
 test("the cleanup removes the line saying what was read from an older matéria, without a model call, and one without a record still says it was written with AI on the page, in Markdown and in RSS", async () => {
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const { articleId } = await takePaper({ ...paper!, pmid: `nota-${T}`, doi: `10.9999/nota-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
@@ -641,6 +668,13 @@ test("the cleanup removes the line saying what was read from an older matéria, 
   assert.equal(row!.body_html, "<h2>Como foi feito</h2><p>Métodos antigos.</p><h2>Referência</h2><p>Citação.</p>");
   assert.equal(row!.body_text, "Métodos antigos. Citação.");
   assert.equal(await removeNotasDeOrigem(), 0, "safe to run again");
+
+  const legacy = (await takePaper({ ...paper!, pmid: `nota-antiga-${T}`, doi: `10.9999/nota-antiga-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"))).articleId!;
+  const legacyNote = "Matéria escrita pelo Carina a partir do resumo publicado; o texto completo não estava disponível em acesso aberto.";
+  await sql`UPDATE articles SET body_html = ${`<p>Citação.</p><p><em>${legacyNote}</em></p>`}, body_text = ${`Citação. ${legacyNote}`} WHERE id = ${legacy}`;
+  assert.equal(await removeNotasDeOrigem(), 1, "the wording of the first version too");
+  const [cleaned] = await sql<{ body_html: string; body_text: string }[]>`SELECT body_html, body_text FROM articles WHERE id = ${legacy}`;
+  assert.deepEqual([cleaned!.body_html, cleaned!.body_text], ["<p>Citação.</p>", "Citação."]);
 
   const line = linhaTransparencia("materia", EXPEDIENTE.editor.name);
   const detail = await loadItemDetail(id);

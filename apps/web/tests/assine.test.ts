@@ -24,7 +24,7 @@ function report(kind: "weekly" | "daily", key: string): ReportDetail {
   } as ReportDetail;
 }
 const item: SiteItemDetail = {
-  ownText: false, id: "sec-1", title: "Matéria da seção", summary: "Resumo da matéria", reason: "Por que ler", source: { name: "Fonte" },
+  ownText: false, summaryCovered: false, id: "sec-1", title: "Matéria da seção", summary: "Resumo da matéria", reason: "Por que ler", source: { name: "Fonte" },
   publishedAt: at, timelineAt: at, discoveredAt: at, category: "reviews", tags: ["tag"], score: 80, selected: true,
   channel: "news", x: null, originalTitle: null, links: { original: "https://doi.org/10.1000/xyz" },
   story: null, readingMode: "full", author: null, outline: [], relatedStories: [], topics: [{ slug: "topico", name: "Tópico" }], indexable: true,
@@ -37,9 +37,9 @@ const translated: SiteItemDetail = {
 } as SiteItemDetail;
 
 const literaturaPart = (fields: Record<string, unknown>) => ({ confianca: null, feitura: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null, ...fields });
-const semFicha: SiteItemDetail = { ...item, id: "sem-ficha", ownText: true, modules: { literatura: literaturaPart({ feitura: "materia" }) } } as SiteItemDetail;
+const semFicha: SiteItemDetail = { ...item, id: "sem-ficha", ownText: true, summaryCovered: true, modules: { literatura: literaturaPart({ feitura: "materia" }) } } as SiteItemDetail;
 const semConferir: SiteItemDetail = {
-  ...item, id: "sem-conferir", ownText: true,
+  ...item, id: "sem-conferir", ownText: true, summaryCovered: true,
   modules: {
     literatura: literaturaPart({
       feitura: "materia",
@@ -47,6 +47,8 @@ const semConferir: SiteItemDetail = {
     }),
   },
 } as SiteItemDetail;
+
+const semTraducao: SiteItemDetail = { ...item, id: "sem-traducao", ownText: true, summary: "Resumo em português do texto integral", bodyLanguage: "original", body: { zh: null, original: "<p>English full text.</p>", zhKind: null, complete: false } } as SiteItemDetail;
 
 const api = createServer((req, res) => {
   const path = new URL(req.url!, "http://api.local").pathname;
@@ -60,6 +62,7 @@ const api = createServer((req, res) => {
   if (/^\/api\/site\/reports\/(weekly|daily)\/navigation\//.test(path)) return res.end(JSON.stringify({ items: [] }));
   if (path === "/api/site/items/sec-1") return res.end(JSON.stringify(item));
   if (path === "/api/site/items/tr-1") return res.end(JSON.stringify(translated));
+  if (path === "/api/site/items/sem-traducao") return res.end(JSON.stringify(semTraducao));
   if (path === "/api/site/items/sem-ficha") return res.end(JSON.stringify(semFicha));
   if (path === "/api/site/items/sem-conferir") return res.end(JSON.stringify(semConferir));
   res.statusCode = 404;
@@ -159,6 +162,12 @@ for (const at of [`/assine/${WEEK}/`, "/items/"]) {
     assert.match(html, /População/);
     assert.match(html, /Sibilância/);
     assert.doesNotMatch(html, /Conflitos de interesse|Principal limitação|[Nn]ão informad/);
+  });
+
+  test(`${at}: own text shows its summary apart only when nothing else on the page says it`, async () => {
+    const visible = async (id: string) => (await page(`${at}${id}`)).replace(/<script[\s\S]*?<\/script>/g, "");
+    assert.match(await visible("sem-traducao"), /Resumo por IA[\s\S]*Resumo em português do texto integral/);
+    assert.doesNotMatch(await visible("sem-ficha"), /Resumo por IA/);
   });
 }
 

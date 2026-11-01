@@ -117,6 +117,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     const item: SiteItemDetail = {
       ...summary,
       ownText: OWN_TEXT_SOURCES.includes(row.source_id),
+      summaryCovered: false,
       selected: false,
       score: null,
       category: null,
@@ -183,9 +184,12 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
 
   // The reason goes with the seat; a report yielding it points to the one holding it.
   const sameEvent = (await seatHolders([row], now)).get(row.id) ?? null;
+  const modules = await modulesOf(id);
+  const ownText = OWN_TEXT_SOURCES.includes(row.source_id);
   const item: SiteItemDetail = {
     ...summary,
-    ownText: OWN_TEXT_SOURCES.includes(row.source_id),
+    ownText,
+    summaryCovered: ownText && (reading.bodyLanguage === "zh" || reading.hasTranslation || saysSummary(modules.modules)),
     x,
     ...(sameEvent ? { reason: null, sameEvent } : {}),
     readingMode: "full",
@@ -200,9 +204,14 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
     hasTranslation: reading.hasTranslation,
     bodyLanguage: reading.bodyLanguage,
     weekly: await weeklyOf(id),
-    ...(await modulesOf(id)),
+    ...modules,
   };
   return { kind: "found", item, row };
+}
+
+/** Whether a module's part of the article already says its public summary (ItemExit.hasSummary). */
+function saysSummary(parts: Record<string, unknown> | undefined): boolean {
+  return !!parts && serverModules().some((m) => m.name in parts && m.items?.exit?.(parts[m.name])?.hasSummary);
 }
 
 async function modulesOf(id: string): Promise<Pick<SiteItemDetail, "modules">> {

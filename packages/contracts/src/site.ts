@@ -133,8 +133,10 @@ export interface OutlineEntry {
  * unless …/original asks for the original. Only the body shown is sent, with its outline.
  */
 export interface SiteItemDetail extends ItemSummary {
-  /** The site's own text (OWN_TEXT_SOURCES, industry/taxonomy.ts): its page shows neither the summary apart nor the source line. */
+  /** The site's own text (OWN_TEXT_SOURCES, industry/taxonomy.ts): its page shows no source line. */
   ownText: boolean;
+  /** Own text whose page already says its summary, in a module's "Em um minuto" or in a body in the site's language: the page does not show it apart. */
+  summaryCovered: boolean;
   /** The post with all its media; its text is the body. */
   x: Omit<XPostView, "text" | "translation"> | null;
   /** Selected, but its fact's seat is held by this report: marked 同新闻, without a reason of its own. */
