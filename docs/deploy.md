@@ -101,12 +101,30 @@ docker compose exec worker node scripts/abas-dividir.ts --apply
 
 没有迁移，没有新环境变量。唯一删除的数据是旧报道正文里的一句话（见下）。本站自己的两个信源（`literatura-materia`、`literatura-integral`，`industry/taxonomy.ts` 的 `OWN_TEXT_SOURCES`）不再用引擎写的标题、“Resumo por IA”和“Por que importa”；`understand` 仍然运行，给类型、标签和分区用。模块多了两个插口：`ServerModule.ownSummary`，以及 `ServerModule.items.exit`（不经过页面就带正文的出口，也就是 Markdown 导出和全文 RSS，用它在正文前后带上临床问题、Em um minuto、卡片和透明度说明）。
 
-新报道按 `industry/prompts/materia.md` 的结构写，字段名变了，长度有上限（只有摘要时约为摘要的 1.2 倍，有全文时约 900 词）。**旧报道的正文不会被模型重写**，只改显示。发布后页面立刻隐藏摘要（没有 Em um minuto、也还没有葡语译文的全文保留摘要）、原标题和“Fonte”一行，已有可信信息的旧报道只显示正文里没有的那几项，没有可信信息的旧报道（`literatura-materia`）在页面、`/assine`、Markdown 和 RSS 上加一行透明度说明；卡片不再显示“Não informado”的项（包括旧记录里存的，不改记录）；但存下的入选理由（“Por que importa”）和引擎写的标题还留在旧报道的页面上，运行下面的 `scripts/materias-republicar.ts --apply` 之后才会消失。
+新报道按 `industry/prompts/materia.md` 的结构写，字段名变了，长度有上限（只有摘要时约为摘要的 1.2 倍，有全文时约 900 词）。**旧报道的正文不会被模型重写**（只有用下面的 `scripts/edicao-reescrever.ts` 明确指定的那一期例外），只改显示。发布后页面立刻隐藏摘要（没有 Em um minuto、也还没有葡语译文的全文保留摘要）、原标题和“Fonte”一行，已有可信信息的旧报道只显示正文里没有的那几项，没有可信信息的旧报道（`literatura-materia`）在页面、`/assine`、Markdown 和 RSS 上加一行透明度说明；卡片不再显示“Não informado”的项（包括旧记录里存的，不改记录）；但存下的入选理由（“Por que importa”）和引擎写的标题还留在旧报道的页面上，运行下面的 `scripts/materias-republicar.ts --apply` 之后才会消失。
 
 **发布后马上运行一次**（只发布，不调用模型；不加 `--apply` 只统计；一篇一个事务，可以停下再跑），并删除旧报道正文里“Matéria escrita pelo … a partir do resumo publicado / do texto completo”这句话（在它跑完之前，这句话还留在页面、Markdown 和 RSS 上），让已存的标题和摘要换成报道自己的，并清掉已存的入选理由，页面、卡片、列表、RSS 和搜索才会跟着变。已经发出的期次保留当时的内容：
 
 ```bash
 docker compose exec worker node scripts/materias-republicar.ts [--apply]
+```
+
+#### 把一期周报整期改写成单一结构（2026 年 11 月 1 日）
+
+没有迁移，没有新环境变量，不删任何数据。上线不自动运行。`scripts/edicao-reescrever.ts` 只处理指定那一期周报（`reports` 里 `kind=weekly`）的条目，其他报道和其他期次都不动，也不重发邮件。本站自己的报道（`literatura-materia`）由写作模型按新结构重写标题、摘要和正文；已翻译的全文（`literatura-integral`）保留正文，只生成可信信息；第三方条目不改；没有原文可读的（PubMed 查不到 PMID 或 DOI，或来自官方页面）只列出，不改。
+
+它不是新的材料修订：不增加 `revision`，也不清空分析、精选和归组，否则条目会先离开已发出的期次，还可能回不来。改写前的标题、摘要、正文和可信信息写进 `audit_log`（`action = 'literatura.reescrever'`），`--restore` 从那里取回。正文的 `article_revisions` 不增加。模型输出通不过校验（缺关键数字、字段为空、提到读的是摘要还是全文）的条目保持原样并列出，下次运行再试；已完成的不再付费。期次内的标题和摘要按发布内容更新，导语和栏目介绍重写一次（写得不实时退回不调用模型的通用导语），旧版本进 `report_revisions`，`generated_at` 不变。
+
+```bash
+# 只统计：不调用模型，写预览文件（/data/reescrever-<期次>.md），给出调用次数和估算的 token
+docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43
+# 让模型写出新文本，只进预览文件，不改已发布内容；之后 --apply 复用这些回答，不再付费
+docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43 --generate
+docker compose cp worker:/data/reescrever-2026-W43.md .
+# 写入（可重复运行；有条目被拒或期次没更新时退出码为 1，再跑一次）
+docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43 --apply --reason="<原因>"
+# 把某一条恢复成改写前的样子
+docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43 --restore=<id> --reason="<原因>"
 ```
 
 #### 证据阶段、同一研究的版本、监管警示与 ELSO 指南（2026 年 10 月 31 日）

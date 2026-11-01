@@ -144,13 +144,16 @@ export const PeriodSchema = z.object({
   sections: z.record(z.string(), z.string().max(1500)).catch({}),
 });
 
+/** A section of a weekly or monthly as its writer reads it. */
+export interface PeriodGroup { label: string; items: Array<{ title: string; summary: string }> }
+
 /**
  * The writer's brief for a week or month: its events as chosen, ordered and grouped by rule. It writes
  * the overview and the introductions of the sections large enough for one, and decides nothing about
  * what the issue carries. The lead is named because the sections' order does not show it, and the overview
  * printed with it must not repeat it.
  */
-export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, lead: Candidate, groups: Array<{ label: string; items: Candidate[] }>) {
+export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, lead: { title: string }, groups: PeriodGroup[]) {
   const list = groups.map((g) => [`【${g.label}】`, ...g.items.map((e) => `- ${e.title} | ${e.summary.slice(0, 350)}`)].join("\n")).join("\n");
   const introduced = groups.filter((g) => g.items.length >= INTRO_EVENTS).map((g) => g.label);
   return {
@@ -210,6 +213,31 @@ export function fitted(text: string, max: number): string | null {
   return out.trim() || null;
 }
 
+/** The paid call that writes a weekly's or monthly's overview and introductions; a failure is the caller's to handle. */
+export async function askPeriodWriter(kind: "weekly" | "monthly", key: string, startDate: string, endDateInclusive: string, lead: { title: string }, groups: PeriodGroup[]) {
+  return chatJson({
+    model: await modelFor("report"), purpose: `report_${kind}`, subject: `report:${kind}:${key}`, promptVersion: REPORT_VERSION,
+    ...periodPrompt(kind, startDate, endDateInclusive, lead, groups), schema: PeriodSchema, temperature: 0.3, maxTokens: 2500,
+  });
+}
+
+/**
+ * What of the writer's answer an issue prints: text naming anything its events do not name is not used,
+ * overlong text keeps the leading sentences that fit, and only a section with enough events has an introduction.
+ */
+export function periodTexts(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, groups: PeriodGroup[], written: z.infer<typeof PeriodSchema>) {
+  const corpus = [`${startDate} ${endDateInclusive}`, ...groups.flatMap((g) => g.items).map((e) => `${e.title} ${e.summary}`)].join("\n");
+  const usable = (text: string | undefined, max: number) => {
+    const fit = fitted(text ?? "", max);
+    return fit && grounded(fit, corpus) ? fit : null;
+  };
+  return {
+    // Without a usable one the read layer says what the issue carries, naming only what is still public.
+    overview: usable(written.overview, OVERVIEW_CHARS[kind]),
+    intro: (g: PeriodGroup) => (g.items.length >= INTRO_EVENTS ? usable(written.sections[g.label], INTRO_CHARS) : null),
+  };
+}
+
 /**
  * A weekly or monthly, compiled from the dailies dated in the period. Its events, their order and their
  * sections are decided by rule: the first event leads and the next three are the highlights. A model
@@ -240,29 +268,19 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
   const groups = SECTION_ORDER
     .map((label) => ({ label, items: top.filter((e) => sectionOf(e.area, e.tags) === label) }))
     .filter((g) => g.items.length > 0);
-  const corpus = [`${startDate} ${endDateInclusive}`, ...top.map((e) => `${e.title} ${e.summary}`)].join("\n");
   const [lead] = top as [Candidate, ...Candidate[]];
   const model = await modelFor("report");
   let written: z.infer<typeof PeriodSchema> = { overview: "", sections: {} };
   let receiptId: number | null = null;
   try {
-    const res = await chatJson({
-      model, purpose: `report_${kind}`, subject: `report:${kind}:${key}`, promptVersion: REPORT_VERSION,
-      ...periodPrompt(kind, startDate, endDateInclusive, lead, groups), schema: PeriodSchema, temperature: 0.3, maxTokens: 2500,
-    });
+    const res = await askPeriodWriter(kind, key, startDate, endDateInclusive, lead, groups);
     written = res.data;
     receiptId = res.receiptId;
   } catch (error) {
     if (shutdownSignal.signal.aborted) throw error;
     console.error(JSON.stringify({ level: "warn", msg: "period writer failed; the issue goes out with its plain overview", report: `${kind}:${key}`, error: logError(error) }));
   }
-  const usable = (text: string | undefined, max: number) => {
-    const fit = fitted(text ?? "", max);
-    return fit && grounded(fit, corpus) ? fit : null;
-  };
-  // Without a usable one the read layer says what the issue carries, naming only what is still public.
-  const overview = usable(written.overview, OVERVIEW_CHARS[kind]);
-  const intro = (g: { label: string; items: Candidate[] }) => g.items.length >= INTRO_EVENTS ? usable(written.sections[g.label], INTRO_CHARS) : null;
+  const { overview, intro } = periodTexts(kind, startDate, endDateInclusive, groups, written);
   const content = {
     kind,
     title: kind === "weekly" ? `${SITE.name} · ${PERIOD_ISSUE_NAMES.weekly} · ${key}` : `${SITE.name} · ${PERIOD_ISSUE_NAMES.monthly} · ${key}`,

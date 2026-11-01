@@ -6,6 +6,7 @@
     "./adicionar": "./backend/adicionar.ts",
     "./confianca": "./backend/confianca.ts",
     "./module": "./module.ts",
+    "./reescrever": "./backend/reescrever.ts",
     "./server": "./server.ts",
     "./web": "./web.tsx"
   },
