@@ -141,12 +141,13 @@ test("a correction's matéria from its page's address or its id", () => {
   assert.equal(articleIdFrom("https://folego.med.br/especiais/linha"), null);
 });
 
-test("the exits' card follows the page's: an older matéria keeps only what its body does not say, the stage is named, no record adds nothing", () => {
+test("the exits follow the page: an older matéria keeps only what its body does not say, the stage is named, no record adds nothing", () => {
   const part = (confianca: MateriaPart["confianca"], estado: MateriaPart["estado"] = "artigo-revisado"): MateriaPart => ({ confianca, estado, versoes: [], mesmoEnsaio: [], correcoes: [] });
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const record = confiancaDaMateria(materia, paper!, "resumo", now);
   const whole = materiaExit(part(record))!;
-  assert.match(whole.before, /^<h2>Ficha do estudo<\/h2><ul>/);
+  assert.match(whole.before, /^<h2>Pergunta clínica<\/h2><p>[^<]+<\/p><h2>Em um minuto<\/h2><p>[^<]+<\/p><p><strong>Muda algo agora\?<\/strong> [^<]+<\/p><h2>Ficha do estudo<\/h2><ul>/);
+  assert.equal(whole.hasSummary, true);
   assert.match(whole.before, /<strong>Texto lido:<\/strong> Somente o resumo/);
   assert.match(whole.before, /<strong>Estágio da evidência:<\/strong> Artigo revisado\. Artigo publicado em revista/);
   assert.match(whole.after, /^<p>Matéria escrita com inteligência artificial/);
@@ -154,5 +155,9 @@ test("the exits' card follows the page's: an older matéria keeps only what its 
   const old = materiaExit(part(older))!;
   assert.doesNotMatch(old.before, /População|Texto lido|Principal limitação/);
   assert.match(old.before, /Estágio da evidência/);
+  assert.doesNotMatch(old.before, /Em um minuto/, "its body has the finding");
+  assert.match(old.before, /Muda algo agora\?/);
+  assert.equal(old.hasSummary, true);
+  assert.equal(materiaExit(part({ ...record, minuto: null }))!.hasSummary, false, "without one, the Markdown keeps the stored summary");
   assert.equal(materiaExit(part(null)), null);
 });

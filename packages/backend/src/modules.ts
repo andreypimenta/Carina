@@ -204,6 +204,8 @@ export interface RequestNotices {
 export interface ItemExit {
   before: string;
   after: string;
+  /** It already says the article's public summary, so an exit that prints the summary as its own section leaves it out. */
+  hasSummary: boolean;
 }
 
 export interface ServerModule {

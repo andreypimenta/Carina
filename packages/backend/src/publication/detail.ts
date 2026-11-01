@@ -97,7 +97,7 @@ export async function itemExits(ids: readonly string[]): Promise<Map<string, Ite
       const exit = m.name in parts ? m.items?.exit?.(parts[m.name]) : null;
       if (!exit) continue;
       const seen = out.get(id);
-      out.set(id, { before: `${seen?.before ?? ""}${exit.before}`, after: `${seen?.after ?? ""}${exit.after}` });
+      out.set(id, { before: `${seen?.before ?? ""}${exit.before}`, after: `${seen?.after ?? ""}${exit.after}`, hasSummary: !!seen?.hasSummary || exit.hasSummary });
     }
   }
   return out;
@@ -233,7 +233,7 @@ export async function exportMarkdown(id: string): Promise<{ filename: string; bo
   lines.push(`- ${SITE.name}: ${itemUrl(row.id)}`);
   lines.push(`- Original: ${row.url}`, "");
   const exit = (await itemExits([id])).get(id);
-  if (row.summary) lines.push("## Resumo", "", row.summary, "");
+  if (row.summary && !exit?.hasSummary) lines.push("## Resumo", "", row.summary, "");
   if (exit?.before) lines.push(bodyToMarkdown(exit.before, row.url), "");
   if (row.selected && row.seat && row.reason) lines.push(`## ${ITEM_COPY.reasonLabel}`, "", row.reason, "");
   if (showsPost(row) && row.x_post) {

@@ -527,7 +527,7 @@ test("the journal's own text keeps its title and summary over the engine's; an o
   assert.equal(otherDetail.kind === "found" && otherDetail.item.ownText, false);
 });
 
-test("Markdown and full RSS carry the card and the transparency line once, around the body; the page's stored body has neither", async () => {
+test("Markdown and full RSS carry the question, Em um minuto, the card and the transparency line once, around the body; the page's stored body has none of them", async () => {
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const { articleId } = await takePaper({ ...paper!, pmid: `exit-${T}`, doi: `10.9999/exit-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
   const id = articleId!;
@@ -537,15 +537,19 @@ test("Markdown and full RSS carry the card and the transparency line once, aroun
   await sql`UPDATE publications SET selected = true, seat = true, syndicate = true, body_mode = 'full', visible_after = now() - interval '1 minute', published_at = now() WHERE article_id = ${id}`;
 
   const times = (text: string, what: string) => text.split(what).length - 1;
-  const carried = ["Ficha do estudo", materia.populacaoCenario, materia.desenhoDetalhe, "Conflitos de interesse declarados", "Texto lido", "Somente o resumo", "inteligência artificial", "acompanha o que vai ao ar"];
+  const carried = [materia.perguntaClinica, "Em um minuto", materia.achado, "Muda algo agora?", materia.diretriz, "Ficha do estudo", materia.populacaoCenario, materia.desenhoDetalhe, "Conflitos de interesse declarados", "Texto lido", "Somente o resumo", "inteligência artificial", "acompanha o que vai ao ar"];
 
   const markdown = (await exportMarkdown(id))!.body;
   for (const what of carried) assert.equal(times(markdown, what), 1, `Markdown: ${what}`);
+  assert.equal(times(markdown, "## Resumo"), 0, "Em um minuto is the summary");
+  assert.ok(markdown.indexOf(materia.perguntaClinica) < markdown.indexOf("## Em um minuto") && markdown.indexOf("## Em um minuto") < markdown.indexOf("## Ficha do estudo"), "in the page's order");
   assert.ok(markdown.indexOf("## Ficha do estudo") < markdown.indexOf("## O que encontraram"), "the card comes before the text");
   assert.ok(markdown.indexOf("## Referência") < markdown.indexOf("inteligência artificial"), "the line comes after it");
 
   const feed = await itemFeed("selected-full", null);
-  const content = /<content:encoded>([\s\S]*?)<\/content:encoded>/.exec(feed.split("<item>").find((i) => i.includes(`<guid isPermaLink="false">${id}</guid>`))!)![1]!;
+  const feedItem = feed.split("<item>").find((i) => i.includes(`<guid isPermaLink="false">${id}</guid>`))!;
+  const content = /<content:encoded>([\s\S]*?)<\/content:encoded>/.exec(feedItem)![1]!;
+  assert.match(/<description>([\s\S]*?)<\/description>/.exec(feedItem)![1]!, /Muda algo agora\?/, "the description keeps the summary");
   for (const what of carried) assert.equal(times(content, what), 1, `RSS: ${what}`);
   assert.ok(content.indexOf("Ficha do estudo") < content.indexOf("O que encontraram"));
   assert.ok(content.indexOf("Referência") < content.indexOf("inteligência artificial"));
@@ -554,5 +558,5 @@ test("Markdown and full RSS carry the card and the transparency line once, aroun
   assert.ok(detail.kind === "found");
   const page = detail.item.body!.zh ?? detail.item.body!.original!;
   assert.match(page, /O que encontraram/);
-  for (const what of ["Ficha do estudo", "Texto lido", "inteligência artificial"]) assert.equal(times(page, what), 0, `page body: ${what}`);
+  for (const what of ["Pergunta clínica", "Em um minuto", "Muda algo agora?", "Ficha do estudo", "Texto lido", "inteligência artificial"]) assert.equal(times(page, what), 0, `page body: ${what}`);
 });
