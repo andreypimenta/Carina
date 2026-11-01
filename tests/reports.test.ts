@@ -9,7 +9,8 @@ import { upsertMaterial } from "@aihot/backend/content/materials";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { loadReport } from "@aihot/backend/publication/reports";
-import { composeDaily, dueDaily, dueMonthly, dueWeekly, grounded } from "@aihot/backend/reports/compose";
+import type { Candidate } from "@aihot/backend/reports/edition";
+import { composeDaily, dueDaily, dueMonthly, dueWeekly, grounded, periodPrompt } from "@aihot/backend/reports/compose";
 import { SITE } from "@aihot/site";
 
 const T = tag();
@@ -58,4 +59,14 @@ test("a weekly that froze no summaries shows the articles' public summaries", as
 
 test("an overview may name the site by its bare name mid-sentence", () => {
   assert.equal(grounded(`Nesta semana, o ${SITE.bareName} destaca três estudos.`, "três estudos"), true);
+});
+
+test("the period writer is told which item leads and not to repeat it in the overview", () => {
+  const lead = { title: "Revisão com 3.667 crianças", summary: "VATS e fibrinólise." } as Candidate;
+  const other = { title: "Outro estudo", summary: "Resumo." } as Candidate;
+  // The lead's section may print after others, so only the named line tells the writer which one leads.
+  const { system, user } = periodPrompt("weekly", "2026-10-19", "2026-10-25", lead, [{ label: "A", items: [other] }, { label: "B", items: [lead] }]);
+  assert.match(user, /^Matéria principal: Revisão com 3\.667 crianças$/m);
+  assert.match(system, /não a repita nem abra o overview com ela, e não use os números dela/);
+  assert.match(system, /resumo da edição como um todo/);
 });

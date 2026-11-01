@@ -170,14 +170,15 @@ export const PERIOD_ISSUE_NAMES = { weekly: "Edição semanal", monthly: "Balan�
 
 /**
  * A weekly's or monthly's overview: the one written for it, else what it carries, naming the first three
- * of its lead, highlights and entries still public. `gone` must cover every entry.
+ * of its highlights and entries still public after the lead, which is set beside it; none when only the
+ * lead is left. `gone` must cover every entry.
  */
 function periodOverview(content: Record<string, any>, kind: "weekly" | "monthly", gone: Set<string>): string | null {
   const changed = entriesOf(content, "periodic").some((e) => e.itemId && gone.has(e.itemId));
   if (!changed && typeof content.overview === "string" && content.overview) return content.overview;
   const shown = leadCandidates(content, "periodic").filter((e) => !e.itemId || !gone.has(String(e.itemId)));
-  if (!shown.length) return null;
-  return `${kind === "weekly" ? "Nesta semana" : "Neste mês"}, ${shown.length}${REPORTS.entry.measure ? ` ${REPORTS.entry.measure}` : ""} ${REPORTS.entry.noun}; os que mais chamaram atenção: ${shown.slice(0, 3).map((e) => e.title).join("; ")}.`;
+  if (shown.length < 2) return null;
+  return `${kind === "weekly" ? "Nesta semana" : "Neste mês"}, ${shown.length}${REPORTS.entry.measure ? ` ${REPORTS.entry.measure}` : ""} ${REPORTS.entry.noun}, entre eles: ${shown.slice(1, 4).map((e) => e.title).join("; ")}.`;
 }
 
 /** A weekly or monthly's own headline; the composer's "<site name> · Edição semanal · 2026-W38" names the issue, not its news. */

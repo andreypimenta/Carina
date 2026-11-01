@@ -133,12 +133,13 @@ for (const kind of ['weekly', 'monthly'] as const) {
     test(`${kind} prose drops unavailable evidence after ${reduction}`, async () => {
       const removed = await citation(`Removed ${kind} ${reduction}`);
       const visible = await citation(`Remaining ${kind} ${reduction}`);
+      const following = await citation(`Following ${kind} ${reduction}`);
       const n = ['withdrawn', 'summary-only', 'ineligible'].indexOf(reduction) + 10;
       const key = kind === 'weekly' ? `2096-W${n}` : `2095-${String(n - 8).padStart(2, '0')}`;
       const overview = `Overview about ${removed.title}`;
       const introduction = `Introduction about ${removed.title}`;
       await issue(kind, key, { leadItemId: removed.itemId, highlights: [visible.itemId], overview,
-        themes: [{ heading: 'Changed section', summary: introduction, storyRefs: [removed, visible] },
+        themes: [{ heading: 'Changed section', summary: introduction, storyRefs: [removed, visible, following] },
           { heading: 'Intact section', summary: 'Intact introduction', storyRefs: [visible] }] });
       assert.equal((await loadReport(kind, key))!.overview, overview, 'unchanged issues retain their own prose');
       if (reduction === 'ineligible') await sql`UPDATE publications SET eligible = false WHERE article_id = ${removed.itemId}`;
@@ -149,7 +150,8 @@ for (const kind of ['weekly', 'monthly'] as const) {
       assert.equal(site.overview, v1.overview);
       assert.equal(rss.leadParagraph, v1.overview);
       assert.ok(!v1.overview?.includes(removed.title), 'withdrawn evidence no longer appears in the overview');
-      assert.ok(v1.overview?.includes(visible.title), 'the existing template names the still-public evidence');
+      assert.ok(v1.overview?.includes(following.title), 'the existing template names the still-public evidence');
+      assert.ok(!v1.overview?.includes(visible.title), 'the replacement lead is not repeated in the overview');
       assert.equal(site.sections[0]!.summary, null);
       assert.equal(v1.sections[0]!.summary, null);
       assert.equal(site.sections[1]!.summary, 'Intact introduction');
@@ -189,7 +191,7 @@ for (const [kind, key] of [['weekly', '2096-W40'], ['monthly', '2096-11']] as co
     const feed = (await feedIssues(kind, 30)).find((r) => r.key === key)!;
     const index = (await v1Periods(kind, 50)).items.find((r) => ('week' in r ? r.week : r.month) === key)!;
     for (const title of [site.lead?.title, v1.headline, feed.headline, index.headline]) assert.equal(title, replacement.title);
-    assert.equal(site.lead?.leadParagraph, v1.overview);
+    assert.equal(site.lead?.leadParagraph, v1.overview ?? '');
     if (kind === 'monthly') assert.equal(site.title, replacement.title, 'the page metadata cannot retain the withdrawn headline');
     assert.ok(!JSON.stringify(v1).includes(removed.title));
   });
@@ -210,6 +212,24 @@ for (const [kind, key] of [['weekly', '2096-W41'], ['monthly', '2096-12']] as co
     assert.ok(!site.lead?.leadParagraph.includes(removed.title));
   });
 }
+
+
+test('a template overview counts the entries and names those after the lead, and none when only the lead is left', async () => {
+  const key = '2096-W43';
+  const lead = await citation('Lead of the template');
+  const others = await Promise.all(['First', 'Second', 'Third', 'Fourth'].map((name) => citation(`${name} of the template`)));
+  await issue('weekly', key, { leadItemId: lead.itemId, highlights: [others[0]!.itemId], themes: [{ heading: 'News', storyRefs: [lead, ...others] }] });
+  const outlets = async () => ({ site: (await loadReport('weekly', key))!, v1: (await v1Period('weekly', key))!.report, rss: (await feedIssues('weekly', 30)).find((r) => r.key === key)! });
+  const full = await outlets();
+  assert.equal(full.site.lead?.title, lead.title);
+  assert.equal(full.v1.overview, `Nesta semana, 5 destaques, entre eles: ${others.slice(0, 3).map((o) => o.title).join('; ')}.`);
+  assert.equal(full.site.overview, full.v1.overview);
+  assert.equal(full.rss.leadParagraph, full.v1.overview);
+  await sql`UPDATE publications SET visibility = 'withdrawn' WHERE article_id = ANY(${others.map((o) => o.itemId)})`;
+  const alone = await outlets();
+  assert.equal(alone.site.lead?.title, lead.title);
+  for (const overview of [alone.site.overview, alone.v1.overview, alone.rss.leadParagraph]) assert.equal(overview, null);
+});
 
 
 test('an expired report index waits for the current withdrawal result',async(t)=>{
