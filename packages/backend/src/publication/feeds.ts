@@ -10,7 +10,8 @@ import { escapeXml, SITE_LANG } from "../lib/text.ts";
 import { proxyBodyImages } from "../media/imgproxy.ts";
 import { DAILY_ISSUE_NAME, feedIssues, PERIOD_ISSUE_NAMES, type FeedIssue, type ReportKind } from "./reports.ts";
 import { textToHtml } from "../content/sanitize.ts";
-import type { FeedNotice } from "../modules.ts";
+import type { FeedNotice, ItemExit } from "../modules.ts";
+import { itemExits } from "./detail.ts";
 import { JOURNAL, publicCategoryCondition, exportTranslation, xView, type ItemRow } from "./items.ts";
 import { publicSourceName } from "./rules.ts";
 import { listedCondition, seatedCondition } from "./scope.ts";
@@ -100,10 +101,10 @@ const FEED_IMAGE_SECONDS = 7 * 86400;
 
 /**
  * The body a full feed carries, in the site's language when the page has it: an X post's translation (with
- * the post it quotes, translated too), else a complete translation of the article, else the original. It
- * ends with an attribution line (also a mark on copies taken from the feed).
+ * the post it quotes, translated too), else a complete translation of the article, else the original, with
+ * what modules add around it. It ends with an attribution line (also a mark on copies taken from the feed).
  */
-function fullContent(r: FeedRow, aihot: string): string | null {
+function fullContent(r: FeedRow, aihot: string, exit: ItemExit | undefined): string | null {
   let html: string | null = null;
   const x = r.channel === "x" ? xView({ x_post: r.x_post ?? null, zh_text: r.zh_text ?? null, quoted_zh: r.quoted_zh ?? null }) : null;
   if (x) {
@@ -122,10 +123,10 @@ function fullContent(r: FeedRow, aihot: string): string | null {
     html = exportTranslation(r) ?? r.body_html;
   }
   if (!html) return null;
-  return `${proxyBodyImages(html, true, FEED_IMAGE_SECONDS)}<p>— Reunido e organizado pelo ${escapeXml(SITE.bareName)}; a versão completa e ${escapeXml(subjectAfter("mais", "notícias"))} em <a href="${aihot}">${aihot}</a></p>`;
+  return `${exit?.before ?? ""}${proxyBodyImages(html, true, FEED_IMAGE_SECONDS)}${exit?.after ?? ""}<p>— Reunido e organizado pelo ${escapeXml(SITE.bareName)}; a versão completa e ${escapeXml(subjectAfter("mais", "notícias"))} em <a href="${aihot}">${aihot}</a></p>`;
 }
 
-function itemXml(r: FeedRow, includeContent: boolean): string {
+function itemXml(r: FeedRow, includeContent: boolean, exit?: ItemExit): string {
   const aihot = itemUrl(r.id);
   const summary = r.summary ?? "";
   const description = `<p>${escapeXml(summary)}</p>\n<p>🔗 <a href="${escapeXml(r.url)}">Ler o original</a></p>\n<p>via ${escapeXml(SITE.name)} · <a href="${aihot}">${aihot}</a></p>`;
@@ -133,7 +134,7 @@ function itemXml(r: FeedRow, includeContent: boolean): string {
   const category = publicCategory ? `\n      <category>${escapeXml(feedCategoryLabel(publicCategory))}</category>` : "";
   let content = "";
   if (includeContent && r.syndicate) {
-    const html = fullContent(r, aihot);
+    const html = fullContent(r, aihot, exit);
     if (html) content = `\n      <content:encoded>${cdata(html)}</content:encoded>`;
   }
   const pubDate = r.published_at ? `\n      <pubDate>${rfc822(r.published_at)}</pubDate>` : "";
@@ -189,7 +190,8 @@ export async function itemFeed(kind: ItemFeedKind, category: PublicApiCategoryKe
       ttl: m.pollHintMinutes,
     };
   }
-  const items = rows.map((r) => itemXml(r, includeContent));
+  const exits = await itemExits(rows.filter((r) => r.syndicate).map((r) => r.id));
+  const items = rows.map((r) => itemXml(r, includeContent, exits.get(r.id)));
   const first = notice?.(meta.selfPath);
   if (first) items.unshift(noticeXml(first));
   return channel(meta, items);

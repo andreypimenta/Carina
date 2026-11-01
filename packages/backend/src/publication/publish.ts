@@ -236,7 +236,6 @@ export async function publishArticle(articleId: string, options: PublishOptions 
   });
 }
 
-/** The title with the label a module requires it to start with (ServerModule.titleLabel), whatever wrote it. */
 /** What an installed module gives as the public summary of an article whose text is the site's own (ServerModule.ownSummary). */
 async function ownSummary(tx: Tx, articleId: string): Promise<string | null> {
   for (const m of serverModules()) {
@@ -246,6 +245,7 @@ async function ownSummary(tx: Tx, articleId: string): Promise<string | null> {
   return null;
 }
 
+/** The title with the label a module requires it to start with (ServerModule.titleLabel), whatever wrote it. */
 async function labelledTitle(tx: Tx, articleId: string, title: string): Promise<string> {
   for (const m of serverModules()) {
     const label = await m.titleLabel?.(articleId, tx);
@@ -324,9 +324,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   const hasBody = !!article.body_text || !!article.x_post?.text || !!article.x_post?.media?.length || !!article.x_post?.quoted?.text;
   const bodyMode = bodyModeOf(source, article.body_status, hasBody);
   const syndicate = mayRedistribute(source, bodyMode);
-  const sourceTitle = isChineseTitle && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
-  // Shown nowhere on the site's own text, but a translation is still found by its title in the original.
-  const originalTitle = ownText ? null : sourceTitle;
+  const originalTitle = isChineseTitle && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
   const shownTitle = await labelledTitle(tx, articleId, title ?? collapseWhitespace(article.title));
 
   // Waiting candidates are readable in the pool, with no selected seat, sync entry or push.
@@ -338,7 +336,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     visibility, sourceMode: source.participation_mode, hasSummary: !!summary, selected, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
   });
   const searchText = collapseWhitespace(
-    [shownTitle, sourceTitle, summary, publicSourceName(source.name, article.journal), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
+    [shownTitle, originalTitle, summary, publicSourceName(source.name, article.journal), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
   ).toLowerCase();
 
   // A selected item sits at its reading group's anchor: the earliest public pool member of its fact.

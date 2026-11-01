@@ -201,6 +201,11 @@ export interface FichaRow {
   estado?: Estado;
 }
 
+/** The card's name, in every exit that shows it. */
+export function fichaTitulo(c: Confianca): string {
+  return c.feitura === "materia" || c.feitura === "traducao" ? "Ficha do estudo" : "Sobre a fonte";
+}
+
 /** The card: each row says something nothing else on the page does. */
 export function fichaRows({ confianca: c, estado }: Pick<MateriaPart, "confianca" | "estado">): FichaRow[] {
   if (!c) return [];

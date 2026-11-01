@@ -13,7 +13,7 @@ import { itemUrl, siteUrl } from "./links.ts";
 import { hasItemPage, publicSourceName } from "./rules.ts";
 import { topicLinks, topicMembership } from "./topics.ts";
 import { weeklyOf } from "./reports.ts";
-import { serverModules } from "../modules.ts";
+import { serverModules, type ItemExit } from "../modules.ts";
 
 interface DetailRow extends ItemRow {
   body_html: string | null;
@@ -85,6 +85,20 @@ export async function itemParts(ids: readonly string[]): Promise<Map<string, Rec
   for (const m of serverModules()) {
     if (!m.items) continue;
     for (const [id, part] of await m.items.parts(ids)) out.set(id, { ...out.get(id), [m.name]: part });
+  }
+  return out;
+}
+
+/** What the installed modules add around these articles' bodies in the exits without their page (ServerModule.items.exit). */
+export async function itemExits(ids: readonly string[]): Promise<Map<string, ItemExit>> {
+  const out = new Map<string, ItemExit>();
+  for (const [id, parts] of await itemParts(ids)) {
+    for (const m of serverModules()) {
+      const exit = m.name in parts ? m.items?.exit?.(parts[m.name]) : null;
+      if (!exit) continue;
+      const seen = out.get(id);
+      out.set(id, { before: `${seen?.before ?? ""}${exit.before}`, after: `${seen?.after ?? ""}${exit.after}` });
+    }
   }
   return out;
 }
@@ -218,7 +232,9 @@ export async function exportMarkdown(id: string): Promise<{ filename: string; bo
   lines.push(row.published_at ? `- Publicado em: ${row.published_at.toISOString()}` : `- Coletado em: ${row.discovered_at.toISOString()}`);
   lines.push(`- ${SITE.name}: ${itemUrl(row.id)}`);
   lines.push(`- Original: ${row.url}`, "");
+  const exit = (await itemExits([id])).get(id);
   if (row.summary) lines.push("## Resumo", "", row.summary, "");
+  if (exit?.before) lines.push(bodyToMarkdown(exit.before, row.url), "");
   if (row.selected && row.seat && row.reason) lines.push(`## ${ITEM_COPY.reasonLabel}`, "", row.reason, "");
   if (showsPost(row) && row.x_post) {
     const post = xView(row);
@@ -236,5 +252,6 @@ export async function exportMarkdown(id: string): Promise<{ filename: string; bo
     if (translation) lines.push("## Texto · Tradução", "", bodyToMarkdown(translation, row.url), "");
     lines.push(isChineseBody(row) ? "## Texto" : "## Texto · Original", "", bodyToMarkdown(row.body_html, row.url), "");
   }
+  if (exit?.after) lines.push(bodyToMarkdown(exit.after, row.url), "");
   return { filename: `${SITE.mcpPrefix}-${row.id}.md`, body: lines.join("\n").replace(/\n{3,}/g, "\n\n") };
 }

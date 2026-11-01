@@ -2,14 +2,15 @@
 // Harbor journal is taken for one) and is graded as changing practice; "alinhado a diretriz" stands without the
 // guideline the material names; the text read is taken from the model instead of the pipeline (an accepted
 // manuscript shown as the published text); a guideline's dates are lost or read from the wrong tag; the
-// editor's name is invented while the site names none; the e-mail shows a piece without "Em um minuto".
+// editor's name is invented while the site names none; the e-mail shows a piece without "Em um minuto";
+// an exit without the page repeats what an older matéria's stored body already says.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { isGuideline, isPreprint, parsePubmedXml } from "../backend/pubmed.ts";
 import { confiancaDaMateria, confiancaDaPagina, confiancaDaTraducao, emUmMinuto, preprintNote, renderMateria, textoLido, type Materia } from "../backend/materia.ts";
 import { pageDates } from "../backend/apurar.ts";
-import { materiaMail } from "../backend/confianca.ts";
+import { materiaExit, materiaMail } from "../backend/confianca.ts";
 import { articleIdFrom, linhaTransparencia, minutoCompacto, PREPRINT_LABEL, type MateriaPart } from "../confianca.ts";
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
@@ -138,4 +139,20 @@ test("a correction's matéria from its page's address or its id", () => {
   assert.equal(articleIdFrom("https://folego.med.br/assine/2026-W44/clx1a2b3c4d5e6f7g8h9i0j1k?g=x"), "clx1a2b3c4d5e6f7g8h9i0j1k");
   assert.equal(articleIdFrom(" clx1a2b3c4d5e6f7g8h9i0j1k "), "clx1a2b3c4d5e6f7g8h9i0j1k");
   assert.equal(articleIdFrom("https://folego.med.br/especiais/linha"), null);
+});
+
+test("the exits' card follows the page's: an older matéria keeps only what its body does not say, the stage is named, no record adds nothing", () => {
+  const part = (confianca: MateriaPart["confianca"], estado: MateriaPart["estado"] = "artigo-revisado"): MateriaPart => ({ confianca, estado, versoes: [], mesmoEnsaio: [], correcoes: [] });
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const record = confiancaDaMateria(materia, paper!, "resumo", now);
+  const whole = materiaExit(part(record))!;
+  assert.match(whole.before, /^<h2>Ficha do estudo<\/h2><ul>/);
+  assert.match(whole.before, /<strong>Texto lido:<\/strong> Somente o resumo/);
+  assert.match(whole.before, /<strong>Estágio da evidência:<\/strong> Artigo revisado\. Artigo publicado em revista/);
+  assert.match(whole.after, /^<p>Matéria escrita com inteligência artificial/);
+  const { estrutura: _estrutura, ...older } = record;
+  const old = materiaExit(part(older))!;
+  assert.doesNotMatch(old.before, /População|Texto lido|Principal limitação/);
+  assert.match(old.before, /Estágio da evidência/);
+  assert.equal(materiaExit(part(null)), null);
 });

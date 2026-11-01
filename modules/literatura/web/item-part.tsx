@@ -7,7 +7,7 @@
 import { EXPEDIENTE, SITE } from "@aihot/site";
 import type { ItemPagePart } from "@aihot/web/modules";
 import {
-  corpoJaDiz, dataBr, ESTADO_LABEL, ESTADO_NOTA, fichaRows, IMPLICACAO_LABEL, isRegistro, linhaTransparencia,
+  corpoJaDiz, dataBr, ESTADO_LABEL, ESTADO_NOTA, fichaRows, fichaTitulo, IMPLICACAO_LABEL, isRegistro, linhaTransparencia,
   type Estado, type Implicacao, type MateriaPart, type Versao,
 } from "../confianca.ts";
 
@@ -110,7 +110,7 @@ function Top({ data }: { data: unknown }) {
         </section>
       )}
       {rows.length > 0 && (
-        <section aria-label={c.feitura === "materia" || c.feitura === "traducao" ? "Ficha do estudo" : "Sobre a fonte"} className="rounded-panel border border-line px-5 py-4">
+        <section aria-label={fichaTitulo(c)} className="rounded-panel border border-line px-5 py-4">
           <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
             {rows.map((r) => (
               <Row key={r.label} label={r.label}>

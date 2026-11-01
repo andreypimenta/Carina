@@ -200,6 +200,12 @@ export interface RequestNotices {
   feed: (req: FastifyRequest, feedPath: string) => FeedNotice | null;
 }
 
+/** What a module adds around an article's body in an exit without its page (ServerModule.items.exit). */
+export interface ItemExit {
+  before: string;
+  after: string;
+}
+
 export interface ServerModule {
   /** Its folder under modules/. */
   name: string;
@@ -325,6 +331,11 @@ export interface ServerModule {
     parts: (ids: readonly string[]) => Promise<Map<string, unknown>>;
     /** Its part under an article in an e-mail, compact: HTML with inline styles and the same as plain text; null for nothing. */
     mail?: (part: unknown) => { html: string; text: string } | null;
+    /**
+     * Its part in the exits that carry an article's text without its page (publication/detail.ts itemExits): HTML
+     * before and after the body, converted by the exit where it needs to; null for nothing. The page does not read it.
+     */
+    exit?: (part: unknown) => ItemExit | null;
   };
   /** More keys a feedback sender is known by; a ban under any of them holds (operations/feedback.ts). */
   feedbackKeys?: (ip: string) => string[];

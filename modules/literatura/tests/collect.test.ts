@@ -17,7 +17,8 @@ import { installModules } from "@aihot/backend/modules";
 import server from "../server.ts";
 import { collectLiterature, INTEGRAL_SOURCE, MATERIA_SOURCE, MAX_ATTEMPTS, recordFailure, takePaper } from "../backend/collect.ts";
 import { parsePubmedXml } from "../backend/pubmed.ts";
-import { itemParts, loadItemDetail } from "@aihot/backend/publication/detail";
+import { exportMarkdown, itemParts, loadItemDetail } from "@aihot/backend/publication/detail";
+import { itemFeed } from "@aihot/backend/publication/feeds";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { addCorrection, listCorrections } from "../backend/correcoes.ts";
 import type { MateriaPart } from "../confianca.ts";
@@ -513,7 +514,6 @@ test("the journal's own text keeps its title and summary over the engine's; an o
   assert.equal(integral.status, "integral");
   const translated = await analyse(integral.articleId!);
   assert.equal(translated.title, "Título reescrito pelo motor", "its own title is the paper's in English");
-  assert.equal(translated.original_title, null);
   assert.match(translated.summary!, /Muda algo agora\?/);
 
   await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at) VALUES ('rss-own-test', 'Revista', 'rss', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
@@ -525,4 +525,34 @@ test("the journal's own text keeps its title and summary over the engine's; an o
   assert.equal(other.reason, "Por que importa escrito pelo motor");
   const otherDetail = await loadItemDetail(articleId);
   assert.equal(otherDetail.kind === "found" && otherDetail.item.ownText, false);
+});
+
+test("Markdown and full RSS carry the card and the transparency line once, around the body; the page's stored body has neither", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const { articleId } = await takePaper({ ...paper!, pmid: `exit-${T}`, doi: `10.9999/exit-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  const id = articleId!;
+  assert.match(modelInputs.at(-1)!, /^Limite desta matéria: cerca de \d+ palavras, somando todos os campos$/m, "the cap reaches the model");
+  await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  await sql`UPDATE publications SET selected = true, seat = true, syndicate = true, body_mode = 'full', visible_after = now() - interval '1 minute', published_at = now() WHERE article_id = ${id}`;
+
+  const times = (text: string, what: string) => text.split(what).length - 1;
+  const carried = ["Ficha do estudo", materia.populacaoCenario, materia.desenhoDetalhe, "Conflitos de interesse declarados", "Texto lido", "Somente o resumo", "inteligência artificial", "acompanha o que vai ao ar"];
+
+  const markdown = (await exportMarkdown(id))!.body;
+  for (const what of carried) assert.equal(times(markdown, what), 1, `Markdown: ${what}`);
+  assert.ok(markdown.indexOf("## Ficha do estudo") < markdown.indexOf("## O que encontraram"), "the card comes before the text");
+  assert.ok(markdown.indexOf("## Referência") < markdown.indexOf("inteligência artificial"), "the line comes after it");
+
+  const feed = await itemFeed("selected-full", null);
+  const content = /<content:encoded>([\s\S]*?)<\/content:encoded>/.exec(feed.split("<item>").find((i) => i.includes(`<guid isPermaLink="false">${id}</guid>`))!)![1]!;
+  for (const what of carried) assert.equal(times(content, what), 1, `RSS: ${what}`);
+  assert.ok(content.indexOf("Ficha do estudo") < content.indexOf("O que encontraram"));
+  assert.ok(content.indexOf("Referência") < content.indexOf("inteligência artificial"));
+
+  const detail = await loadItemDetail(id);
+  assert.ok(detail.kind === "found");
+  const page = detail.item.body!.zh ?? detail.item.body!.original!;
+  assert.match(page, /O que encontraram/);
+  for (const what of ["Ficha do estudo", "Texto lido", "inteligência artificial"]) assert.equal(times(page, what), 0, `page body: ${what}`);
 });

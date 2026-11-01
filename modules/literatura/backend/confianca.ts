@@ -1,9 +1,11 @@
 // Each new matéria's trust record (../confianca.ts), written with the matéria in its transaction, and the
 // article's part of its page and of the weekly e-mail (ServerModule.items): that record, where its study stands
 // and the study's other versions and other papers of its trial (backend/estudos.ts), and the corrections the editor added (backend/correcoes.ts).
+// The card and the transparency line also go with the text in the exits without the page (ServerModule.items.exit).
 // A preprint's or a registry entry's public title starts with its stage's label (ServerModule.titleLabel).
 import { sql, type Db } from "@aihot/backend/db";
-import { alertaTitleLabel, estadoTitleLabel, IMPLICACAO_LABEL, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
+import { EXPEDIENTE } from "@aihot/site";
+import { alertaTitleLabel, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
 import { estudosOf, REGISTRO_TAG } from "./estudos.ts";
 
 const MATERIA_SOURCE = "literatura-materia";
@@ -74,4 +76,15 @@ export function materiaMail(part: unknown): { html: string; text: string } | nul
 <div><b style="color:#0f766e">Em um minuto</b> ${esc(m.achado)}</div>
 <div><b>Muda algo agora?</b> ${esc(IMPLICACAO_LABEL[m.mudaAlgo])}${m.diretriz ? ` (${esc(m.diretriz)})` : ""}</div></div>`;
   return { html, text: line };
+}
+
+/** The card before the text and the transparency line after it, where the text goes without the page (Markdown, RSS); nothing for a piece without a record. */
+export function materiaExit(part: unknown): { before: string; after: string } | null {
+  const { confianca: c, estado } = part as MateriaPart;
+  if (!c) return null;
+  const rows = fichaRows({ confianca: c, estado }).map((r) => `<li><strong>${esc(r.label)}:</strong> ${esc(r.estado ? ESTADO_LABEL[r.estado] : r.text ?? "")}${r.note ? `. ${esc(r.note)}` : ""}</li>`);
+  return {
+    before: rows.length ? `<h2>${esc(fichaTitulo(c))}</h2><ul>${rows.join("")}</ul>` : "",
+    after: `<p>${esc(linhaTransparencia(c, EXPEDIENTE.editor.name))}</p>`,
+  };
 }

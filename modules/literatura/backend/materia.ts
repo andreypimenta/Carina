@@ -151,18 +151,6 @@ export function limitePalavras(paper: Pick<Paper, "abstract">, fullText: string 
   return Math.ceil(paper.abstract.reduce((n, s) => n + countWords(s.text), 0) * CAP_FROM_ABSTRACT);
 }
 
-/** The words the model wrote, in every field the reader sees. */
-export function palavrasDaMateria(m: Materia): number {
-  return countWords(materiaFields(m).join(" "));
-}
-
-function materiaFields(m: Materia): string[] {
-  return [
-    m.titulo, m.perguntaClinica, m.achado, m.populacaoIdade, m.populacaoDoenca, m.populacaoCenario, m.desenhoDetalhe, m.conflitos, m.limitacaoPrincipal,
-    m.oQueFizeram, ...m.resultados.flatMap((r) => [r.desfecho, r.resultado, r.efeito]), ...m.aFavor, ...m.sinaisDeAlerta.map((f) => f.detalhe), ...m.naoInformado, m.naPratica, m.contexto,
-  ];
-}
-
 /**
  * The text the engine reads and groups by (articles.body_text): the body and what the page shows above it. The
  * population, the design and the sample live only there, and selection scores on them.
