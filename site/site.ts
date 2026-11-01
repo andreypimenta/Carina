@@ -154,7 +154,7 @@ export const ABOUT = {
   steps: {
     collect: "Buscas temáticas no PubMed, sociedades de cirurgia torácica, pneumologia, pediatria e otorrinolaringologia, reguladores e registros de ensaios clínicos. Para cada artigo, procuramos a versão de acesso aberto legal.",
     store: "Tudo o que é coletado fica guardado, e as publicações sobre o mesmo estudo ou o mesmo fato são agrupadas.",
-    select: `O modelo avalia o desenho do estudo, o tamanho da amostra e o impacto na conduta, e escreve a matéria em português com uma camada para o pediatra e outra para o especialista. Artigos com licença aberta (CC BY) são traduzidos na íntegra.`,
+    select: `O modelo avalia o desenho do estudo, o tamanho da amostra e o impacto na conduta, e escreve a matéria em português, numa estrutura única em que cada fato aparece uma vez. Artigos com licença aberta (CC BY) são traduzidos na íntegra.`,
     publish: `A edição semanal sai ${EDITION_WHEN.weekly} (horário de Brasília); o feed é atualizado todos os dias e há um balanço ${EDITION_WHEN.monthly}.`,
   },
   /**
