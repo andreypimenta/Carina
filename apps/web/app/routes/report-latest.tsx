@@ -36,7 +36,7 @@ export function meta({ loaderData, location }: Route.MetaArgs) {
   // The front page shows the latest weekly edition: /weekly names it as its canonical, so the two are one page in search.
   const front = isFrontPath(location.pathname);
   const path = kind === "weekly" ? "/" : location.pathname;
-  const issue = report ? reportLd(report, path, report.lead?.leadParagraph ?? description) : null;
+  const issue = report ? reportLd(report, path, report.lead?.leadParagraph || description) : null;
   return [...pageMeta({
     title: front ? null : KIND_LABEL[kind],
     description: front ? null : description,

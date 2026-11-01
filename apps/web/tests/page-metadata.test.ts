@@ -10,7 +10,7 @@ import { createServer } from 'node:http';
 import { after, before, test } from 'node:test';
 import * as cheerio from 'cheerio';
 import type { FeedItemSummary, ReportCitation, ReportDetail, ReportKind, SiteItemDetail, StoryDetail } from '@aihot/contracts/site';
-import { SITE } from '@aihot/site';
+import { REPORTS, SITE } from '@aihot/site';
 import { articleLd, readFilters, reportLd } from '../app/lib/seo.ts';
 import { reportDateLabel } from '../app/features/report/format.ts';
 import { startWebServer, type WebServer } from './web-server.ts';
@@ -20,7 +20,8 @@ const item: FeedItemSummary = { id: 'metadata-fixture', title: 'Traqueostomia pr
 const detail = { ...item, originalTitle: null, links: { original: 'https://example.org/report' }, discoveredAt: at, story: null, readingMode: 'full', author: null, body: { zh: '<p>Texto verificável.</p>', original: null, zhKind: 'original', complete: true }, outline: [], relatedStories: [], topics: [], indexable: true, markdownAvailable: true, group: null, hasTranslation: false, bodyLanguage: 'pt' } as unknown as SiteItemDetail;
 const citation = (available: boolean): ReportCitation => ({ itemId: available ? item.id : 'withdrawn', title: available ? item.title : 'Manchete antiga retirada', summary: item.summary, sourceName: item.source.name, sourceUrl: 'https://example.org/report', sourceIconUrl: null, firstParty: true, publishedAt: at, available } as ReportCitation);
 const KEYS: Record<ReportKind, string> = { daily: '2026-10-04', weekly: '2026-W40', monthly: '2026-10' };
-const report = (kind: ReportKind) => ({ kind, key: KEYS[kind], issueNumber: 1, title: `${SITE.name} · edição de teste`, generatedAt: at, lead: { title: 'Nova diretriz para estenose subglótica', leadParagraph: 'A abertura da edição.' }, leadItemId: item.id, overview: null, highlights: [citation(true)], sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null }) as unknown as ReportDetail;
+let leadParagraph = 'A abertura da edição.';
+const report = (kind: ReportKind) => ({ kind, key: KEYS[kind], issueNumber: 1, title: `${SITE.name} · edição de teste`, generatedAt: at, lead: { title: 'Nova diretriz para estenose subglótica', leadParagraph }, leadItemId: item.id, overview: null, highlights: [citation(true)], sections: [], flashes: [], cover: null, metrics: {}, readingMinutes: 1, prev: null, next: null }) as unknown as ReportDetail;
 const story = { publicId: 'metadata-story', title: 'Diretriz de via aérea pediátrica', status: 'settled', reportCount: 1, sourceCount: 1, firstReportAt: at, latestAt: at, digest: 'Síntese atual e verificável do evento.', digestUpdatedAt: '2026-10-04T09:00:00.000Z', summary: null, excerpt: null, latest: null, latestReport: null, whyHot: { participants48h: 0, newParticipants6h: 0, recentReports24h: 0, observationComplete: true, rank: null }, developments: [], officialReports: [], timeline: [{ id: item.id, title: item.title, summary: item.summary, source: { name: item.source.name, firstParty: true }, publishedAt: at, selected: true }], heat: [], related: [], topics: [] } as unknown as StoryDetail;
 
 let web: WebServer;
@@ -109,6 +110,24 @@ for (const [kind, label, date] of [['daily', 'Notas diárias', '04/10/2026'], ['
     assert.equal('dateModified' in article, false);
   });
 }
+
+test('an issue left with only its lead and no overview is still described', async () => {
+  leadParagraph = '';
+  try {
+    const r = report('weekly');
+    const fallback = `Edição semanal do ${SITE.bareName}: ${r.key}.`;
+    const detail = await page(`/weekly/${r.key}`);
+    assert.equal(detail('meta[name=description]').attr('content'), fallback);
+    assert.equal(detail("meta[property='og:description']").attr('content'), fallback);
+    assert.equal(structured(detail).find((entry) => entry['@type'] === 'NewsArticle')!.description, fallback);
+    for (const path of ['/weekly', '/']) {
+      const article = structured(await page(path)).find((entry) => entry['@type'] === 'NewsArticle')!;
+      assert.equal(article.description, `${REPORTS.descriptions.weekly}.`);
+    }
+  } finally {
+    leadParagraph = 'A abertura da edição.';
+  }
+});
 
 test("an issue's dates read as readers write them, across months and years", () => {
   assert.equal(reportDateLabel('daily', '2026-10-17'), '17/10/2026');
