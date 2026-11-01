@@ -7,6 +7,9 @@
 // (backend/estudos.ts); and the public corrections the editor added (backend/correcoes.ts).
 // Shared by the backend and the web, so nothing here imports either.
 
+/** The source of the site's own articles about papers and official pages. */
+export const MATERIA_SOURCE = "literatura-materia";
+
 /** "Muda algo agora?": a grade of what the material supports, not a recommendation of the journal. */
 export const IMPLICACOES = ["nao", "pode-informar-discussao", "alinhado-a-diretriz"] as const;
 export type Implicacao = (typeof IMPLICACOES)[number];

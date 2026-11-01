@@ -7,10 +7,10 @@ import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { sql, type Db } from "@aihot/backend/db";
 import type { ItemExit } from "@aihot/backend/modules";
 import { EXPEDIENTE } from "@aihot/site";
-import { achadoDoResumo, achadoVisivel, alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
+import { achadoDoResumo, achadoVisivel, alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, MATERIA_SOURCE, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
 import { estudosOf, REGISTRO_TAG } from "./estudos.ts";
 
-const MATERIA_SOURCE = "literatura-materia";
+export { MATERIA_SOURCE };
 
 export async function saveConfianca(tx: Db, articleId: string, data: Confianca): Promise<void> {
   await tx`INSERT INTO literatura_confianca (article_id, data) VALUES (${articleId}, ${tx.json(data as never)})

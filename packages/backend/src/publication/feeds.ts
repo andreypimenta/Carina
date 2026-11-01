@@ -190,7 +190,7 @@ export async function itemFeed(kind: ItemFeedKind, category: PublicApiCategoryKe
       ttl: m.pollHintMinutes,
     };
   }
-  const exits = await itemExits(rows.filter((r) => r.syndicate).map((r) => r.id));
+  const exits = includeContent ? await itemExits(rows.filter((r) => r.syndicate).map((r) => r.id)) : new Map<string, ItemExit>();
   const items = rows.map((r) => itemXml(r, includeContent, exits.get(r.id)));
   const first = notice?.(meta.selfPath);
   if (first) items.unshift(noticeXml(first));

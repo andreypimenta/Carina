@@ -23,11 +23,12 @@ import { onSubject, paperFromItem, pubmedTerm, readSumario, type Revistas } from
 import { papersOfPost, readPosts, type Pista, type Post } from "./pistas.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
 import { confiancaDaMateria, confiancaDaTraducao, creditBlock, materiaText, preprintNote, referenceBlock, renderMateria, readTrust, textoLido, writeMateria, type XCredit } from "./materia.ts";
+import { MATERIA_SOURCE } from "../confianca.ts";
 import { saveConfianca } from "./confianca.ts";
 import { estudoDoPaper, saveEstudo } from "./estudos.ts";
 
 export const INTEGRAL_SOURCE = "literatura-integral";
-export const MATERIA_SOURCE = "literatura-materia";
+export { MATERIA_SOURCE };
 /** Below this many characters of body (the abstract not counted), what Europe PMC returned is not a full text. */
 export const MIN_FULL_TEXT = 1500;
 /** Runs a failing paper is tried on before it is given up. */
