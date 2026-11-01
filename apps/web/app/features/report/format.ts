@@ -93,15 +93,6 @@ export function archiveMark(kind: ReportKind, key: string): { big: string; small
   return { big: key.slice(5, 7), small: null };
 }
 
-/** Short chip label for the phone switcher: "Hoje", "26 de set.", "Set. · 2ª sem.", "Agosto". */
-export function chipLabel(kind: ReportKind, key: string, index: ReportNavigationEntry[], today: string): string {
-  if (kind === "daily") return key === today ? "Hoje" : monthDay(key, today);
-  if (kind === "monthly") return capitalize(monthName(Number(key.slice(5, 7))));
-  const group = archiveGroups("weekly", index).find((g) => g.entries.some((e) => e.key === key));
-  const entry = group?.entries.find((e) => e.key === key);
-  return group && entry ? `${capitalize(monthName(Number(group.id.slice(5))).slice(0, 3))}. · ${entry.short}` : key;
-}
-
 /**
  * "Edição nº N": the issue's place in its series as the server counts it over every issue. The navigation
  * index holds only the newest issues, so its length cannot tell.

@@ -1,7 +1,7 @@
 // Feed filters: the section (aba) tabs, the channel and category choice (a row of tabs on desktop, a sheet behind the bar's filter
 // button on phones), the phone bar of 精选 and 全部, and search.
 import { useEffect, useRef, useState } from "react";
-import { Form, Link, useNavigation, useSearchParams } from "react-router";
+import { Form, Link, useLocation, useNavigation, useSearchParams } from "react-router";
 import { AREA_KEYS, AREA_LABELS, CATEGORY_KEYS, CATEGORY_LABELS, CHANNEL_LABELS, type AreaKey, type CategoryKey, type ChannelKey } from "@aihot/contracts/taxonomy";
 import { IconCheck, IconClose, IconFilter, IconSearch } from "../../components/icons";
 import { PillTabs } from "../../components/ui/Tabs";
@@ -41,13 +41,15 @@ function filterKey(category: CategoryKey | null, channel: ChannelKey): string {
 }
 
 /**
- * The site's sections (abas), on phones and desktop alike, above the other filters: every section, or one.
- * The other filters in use carry over.
+ * The site's sections (abas): on desktop above a feed's other filters, on phones in the masthead. Every
+ * section, or one; `everyArea: false` leaves out the choice of every section (off a feed, where none is
+ * chosen). On the feed itself the other filters in use carry over.
  */
-export function AreaTabs({ base, area, layoutId, className = "" }: { base: string; area: AreaKey | null | undefined; layoutId: string; className?: string }) {
-  const [params] = useSearchParams();
+export function AreaTabs({ base, area, everyArea = true, layoutId, className = "" }: { base: string; area: AreaKey | null | undefined; everyArea?: boolean; layoutId: string; className?: string }) {
+  const [current] = useSearchParams();
+  const params = useLocation().pathname === base ? current : new URLSearchParams();
   const items = [
-    { key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), prefetch: "intent" as const },
+    ...(everyArea ? [{ key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), prefetch: "intent" as const }] : []),
     ...AREA_KEYS.map((k) => ({ key: k, label: AREA_LABELS[k], to: hrefWith(base, params, { area: k }), prefetch: "intent" as const })),
   ];
   const ref = useRef<HTMLDivElement>(null);

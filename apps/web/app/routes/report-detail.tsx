@@ -5,7 +5,6 @@ import { SITE } from "@aihot/site";
 import { apiGet, cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { pageMeta, reportLd, reportTitle, titled } from "../lib/seo";
-import { beijingDate } from "@aihot/contracts/time";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportPaper, reportOutline } from "../features/report/ReportPaper";
 import { KIND_LABEL, feedLink, kindFromPath } from "../features/report/format";
@@ -29,7 +28,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     loadOr404<ReportDetail>(`/api/site/reports/${kind}/${key}`, { signal: request.signal }),
     apiGet<ReportNavigationResponse>(`/api/site/reports/${kind}/navigation/${key}`, { signal: request.signal }),
   ]);
-  return cachedPage(3600, { report, index, today: beijingDate(Date.now()) });
+  return cachedPage(3600, { report, index });
 }
 
 export function meta({ loaderData }: Route.MetaArgs) {
@@ -48,9 +47,9 @@ export function meta({ loaderData }: Route.MetaArgs) {
 }
 
 export default function ReportDetailPage() {
-  const { report, index, today } = useLoaderData<typeof loader>();
+  const { report, index } = useLoaderData<typeof loader>();
   return (
-    <ReportLayout kind={report.kind} index={index} current={report.key} today={today} outline={reportOutline(report)}>
+    <ReportLayout kind={report.kind} index={index} current={report.key} outline={reportOutline(report)}>
       <ReportPaper report={report} index={index} />
     </ReportLayout>
   );

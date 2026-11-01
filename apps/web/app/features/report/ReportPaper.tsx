@@ -37,14 +37,15 @@ function Masthead({ report, index, quiet }: { report: ReportDetail; index: Repor
   const mark = dateMark(report.kind, report.key);
   const label = KIND_LABEL[report.kind];
   return (
-    <header className="pt-5 lg:pt-0">
-      <div className="flex items-center justify-between gap-4 text-[12px] text-ink-4">
+    <header>
+      {/* Phones go straight from the bar to the nameplate: the date is in the box beside it. */}
+      <div className="hidden items-center justify-between gap-4 text-[12px] text-ink-4 lg:flex">
         <span className="num">{dateLine(report.kind, report.key)}</span>
         <span className="hidden tracking-[0.12em] @[640px]:inline">{MOTTO[report.kind]}</span>
         <span>{EDITION[report.kind]}</span>
       </div>
 
-      <div className="flex items-stretch justify-between gap-5 py-6 @[880px]:gap-10 @[880px]:py-8">
+      <div className="flex items-stretch justify-between gap-5 py-4 lg:py-6 @[880px]:gap-10 @[880px]:py-8">
         <div className="flex min-w-0 flex-1 flex-col justify-center">
           <h1 id="report-start" className="scroll-mt-[calc(var(--bar-h)+1.5rem)]">
             <span className="sr-only">
@@ -69,11 +70,11 @@ function Masthead({ report, index, quiet }: { report: ReportDetail; index: Repor
         </div>
       </div>
 
-      {/* A quiet day has no figures to set and nothing to read through: the masthead just closes. */}
-      {quiet ? (
-        <div aria-hidden="true" className="border-t border-line-strong" />
-      ) : (
-        <div className="flex flex-wrap items-baseline gap-x-8 gap-y-1.5 border-y border-line-strong py-3">
+      {/* A quiet day has no figures to set and nothing to read through: the masthead just closes. So does it
+          on a phone, where the figures would push the lead below the first screen. */}
+      <div aria-hidden="true" className={`border-t border-line-strong ${quiet ? "" : "lg:hidden"}`} />
+      {!quiet && (
+        <div className="hidden flex-wrap items-baseline gap-x-8 gap-y-1.5 border-y border-line-strong py-3 lg:flex">
           {metricItems(report.metrics).map((m) => (
             <span key={m.unit} className="inline-flex items-baseline gap-1.5 whitespace-nowrap">
               <span className="num text-[22px] font-bold leading-none tracking-[-0.02em] text-ink @[880px]:text-[24px]">{m.value}</span>
@@ -262,11 +263,12 @@ function LeadPicture({ cover, onError, priority = false, className = "" }: { cov
 
 /**
  * A weekly's or monthly's overview. Such an issue leading with an event sets the event on its front
- * page as a daily does, so the overview opens the issue above it.
+ * page as a daily does, so the overview opens the issue above it; on a phone it follows the lead, which
+ * would otherwise start below the first screen.
  */
 function Overview({ text }: { text: string }) {
   return (
-    <section aria-label="Panorama da edição" className="border-b border-line py-7 @[880px]:py-9">
+    <section aria-label="Panorama da edição" className="order-2 border-t border-line py-7 lg:order-none lg:border-b lg:border-t-0 @[880px]:col-span-full @[880px]:py-9">
       <Kicker>Panorama da edição</Kicker>
       <p className="mt-4 max-w-[46em] text-[16.5px] leading-[1.9] text-ink-2 @[560px]:text-justify @[880px]:text-[17.5px]">{text}</p>
     </section>
@@ -276,7 +278,7 @@ function Overview({ text }: { text: string }) {
 /** The front page: the lead beside a column of today's highlights and the index of pages. */
 function FrontPage({ report, pages, leadStory, count, itemPath }: { report: ReportDetail; pages: Page[]; leadStory: ReportCitation | null; count: number; itemPath: ItemPath }) {
   const daily = report.kind === "daily";
-  // A weekly or monthly leading with an event: the event's own summary; its overview stands above (Overview).
+  // A weekly or monthly leading with an event: the event's own summary; its overview stands apart (Overview).
   const byEvent = daily || !!leadStory;
   // A picture that fails to load is dropped, and the lead is set as if it had none.
   const [broken, setBroken] = useState<string | null>(null);
@@ -292,11 +294,13 @@ function FrontPage({ report, pages, leadStory, count, itemPath }: { report: Repo
 
   return (
     <section aria-label="Primeira página" className="grid @[880px]:grid-cols-[minmax(0,1fr)_300px] @[1040px]:grid-cols-[minmax(0,1fr)_340px]">
+      {!daily && leadStory && report.overview && <Overview text={report.overview} />}
       {/* On a phone the headline comes before a landscape picture, so the first screen carries the news. */}
-      <div id={leadStory ? (anchorOf(leadStory) ?? undefined) : undefined} className="flex min-w-0 scroll-mt-[calc(var(--bar-h)+1.5rem)] flex-col py-7 @[880px]:border-r @[880px]:border-line @[880px]:py-10 @[880px]:pr-10">
-        <Kicker>{byEvent ? "Manchete" : "Panorama da edição"}</Kicker>
-        {cover && wide && <LeadPicture cover={cover} onError={() => setBroken(cover.url)} priority className="order-2 mt-5 @[560px]:order-1" />}
-        <h2 className="order-1 mt-4 text-[32px] font-black leading-[1.28] tracking-[-0.03em] text-ink [text-wrap:balance] @[520px]:text-[40px] @[560px]:order-2 @[1040px]:text-[48px] @[1040px]:leading-[1.22]">
+      <div id={leadStory ? (anchorOf(leadStory) ?? undefined) : undefined} className="order-1 flex min-w-0 scroll-mt-[calc(var(--bar-h)+1.5rem)] flex-col py-7 lg:order-none @[880px]:border-r @[880px]:border-line @[880px]:py-10 @[880px]:pr-10">
+        {/* The lead's headline needs no label; an issue led by its overview names it. */}
+        {!byEvent && <Kicker>Panorama da edição</Kicker>}
+        {cover && wide && <LeadPicture cover={cover} onError={() => setBroken(cover.url)} priority className={`order-2 mt-5 @[560px]:order-1 ${byEvent ? "@[560px]:mt-0" : ""}`} />}
+        <h2 className={`order-1 ${byEvent ? (cover && wide ? "@[560px]:mt-4" : "") : "mt-4"} text-[32px] font-black leading-[1.28] tracking-[-0.03em] text-ink [text-wrap:balance] @[520px]:text-[40px] @[560px]:order-2 @[1040px]:text-[48px] @[1040px]:leading-[1.22]`}>
           {leadStory?.itemId ? (
             <IntentLink viewTransition to={itemPath(leadStory.itemId)} className="transition-colors hover:text-accent">
               {title}
@@ -322,7 +326,7 @@ function FrontPage({ report, pages, leadStory, count, itemPath }: { report: Repo
         {!!leadStory?.related?.length && <Related items={leadStory.related} itemPath={itemPath} className="order-5 mt-5 border-t border-line pt-4" />}
       </div>
 
-      <aside className="min-w-0 border-t border-line py-7 @[880px]:border-t-0 @[880px]:py-10 @[880px]:pl-8">
+      <aside className="order-3 min-w-0 border-t border-line py-7 lg:order-none @[880px]:border-t-0 @[880px]:py-10 @[880px]:pl-8">
         {highlights.length > 0 && (
           <>
             <Kicker>{`Destaques ${period}`}</Kicker>
@@ -492,10 +496,7 @@ export function ReportPaper({ report, index, standalone = false, itemPath = ITEM
       {quiet ? (
         report.lead && <QuietFront lead={report.lead} />
       ) : (
-        <>
-          {!daily && leadStory && report.overview && <Overview text={report.overview} />}
-          <FrontPage report={report} pages={pages} leadStory={leadStory} count={count} itemPath={itemPath} />
-        </>
+        <FrontPage report={report} pages={pages} leadStory={leadStory} count={count} itemPath={itemPath} />
       )}
       {/* An issue kept in this tab's history from before the modules' parts were added has none. */}
       {PARTS.map(({ name, part: { Block } }) => (report.modules?.[name] === undefined ? null : <Block key={name} data={report.modules[name]} report={report} />))}

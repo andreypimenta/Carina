@@ -1,11 +1,11 @@
 // Moving between reports: the archive column on desktop; on phones the kind switch in the bar
-// (ReportLayout) and recent-issue chips under it.
+// (ReportLayout).
 import { IntentLink } from "../../components/ui/IntentLink";
 import { useEffect, useState } from "react";
 import type { ReportNavigationEntry, ReportNavigationResponse, ReportKind } from "@aihot/contracts/site";
 import { PillTabs } from "../../components/ui/Tabs";
 import { IconChevronRight } from "../../components/icons";
-import { KINDS, KIND_LABEL, KIND_PATH, KIND_SHORT, archiveGroups, archiveMark, chipLabel, reportPath } from "./format";
+import { KINDS, KIND_LABEL, KIND_PATH, KIND_SHORT, archiveGroups, archiveMark, reportPath } from "./format";
 
 /** 日报 / 周报 / 月报 as the site's pill switch: spread across the archive column, or compact in the phone bar (opening at the top). */
 export function KindSwitch({ kind, phone = false }: { kind: ReportKind; phone?: boolean }) {
@@ -94,30 +94,5 @@ function ArchiveGroup({ g, kind, current, initiallyOpen }: {
       </ul>}
       {kind === "daily" && !open && <noscript><a href="/daily/archive">Ver o arquivo completo das notas diárias</a></noscript>}
     </details>
-  );
-}
-
-/** Phones, under the bar: the three latest issues and a way further back. */
-export function ReportPhoneNav({ kind, index, current, today }: { kind: ReportKind; index: ReportNavigationEntry[]; current: string | null; today: string }) {
-  const recent = index.slice(0, 3);
-  const earlier = kind === "daily" ? "/daily/archive" : "#report-history";
-  const chip = "inline-flex h-11 shrink-0 items-center rounded-full border px-4 text-[13px] transition-colors";
-  if (recent.length === 0) return null;
-  return (
-    <nav aria-label={`Edições recentes · ${KIND_LABEL[kind]}`} className="scrollbar-none bleed flex gap-2 overflow-x-auto pb-1 pt-1.5 lg:hidden">
-      {recent.map((e) => {
-        const on = e.key === current;
-        return (
-          <IntentLink key={e.key} to={reportPath(kind, e.key)} aria-current={on ? "page" : undefined} className={`${chip} ${on ? "border-ink bg-ink font-semibold text-bg" : "border-line-strong bg-surface text-ink-2 active:bg-bg-sunk"}`}>
-            {chipLabel(kind, e.key, index, today)}
-          </IntentLink>
-        );
-      })}
-      {index.length > 3 && (
-        <IntentLink to={earlier} viewTransition={kind === "daily"} className={`${chip} border-line-strong bg-surface text-ink-2 active:bg-bg-sunk`}>
-          Anteriores
-        </IntentLink>
-      )}
-    </nav>
   );
 }
