@@ -3,19 +3,18 @@ import type { ReportNavigationEntry, ReportKind } from "@aihot/contracts/site";
 import { BarButton, PhoneBar, type BackTarget } from "../../components/shell/PhoneBar";
 import { OutlineSheet, type OutlineEntry } from "../../components/ui/OutlineSheet";
 import { IconList } from "../../components/icons";
-import { KindSwitch, ReportArchive, ReportPhoneNav } from "./ReportNav";
+import { KindSwitch, ReportArchive } from "./ReportNav";
 
 /**
  * Report pages sit beside their own archive column (desktop), flush against the site sidebar. Phones get
- * a bar with the kind switch and the issue's outline (本期目录), the recent issues under it; a page below
+ * a bar with the kind switch and the issue's outline (本期目录), and the issue starts right under it; a page below
  * the reports (the archive) gets a bar leading back instead. The paper is centred beside the archive, on
  * a faintly toned paper in the light theme, up to 1160px.
  */
-export function ReportLayout({ kind, index, current, today, outline = [], back, title, children }: {
+export function ReportLayout({ kind, index, current, outline = [], back, title, children }: {
   kind: ReportKind;
   index: ReportNavigationEntry[];
   current: string | null;
-  today: string;
   /** The issue's pages (reportOutline). */
   outline?: OutlineEntry[];
   /** Below the reports: where the phone bar leads back, and the page's name. */
@@ -42,7 +41,6 @@ export function ReportLayout({ kind, index, current, today, outline = [], back, 
                 )
               }
             />
-            <ReportPhoneNav kind={kind} index={index} current={current} today={today} />
             {outline.length > 0 && <OutlineSheet title="Sumário da edição" open={outlineOpen} onClose={() => setOutlineOpen(false)} outline={outline} />}
           </>
         )}

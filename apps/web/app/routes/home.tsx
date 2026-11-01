@@ -46,7 +46,6 @@ export default function Home() {
     <div className="pb-6">
       {/* Phones: the bar (精选 | 全部, filter, search), the filter in use, today's hot topics, the feed. */}
       <FeedBar base="/selecao" category={filters.category} channel={filters.channel} />
-      <AreaTabs base="/selecao" area={filters.area} layoutId="home-area-phone" className="mb-3 lg:hidden" />
       <ActiveFilters base="/selecao" category={filters.category} channel={filters.channel} tag={filters.tag} />
       <div className="hidden lg:block">
         <h1 className="text-[24px] font-semibold leading-[1.3] text-ink">{title}</h1>

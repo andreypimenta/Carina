@@ -5,7 +5,6 @@ import { REPORTS } from "@aihot/site";
 import { cachedPage, loadOr404 } from "../lib/api.server";
 import { pageReuse } from "../lib/page-reuse";
 import { pageMeta, reportLd, siteLd } from "../lib/seo";
-import { beijingDate } from "@aihot/contracts/time";
 import { EmptyState } from "../components/ui/Page";
 import { ReportLayout } from "../features/report/ReportLayout";
 import { ReportPaper, reportOutline } from "../features/report/ReportPaper";
@@ -27,7 +26,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (isFrontPath(pathname) && FEED_PARAMS.some((p) => url.searchParams.has(p))) throw redirect(`/selecao${url.search}`);
   const kind = kindFromPath(pathname);
   const { index, report } = await loadOr404<ReportLatestPage>(`/api/site/reports/${kind}/latest-page`, { signal: request.signal });
-  return cachedPage(600, { kind, report, index, today: beijingDate(Date.now()) });
+  return cachedPage(600, { kind, report, index });
 }
 
 export function meta({ loaderData, location }: Route.MetaArgs) {
@@ -49,9 +48,9 @@ export function meta({ loaderData, location }: Route.MetaArgs) {
 }
 
 export default function ReportLatestPage() {
-  const { kind, report, index, today } = useLoaderData<typeof loader>();
+  const { kind, report, index } = useLoaderData<typeof loader>();
   return (
-    <ReportLayout kind={kind} index={index} current={report?.key ?? null} today={today} outline={report ? reportOutline(report) : []}>
+    <ReportLayout kind={kind} index={index} current={report?.key ?? null} outline={report ? reportOutline(report) : []}>
       {report ? <ReportPaper report={report} index={index} /> : <EmptyState title={`Ainda não há ${KIND_LABEL[kind].toLowerCase()} publicado`}>A primeira edição vai aparecer aqui assim que sair.</EmptyState>}
     </ReportLayout>
   );

@@ -1,8 +1,9 @@
 // The way to /assine from the site's own pages, for the reader who came by a shared link: one line under an
-// issue's masthead and at the foot of every page, and a short card where an issue or an article ends, with
-// "Indique a um colega" after it at an issue's end. Nothing pops up or covers the reading. Under a weekly
-// issue's line, the button that copies its link for the groups; at an article's end, above the card, the
-// buttons that send its lean /assine page to WhatsApp or copy it.
+// issue's masthead (desktop only: on a phone the issue's lead comes first) and at the foot of every page, and a
+// short card where an issue or an article ends, with "Indique a um colega" after it at an issue's end. Nothing
+// pops up or covers the reading. Under a weekly issue's line (on a phone, under its closing card instead), the
+// button that copies its link for the groups; at an article's end, above the card, the buttons that send its
+// lean /assine page to WhatsApp or copy it.
 import { Link } from "react-router";
 import { EDITION_WHEN, SITE } from "@aihot/site";
 import type { ReportDetail, SiteItemDetail } from "@aihot/contracts/site";
@@ -38,6 +39,7 @@ export function Callout({ at, report, item }: { at: CalloutPlace; report?: Repor
       return (
         <>
           {card}
+          {report?.kind === "weekly" && <ShareLink url={`${siteUrl()}/assine/${report.key}`} className="mt-4 lg:hidden" />}
           {at === "report-end" && <Indique className="mt-4" />}
         </>
       );
@@ -67,7 +69,7 @@ export function Callout({ at, report, item }: { at: CalloutPlace; report?: Repor
     );
   }
   return (
-    <>
+    <div className="hidden lg:block">
       <Link to="/assine" prefetch="intent" className="group mt-5 flex items-center gap-2.5 rounded-card bg-accent-softer px-4 py-2.5 text-[13.5px] leading-snug text-ink-2 ring-1 ring-inset ring-accent/25">
         <IconMail size={16} className="shrink-0 text-accent" />
         <span className="min-w-0">
@@ -75,6 +77,6 @@ export function Callout({ at, report, item }: { at: CalloutPlace; report?: Repor
         </span>
       </Link>
       {report?.kind === "weekly" && <ShareLink url={`${siteUrl()}/assine/${report.key}`} />}
-    </>
+    </div>
   );
 }

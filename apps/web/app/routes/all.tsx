@@ -110,7 +110,6 @@ export default function AllPage() {
       ) : (
         <FeedBar base="/all" category={f.category} channel={f.channel} />
       )}
-      <AreaTabs base="/all" area={f.area} layoutId="all-area-phone" className="mb-3 lg:hidden" />
       <ActiveFilters base="/all" category={f.category} channel={f.channel} tag={f.tag} />
 
       {/* Desktop, as on 精选: the title, then one filter row with the search field aligned on the right. */}

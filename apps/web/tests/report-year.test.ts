@@ -1,21 +1,9 @@
 // Calendar days printed on the report pages (features/report/format.ts). Failure cases, the same class as
-// day-header-year.test.ts: on 2 January 2027 the phone switcher's chip for the 31 December issue reads "31 de dez."
-// and the "Dia anterior" link on the 1 January issue reads "Dia anterior · 31 de dez.", both read as 2027's. The
-// follow-up badge in ReportPaper.tsx and the calendar grid's hover labels go through the same monthDay.
+// day-header-year.test.ts: on 2 January 2027 the "Dia anterior" link on the 1 January issue reads "Dia anterior ·
+// 31 de dez.", read as 2027's. The follow-up badge in ReportPaper.tsx and the calendar grid's hover labels go through the same monthDay.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { chipLabel, neighbourLabel, periodGrid } from "../app/features/report/format.ts";
-
-const index = [
-  { key: "2026-12-31", issueNumber: 400, title: "Edição 400" },
-  { key: "2027-01-01", issueNumber: 401, title: "Edição 401" },
-];
-
-test("the phone chip names the year of another Brasília year", () => {
-  assert.equal(chipLabel("daily", "2027-01-02", index, "2027-01-02"), "Hoje");
-  assert.equal(chipLabel("daily", "2027-01-01", index, "2027-01-02"), "1 de jan.");
-  assert.equal(chipLabel("daily", "2026-12-31", index, "2027-01-02"), "31 de dez. de 2026");
-});
+import { neighbourLabel, periodGrid } from "../app/features/report/format.ts";
 
 test("the previous and next day links name the year across the year boundary", () => {
   // 31 December 2026, 23:30 in Brasília: the year has not turned for the site's clock.
