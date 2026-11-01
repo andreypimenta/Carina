@@ -301,6 +301,28 @@ test('reader enhancements wait for visible code and update only the picture that
   }finally{await context.close();}
 });
 
+test('a masthead section starts the page it opens at the top; on the feed it only filters, keeping the place',async()=>{
+  const context=await safari.newContext({viewport:{width:390,height:844}});
+  const page=await context.newPage();
+  const section=page.getByRole('navigation',{name:'Área',exact:true}).first().getByRole('link').nth(1);
+  try{
+    await page.goto(origin+'/weekly');
+    await expect(section).toBeVisible();
+    await page.evaluate(()=>{document.body.style.minHeight='3000px';window.scrollTo(0,20);});
+    await section.click();
+    await page.waitForURL(/\/selecao\?area=/);
+    await expect.poll(()=>page.evaluate(()=>window.scrollY)).toBe(0);
+
+    await page.goto(origin+'/selecao?tag=long-reading');
+    await expect(page.locator('[data-card-key]')).toHaveCount(180);
+    await page.evaluate(()=>window.scrollTo(0,20));
+    await section.click();
+    await page.waitForURL(/\/selecao\?tag=long-reading&area=/);
+    await expect(page.locator('[data-card-key]')).toHaveCount(180);
+    assert.equal(await page.evaluate(()=>window.scrollY),20);
+  }finally{await context.close();}
+});
+
 test('deep reading returns to its anchor, including folded dates',async()=>{
   const context=await safari.newContext({viewport:{width:390,height:844}});
   const page=await context.newPage();

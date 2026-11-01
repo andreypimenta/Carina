@@ -47,10 +47,11 @@ function filterKey(category: CategoryKey | null, channel: ChannelKey): string {
  */
 export function AreaTabs({ base, area, everyArea = true, layoutId, className = "" }: { base: string; area: AreaKey | null | undefined; everyArea?: boolean; layoutId: string; className?: string }) {
   const [current] = useSearchParams();
-  const params = useLocation().pathname === base ? current : new URLSearchParams();
+  const onFeed = useLocation().pathname === base;
+  const params = onFeed ? current : new URLSearchParams();
   const items = [
-    ...(everyArea ? [{ key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), prefetch: "intent" as const }] : []),
-    ...AREA_KEYS.map((k) => ({ key: k, label: AREA_LABELS[k], to: hrefWith(base, params, { area: k }), prefetch: "intent" as const })),
+    ...(everyArea ? [{ key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), resetScroll: !onFeed, prefetch: "intent" as const }] : []),
+    ...AREA_KEYS.map((k) => ({ key: k, label: AREA_LABELS[k], to: hrefWith(base, params, { area: k }), resetScroll: !onFeed, prefetch: "intent" as const })),
   ];
   const ref = useRef<HTMLDivElement>(null);
   // On a phone the row scrolls sideways; bring the chosen section into view without moving the page.
