@@ -41,16 +41,16 @@ function filterKey(category: CategoryKey | null, channel: ChannelKey): string {
 }
 
 /**
- * The site's sections (abas): on desktop above a feed's other filters, on phones in the masthead. Every
- * section, or one; `everyArea: false` leaves out the choice of every section (off a feed, where none is
- * chosen). On the feed itself the other filters in use carry over.
+ * The site's sections (abas): on desktop above a feed's other filters, on phones in the masthead. On the
+ * feed itself every section, or one, with the other filters in use carrying over; off it, where none is
+ * chosen, only the sections.
  */
-export function AreaTabs({ base, area, everyArea = true, layoutId, className = "" }: { base: string; area: AreaKey | null | undefined; everyArea?: boolean; layoutId: string; className?: string }) {
+export function AreaTabs({ base, area, layoutId, className = "" }: { base: string; area: AreaKey | null | undefined; layoutId: string; className?: string }) {
   const [current] = useSearchParams();
   const onFeed = useLocation().pathname === base;
   const params = onFeed ? current : new URLSearchParams();
   const items = [
-    ...(everyArea ? [{ key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), resetScroll: !onFeed, prefetch: "intent" as const }] : []),
+    ...(onFeed ? [{ key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), resetScroll: !onFeed, prefetch: "intent" as const }] : []),
     ...AREA_KEYS.map((k) => ({ key: k, label: AREA_LABELS[k], to: hrefWith(base, params, { area: k }), resetScroll: !onFeed, prefetch: "intent" as const })),
   ];
   const ref = useRef<HTMLDivElement>(null);

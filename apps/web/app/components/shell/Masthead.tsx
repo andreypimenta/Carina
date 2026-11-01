@@ -37,7 +37,7 @@ function PhoneSections() {
   const area = feed && isAreaKey(chosen) ? chosen : null;
   return (
     <div className="mt-2 border-t-2 border-ink pt-2 text-left lg:hidden">
-      <AreaTabs base={feed ?? "/selecao"} area={area} everyArea={feed !== null} layoutId="masthead-area" />
+      <AreaTabs base={feed ?? "/selecao"} area={area} layoutId="masthead-area" />
     </div>
   );
 }
