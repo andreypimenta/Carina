@@ -92,7 +92,7 @@ export async function titleLabel(articleId: string, tx: Db): Promise<string | nu
 }
 
 /**
- * The public summary of the journal's own text (the engine's "Resumo por IA" is not shown on it): "Em um minuto"
+ * The public summary of the journal's own text: "Em um minuto"
  * and its grade, what cards, editions and feeds carry; else a matéria's own stored line under its title; else
  * nothing, and a translation without a record keeps the engine's summary for its card.
  */
