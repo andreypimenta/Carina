@@ -27,6 +27,10 @@ test("each story carries its modules' compact parts, in the HTML and the plain t
     assert.match(mail.text, /- Primeira \(Fôlego\) — \S+\n {2}Em um minuto: achado da primeira\n- Segunda/);
     assert.match(mail.text, /MANCHETE: A manchete\nEm um minuto: achado da manchete\n/);
     assert.deepEqual(editionEmail(report, "token").text.match(/Em um minuto/g), null, "nothing without parts");
+    const withSummary = { ...report, sections: [{ ...report.sections[0]!, items: [{ ...story("lead", "A manchete"), summary: "resumo da manchete" }, { ...story("a", "Primeira"), summary: "resumo da primeira" }, { ...story("b", "Segunda"), summary: "resumo da segunda" }] }] } as never;
+    const shown = editionEmail(withSummary, "token", null, new Map([["a", { minuto: "achado da primeira" }]]));
+    assert.doesNotMatch(shown.html, />resumo da primeira</, "the part takes the summary's place, so the finding is not said twice");
+    assert.match(shown.html, />resumo da segunda</, "a story without a part keeps its summary");
   } finally {
     installModules([]);
   }

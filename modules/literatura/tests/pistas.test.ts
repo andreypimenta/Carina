@@ -26,7 +26,7 @@ const papers: Record<string, { title: string; entered: string; doi: string }> = 
 const opened: string[] = [];
 let failing = true;
 const modelCalls: string[] = [];
-const materia = { titulo: "Traqueostomia em lactentes", linhaFina: "Coorte multicêntrica", lide: "Um estudo acompanhou lactentes.", contexto: "", metodos: "Coorte.", resultados: "Poucas complicações.", limitacoes: "Observacional.", paraOPediatra: "Encaminhe cedo.", paraOEspecialista: "Padronize o cuidado." };
+const materia = { titulo: "Traqueostomia em lactentes", achado: "Um estudo acompanhou lactentes.", perguntaClinica: "Qual o resultado nesta população?", oQueFizeram: "Coorte.", resultados: [{ desfecho: "Desfecho principal", resultado: "Poucas complicações.", efeito: "" }], sinaisDeAlerta: [{ sinal: "centro-unico", detalhe: "Observacional." }], aFavor: [], naoInformado: [], naPratica: "Encaminhe cedo.", contexto: "" };
 
 const pubmedXml = (ids: string[]) => `<?xml version="1.0"?><PubmedArticleSet>${ids.map((pmid) => {
   const p = papers[pmid]!;

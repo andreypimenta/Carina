@@ -312,6 +312,11 @@ export interface ServerModule {
    */
   titleLabel?: (articleId: string, tx: Db) => Promise<string | null>;
   /**
+   * The public summary of an article whose text is the site's own (OWN_TEXT_SOURCES, industry/taxonomy.ts), or
+   * null for the engine's: read each time the article is published (publication/publish.ts), so keep it to one indexed lookup.
+   */
+  ownSummary?: (articleId: string, tx: Db) => Promise<string | null>;
+  /**
    * Its part of articles, by id, as they are now (publication/detail.ts itemParts): on the article's page
    * (SiteItemDetail.modules, drawn by its web module's itemPage) and, through `mail`, under the article in
    * an e-mail. Ids it has nothing for are left out.

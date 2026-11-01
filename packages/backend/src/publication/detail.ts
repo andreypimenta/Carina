@@ -1,5 +1,6 @@
 // Item detail and Markdown export, both behind the same visibility and licence rules.
 import type { OutlineEntry, SiteItemDetail, StoryRef } from "@aihot/contracts/site";
+import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { ITEM_COPY, SITE } from "@aihot/site";
 import { bodyToMarkdown } from "../content/markdown.ts";
 import { sql } from "../db.ts";
@@ -101,6 +102,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
   if (row.visibility === "summary-only") {
     const item: SiteItemDetail = {
       ...summary,
+      ownText: OWN_TEXT_SOURCES.includes(row.source_id),
       selected: false,
       score: null,
       category: null,
@@ -169,6 +171,7 @@ export async function loadItemDetail(id: string, language: "zh" | "original" = "
   const sameEvent = (await seatHolders([row], now)).get(row.id) ?? null;
   const item: SiteItemDetail = {
     ...summary,
+    ownText: OWN_TEXT_SOURCES.includes(row.source_id),
     x,
     ...(sameEvent ? { reason: null, sameEvent } : {}),
     readingMode: "full",

@@ -39,7 +39,7 @@ import { enabledSources, MATERIA_SOURCE, MAX_ATTEMPTS, MIN_FULL_TEXT, settings, 
 import { saveConfianca } from "./confianca.ts";
 import { estudoDoPaper, saveEstudo, saveRegistroPage } from "./estudos.ts";
 import {
-  confiancaDaMateria, confiancaDaPagina, creditBlock, MATERIA_STEP, renderFonteMateria, renderMateria, textoLido, writeFonteMateria, writeMateria, type PrimaryPage, type XCredit,
+  confiancaDaMateria, confiancaDaPagina, creditBlock, MATERIA_STEP, materiaText, renderFonteMateria, renderMateria, textoLido, writeFonteMateria, writeMateria, type PrimaryPage, type XCredit,
 } from "./materia.ts";
 import { authorLine, fetchPapers, pmidsForDoi, pmidsForTitle, searchPmids, trialIdsIn, type Paper, type PubmedPaper } from "./pubmed.ts";
 
@@ -414,11 +414,11 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
   const basis = fullText ? "full" : "abstract";
   const estudo = await estudoDoPaper(paper);
   const { materia, receiptId } = await writeMateria(paper, fullText, estudo.anteriores);
-  const html = sanitizeBody(renderMateria(materia, paper, access, null, basis) + creditBlock(credit), url);
+  const html = sanitizeBody(renderMateria(materia, paper, access, null) + creditBlock(credit), url);
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url, title: materia.titulo.trim(), author: authorLine(paper.authors) || null, language: "pt",
-      publishedAt: now, excerpt: materia.linhaFina.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
+      publishedAt: now, excerpt: materia.achado.trim() || null, bodyHtml: html, bodyText: materiaText(materia, html), bodyStatus: "ok",
       raw: { doi, journal: paper.journal, access, originalTitle: paper.title, basis, ...(fullText ? { fullTextFrom: "publisher" } : {}), xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
@@ -455,7 +455,7 @@ async function takePage(articleId: string, page: Page, post: string, credit: XCr
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url: page.url, title: materia.titulo.trim(), author: materia.organizacao.trim() || null, language: "pt",
-      publishedAt: now, excerpt: materia.linhaFina.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
+      publishedAt: now, excerpt: materia.achado.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
       raw: { basis: "pagina", organization: materia.organizacao.trim(), pageTitle: primary.title, xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);

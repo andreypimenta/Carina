@@ -13,7 +13,7 @@
 import type { ServerModule } from "@aihot/backend/modules";
 import { registerCorrecoes } from "./api/correcoes.ts";
 import { registerEspeciais } from "./api/especiais.ts";
-import { materiaMail, materiaParts, titleLabel } from "./backend/confianca.ts";
+import { materiaMail, materiaParts, ownSummary, titleLabel } from "./backend/confianca.ts";
 import { ADICIONAR_QUEUE } from "./backend/adicionar.ts";
 import { ALERTA_PURPOSE, collectAlertas } from "./backend/alertas.ts";
 import { readElso } from "./backend/elso.ts";
@@ -34,6 +34,7 @@ const server: ServerModule = {
     registerCorrecoes(app);
   },
   titleLabel,
+  ownSummary,
   items: { parts: materiaParts, mail: materiaMail },
   models: {
     [MATERIA_STEP]: {

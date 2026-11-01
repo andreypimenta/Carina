@@ -108,19 +108,18 @@ test("JATS: blocks nested in paragraphs, floats-group, formulas, escaped labels;
 test("the article: sections in order, text escaped, the reference and the access note at the foot", () => {
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const html = renderMateria({
-    titulo: "Reconstrução em um tempo teve decanulação semelhante", linhaFina: "Coorte de 84 crianças <grau III>", lide: "Primeiro parágrafo.\n\nSegundo parágrafo.",
-    contexto: "", metodos: "Coorte retrospectiva.", resultados: "88% e 91%.", limitacoes: "Retrospectivo.", paraOPediatra: "", paraOEspecialista: "Ajuda a escolher.",
-  }, paper!, { kind: "closed" }, null, "abstract");
-  assert.match(html, /^<p><strong>Coorte de 84 crianças &lt;grau III&gt;<\/strong><\/p><p>Primeiro parágrafo.<\/p><p>Segundo parágrafo.<\/p><h2>Como foi feito<\/h2>/);
-  assert.doesNotMatch(html, /Contexto|Para o pediatra/);
-  assert.match(html, /<h2>O que encontraram<\/h2><p>88% e 91%.<\/p><h2>Limitações<\/h2>.*<h2>Para o especialista<\/h2>/);
+    desenho: "coorte", oQueFizeram: "Coorte <retrospectiva>.\n\nSegundo parágrafo.", resultados: [{ desfecho: "Decanulação", resultado: "88% e 91%", efeito: "" }],
+    aFavor: [], sinaisDeAlerta: [{ sinal: "retrospectivo", detalhe: "Dados de prontuário." }], naoInformado: [], naPratica: "Ajuda a escolher.", contexto: "",
+  }, paper!, { kind: "closed" }, null);
+  assert.match(html, /^<h2>O que fizeram<\/h2><p>Coorte &lt;retrospectiva&gt;.<\/p><p>Segundo parágrafo.<\/p><h2>O que encontraram<\/h2>/);
+  assert.doesNotMatch(html, /Contexto|Para o pediatra|Matéria escrita/);
+  assert.match(html, /<h2>Quanto confiar<\/h2><ul><li><strong>Retrospectivo:<\/strong> Dados de prontuário.<\/li><\/ul><h2>Na prática<\/h2>.*<h2>Referência<\/h2>/);
   assert.match(html, /DOI: <a href="https:\/\/doi.org\/10.1016\/j.jpedsurg.2026.161999">/);
   assert.match(html, /o artigo completo é pago na editora/);
-  assert.match(html, /a partir do resumo publicado/);
-  const unknown = referenceBlock(paper!, { kind: "unknown" }, null, "abstract");
+  const unknown = referenceBlock(paper!, { kind: "unknown" }, null);
   assert.doesNotMatch(unknown, /pago|gratuito/, "nothing is said about access that is not known");
-  assert.match(referenceBlock(paper!, { kind: "unknown" }, "PMC42", "full"), /<a href="https:\/\/europepmc.org\/article\/PMC\/PMC42">europepmc.org<\/a>/);
-  const open = referenceBlock(paper!, { kind: "open", copy: { url: "https://europepmc.org/article/MED/41000001", license: "cc-by-nc-nd", host: "repository", version: "acceptedVersion" } }, null, "full");
+  assert.match(referenceBlock(paper!, { kind: "unknown" }, "PMC42"), /<a href="https:\/\/europepmc.org\/article\/PMC\/PMC42">europepmc.org<\/a>/);
+  const open = referenceBlock(paper!, { kind: "open", copy: { url: "https://europepmc.org/article/MED/41000001", license: "cc-by-nc-nd", host: "repository", version: "acceptedVersion" } }, null);
   assert.match(open, /Texto completo gratuito:<\/strong> <a href="https:\/\/europepmc.org\/article\/MED\/41000001">europepmc.org<\/a> \(manuscrito aceito pelos autores\), licença CC BY-NC-ND/);
-  assert.match(materiaInput(paper!, null), /Texto disponível: somente o resumo\n\nBACKGROUND: The best strategy/);
+  assert.match(materiaInput(paper!, null), /Texto disponível: somente o resumo\nLimite desta matéria: cerca de 48 palavras, somando todos os campos\n\nBACKGROUND: The best strategy/);
 });

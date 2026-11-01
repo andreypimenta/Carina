@@ -60,7 +60,7 @@ export default function AssineMateria() {
             <time dateTime={shownAt} className="mono">{fullDateTime(shownAt)}</time>
           </div>
           {!isX && <h1 className="text-[26px] font-bold leading-[1.38] tracking-[-0.01em] text-ink lg:text-[32px] lg:leading-[1.34]">{item.title}</h1>}
-          {item.summary && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
+          {item.summary && (!item.ownText || item.readingMode === "summary-only") && (!isX || item.summary.replace(/\s+/g, " ").trim() !== item.title) && (
             <section className={isX ? "mt-4" : "mt-7"}>
               <div className="mb-2 text-[12px] font-semibold text-accent">{item.readingMode === "summary-only" ? "Resumo" : "Resumo por IA"}</div>
               <p className="text-[18px] leading-[1.7] text-ink">{item.summary}</p>

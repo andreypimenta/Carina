@@ -208,7 +208,7 @@ export function renderAlerta(a: Alerta, ato: Ato): string {
     a.linhaFina.trim() ? `<p><strong>${esc(a.linhaFina.trim())}</strong></p>` : "",
     paragraphs(a.corpo),
     `<h2>Fonte oficial</h2><p>${esc(ORGAO_NOME[ato.orgao])}: <a href="${esc(ato.url)}">${esc(ato.title || ato.url)}</a> (${d}/${m}/${y}).</p>`,
-    `<p><em>Ato regulatório, não evidência de eficácia nem de segurança clínica do produto. Alerta escrito pelo ${esc(SITE.bareName)} a partir do ato oficial.</em></p>`,
+    `<p><em>Ato regulatório, não evidência de eficácia nem de segurança clínica do produto.</em></p>`,
   ].join("");
 }
 

@@ -73,6 +73,13 @@ export const AREAS = [
 export const UNCAPPED_SOURCES: readonly string[] = ["literatura-materia", "literatura-integral"];
 
 /**
+ * Fontes cujo texto é do próprio jornal (modules/literatura): o motor as analisa para tipo, tags e seção, mas não
+ * escreve por cima delas. Sem título reescrito, sem o título original embaixo, sem "Resumo por IA" na página e sem
+ * "Por que importa"; o link "Fonte:" também sai, porque o corpo já termina na referência.
+ */
+export const OWN_TEXT_SOURCES: readonly string[] = ["literatura-materia", "literatura-integral"];
+
+/**
  * O tipo de publicação mais acompanhado neste setor (aqui, diretrizes e consensos): o número no cabeçalho das edições.
  * Só conta quando categoria e tag batem; unit vem logo depois do número. Setores sem esse tipo usam null.
  */

@@ -3,8 +3,10 @@
 // and the study's other versions and other papers of its trial (backend/estudos.ts), and the corrections the editor added (backend/correcoes.ts).
 // A preprint's or a registry entry's public title starts with its stage's label (ServerModule.titleLabel).
 import { sql, type Db } from "@aihot/backend/db";
-import { alertaTitleLabel, DESENHO_LABEL, estadoTitleLabel, IMPLICACAO_LABEL, minutoCompacto, PREPRINT_LABEL, TEXTO_LIDO_LABEL, type Confianca, type Correcao, type Estado, type MateriaPart } from "../confianca.ts";
+import { alertaTitleLabel, estadoTitleLabel, IMPLICACAO_LABEL, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
 import { estudosOf, REGISTRO_TAG } from "./estudos.ts";
+
+const MATERIA_SOURCE = "literatura-materia";
 
 export async function saveConfianca(tx: Db, articleId: string, data: Confianca): Promise<void> {
   await tx`INSERT INTO literatura_confianca (article_id, data) VALUES (${articleId}, ${tx.json(data as never)})
@@ -48,19 +50,28 @@ export async function titleLabel(articleId: string, tx: Db): Promise<string | nu
   return estadoTitleLabel(row.estado ?? (row.preprint ? "preprint" : row.registro ? "registrado" : null));
 }
 
+/**
+ * The public summary of the journal's own text (the engine's "Resumo por IA" is not shown on it): "Em um minuto"
+ * and its grade, what cards, editions and feeds carry; else a matéria's own stored line under its title; else
+ * nothing, and a translation without a record keeps the engine's summary for its card.
+ */
+export async function ownSummary(articleId: string, tx: Db): Promise<string | null> {
+  const [row] = await tx<{ minuto: EmUmMinuto | null; excerpt: string | null; source_id: string }[]>`
+    SELECT c.data->'minuto' AS minuto, a.excerpt, a.source_id FROM articles a LEFT JOIN literatura_confianca c ON c.article_id = a.id WHERE a.id = ${articleId}`;
+  if (row?.minuto) return minutoEmLinha(row.minuto);
+  return row?.source_id === MATERIA_SOURCE ? row.excerpt?.trim() || null : null;
+}
+
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-/** "Em um minuto" under the matéria in the weekly e-mail, with its design and the text read; nothing for a piece without one. */
+/** Under the matéria in the weekly e-mail: "Em um minuto" and "Muda algo agora?", in place of its summary; nothing for a piece without one. */
 export function materiaMail(part: unknown): { html: string; text: string } | null {
   const p = part as MateriaPart | null;
   const line = p ? minutoCompacto(p) : null;
-  if (!p?.confianca?.minuto || !line) return null;
-  const c = p.confianca;
-  const m = c.minuto!;
-  const ficha = [c.desenho ? DESENHO_LABEL[c.desenho] : null, `Texto lido: ${TEXTO_LIDO_LABEL[c.textoLido].toLowerCase()}`].filter(Boolean).join(" · ");
+  const m = p?.confianca?.minuto;
+  if (!m || !line) return null;
   const html = `<div style="margin:8px 0 0;padding:10px 12px;background:#f4f2ec;border-radius:8px;font-family:Arial,Helvetica,sans-serif;font-size:13px;line-height:1.6;color:#3b4649">
-${c.preprint ? `<div style="font-weight:bold;color:#9a3412">${esc(PREPRINT_LABEL)}</div>` : ""}<div><b style="color:#0f766e">Em um minuto</b> ${esc(m.achado)}</div>
-<div><b>Para quem:</b> ${esc(m.paraQuem)} · <b>Muda algo agora?</b> ${esc(IMPLICACAO_LABEL[m.mudaAlgo])}</div>
-<div style="color:#6b7478">${esc(ficha)}</div></div>`;
-  return { html, text: `${line} (${ficha})` };
+<div><b style="color:#0f766e">Em um minuto</b> ${esc(m.achado)}</div>
+<div><b>Muda algo agora?</b> ${esc(IMPLICACAO_LABEL[m.mudaAlgo])}${m.diretriz ? ` (${esc(m.diretriz)})` : ""}</div></div>`;
+  return { html, text: line };
 }

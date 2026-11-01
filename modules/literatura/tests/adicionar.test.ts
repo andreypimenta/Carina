@@ -30,7 +30,7 @@ const RECORDS: Record<string, string> = { [PMID]: record(PMID, DOI), [LATER]: re
 
 const modelInputs: string[] = [];
 const searches: string[] = [];
-const materia = { titulo: "Traqueíte após traqueostomia pediátrica", linhaFina: "Análise do NSQIP", lide: "Um estudo avaliou traqueíte após traqueostomia.", contexto: "", metodos: "Coorte.", resultados: "Traqueíte em parte das crianças.", limitacoes: "Base administrativa.", paraOPediatra: "Atenção à traqueíte.", paraOEspecialista: "Reforça o cuidado." };
+const materia = { titulo: "Traqueíte após traqueostomia pediátrica", achado: "Um estudo avaliou traqueíte após traqueostomia.", perguntaClinica: "Qual o resultado nesta população?", oQueFizeram: "Coorte.", resultados: [{ desfecho: "Desfecho principal", resultado: "Traqueíte em parte das crianças.", efeito: "" }], sinaisDeAlerta: [{ sinal: "centro-unico", detalhe: "Base administrativa." }], aFavor: [], naoInformado: [], naPratica: "Atenção à traqueíte.", contexto: "" };
 
 const stubServer = http.createServer((req, res) => {
   const chunks: Buffer[] = [];

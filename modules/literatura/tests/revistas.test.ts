@@ -23,7 +23,7 @@ const pmidOf = { early: "42000001", lost: "42000002" } as Record<string, string>
 let pubmedHas = new Set<string>();
 const modelInputs: string[] = [];
 const searches: string[] = [];
-const materia = { titulo: "Traqueoplastia por deslizamento em lactentes", linhaFina: "Série de 12 casos", lide: "Um centro descreveu 12 lactentes.", contexto: "", metodos: "Série de casos.", resultados: "Todos extubados.", limitacoes: "Centro único.", paraOPediatra: "Estridor persistente merece investigação.", paraOEspecialista: "Técnica reprodutível." };
+const materia = { titulo: "Traqueoplastia por deslizamento em lactentes", achado: "Um centro descreveu 12 lactentes.", perguntaClinica: "Qual o resultado nesta população?", oQueFizeram: "Série de casos.", resultados: [{ desfecho: "Desfecho principal", resultado: "Todos extubados.", efeito: "" }], sinaisDeAlerta: [{ sinal: "centro-unico", detalhe: "Centro único." }], aFavor: [], naoInformado: [], naPratica: "Estridor persistente merece investigação.", contexto: "" };
 
 const pubmedXml = (pmid: string, d: string) => `<?xml version="1.0"?><PubmedArticleSet><PubmedArticle><MedlineCitation><PMID>${pmid}</PMID><Article>
   <Journal><Title>Journal of watched surgery</Title><ISOAbbreviation>J Watch Surg</ISOAbbreviation><JournalIssue><PubDate><Year>2026</Year></PubDate></JournalIssue></Journal>

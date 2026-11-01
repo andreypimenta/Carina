@@ -1,7 +1,7 @@
-// Why a matéria can be trusted, as the site shows it (web/item-part.tsx, the weekly e-mail): "Em um minuto"
-// (the finding, who it matters to, and whether it changes anything now, graded from what the material itself
+// Why a matéria can be trusted, as the site shows it (web/item-part.tsx, the cards, the weekly e-mail): the clinical
+// question, "Em um minuto" (the finding, and whether it changes anything now, graded from what the material itself
 // supports and never the journal's own recommendation), the population, the study design and its main
-// limitation, the declared conflicts and what carries over to Brazil as the model read them (backend/materia.ts);
+// limitation and the declared conflicts as the model read them (backend/materia.ts);
 // the text the pipeline actually read; preprints; the dates of a guideline or consensus; where the study stands
 // (registered, recruiting, results deposited, preprint, reviewed article) and its other versions the site has
 // (backend/estudos.ts); and the public corrections the editor added (backend/correcoes.ts).
@@ -118,8 +118,10 @@ export interface Versao {
 }
 
 export interface EmUmMinuto {
+  /** The only summary of the piece: the answer to the clinical question, with its main number. */
   achado: string;
-  paraQuem: string;
+  /** Only on older records and official pages; a paper's matéria says it in "Na prática". */
+  paraQuem?: string | null;
   mudaAlgo: Implicacao;
   /** The guideline or consensus the material names, when the grade is "alinhado-a-diretriz". */
   diretriz: string | null;
@@ -128,6 +130,13 @@ export interface EmUmMinuto {
 /** What is stored for each new matéria (literatura_confianca). Old matérias have none and show nothing. */
 export interface Confianca {
   feitura: Feitura;
+  /**
+   * "unica": written in the single structure (industry/prompts/materia.md), each fact in one place. Absent on the
+   * matérias written before it, whose stored body already says most of the card (`corpoJaDiz`).
+   */
+  estrutura?: "unica";
+  /** The clinical question in one PICO line. */
+  perguntaClinica?: string | null;
   minuto: EmUmMinuto | null;
   populacao: { idade: string; doenca: string; cenario: string } | null;
   desenho: Desenho | null;
@@ -177,34 +186,66 @@ export function dataBr(day: string): string {
 }
 
 /**
- * What the model did and who follows it, for the line at the end of the piece: published without a human review
- * first, so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE).
+ * A matéria written before the single structure: its stored body, which is never rewritten, already has the
+ * finding, the population, the design, the limitation and the text it was written from, so its card leaves them out.
  */
-export function linhaRevisao(c: Confianca, editor: string | null): string {
-  const and = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} e ${xs.at(-1)}` : xs.join(""));
-  const fichas = `extraiu ${and(["população", "desenho", "principal limitação", ...(c.conflitos && c.conflitos !== NAO_INFORMADO ? ["conflitos declarados"] : [])])}`;
-  const acts = (...first: string[]) => and([...first, "graduou se ele muda algo agora", ...(c.aplicabilidade ? ["apontou o que se transfere ao contexto brasileiro"] : [])]);
-  const ia = {
-    materia: `Matéria redigida com auxílio de inteligência artificial (IA) a partir da fonte original (o texto indicado em “Texto lido”) e selecionada automaticamente: a IA ${acts("resumiu o estudo", fichas)}.`,
-    pagina: `Matéria redigida com auxílio de inteligência artificial (IA) a partir da página oficial indicada na fonte e selecionada automaticamente: a IA ${acts("resumiu o conteúdo")}.`,
-    traducao: `Artigo traduzido na íntegra com inteligência artificial (IA) e selecionado automaticamente: a IA ${acts("traduziu o texto", fichas)}; em caso de divergência, vale o original.`,
-    alerta: "Alerta redigido com auxílio de inteligência artificial (IA) a partir do ato oficial indicado na fonte e selecionado automaticamente: a IA resumiu o ato, classificou sua categoria e verificou se envolve dispositivos de via aérea ou respiratórios usados em crianças. Um ato regulatório não é evidência de eficácia nem de segurança clínica do produto.",
-    aviso: "Aviso gerado automaticamente a partir da página oficial indicada na fonte, sem leitura do documento: diz apenas o que a página informa (o título e a data de atualização).",
-  }[c.feitura];
-  const who = editor ? `O editor responsável, ${editor},` : "O editor responsável";
-  return `${ia} ${who} acompanha o que vai ao ar e corrige quando necessário; correções de substância são registradas no fim da página, com a data, o que mudou e por quê.`;
+export function corpoJaDiz(c: Confianca): boolean {
+  return c.feitura === "materia" && c.estrutura !== "unica";
 }
 
-/** The compact "Em um minuto" of the weekly e-mail as one line of plain text, or null for a piece without one. */
+/** A row of the card under "Em um minuto" (web/item-part.tsx). `estado` draws the stage's badge. */
+export interface FichaRow {
+  label: string;
+  text?: string;
+  note?: string;
+  estado?: Estado;
+}
+
+/** The card: each row says something nothing else on the page does. */
+export function fichaRows({ confianca: c, estado }: Pick<MateriaPart, "confianca" | "estado">): FichaRow[] {
+  if (!c) return [];
+  const antiga = corpoJaDiz(c);
+  const study = c.feitura === "materia" || c.feitura === "traducao";
+  const rows: Array<FichaRow | null> = [
+    c.alerta ? { label: "Ato regulatório", text: `${CATEGORIA_ALERTA_LABEL[c.alerta.categoria]} (${c.alerta.orgao})`, note: "Não é evidência de eficácia nem de segurança clínica do produto." } : null,
+    c.populacao && !antiga ? { label: "População", text: [c.populacao.idade, c.populacao.doenca, c.populacao.cenario].join(" · ") } : null,
+    c.desenho && !antiga ? { label: study ? "Desenho" : "Documento", text: c.desenhoDetalhe ? `${DESENHO_LABEL[c.desenho]} (${c.desenhoDetalhe})` : DESENHO_LABEL[c.desenho] } : null,
+    antiga ? null : { label: "Texto lido", text: TEXTO_LIDO_LABEL[c.textoLido] },
+    estado ? { label: "Estágio da evidência", estado, note: ESTADO_NOTA[estado] } : null,
+    c.conflitos ? { label: "Conflitos de interesse declarados", text: c.conflitos } : null,
+    c.limitacao && !antiga ? { label: "Principal limitação", text: c.limitacao } : null,
+    c.aplicabilidade ? { label: c.estrutura === "unica" ? "Na prática" : "O que se transfere ao contexto brasileiro", text: c.aplicabilidade } : null,
+    c.datas ? { label: "Datas do documento", text: `Publicado: ${c.datas.publicado ? dataBr(c.datas.publicado) : "não informado"} · Revisado: ${c.datas.revisado ? dataBr(c.datas.revisado) : "não informado pela fonte"} · Verificado pelo jornal em ${dataBr(c.datas.conferido)}` } : null,
+  ];
+  return rows.filter((r): r is FichaRow => r !== null);
+}
+
+/**
+ * The one line of transparency at the end of the piece: made with AI and published without a human review first,
+ * so the editor follows what goes live and corrects it; named once the site names one (EXPEDIENTE). What it was
+ * written from is on the card ("Texto lido").
+ */
+export function linhaTransparencia(c: Confianca, editor: string | null): string {
+  const how = {
+    materia: "Matéria escrita com inteligência artificial e publicada automaticamente",
+    pagina: "Matéria escrita com inteligência artificial e publicada automaticamente",
+    traducao: "Artigo traduzido na íntegra com inteligência artificial e publicado automaticamente",
+    alerta: "Alerta escrito com inteligência artificial a partir do ato oficial e publicado automaticamente",
+    aviso: "Aviso gerado automaticamente a partir da página oficial, sem leitura do documento",
+  }[c.feitura];
+  return `${how}; ${editor ? `o editor responsável, ${editor},` : "o editor responsável"} acompanha o que vai ao ar e corrige quando necessário.`;
+}
+
+const semPonto = (s: string) => s.replace(/[.\s]+$/, "");
+
+/** "Em um minuto" in one line: the finding, then whether it changes anything now. */
+export function minutoEmLinha(m: EmUmMinuto): string {
+  return `${semPonto(m.achado)}. Muda algo agora? ${IMPLICACAO_LABEL[m.mudaAlgo]}${m.diretriz ? ` (${m.diretriz})` : ""}.`;
+}
+
+/** "Em um minuto" under a piece in the weekly e-mail, as plain text, or null for a piece without one. */
 export function minutoCompacto(part: MateriaPart): string | null {
-  const c = part.confianca;
-  if (!c?.minuto) return null;
-  return [
-    c.preprint ? `${PREPRINT_LABEL}.` : "",
-    `Em um minuto: ${c.minuto.achado.replace(/[.\s]+$/, "")}.`,
-    `Para quem: ${c.minuto.paraQuem.replace(/[.\s]+$/, "")}.`,
-    `Muda algo agora? ${IMPLICACAO_LABEL[c.minuto.mudaAlgo]}.`,
-  ].filter(Boolean).join(" ");
+  return part.confianca?.minuto ? `Em um minuto: ${minutoEmLinha(part.confianca.minuto)}` : null;
 }
 
 /** A correction as the admin lists it: the matéria it belongs to, who added it and when. */

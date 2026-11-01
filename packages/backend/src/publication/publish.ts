@@ -2,6 +2,7 @@
 // manual overrides and grouping, then record selected-set changes in the sync ledger.
 // Rebuilding only re-reads stored results; it never calls a model.
 import { toPublicApiCategory } from "@aihot/contracts/taxonomy";
+import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { SITE } from "@aihot/site";
 import { one, sql, type Tx } from "../db.ts";
 import { sha256, stableJson } from "../lib/ids.ts";
@@ -236,6 +237,15 @@ export async function publishArticle(articleId: string, options: PublishOptions 
 }
 
 /** The title with the label a module requires it to start with (ServerModule.titleLabel), whatever wrote it. */
+/** What an installed module gives as the public summary of an article whose text is the site's own (ServerModule.ownSummary). */
+async function ownSummary(tx: Tx, articleId: string): Promise<string | null> {
+  for (const m of serverModules()) {
+    const summary = await m.ownSummary?.(articleId, tx);
+    if (summary) return summary;
+  }
+  return null;
+}
+
 async function labelledTitle(tx: Tx, articleId: string, title: string): Promise<string> {
   for (const m of serverModules()) {
     const label = await m.titleLabel?.(articleId, tx);
@@ -284,8 +294,11 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   // text is the title, where an article would still be a half-finished card.
   const zhTitle = analysis?.title_zh?.trim() ? analysis.title_zh : null;
   const original = originalPostCopy(article.x_post, article.url, article.x_article);
-  const title = pickString(f.title, original?.title ?? zhTitle ?? (isChineseTitle || article.x_post ? collapseWhitespace(article.title) : null));
-  const summary = pickString(f.summary, original ? original.summary : analysis?.summary_zh ?? null);
+  // The site's own text keeps its own title; a text translated in full has only the engine's title in the site's language.
+  const ownText = OWN_TEXT_SOURCES.includes(source.id);
+  const ownTitle = ownText && isChineseTitle ? collapseWhitespace(article.title) : null;
+  const title = pickString(f.title, original?.title ?? ownTitle ?? zhTitle ?? (isChineseTitle || article.x_post ? collapseWhitespace(article.title) : null));
+  const summary = pickString(f.summary, original ? original.summary : (ownText ? await ownSummary(tx, articleId) : null) ?? analysis?.summary_zh ?? null);
   const category = pickString(f.category, analysis?.category ?? null);
   const tags = Array.isArray(f.tags) ? (f.tags as string[]) : [...new Set([...(analysis?.tags ?? []), ...(analysis?.subjects ?? []).map((s) => `entity:${s}`)])];
   // Every item has its section (aba): the editor's, else the structure step's, else its tags'.
@@ -307,11 +320,13 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
   // A historical import already has its public decision. Preserve that confirmed state on rebuild.
   const selected = selectionCandidate && article.grouping_status === "complete"
     && (f.selected === true || article.selection_adds_value !== false);
-  const reason = selected ? pickString(f.reason, original ? null : analysis?.reason_zh ?? null) : null;
+  const reason = selected ? pickString(f.reason, original || ownText ? null : analysis?.reason_zh ?? null) : null;
   const hasBody = !!article.body_text || !!article.x_post?.text || !!article.x_post?.media?.length || !!article.x_post?.quoted?.text;
   const bodyMode = bodyModeOf(source, article.body_status, hasBody);
   const syndicate = mayRedistribute(source, bodyMode);
-  const originalTitle = isChineseTitle && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
+  const sourceTitle = isChineseTitle && title === collapseWhitespace(article.title) ? null : collapseWhitespace(article.title);
+  // Shown nowhere on the site's own text, but a translation is still found by its title in the original.
+  const originalTitle = ownText ? null : sourceTitle;
   const shownTitle = await labelledTitle(tx, articleId, title ?? collapseWhitespace(article.title));
 
   // Waiting candidates are readable in the pool, with no selected seat, sync entry or push.
@@ -323,7 +338,7 @@ export async function publishArticleTx(tx: Tx, articleId: string, options: Publi
     visibility, sourceMode: source.participation_mode, hasSummary: !!summary, selected, seoIndexedAt: previous?.seo_indexed_at ?? null, seoExcludedAt: previous?.seo_excluded_at ?? null,
   });
   const searchText = collapseWhitespace(
-    [shownTitle, originalTitle, summary, publicSourceName(source.name, article.journal), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
+    [shownTitle, sourceTitle, summary, publicSourceName(source.name, article.journal), ...displayTags(tags), ...(analysis?.subjects ?? [])].filter(Boolean).join(" "),
   ).toLowerCase();
 
   // A selected item sits at its reading group's anchor: the earliest public pool member of its fact.

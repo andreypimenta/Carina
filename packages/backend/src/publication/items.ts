@@ -2,6 +2,7 @@
 // items through these columns and views; which rows are public is decided by scope.ts.
 import { CATEGORY_KEYS, toPublicApiCategory, type AreaKey, type CategoryKey, type ChannelKey, type PublicApiCategoryKey } from "@aihot/contracts/taxonomy";
 import type { FeedItemSummary, ItemSummary, MediaView, XPostView } from "@aihot/contracts/site";
+import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { POLICY } from "@aihot/site";
 import { sql, type Db } from "../db.ts";
 import { isEmptyOrLinkOnly } from "../content/posts.ts";
@@ -35,6 +36,7 @@ export interface ItemRow {
   journal: string | null;
   /** Participation mode of the source now (editorial, hot_signal, isolated). */
   source_mode: string;
+  source_id: string;
   x_post: Record<string, any> | null;
   author: string | null;
   language: string | null;
@@ -53,7 +55,7 @@ export const JOURNAL = sql`(SELECT nullif(btrim(j.raw->>'journal'), '') FROM art
 
 /** Columns every item listing selects. Internal judgement details never leave this layer. */
 export const ITEM_COLUMNS = sql`
-  p.article_id AS id, p.title, p.original_title, p.summary, p.reason, p.category, p.tags, p.score,
+  p.article_id AS id, p.source_id, p.title, p.original_title, p.summary, p.reason, p.category, p.tags, p.score,
   p.selected, p.seat, p.channel, p.url, p.published_at, p.discovered_at, p.timeline_at, p.visibility,
   p.body_mode, p.indexable, p.fact_id, s.name AS source_name, nullif(btrim(a.raw->>'journal'), '') AS journal, s.participation_mode AS source_mode,
   a.x_post, a.author, a.language,
@@ -184,7 +186,7 @@ export function toFeedItemSummary(row: ItemRow): FeedItemSummary {
   const item = toItemSummary(row);
   const x = showsPost(row) ? xView(row, true) : null;
   return {
-    id: item.id, title: item.title, summary: item.summary ?? (x?.text || null), reason: item.reason,
+    id: item.id, title: item.title, summary: item.summary ?? (x?.text || null), reason: item.reason, ownText: OWN_TEXT_SOURCES.includes(row.source_id),
     source: item.source, publishedAt: item.publishedAt, timelineAt: item.timelineAt,
     category: item.category, tags: item.tags, score: item.score, selected: item.selected, channel: item.channel,
     x: x ? {

@@ -24,7 +24,7 @@ function report(kind: "weekly" | "daily", key: string): ReportDetail {
   } as ReportDetail;
 }
 const item: SiteItemDetail = {
-  id: "sec-1", title: "Matéria da seção", summary: "Resumo da matéria", reason: "Por que ler", source: { name: "Fonte" },
+  ownText: false, id: "sec-1", title: "Matéria da seção", summary: "Resumo da matéria", reason: "Por que ler", source: { name: "Fonte" },
   publishedAt: at, timelineAt: at, discoveredAt: at, category: "reviews", tags: ["tag"], score: 80, selected: true,
   channel: "news", x: null, originalTitle: null, links: { original: "https://doi.org/10.1000/xyz" },
   story: null, readingMode: "full", author: null, outline: [], relatedStories: [], topics: [{ slug: "topico", name: "Tópico" }], indexable: true,

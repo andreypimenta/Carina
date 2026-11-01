@@ -22,7 +22,7 @@ import { fetchPapers, pmidsForDoi, searchPmids, skippable, authorLine, isPreprin
 import { onSubject, paperFromItem, pubmedTerm, readSumario, type Revistas } from "./revistas.ts";
 import { papersOfPost, readPosts, type Pista, type Post } from "./pistas.ts";
 import { blockText, fetchFullText, findOpenCopy, LICENSE_NAMES, lookupPmcid, readOpenCopy, republishable, type Access, type FullText } from "./access.ts";
-import { confiancaDaMateria, confiancaDaTraducao, creditBlock, preprintNote, referenceBlock, renderMateria, readTrust, textoLido, writeMateria, type XCredit } from "./materia.ts";
+import { confiancaDaMateria, confiancaDaTraducao, creditBlock, materiaText, preprintNote, referenceBlock, renderMateria, readTrust, textoLido, writeMateria, type XCredit } from "./materia.ts";
 import { saveConfianca } from "./confianca.ts";
 import { estudoDoPaper, saveEstudo } from "./estudos.ts";
 
@@ -85,7 +85,7 @@ export function integralBody(paper: Paper, full: FullText, access: Access, pmcid
     full.html.length > TRANSLATED_CHARS ? " Por causa do tamanho, só a parte inicial do texto é traduzida; o restante aparece no original." : "",
     " Em caso de divergência, vale o original.",
   ].join("");
-  return `${isPreprint(paper) ? preprintNote() : ""}<p><em>${credit}</em></p>${full.html}${referenceBlock(paper, access, pmcid, "integral")}`;
+  return `${isPreprint(paper) ? preprintNote() : ""}<p><em>${credit}</em></p>${full.html}${referenceBlock(paper, access, pmcid)}`;
 }
 
 /**
@@ -162,11 +162,11 @@ export async function takePaper(paper: Paper, now = new Date(), sources = { inte
   if (basis === "abstract" && !paper.abstract.length) return record(paper, "sem-texto");
   const estudo = await estudoDoPaper(paper);
   const { materia, receiptId } = await writeMateria(paper, fullText, estudo.anteriores);
-  const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null, basis) + credited, url);
+  const html = sanitizeBody(renderMateria(materia, paper, access, full ? pmcid : null) + credited, url);
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url, title: materia.titulo.trim(), author: authorLine(paper.authors) || null, language: "pt",
-      publishedAt, excerpt: materia.linhaFina.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
+      publishedAt, excerpt: materia.achado.trim() || null, bodyHtml: html, bodyText: materiaText(materia, html), bodyStatus: "ok",
       raw: { ...raw, originalTitle: paper.title, basis, ...(from ? { fullTextFrom: from } : {}) }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
