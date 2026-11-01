@@ -115,7 +115,7 @@ docker compose exec worker node scripts/materias-republicar.ts [--apply]
 
 编辑改过标题或摘要（`editorial_overrides`）的条目，脚本不清除改动：新文本照常写入，但卡片、列表和期次仍显示编辑的文字，这类条目单独报告为 `overridden`，不算 `written`；要让新文本显示，由编辑在后台清除改动后再运行一次。
 
-它不是新的材料修订：不增加 `revision`，也不清空分析、精选和归组，否则条目会先离开已发出的期次，还可能回不来。改写前的标题、摘要、正文、可信信息和 `literatura_papers.status` 写进 `audit_log`（`action = 'literatura.reescrever'`），`--restore` 从那里取回。正文的 `article_revisions` 不增加。模型输出通不过校验的条目保持原样并列出，下次运行再试；已完成的不再付费。校验内容：提到读的是摘要还是全文；Em um minuto（`achado`）里没有旧导语中的任何一个数字（旧导语没有数字时不查）；必填字段为空（`perguntaClinica`、`achado`，报道还有 `oQueFizeram`、`naPratica`）；报道的 `naPratica` 里有数字。超过字数上限（只数模型写的字段）只在预览和控制台提示，不拒绝，因为上限是“约”。期次内的标题和摘要按发布内容更新，导语和栏目介绍重写一次（写得不实时退回不调用模型的通用导语），旧版本进 `report_revisions`，`generated_at` 不变。
+它不是新的材料修订：不增加 `revision`，也不清空分析、精选和归组，否则条目会先离开已发出的期次，还可能回不来。改写前的标题、摘要、正文、可信信息和 `literatura_papers.status` 写进 `audit_log`（`action = 'literatura.reescrever'`），`--restore` 从那里取回。正文的 `article_revisions` 不增加。模型输出通不过校验的条目保持原样并列出，下次运行再试；已完成的不再付费。校验内容：读者看到的任何字段提到论文的摘要或全文（“resumo executivo”和会议摘要不算；只有 `desenho` 是系统综述或荟萃分析的报道，其 `oQueFizeram` 和 `resultados` 可以提到，因为筛选摘要、阅读全文是这类研究自己的方法；这种按字段的规则可能误拒，代价是重试一次，预览在 `--apply` 前人工读）；Em um minuto（`achado`）里没有旧导语中的任何一个数字（旧导语没有数字时不查）；必填字段为空（`achado`，报道和已翻译的全文还有 `perguntaClinica`，报道还有 `oQueFizeram`、`naPratica`）；报道的 `naPratica` 里有数字。超过字数上限（只数模型写的字段）只在预览和控制台提示，不拒绝，因为上限是“约”。期次内的标题和摘要按发布内容更新，导语和栏目介绍重写一次（写得不实时退回不调用模型的通用导语），旧版本进 `report_revisions`，`generated_at` 不变。
 
 ```bash
 # 只统计：不调用模型，写预览文件（/data/reescrever-<期次>.md），给出调用次数和估算的 token
