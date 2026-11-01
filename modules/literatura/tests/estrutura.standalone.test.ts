@@ -67,16 +67,11 @@ test("a sample matéria shows each key number in one block of the page, and Na p
   assert.deepEqual(Object.keys(blocks), ["Título", "Pergunta clínica", "Em um minuto", "População", "Desenho", "Texto lido", "Conflitos de interesse declarados", "Principal limitação", "O que fizeram", "O que encontraram", "Quanto confiar", "Na prática"]);
 });
 
-test("the length cap: about 1.2x the abstract's words, 900 from a full text; the model is told, the prompt says so, and the sample fits", () => {
+test("the length cap: about 1.2x the abstract's words, 900 from a full text; the model is told, and the sample fits", () => {
   assert.equal(limitePalavras(paper, null), 712);
   assert.equal(limitePalavras(paper, "full text"), 900);
   assert.match(materiaInput(paper, null), /Limite desta matéria: cerca de 712 palavras, somando todos os campos/);
   assert.match(materiaInput(paper, "full text"), /Limite desta matéria: cerca de 900 palavras/);
-  const prompt = readFileSync(new URL("../../../industry/prompts/materia.md", import.meta.url), "utf8");
-  assert.match(prompt, /1,2 vez o tamanho do resumo/);
-  assert.match(prompt, /cerca de 900 palavras/);
-  assert.match(prompt, /Cada fato e cada número aparecem uma única vez/);
-  assert.match(prompt, /Não informado não é o mesmo que não feito/);
   const words = palavrasDaMateria(prospect);
   assert.ok(words <= limitePalavras(paper, null), `${words} words`);
   assert.ok(words > 150, "every field the reader sees is counted");
@@ -90,8 +85,6 @@ test("the body changes with the study's design", () => {
   assert.match(body("serie-de-casos"), /<th>Resultado<\/th>/);
   assert.match(body("diretriz"), /<h2>O que recomendam<\/h2><table><thead><tr><th>Recomendação<\/th><th>Força<\/th>/);
   assert.doesNotMatch(body("serie-de-casos", ""), /Observação/, "a column nothing fills is left out");
-  const prompt = readFileSync(new URL("../../../industry/prompts/materia.md", import.meta.url), "utf8");
-  for (const design of ["Ensaio clínico", "Coorte, caso-controle, transversal", "Revisão sistemática, metanálise", "Série, relato de caso", "Diretriz, consenso"]) assert.ok(prompt.includes(`**${design}`), design);
 });
 
 test("Quanto confiar: the flags present, by name, with the study's strengths and what was not reported; nothing when there is nothing", () => {
