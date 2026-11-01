@@ -74,6 +74,7 @@ const stubServer = http.createServer((req, res) => {
     if (url.startsWith("/epmc/search")) return send(200, "application/json", JSON.stringify({ resultList: { result: [] } }));
     if (url === "/epmc/PMC12345678/fullTextXML") return send(200, "text/xml", long(fixture("jats.xml")));
     if (url === "/epmc/PMC99/fullTextXML") return send(200, "text/xml", ndJats);
+    if (url === "/epmc/PMC55/fullTextXML") return send(200, "text/xml", fixture("jats.xml"));
     if (url.startsWith("/epmc/")) return send(404, "text/plain", "not found");
     // Crossref knows the article of the version-linking test as the published version of its preprint.
     const crossref = /^\/crossref\/works\/(.+?)(?:\?|$)/.exec(url)?.[1];
@@ -710,4 +711,15 @@ test("the cleanup removes the line saying what was read from an older matéria, 
   }
   assert.equal(markdown.split(line).length - 1, 1, "Markdown: the transparency line, once");
   assert.equal(feedItem.split(line).length - 1, 1, "RSS: the transparency line, once");
+});
+
+test("a short PMC text is not written from, but the reader still gets its free link and licence", async () => {
+  const [, paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const out = await takePaper({ ...paper!, title: `Short PMC text ${T}`, pmid: `curto-${T}`, doi: `10.9999/curto-${T}`, pmcid: "PMC55" });
+  assert.equal(out.status, "materia-abstract");
+  assert.doesNotMatch(modelInputs.at(-1)!, /Texto disponível: texto completo/);
+  const [row] = await sql<{ body_html: string; raw: { license: string | null } }[]>`SELECT body_html, raw FROM articles WHERE id = ${out.articleId!}`;
+  assert.match(row!.body_html, /europepmc\.org\/article\/PMC\/PMC55/);
+  assert.doesNotMatch(row!.body_html, /pago na editora/);
+  assert.equal(row!.raw.license, "cc-by");
 });
