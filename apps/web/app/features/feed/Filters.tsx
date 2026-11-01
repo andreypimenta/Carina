@@ -50,7 +50,7 @@ export function AreaTabs({ base, area, layoutId, className = "" }: { base: strin
   const onFeed = useLocation().pathname === base;
   const params = onFeed ? current : new URLSearchParams();
   const items = [
-    ...(onFeed ? [{ key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), resetScroll: !onFeed, prefetch: "intent" as const }] : []),
+    ...(onFeed ? [{ key: "all", label: "Todas as áreas", to: hrefWith(base, params, { area: null }), prefetch: "intent" as const }] : []),
     ...AREA_KEYS.map((k) => ({ key: k, label: AREA_LABELS[k], to: hrefWith(base, params, { area: k }), resetScroll: !onFeed, prefetch: "intent" as const })),
   ];
   const ref = useRef<HTMLDivElement>(null);
