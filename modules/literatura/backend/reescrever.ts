@@ -101,21 +101,30 @@ export function mainNumbers(headline: string, source: string): string[] {
 
 export const hasNumber = (text: string, number: string) => figures(text).some((f) => sameFigure(f, number));
 
-/** A paper's abstract or full text, named as such; a congress abstract or a guideline's executive summary is another thing. */
-const READ_TEXT = String.raw`(?:resumo(?!\s+(?:executivo|(?:de|do|em)\s+(?:congresso|conferência|evento)))|abstract|(?:texto|artigo)\s+(?:completo|integral|na\s+[ií]ntegra)|full[- ]text)(?!\p{L})`;
+/** A paper's abstract, named as such; a congress abstract or a guideline's executive summary is another thing. */
+const READ_ABSTRACT = String.raw`(?:resumo(?!\s+(?:executivo|(?:de|do|em)\s+(?:congresso|conferência|evento)))|abstract)(?!\p{L})`;
+const READ_FULL = String.raw`(?:(?:texto|artigo)\s+(?:completo|integral|na\s+[ií]ntegra)|full[- ]text)(?!\p{L})`;
+const READ_TEXT = `(?:${READ_ABSTRACT}|${READ_FULL})`;
+const DETERMINER = String.raw`(?:(?:o|um|este|esse|seu|do|no|deste|desse|neste|nesse)\s+)?`;
+/** In a clause about the study's reviewers screening, selecting or excluding, the text is what they read. */
+const NOT_SCREENING = String.raw`(?<!\b(?:tria(?:gem|d|r)|sele[cç]|revisor|exclu[ií])[^.;:\n]*)`;
 /**
- * Words that tell the reader what the journal read: that text as the journal's source, or what it says or lacks. The
- * site never says it (industry/prompts/materia.md). A study's own methods (reviewers screening abstracts and reading
- * full texts) are the study's, and stay.
+ * Words that tell the reader what the journal had or read: that text as the journal's source, or what it says or
+ * lacks. The site never says it (industry/prompts/materia.md). What the study's reviewers did (screening, reading,
+ * obtaining, excluding) is the study's, and stays.
  */
 const SAYS_WHAT_WAS_READ = new RegExp([
-  String.raw`\b(?:segundo|conforme|de\s+acordo\s+com|(?:apenas|somente|só)(?:\s+com)?|a\s+partir(?:\s+de)?|com\s+base(?:\s+em)?|basead[oa](?:\s+em)?)\s+(?:(?:o|um|este|esse|seu|do|no|deste|desse|neste|nesse)\s+)?${READ_TEXT}`,
-  String.raw`\b(?:neste|nesse|deste|desse|este|esse|seu)\s+${READ_TEXT}`,
-  String.raw`(?<!\be\s)\bno\s+${READ_TEXT}`,
-  String.raw`\bo\s+${READ_TEXT}\s+(?:não|informa|relata|diz|traz|descreve|menciona|cita|indica|mostra|aponta|apresenta|afirma|(?:estava|está|foi)\s+(?:disponível|consultado|lido|acessado|obtido))\b`,
-  String.raw`\b(?:lemos|consultamos|tivemos\s+acesso\s+ao?)\s+(?:o\s+)?${READ_TEXT}`,
+  String.raw`\b(?:segundo|conforme|de\s+acordo\s+com|(?:apenas|somente|só)(?:\s+(?:com|em|ao))?)\s+${DETERMINER}${READ_TEXT}`,
+  String.raw`${NOT_SCREENING}\b(?:a\s+partir(?:\s+de)?|com\s+base(?:\s+em)?|basead[oa](?:\s+em)?|pelo)\s+${DETERMINER}${READ_TEXT}`,
+  String.raw`\b(?:neste|nesse|deste|desse|este|esse)\s+${READ_TEXT}`,
+  String.raw`\bseu\s+${READ_ABSTRACT}`,
+  String.raw`${NOT_SCREENING}(?<!\be\s)\bno\s+${READ_ABSTRACT}`,
+  String.raw`(?:^|[.;:]\s+)(?:no|em\s+seu)\s+${READ_FULL}`,
+  String.raw`\bo\s+${READ_TEXT}\s+(?:não|disponível|informa|relata|diz|traz|descreve|menciona|cita|indica|mostra|aponta|apresenta|afirma|(?:estava|está|foi)\s+(?:disponível|consultado|lido|acessado|obtido)\b(?!\s+(?:por|para)\b))`,
+  String.raw`(?:\b${READ_FULL}|(?<!\p{L})íntegra(?:\s+d[oe]\s+\p{L}+)?)\s+(?:indisponível|não\b(?!\s+foram))`,
+  String.raw`\b(?:lemos|consultamos|tivemos\s+acesso\s+ao?|sem\s+acesso\s+ao?|limitad[oa]s?\s+ao|(?:constam?|ausentes?)\s+do|havia)\s+(?:o\s+)?${READ_TEXT}`,
   String.raw`\bresumo\s+(?:publicado|do\s+artigo|do\s+estudo)\b`,
-].join("|"), "iu");
+].join("|"), "ium");
 
 /** All the model's text a reader sees. */
 function trustWords(t: Trust): string[] {

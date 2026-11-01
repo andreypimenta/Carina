@@ -204,13 +204,43 @@ test("digits inside a name are no figure; a range's bounds and a dose are", () =
   assert.equal(refusal({ ...ok, achado: "Bronquiolite em lactentes.", numbers: mainNumbers("Bronquiolite pós-COVID-19", "COVID-19") }), null);
 });
 
-test("wording about what the journal read is refused; a study's own methods are not", () => {
+const SAYS_READ_TABLE: Array<[text: string, refused: boolean]> = [
+  ["A partir do resumo, 88%.", true],
+  ["O resumo não informa o seguimento.", true],
+  ["Só o resumo estava à mão.", true],
+  ["O artigo na íntegra não foi consultado.", true],
+  ["O artigo completo não estava disponível.", true],
+  ["Sem acesso ao texto completo.", true],
+  ["A íntegra do artigo não foi consultada.", true],
+  ["Texto completo não disponível.", true],
+  ["O dado consta em texto completo indisponível.", true],
+  ["Disponível apenas em resumo.", true],
+  ["Informação limitada ao resumo.", true],
+  ["Não consta do resumo.", true],
+  ["Informação ausente do resumo.", true],
+  ["Avaliado pelo resumo.", true],
+  ["Só havia o resumo.", true],
+  ["O resumo disponível traz pouco.", true],
+  ["No texto completo, 88% melhoraram.", true],
+  ["Triagem de resumos e leitura do texto completo por dois revisores.", false],
+  ["Artigos em texto completo foram avaliados.", false],
+  ["Títulos e resumos foram lidos por dois revisores.", false],
+  ["O resumo executivo da diretriz recomenda treinar os cuidadores.", false],
+  ["Dois revisores triaram títulos e resumos e, depois, avaliaram os elegíveis no texto completo.", false],
+  ["Foram excluídos no texto completo.", false],
+  ["Avaliaram os artigos em seu texto completo.", false],
+  ["O artigo completo foi lido por dois revisores.", false],
+  ["O texto completo foi obtido para 40 estudos.", false],
+  ["Triagem com base no resumo.", false],
+  ["Seleção a partir do resumo e do título.", false],
+];
+
+test("wording about what the journal had or read is refused; what the study's reviewers did is not", () => {
   const ok = { required: { achado: "Achado" }, text: [""], achado: "Achado.", numbers: [] };
-  for (const said of ["A partir do resumo, 88%.", "O resumo não informa o seguimento.", "Só o resumo estava à mão.", "O artigo na íntegra não foi consultado.", "O artigo completo não estava disponível."]) {
-    assert.match(refusal({ ...ok, text: [said] })!, /says what was read/, said);
-  }
-  for (const fine of ["Triagem de resumos e leitura do texto completo por dois revisores.", "Artigos em texto completo foram avaliados.", "Títulos e resumos foram lidos por dois revisores.", "O resumo executivo da diretriz recomenda treinar os cuidadores."]) {
-    assert.equal(refusal({ ...ok, text: [fine] }), null, fine);
+  for (const [text, refused] of SAYS_READ_TABLE) {
+    const why = refusal({ ...ok, text: [text] });
+    if (refused) assert.match(why ?? "", /says what was read/, text);
+    else assert.equal(why, null, text);
   }
 });
 
