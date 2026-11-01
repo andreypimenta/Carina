@@ -147,9 +147,10 @@ export const PeriodSchema = z.object({
 /**
  * The writer's brief for a week or month: its events as chosen, ordered and grouped by rule. It writes
  * the overview and the introductions of the sections large enough for one, and decides nothing about
- * what the issue carries.
+ * what the issue carries. The lead is named because the sections' order does not show it, and the overview
+ * printed under it must not repeat it.
  */
-export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, groups: Array<{ label: string; items: Candidate[] }>) {
+export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, lead: Candidate, groups: Array<{ label: string; items: Candidate[] }>) {
   const list = groups.map((g) => [`【${g.label}】`, ...g.items.map((e) => `- ${e.title} | ${e.summary.slice(0, 350)}`)].join("\n")).join("\n");
   const introduced = groups.filter((g) => g.items.length >= INTRO_EVENTS).map((g) => g.label);
   return {
@@ -158,7 +159,7 @@ export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endD
       sections: introduced.length ? promptText("report-period-sections", { columns: introduced.map((l) => `"${l}"`).join(", ") }) : promptText("report-period-no-sections"),
       sectionsExample: introduced.length ? `{"${introduced[0]}": "..."}` : "{}",
     }),
-    user: `Esta edição: ${startDate} a ${endDateInclusive}\n${list}`,
+    user: `Esta edição: ${startDate} a ${endDateInclusive}\nMatéria principal: ${lead.title}\n${list}`,
   };
 }
 
@@ -240,13 +241,14 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
     .map((label) => ({ label, items: top.filter((e) => sectionOf(e.area, e.tags) === label) }))
     .filter((g) => g.items.length > 0);
   const corpus = [`${startDate} ${endDateInclusive}`, ...top.map((e) => `${e.title} ${e.summary}`)].join("\n");
+  const [lead] = top as [Candidate, ...Candidate[]];
   const model = await modelFor("report");
   let written: z.infer<typeof PeriodSchema> = { overview: "", sections: {} };
   let receiptId: number | null = null;
   try {
     const res = await chatJson({
       model, purpose: `report_${kind}`, subject: `report:${kind}:${key}`, promptVersion: REPORT_VERSION,
-      ...periodPrompt(kind, startDate, endDateInclusive, groups), schema: PeriodSchema, temperature: 0.3, maxTokens: 2500,
+      ...periodPrompt(kind, startDate, endDateInclusive, lead, groups), schema: PeriodSchema, temperature: 0.3, maxTokens: 2500,
     });
     written = res.data;
     receiptId = res.receiptId;
@@ -261,7 +263,6 @@ async function composePeriod(kind: "weekly" | "monthly", key: string, startDate:
   // Without a usable one the read layer says what the issue carries, naming only what is still public.
   const overview = usable(written.overview, OVERVIEW_CHARS[kind]);
   const intro = (g: { label: string; items: Candidate[] }) => g.items.length >= INTRO_EVENTS ? usable(written.sections[g.label], INTRO_CHARS) : null;
-  const [lead] = top as [Candidate, ...Candidate[]];
   const content = {
     kind,
     title: kind === "weekly" ? `${SITE.name} · ${PERIOD_ISSUE_NAMES.weekly} · ${key}` : `${SITE.name} · ${PERIOD_ISSUE_NAMES.monthly} · ${key}`,
