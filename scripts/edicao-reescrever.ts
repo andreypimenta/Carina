@@ -13,7 +13,7 @@ import { config } from "@aihot/backend/config";
 import { closeDb } from "@aihot/backend/db";
 import { stopBoss } from "@aihot/backend/jobs/queue";
 import { installModules } from "@aihot/backend/modules";
-import { restoreItems, rewriteEdition, type Mode } from "@aihot/literatura/reescrever";
+import { restoreItems, rewriteEdition, stayedOld, type Mode } from "@aihot/literatura/reescrever";
 import { SERVER_MODULES } from "@aihot/site/modules/server";
 
 const ACTOR = "script:edicao-reescrever";
@@ -43,14 +43,14 @@ try {
     const previewPath = values.preview ?? path.join(config.dataDir, `reescrever-${key}.md`);
     const out = await rewriteEdition(key!, { mode, reason: reason ?? "", actor: ACTOR, previewPath, log: console.log });
     const count = (status: string) => out.items.filter((i) => i.status === status).length;
-    console.log(`${out.items.length} items: ${count("written")} written, ${count("generated")} generated, ${count("would-write")} to write, ${count("done")} already done, ${count("kept")} kept, ${count("refused")} refused, ${count("failed")} failed`);
-    for (const i of out.items.filter((x) => x.type === "sem-fonte" || x.status === "refused" || x.status === "failed")) console.log(`  LEFT UNCHANGED  ${i.id}  ${i.why}`);
+    console.log(`${out.items.length} items: ${count("written")} written, ${count("generated")} generated, ${count("would-write")} to write, ${count("done")} already done, ${count("overridden")} still overridden, ${count("kept")} kept, ${count("refused")} refused, ${count("failed")} failed`);
+    for (const i of out.items.filter((x) => stayedOld(x) || x.status === "kept")) console.log(`  ${i.status === "overridden" ? "STILL OVERRIDDEN" : "LEFT UNCHANGED"}  ${i.id}  ${i.type}  ${i.why}`);
     console.log(`model calls: ${out.modelCalls}; estimated tokens: ${out.tokens}`);
     console.log(`preview: ${previewPath}`);
     if (mode === "apply") {
       if (typeof out.report === "object" && "error" in out.report) console.log(`EDITION NOT UPDATED: ${out.report.error}; run again`);
       else console.log("edition:", out.report);
-      if (count("refused") || count("failed") || (typeof out.report === "object" && "error" in out.report)) process.exitCode = 1;
+      if (out.items.some(stayedOld) || (typeof out.report === "object" && "error" in out.report)) process.exitCode = 1;
     } else console.log(`dry run: nothing published changed; pass --apply --reason="…" to write`);
   }
 } finally {

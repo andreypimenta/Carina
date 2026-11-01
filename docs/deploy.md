@@ -111,9 +111,11 @@ docker compose exec worker node scripts/materias-republicar.ts [--apply]
 
 #### 把一期周报整期改写成单一结构（2026 年 11 月 1 日）
 
-没有迁移，没有新环境变量，不删任何数据。上线不自动运行。`scripts/edicao-reescrever.ts` 只处理指定那一期周报（`reports` 里 `kind=weekly`）的条目，其他报道和其他期次都不动，也不重发邮件。本站自己的报道（`literatura-materia`）由写作模型按新结构重写标题、摘要和正文；已翻译的全文（`literatura-integral`）保留正文，只生成可信信息；第三方条目不改；没有原文可读的（PubMed 查不到 PMID 或 DOI，或来自官方页面）只列出，不改。
+没有迁移，没有新环境变量，不删任何数据。上线不自动运行。`scripts/edicao-reescrever.ts` 只处理指定那一期周报（`reports` 里 `kind=weekly`）的条目，其他报道和其他期次都不动，也不重发邮件。本站自己的报道（`literatura-materia`）由写作模型按新结构重写标题、摘要和正文：PubMed 有的走论文路径，PubMed 没有、只有 DOI 的重新读出版社页面后走同一路径；来自官方页面的（`raw.basis = pagina`）重新读该页面和引出它的 X 帖子，走官方页面的写作模型（`materia-fonte`）。已翻译的全文（`literatura-integral`）保留正文，只生成可信信息。第三方条目不改，也不编写。来源读不到的（页面打不开、帖子不在库里、PubMed 和 DOI 都没有）只列出，不改，绝不编写。
 
-它不是新的材料修订：不增加 `revision`，也不清空分析、精选和归组，否则条目会先离开已发出的期次，还可能回不来。改写前的标题、摘要、正文和可信信息写进 `audit_log`（`action = 'literatura.reescrever'`），`--restore` 从那里取回。正文的 `article_revisions` 不增加。模型输出通不过校验（缺关键数字、字段为空、提到读的是摘要还是全文）的条目保持原样并列出，下次运行再试；已完成的不再付费。期次内的标题和摘要按发布内容更新，导语和栏目介绍重写一次（写得不实时退回不调用模型的通用导语），旧版本进 `report_revisions`，`generated_at` 不变。
+编辑改过标题或摘要（`editorial_overrides`）的条目，脚本不清除改动：新文本照常写入，但卡片、列表和期次仍显示编辑的文字，这类条目单独报告为 `overridden`，不算 `written`；要让新文本显示，由编辑在后台清除改动后再运行一次。
+
+它不是新的材料修订：不增加 `revision`，也不清空分析、精选和归组，否则条目会先离开已发出的期次，还可能回不来。改写前的标题、摘要、正文、可信信息和 `literatura_papers.status` 写进 `audit_log`（`action = 'literatura.reescrever'`），`--restore` 从那里取回。正文的 `article_revisions` 不增加。模型输出通不过校验的条目保持原样并列出，下次运行再试；已完成的不再付费。校验内容：提到读的是摘要还是全文；Em um minuto（`achado`）里没有旧导语中的任何一个数字（旧导语没有数字时不查）；必填字段为空（`perguntaClinica`、`achado`，报道还有 `oQueFizeram`、`naPratica`）；报道的 `naPratica` 里有数字。超过字数上限（只数模型写的字段）只在预览和控制台提示，不拒绝，因为上限是“约”。期次内的标题和摘要按发布内容更新，导语和栏目介绍重写一次（写得不实时退回不调用模型的通用导语），旧版本进 `report_revisions`，`generated_at` 不变。
 
 ```bash
 # 只统计：不调用模型，写预览文件（/data/reescrever-<期次>.md），给出调用次数和估算的 token
@@ -121,7 +123,7 @@ docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43
 # 让模型写出新文本，只进预览文件，不改已发布内容；之后 --apply 复用这些回答，不再付费
 docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43 --generate
 docker compose cp worker:/data/reescrever-2026-W43.md .
-# 写入（可重复运行；有条目被拒或期次没更新时退出码为 1，再跑一次）
+# 写入（可重复运行）；列出每个没改的条目和原因。本站自己的条目还留在旧样子（被拒、失败、来源读不到、仍被编辑改动覆盖）或期次没更新时退出码为 1
 docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43 --apply --reason="<原因>"
 # 把某一条恢复成改写前的样子
 docker compose exec worker node scripts/edicao-reescrever.ts 2026-W43 --restore=<id> --reason="<原因>"

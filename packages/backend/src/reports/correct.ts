@@ -69,16 +69,16 @@ export async function correctReportClassification(tx: Tx, articleId: string, rea
 }
 
 /**
- * Brings a published weekly's or monthly's frozen entries for these items to their current public title and
+ * Brings a published weekly's frozen entries for these items to their current public title and
  * summary, and has its overview and introductions written again from them, since they may quote what changed.
  * Text the writer's rule does not accept leaves the plain overview, as in a new issue. The issue keeps its date
  * and the edition it replaces is kept as a revision. A writer that fails changes nothing, so a later run tries
  * again. Returns how many entries changed; 0 pays nothing.
  */
-export async function correctPeriodCitations(kind: "weekly" | "monthly", key: string, ids: readonly string[], reason: string, actor: string): Promise<{ changed: number; overview: string | null }> {
+export async function correctPeriodCitations(key: string, ids: readonly string[], reason: string, actor: string): Promise<{ changed: number; overview: string | null }> {
   const [report] = await sql<{ revision: number; content: Content & { overview?: string | null; generator?: Record<string, unknown>; leadItemId?: string; headline?: string; periodStart: string; periodEnd: string } }[]>`
-    SELECT revision, content FROM reports WHERE kind = ${kind} AND key = ${key}`;
-  if (!report) throw new Error(`no ${kind} ${key}`);
+    SELECT revision, content FROM reports WHERE kind = 'weekly' AND key = ${key}`;
+  if (!report) throw new Error(`no weekly ${key}`);
   const rows = await sql<{ article_id: string; title: string; summary: string | null }[]>`SELECT article_id, title, summary FROM publications WHERE article_id = ANY(${[...ids]})`;
   const current = new Map(rows.map((r) => [r.article_id, r]));
   const content = structuredClone(report.content);
@@ -96,21 +96,21 @@ export async function correctPeriodCitations(kind: "weekly" | "monthly", key: st
 
   const themes = content.themes ?? [];
   const groups: PeriodGroup[] = themes.map((t) => ({ label: t.heading ?? "", items: (t.storyRefs ?? []).map((e) => ({ title: String(e.title ?? ""), summary: String(e.summary ?? "") })) }));
-  const res = await askPeriodWriter(kind, key, content.periodStart, content.periodEnd, { title: content.headline ?? "" }, groups);
-  const { overview, intro } = periodTexts(kind, content.periodStart, content.periodEnd, groups, res.data);
+  const res = await askPeriodWriter("weekly", key, content.periodStart, content.periodEnd, { title: content.headline ?? "" }, groups);
+  const { overview, intro } = periodTexts("weekly", content.periodStart, content.periodEnd, groups, res.data);
   content.overview = overview;
   themes.forEach((t, i) => { t.summary = intro(groups[i]!); });
   content.generator = { ...content.generator, version: REPORT_VERSION, model: res.model, written: overview !== null };
 
   await sql.begin(async (tx) => {
-    const [locked] = await tx<{ id: number; revision: number; generated_at: Date }[]>`SELECT id, revision, generated_at FROM reports WHERE kind = ${kind} AND key = ${key} FOR UPDATE`;
-    if (locked!.revision !== report.revision) throw new Error(`${kind} ${key} changed while its text was corrected`);
+    const [locked] = await tx<{ id: number; revision: number; generated_at: Date }[]>`SELECT id, revision, generated_at FROM reports WHERE kind = 'weekly' AND key = ${key} FOR UPDATE`;
+    if (locked!.revision !== report.revision) throw new Error(`weekly ${key} changed while its text was corrected`);
     await tx`INSERT INTO report_revisions (report_id, revision, content, generated_at, reason)
       VALUES (${locked!.id}, ${locked!.revision}, ${tx.json(report.content as never)}, ${locked!.generated_at}, ${`text correction: ${reason}`})`;
     await tx`UPDATE reports SET content = ${tx.json(content as never)}, revision = revision + 1, updated_at = now() WHERE id = ${locked!.id}`;
     await completeReceipt(tx, res.receiptId);
-    await audit(actor, "report.correct-text", `report:${kind}:${key}`, reason, { revision: locked!.revision }, { revision: locked!.revision + 1, entries: changed }, { db: tx });
-    await emit("reportsChanged", { reason: `${kind} ${key} text correction` }, tx);
+    await audit(actor, "report.correct-text", `report:weekly:${key}`, reason, { revision: locked!.revision }, { revision: locked!.revision + 1, entries: changed }, { db: tx });
+    await emit("reportsChanged", { reason: `weekly ${key} text correction` }, tx);
   });
   return { changed, overview };
 }

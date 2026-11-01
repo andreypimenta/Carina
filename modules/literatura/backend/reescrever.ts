@@ -1,7 +1,9 @@
 // One edition rewritten in the matéria's single structure (scripts/edicao-reescrever.ts): the journal's own items
 // a weekly carries, each from its paper's source text and through the writer new papers go through (materia.ts).
-// A matéria gets a new title, summary and body; a translated full text keeps its body and gets the record the writer
-// gives a translation; a third party's item, or one with no paper to read, is listed and left as it is.
+// A matéria, from PubMed or from its publisher's page, gets a new title, summary and body; a matéria from an official
+// page goes through the page's writer; a translated full text keeps its body and gets the record the writer gives a
+// translation; a third party's item, or one whose source cannot be read, is listed and left as it is. An editor's
+// override is never cleared: an item it still covers is reported as such.
 //
 // This is not a new revision of the material on purpose. A revision (content/materials.ts) starts over everything
 // decided on the old text, so the item would leave the edition until judged again, and could stay out. The words
@@ -23,11 +25,12 @@ import { correctPeriodCitations } from "@aihot/backend/reports/correct";
 import { periodPrompt } from "@aihot/backend/reports/compose";
 import { MATERIA_SOURCE, type Confianca } from "../confianca.ts";
 import { blockText, type Access } from "./access.ts";
+import { postCredit, postText, primaryPageOf, publisherPaper, readPage } from "./apurar.ts";
 import { INTEGRAL_SOURCE, materiaFullText, paperAccess } from "./collect.ts";
 import { saveConfianca } from "./confianca.ts";
-import { estudoDoPaper, saveEstudo, type Estudo } from "./estudos.ts";
-import { confiancaDaMateria, confiancaDaTraducao, limitePalavras, materiaInput, materiaText, readTrust, renderMateria, textoLido, writeMateria, type Materia, type Trust } from "./materia.ts";
-import { fetchPapers, pmidsForDoi, skippable, type PubmedPaper } from "./pubmed.ts";
+import { estudoDoPaper, saveEstudo, saveRegistroPage, type Estudo } from "./estudos.ts";
+import { confiancaDaMateria, confiancaDaPagina, confiancaDaTraducao, fonteInput, limitePalavras, materiaInput, materiaText, readTrust, renderFonteMateria, renderMateria, textoLido, writeFonteMateria, writeMateria, type FonteMateria, type Materia, type PrimaryPage, type Trust, type XCredit } from "./materia.ts";
+import { fetchPapers, pmidsForDoi, skippable, trialIdsIn, type Paper, type PubmedPaper } from "./pubmed.ts";
 
 const AUDIT_ACTION = "literatura.reescrever";
 const AUDIT_RESTORE = "literatura.reescrever.restaurar";
@@ -38,24 +41,28 @@ export type Mode = "plan" | "generate" | "apply";
 interface Row {
   id: string; source_id: string; url: string; title: string; excerpt: string | null; body_html: string | null; body_text: string | null; content_hash: string | null;
   raw: Record<string, unknown> | null; confianca: Confianca | null; estudo: Record<string, unknown> | null; pub_title: string | null; pub_summary: string | null;
+  paper_statuses: Array<{ pmid: string; status: string }> | null; overrides: Record<string, unknown> | null;
 }
 
 export interface ItemResult {
   id: string;
-  type: "materia" | "traducao" | "terceiros" | "sem-fonte";
-  /** would-write: planned. written/generated: done in this run. done: from an earlier run. kept: left on purpose. refused: the model's text failed a check. failed: a service or the model failed. */
-  status: "would-write" | "generated" | "written" | "done" | "kept" | "refused" | "failed";
+  type: "materia" | "pagina" | "traducao" | "terceiros" | "sem-fonte";
+  /** would-write: planned. written/generated: done in this run. done: from an earlier run. overridden: written, but an editor's override still shows instead of the new text. kept: left on purpose. refused: the model's text failed a check. failed: a service or the model failed. */
+  status: "would-write" | "generated" | "written" | "done" | "overridden" | "kept" | "refused" | "failed";
   why: string | null;
   oldTitle: string;
   newTitle: string | null;
   oldWords: number;
   newWords: number | null;
-  /** About what the matéria may have (materia.ts limitePalavras); the preview flags one over it. */
+  /** About what the matéria may have (materia.ts limitePalavras), against the model's own fields; the preview and the log flag one over it. */
   limit: number | null;
   mainNumber: string | null;
   tokens: number;
   newText: string | null;
 }
+
+/** An item of the journal's own that stayed in the old form, whole or in what its cards show. */
+export const stayedOld = (i: ItemResult) => i.status === "refused" || i.status === "failed" || i.status === "overridden" || (i.status === "kept" && i.type !== "terceiros");
 
 export interface RewriteResult { items: ItemResult[]; modelCalls: number; tokens: number; report: { changed: number; overview: string | null } | "not-run" | { error: string } }
 
@@ -94,7 +101,7 @@ export function mainNumbers(headline: string, source: string): string[] {
 export const hasNumber = (text: string, number: string) => figures(text).some((f) => sameFigure(f, number));
 
 /** Words that tell the reader what was read. The site never says it (industry/prompts/materia.md). */
-const SAYS_WHAT_WAS_READ = /\b(?:o|do|no|pelo|ao|apenas o|só o)\s+resumo\b|\bresumo\s+(?:publicado|do artigo|do estudo)\b|\btexto\s+(?:completo|integral)\b|\bfull[- ]text\b|\babstract\b/i;
+const SAYS_WHAT_WAS_READ = /\b(?:o|os|do|dos|no|nos|pelo|pelos|ao|aos|um|este|esse|neste|nesse|deste|desse|seu|apenas|só|somente|com|sem|de|por|via)\s+resumos?\b(?!\s+(?:de|do|em)\s+(?:congresso|conferência|evento))|\bresumo\s+(?:publicado|do artigo|do estudo)\b|\b(?:texto|artigo)\s+(?:completo|integral)\b|(?<!\p{L})íntegra(?!\p{L})|\bna\s+integra\b|\bfull[- ]text\b|\babstract\b/iu;
 
 /** All the model's text a reader sees. */
 function trustWords(t: Trust): string[] {
@@ -104,14 +111,20 @@ function materiaWords(m: Materia): string[] {
   return [m.titulo, ...trustWords(m), m.oQueFizeram, ...m.resultados.flatMap((r) => [r.desfecho, r.resultado, r.efeito]), ...m.aFavor, ...m.sinaisDeAlerta.map((f) => f.detalhe), ...m.naoInformado, m.contexto];
 }
 
-/** Why the model's text cannot stand in for what is published; null when it can. */
-export function refusal(parts: { required: Record<string, string>; text: string[]; numbers: string[] }): string | null {
+function fonteWords(m: FonteMateria): string[] {
+  return [m.titulo, m.organizacao, m.lide, m.corpo, m.achado, m.paraQuem, m.diretriz, m.conflitos, m.aplicabilidadeBrasil];
+}
+
+/** Why the model's text cannot stand in for what is published; null when it can. "Em um minuto" (`achado`) has one of the old line's figures, "Na prática" (`noFigures`) has none. */
+export function refusal(parts: { required: Record<string, string>; text: string[]; achado: string; numbers: string[]; noFigures?: string }): string | null {
   const blank = Object.entries(parts.required).filter(([, v]) => !v.trim()).map(([k]) => k);
   if (blank.length) return `model output failed validation: ${blank.join(", ")} empty`;
   const text = parts.text.join("\n");
   const says = SAYS_WHAT_WAS_READ.exec(text);
   if (says) return `model output failed validation: says what was read ("${says[0]}")`;
-  if (parts.numbers.length && !parts.numbers.some((n) => hasNumber(text, n))) return `main number ${parts.numbers.join(" or ")} is missing from the new text`;
+  if (parts.numbers.length && !parts.numbers.some((n) => hasNumber(parts.achado, n))) return `main number ${parts.numbers.join(" or ")} is missing from achado`;
+  const inPractice = figures(parts.noFigures ?? "");
+  if (inPractice.length) return `model output failed validation: naPratica has figures (${inPractice.join(", ")})`;
   return null;
 }
 
@@ -122,24 +135,29 @@ async function editionIds(key: string): Promise<string[]> {
   return [...new Set((report.themes ?? []).flatMap((t) => t.storyRefs ?? []).flatMap((r) => (r.itemId ? [r.itemId] : [])))];
 }
 
-const COLUMNS = sql`a.id, a.source_id, a.url, a.title, a.excerpt, a.body_html, a.body_text, a.content_hash, a.raw, c.data AS confianca, to_jsonb(e) AS estudo, p.title AS pub_title, p.summary AS pub_summary`;
+const COLUMNS = sql`a.id, a.source_id, a.url, a.title, a.excerpt, a.body_html, a.body_text, a.content_hash, a.raw, c.data AS confianca, to_jsonb(e) AS estudo, p.title AS pub_title, p.summary AS pub_summary, o.fields AS overrides,
+  (SELECT json_agg(json_build_object('pmid', lp.pmid, 'status', lp.status)) FROM literatura_papers lp WHERE lp.article_id = a.id) AS paper_statuses`;
 
 async function readItems(ids: string[]): Promise<Row[]> {
   const rows = await sql<Row[]>`SELECT ${COLUMNS} FROM articles a
-    LEFT JOIN literatura_confianca c ON c.article_id = a.id LEFT JOIN literatura_estudos e ON e.article_id = a.id LEFT JOIN publications p ON p.article_id = a.id
+    LEFT JOIN literatura_confianca c ON c.article_id = a.id LEFT JOIN literatura_estudos e ON e.article_id = a.id LEFT JOIN publications p ON p.article_id = a.id LEFT JOIN editorial_overrides o ON o.article_id = a.id
     WHERE a.id = ANY(${ids})`;
   const byId = new Map(rows.map((r) => [r.id, r]));
   return ids.flatMap((id) => byId.get(id) ?? []);
 }
 
 /** What the row holds, as the audit log keeps it for restoreItems. */
-const snapshot = (r: Row) => ({ title: r.title, excerpt: r.excerpt, bodyHtml: r.body_html, bodyText: r.body_text, contentHash: r.content_hash, raw: r.raw, confianca: r.confianca, estudo: r.estudo, publicationTitle: r.pub_title, publicationSummary: r.pub_summary });
+const snapshot = (r: Row) => ({ title: r.title, excerpt: r.excerpt, bodyHtml: r.body_html, bodyText: r.body_text, contentHash: r.content_hash, raw: r.raw, confianca: r.confianca, estudo: r.estudo, publicationTitle: r.pub_title, publicationSummary: r.pub_summary, paperStatuses: r.paper_statuses });
 
-/** Each item's paper by the PMID it was written from, else its DOI. A paper only a page describes (its raw says neither) has none. */
+const doiOf = (r: Row) => (typeof r.raw?.doi === "string" && r.raw.doi ? r.raw.doi : null);
+/** A matéria written from an official page (apurar.ts takePage). */
+const fromPage = (r: Row) => r.source_id === MATERIA_SOURCE && r.raw?.basis === "pagina";
+
+/** Each item's paper in PubMed by the PMID it was written from, else its DOI. One PubMed does not have, or an official page's, has none. */
 async function papersOf(rows: Row[]): Promise<Map<string, PubmedPaper>> {
   const pmids = new Map<string, string>();
   for (const r of rows) {
-    const pmid = typeof r.raw?.pmid === "string" && r.raw.pmid ? r.raw.pmid : typeof r.raw?.doi === "string" && r.raw.doi ? (await pmidsForDoi(r.raw.doi))[0] : undefined;
+    const pmid = typeof r.raw?.pmid === "string" && r.raw.pmid ? r.raw.pmid : doiOf(r) ? (await pmidsForDoi(doiOf(r)!))[0] : undefined;
     if (pmid) pmids.set(r.id, pmid);
   }
   const papers = new Map((await fetchPapers([...new Set(pmids.values())])).map((p) => [p.pmid, p]));
@@ -160,7 +178,7 @@ async function commit(r: Row, write: (tx: Tx) => Promise<void>, reason: string, 
   });
 }
 
-interface Prepared { paper: PubmedPaper; access: Access; pmcid: string | null; pmcText: boolean; fullText: string | null; from: "pmc" | "copy" | "publisher" | null; estudo: Estudo }
+interface Prepared { paper: Paper; access: Access; pmcid: string | null; pmcText: boolean; fullText: string | null; from: "pmc" | "copy" | "publisher" | null; estudo: Estudo }
 
 async function prepare(r: Row, paper: PubmedPaper): Promise<Prepared | string> {
   const skip = skippable(paper);
@@ -170,15 +188,41 @@ async function prepare(r: Row, paper: PubmedPaper): Promise<Prepared | string> {
   if (integral && !full) return "the translated full text cannot be read again";
   const { fullText, from } = integral ? { fullText: full!.text, from: "pmc" as const } : await materiaFullText(paper, access, full);
   if (!fullText && !paper.abstract.length) return "the paper has neither a full text nor an abstract";
+  return { paper, access, pmcid, pmcText: !!full, fullText, from, estudo: await estudoOf(r, paper) };
+}
+
+/** A matéria whose paper PubMed does not have: its publisher's page, read again at the address the item stores, as apurar.ts takePublisherPage reads it. */
+async function preparePublisher(r: Row, doi: string): Promise<Prepared | string> {
+  const page = await readPage(r.url);
+  if (!page) return "the publisher's page cannot be read again";
+  const read = await publisherPaper(page, doi);
+  if (!read) return "the publisher's page has no title or no text to write from";
+  return { ...read, pmcid: null, pmcText: false, from: read.fullText ? "publisher" : null, estudo: await estudoOf(r, read.paper) };
+}
+
+interface PreparedPage { page: PrimaryPage; post: string; credit: XCredit }
+
+/** A matéria from an official page: the page read again at the address the item stores, and the post the item names, which the writer reads with it. */
+async function preparePage(r: Row): Promise<PreparedPage | string> {
+  const read = await readPage(r.url);
+  const page = read && primaryPageOf(read);
+  if (!page) return "the official page cannot be read again";
+  const [post] = await sql<{ url: string; x_post: { handle?: string; authorName?: string; text?: string; quoted?: { text?: string } | null }; x_article: { title?: string; text?: string } | null }[]>`
+    SELECT url, x_post, x_article FROM articles WHERE url = ${String(r.raw?.xPost ?? "")} AND x_post IS NOT NULL`;
+  if (!post) return "the X post that led to the official page is not stored";
+  return { page, post: postText(post), credit: postCredit(post) };
+}
+
+/** The study the paper belongs to; the item itself is no earlier version of it. */
+async function estudoOf(r: Row, paper: Paper): Promise<Estudo> {
   const estudo = await estudoDoPaper(paper);
-  // The item itself is no earlier version of the study.
-  return { paper, access, pmcid, pmcText: !!full, fullText, from, estudo: { ...estudo, anteriores: estudo.anteriores.filter((a) => a.articleId !== r.id) } };
+  return { ...estudo, anteriores: estudo.anteriores.filter((a) => a.articleId !== r.id) };
 }
 
 /** A matéria: the writer's text in the row, under its own record; refused text leaves the row as it is. */
 async function rewriteMateria(r: Row, p: Prepared, numbers: string[], result: ItemResult, mode: Exclude<Mode, "plan">, reason: string, actor: string, now: Date) {
   const { materia, receiptId } = await writeMateria(p.paper, p.fullText, p.estudo.anteriores);
-  const why = refusal({ required: { perguntaClinica: materia.perguntaClinica, achado: materia.achado }, text: materiaWords(materia), numbers: numbers.slice(0, 1) });
+  const why = refusal({ required: { perguntaClinica: materia.perguntaClinica, achado: materia.achado, oQueFizeram: materia.oQueFizeram, naPratica: materia.naPratica }, text: materiaWords(materia), achado: materia.achado, numbers, noFigures: materia.naPratica });
   if (why) {
     await rejectReceivedResponse(receiptId, why);
     return Object.assign(result, { status: "refused", why });
@@ -187,7 +231,7 @@ async function rewriteMateria(r: Row, p: Prepared, numbers: string[], result: It
   const bodyText = materiaText(materia, html);
   const title = collapseWhitespace(materia.titulo).slice(0, 1000);
   const excerpt = materia.achado.trim();
-  Object.assign(result, { newTitle: title, newWords: words(bodyText), newText: `${title}\n\n${materia.perguntaClinica}\n\n${excerpt}\n\n${blockText(html)}` });
+  Object.assign(result, { newTitle: title, newWords: words(materiaWords(materia).join(" ")), newText: `${title}\n\n${materia.perguntaClinica}\n\n${excerpt}\n\n${blockText(html)}` });
   if (mode === "generate") return Object.assign(result, { status: "generated" });
   const basis = p.fullText ? "full" : "abstract";
   const { fullTextFrom: _from, ...raw } = r.raw ?? {};
@@ -202,13 +246,38 @@ async function rewriteMateria(r: Row, p: Prepared, numbers: string[], result: It
   return Object.assign(result, { status: "written" });
 }
 
+/** A matéria from an official page: the page's writer, as for a new one (apurar.ts takePage). Its record has no "estrutura", so `raw.reescrita` says it is done. */
+async function rewritePage(r: Row, p: PreparedPage, numbers: string[], result: ItemResult, mode: Exclude<Mode, "plan">, reason: string, actor: string, now: Date) {
+  const { materia, receiptId } = await writeFonteMateria(p.page, p.post);
+  const why = materia ? refusal({ required: { achado: materia.achado }, text: fonteWords(materia), achado: materia.achado, numbers }) : "model output failed validation: not the primary source, or too short";
+  if (!materia || why) {
+    await rejectReceivedResponse(receiptId, why!);
+    return Object.assign(result, { status: "refused", why });
+  }
+  const html = sanitizeBody(renderFonteMateria(materia, p.page, p.credit), p.page.url);
+  const excerpt = materia.achado.trim();
+  const bodyText = `${excerpt} ${blockText(html)}`.trim();
+  const title = collapseWhitespace(materia.titulo).slice(0, 1000);
+  Object.assign(result, { newTitle: title, newWords: words(fonteWords(materia).join(" ")), newText: `${title}\n\n${excerpt}\n\n${blockText(html)}` });
+  if (mode === "generate") return Object.assign(result, { status: "generated" });
+  const registro = trialIdsIn(p.page.url).length > 0;
+  await commit(r, async (tx) => {
+    await tx`UPDATE articles SET title = ${title}, excerpt = ${excerpt}, body_html = ${html}, body_text = ${bodyText}, content_hash = ${contentHash({ title, bodyText, excerpt })},
+      raw = ${tx.json({ ...r.raw, organization: materia.organizacao.trim(), pageTitle: p.page.title, reescrita: true } as never)}, updated_at = now() WHERE id = ${r.id}`;
+    await completeReceipt(tx, receiptId);
+    await saveConfianca(tx, r.id, confiancaDaPagina(materia, p.page, now, registro));
+    if (registro) await saveRegistroPage(tx, r.id, p.page.url);
+  }, reason, actor, { title, excerpt, words: result.newWords, receiptId });
+  return Object.assign(result, { status: "written" });
+}
+
 /**
  * A translated full text: the body is the paper's and stays, with every number; the writer gives it its record, as
- * for a new one (collect.ts), which holds few, so any of the old line's figures will do.
+ * for a new one (collect.ts).
  */
 async function rewriteTraducao(r: Row, p: Prepared, numbers: string[], result: ItemResult, mode: Exclude<Mode, "plan">, reason: string, actor: string, now: Date) {
   const { trust, receiptId } = await readTrust(p.paper, p.fullText!, p.estudo.anteriores);
-  const why = refusal({ required: { perguntaClinica: trust.perguntaClinica, achado: trust.achado }, text: trustWords(trust), numbers });
+  const why = refusal({ required: { perguntaClinica: trust.perguntaClinica, achado: trust.achado }, text: trustWords(trust), achado: trust.achado, numbers });
   if (why) {
     await rejectReceivedResponse(receiptId, why);
     return Object.assign(result, { status: "refused", why });
@@ -223,11 +292,17 @@ async function rewriteTraducao(r: Row, p: Prepared, numbers: string[], result: I
   return Object.assign(result, { status: "written" });
 }
 
+const overLimit = (i: ItemResult) => (i.limit && i.newWords && i.newWords > i.limit ? ` (acima do limite de ${i.limit})` : "");
+
+/** What of an editor's override would still show instead of this item's new text (publish.ts). */
+function overriddenFields(r: Row, type: ItemResult["type"]): string[] {
+  return (type === "traducao" ? ["summary"] : ["title", "summary"]).filter((k) => typeof r.overrides?.[k] === "string" && (r.overrides[k] as string).trim());
+}
+
 function previewText(key: string, mode: Mode, out: RewriteResult): string {
   const lines = [`# Edição ${key}: reescrita na estrutura única (${mode})`, "", `Chamadas de modelo: ${out.modelCalls}. Tokens estimados: ${out.tokens}, à razão de 4 caracteres por token, entrada e saída.`, ""];
   for (const i of out.items) {
-    const over = i.limit && i.newWords && i.newWords > i.limit ? ` (acima do limite de ${i.limit})` : "";
-    lines.push(`## ${i.id}: ${i.type}, ${i.status}`, "", `- Título antigo: ${i.oldTitle}`, `- Título novo: ${i.newTitle ?? "sem mudança"}`, `- Palavras: ${i.oldWords} → ${i.newWords ?? "?"}${over}`, `- Número principal: ${i.mainNumber ?? "não identificado"}`);
+    lines.push(`## ${i.id}: ${i.type}, ${i.status}`, "", `- Título antigo: ${i.oldTitle}`, `- Título novo: ${i.newTitle ?? "sem mudança"}`, `- Palavras: ${i.oldWords} → ${i.newWords ?? "?"}${overLimit(i)}`, `- Número principal: ${i.mainNumber ?? "não identificado"}`);
     if (i.why) lines.push(`- Motivo: ${i.why}`);
     if (i.newText) lines.push("", i.newText);
     lines.push("");
@@ -246,31 +321,39 @@ export async function rewriteEdition(key: string, opts: { mode: Mode; reason: st
   const log = opts.log ?? (() => {});
   const rows = await readItems(await editionIds(key));
   const own = (r: Row) => OWN_TEXT_SOURCES.includes(r.source_id);
-  const done = (r: Row) => r.confianca?.estrutura === "unica";
+  const done = (r: Row) => r.confianca?.estrutura === "unica" || r.raw?.reescrita === true;
   const papers = await papersOf(rows.filter((r) => own(r) && !done(r)));
   const system = promptText("materia").length;
   const out: RewriteResult = { items: [], modelCalls: 0, tokens: 0, report: "not-run" };
+  let writesItems = false;
 
   for (const r of rows) {
-    const result: ItemResult = { id: r.id, type: own(r) ? (r.source_id === MATERIA_SOURCE ? "materia" : "traducao") : "terceiros", status: "kept", why: null, oldTitle: r.pub_title ?? r.title, newTitle: null, oldWords: words(r.body_text), newWords: null, limit: null, mainNumber: null, tokens: 0, newText: null };
+    const result: ItemResult = { id: r.id, type: !own(r) ? "terceiros" : fromPage(r) ? "pagina" : r.source_id === MATERIA_SOURCE ? "materia" : "traducao", status: "kept", why: null, oldTitle: r.pub_title ?? r.title, newTitle: null, oldWords: words(r.body_text), newWords: null, limit: null, mainNumber: null, tokens: 0, newText: null };
     out.items.push(result);
     if (!own(r)) result.why = "third party's item: the journal has no text of its own to write";
     else if (done(r)) Object.assign(result, { status: "done", why: "already in the single structure" });
-    else if (!papers.has(r.id)) Object.assign(result, { type: "sem-fonte", why: "no source to rewrite from: no paper in PubMed under its PMID or DOI" });
     else {
       try {
-        const p = await prepare(r, papers.get(r.id)!);
+        const p = fromPage(r) ? await preparePage(r)
+          : papers.has(r.id) ? await prepare(r, papers.get(r.id)!)
+          : r.source_id === MATERIA_SOURCE && doiOf(r) ? await preparePublisher(r, doiOf(r)!)
+          : "no source to rewrite from: no paper in PubMed under its PMID or DOI, and no page of its own";
         if (typeof p === "string") Object.assign(result, { type: "sem-fonte", why: p });
         else {
-          const source = p.fullText ?? p.paper.abstract.map((s) => s.text).join(" ");
+          const page = "page" in p;
+          const source = page ? p.page.text : p.fullText ?? p.paper.abstract.map((s) => s.text).join(" ");
           const numbers = mainNumbers([r.source_id === MATERIA_SOURCE ? r.excerpt : r.pub_summary, r.title].filter(Boolean).join(" "), source);
           result.mainNumber = numbers[0] ?? null;
-          result.limit = limitePalavras(p.paper, p.fullText);
+          const limit = page ? null : limitePalavras(p.paper, p.fullText);
+          if (result.type === "materia") result.limit = limit;
           // The prompt and input going in; about two tokens a word coming out, as JSON, up to the writer's limit.
-          result.tokens = tokensOf(system + materiaInput(p.paper, p.fullText, p.estudo.anteriores).length) + Math.min(4000, result.limit * 2);
+          result.tokens = page
+            ? tokensOf(promptText("materia-fonte").length + fonteInput(p.page, p.post).length) + 3000
+            : tokensOf(system + materiaInput(p.paper, p.fullText, p.estudo.anteriores).length) + Math.min(4000, limit! * 2);
           out.modelCalls++;
           out.tokens += result.tokens;
           if (mode === "plan") result.status = "would-write";
+          else if (page) await rewritePage(r, p, numbers, result, mode, reason, actor, now);
           else if (r.source_id === MATERIA_SOURCE) await rewriteMateria(r, p, numbers, result, mode, reason, actor, now);
           else await rewriteTraducao(r, p, numbers, result, mode, reason, actor, now);
         }
@@ -278,12 +361,17 @@ export async function rewriteEdition(key: string, opts: { mode: Mode; reason: st
         Object.assign(result, { status: "failed", why: (error as Error).message });
       }
     }
-    log(`${result.status}  ${r.id}  ${result.type}  "${result.oldTitle}" → "${result.newTitle ?? "sem mudança"}"  ${result.oldWords} → ${result.newWords ?? "?"} palavras${result.why ? `  ${result.why}` : ""}`);
+    if (["would-write", "generated", "written"].includes(result.status)) writesItems = true;
+    const hidden = overriddenFields(r, result.type);
+    if (hidden.length && ["would-write", "generated", "written", "done"].includes(result.status)) {
+      result.why = `an editor's override of ${hidden.join(" and ")} still shows instead of the new text`;
+      if (result.status === "written" || result.status === "done") result.status = "overridden";
+    }
+    log(`${result.status}  ${r.id}  ${result.type}  "${result.oldTitle}" → "${result.newTitle ?? "sem mudança"}"  ${result.oldWords} → ${result.newWords ?? "?"} palavras${overLimit(result)}${result.why ? `  ${result.why}` : ""}`);
   }
 
   // The edition's overview is written again once anything of it changed: one call more.
   const [report] = await sql<{ content: { periodStart: string; periodEnd: string; headline: string; themes: Array<{ heading: string; storyRefs: Array<{ title?: string; summary?: string | null }> }> } }[]>`SELECT content FROM reports WHERE kind = 'weekly' AND key = ${key}`;
-  const writesItems = out.items.some((i) => ["would-write", "generated", "written"].includes(i.status));
   if (writesItems) {
     const c = report!.content;
     const prompt = periodPrompt("weekly", c.periodStart, c.periodEnd, { title: c.headline }, c.themes.map((t) => ({ label: t.heading, items: t.storyRefs.map((e) => ({ title: e.title ?? "", summary: e.summary ?? "" })) })));
@@ -294,7 +382,7 @@ export async function rewriteEdition(key: string, opts: { mode: Mode; reason: st
   if (mode === "apply") {
     const rewritten = (await readItems(rows.map((r) => r.id))).filter((r) => own(r) && done(r)).map((r) => r.id);
     try {
-      out.report = await correctPeriodCitations("weekly", key, rewritten, reason, actor);
+      out.report = await correctPeriodCitations(key, rewritten, reason, actor);
     } catch (error) {
       out.report = { error: (error as Error).message };
     }
@@ -331,6 +419,7 @@ export async function restoreItems(key: string, ids: string[], opts: { reason: s
       else await tx`DELETE FROM literatura_confianca WHERE article_id = ${id}`;
       if (!s.estudo) await tx`DELETE FROM literatura_estudos WHERE article_id = ${id}`;
       else await tx`UPDATE literatura_estudos SET ids = ${s.estudo.ids as string[]}, estado = ${s.estudo.estado as string}, titulo = ${s.estudo.titulo as string | null}, autor = ${s.estudo.autor as string | null} WHERE article_id = ${id}`;
+      for (const p of s.paperStatuses ?? []) await tx`UPDATE literatura_papers SET status = ${p.status}, updated_at = now() WHERE pmid = ${p.pmid}`;
       await audit(opts.actor, AUDIT_RESTORE, `content:${id}`, opts.reason, null, { title: s.title }, { db: tx });
       const published = await publishArticleTx(tx, id);
       await emit("articleChanged", { id, kind: "content", reduced: published?.reduced, reason: "edition rewrite restored" }, tx);
@@ -339,5 +428,5 @@ export async function restoreItems(key: string, ids: string[], opts: { reason: s
     restored.push(id);
     log(`restored  ${id}  "${s.title}"`);
   }
-  return correctPeriodCitations("weekly", key, restored, opts.reason, opts.actor);
+  return correctPeriodCitations(key, restored, opts.reason, opts.actor);
 }

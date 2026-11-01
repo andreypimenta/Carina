@@ -34,7 +34,7 @@ import { identityKeyForUrl } from "@aihot/backend/lib/url";
 import { chatJson } from "@aihot/backend/providers/llm";
 import { completeReceipt } from "@aihot/backend/providers/receipts";
 import { earlier } from "./adicionar.ts";
-import { articleText, blockText, findOpenCopy, lookupPmid } from "./access.ts";
+import { articleText, blockText, findOpenCopy, lookupPmid, type Access } from "./access.ts";
 import { enabledSources, MATERIA_SOURCE, MAX_ATTEMPTS, MIN_FULL_TEXT, settings, takePaper } from "./collect.ts";
 import { saveConfianca } from "./confianca.ts";
 import { estudoDoPaper, saveEstudo, saveRegistroPage } from "./estudos.ts";
@@ -92,7 +92,7 @@ export function refsIn(text: string): Refs {
   return { dois, pmids, pmcids };
 }
 
-interface Page {
+export interface Page {
   html: string;
   url: string;
 }
@@ -158,7 +158,7 @@ export function pageDates(html: string): { publishedOn: string | null; modifiedO
 }
 
 /** A linked page asked for once; null when it refuses the crawler, is not HTML or fails. */
-async function readPage(url: string): Promise<Page | null> {
+export async function readPage(url: string): Promise<Page | null> {
   try {
     const res = await guardedFetch(url, { timeoutMs: 20_000, maxBytes: 4 * 1024 * 1024 });
     if (res.status !== 200 || !/html/.test(res.headers.get("content-type") ?? "")) return null;
@@ -338,7 +338,10 @@ interface PostRow {
 }
 
 /** All the post's own words: its text, the post it quotes and its X Article. */
-const postText = (r: PostRow) => [r.x_post.text, r.x_post.quoted?.text, r.x_article?.title, r.x_article?.text].filter(Boolean).join("\n\n");
+export const postText = (r: Pick<PostRow, "x_post" | "x_article">) => [r.x_post.text, r.x_post.quoted?.text, r.x_article?.title, r.x_article?.text].filter(Boolean).join("\n\n");
+
+/** The post's credit at the foot of what it led to. */
+export const postCredit = (r: Pick<PostRow, "url" | "x_post">): XCredit => ({ handle: r.x_post.handle ?? "", authorName: r.x_post.authorName ?? "", url: r.url });
 
 /** Whether the post is still in the days it is researched in (a post waiting for PubMed is taken once more after, one waiting on its paper until the wait ends). */
 const inWindow = (row: PostRow, now: Date) => now.getTime() - row.discovered_at.getTime() < X_WINDOW_DAYS * 86_400_000;
@@ -359,7 +362,7 @@ export interface XOutcome { articleId: string; status: string; pmid: string | nu
  * official page and, last, the publisher's page of the paper, written up as a paper. Nothing found ends it.
  */
 export async function researchPost(row: PostRow, now = new Date(), sources?: { integral: boolean; materia: boolean }): Promise<XOutcome> {
-  const credit: XCredit = { handle: row.x_post.handle ?? "", authorName: row.x_post.authorName ?? "", url: row.url };
+  const credit = postCredit(row);
   const text = postText(row);
   const known = row.pmid ? (await fetchPapers([row.pmid])).find((p) => p.pmid === row.pmid) ?? null
     : row.doi ? await paperOf({ dois: [row.doi], pmids: [], pmcids: [] }) : null;
@@ -391,16 +394,12 @@ export async function researchPost(row: PostRow, now = new Date(), sources?: { i
 }
 
 /**
- * The site's article about a paper PubMed never had, from its publisher's page (the page as served to the
- * site's crawler): written like any paper's (industry/prompts/materia.md), from the page's text up to its back
- * matter when the page is the open copy Unpaywall points to (its address or this DOI's) and has more than the abstract (as for the free copies,
- * access.ts), else from the abstract its citation tags declare, with the reference block; null without a
- * title or with neither. A paper already written under its DOI is not written again.
+ * What a paper PubMed never had gives from its publisher's page (the page as served to the site's crawler): the
+ * page's text up to its back matter when the page is the open copy Unpaywall points to (its address or this DOI's)
+ * and has more than the abstract (as for the free copies, access.ts), else the abstract its citation tags declare;
+ * null without a title or with neither.
  */
-async function takePublisherPage(articleId: string, page: Page, doi: string, credit: XCredit, now: Date): Promise<XOutcome | null> {
-  const url = `https://doi.org/${doi}`;
-  const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE identity_key = ${identityKeyForUrl(url)}`;
-  if (taken) return recordPost(articleId, "ja-coberto", null, taken.id, doi);
+export async function publisherPaper(page: Page, doi: string): Promise<{ paper: Paper; access: Access; fullText: string | null } | null> {
   const paper = paperFromPage(page.html, doi);
   if (!paper) return null;
   const abstractChars = paper.abstract.reduce((n, a) => n + a.text.length, 0);
@@ -411,6 +410,21 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
   const copy = access.kind === "open" && isThisPage(access.copy.url) ? articleText(page.html, page.url, abstractChars) : null;
   const fullText = copy && copy.bodyChars >= MIN_FULL_TEXT ? copy.text : null;
   if (!fullText && !abstractChars) return null;
+  return { paper, access, fullText };
+}
+
+/**
+ * The site's article about a paper PubMed never had, from its publisher's page (publisherPaper): written like any
+ * paper's (industry/prompts/materia.md), with the reference block. A paper already written under its DOI is not
+ * written again.
+ */
+async function takePublisherPage(articleId: string, page: Page, doi: string, credit: XCredit, now: Date): Promise<XOutcome | null> {
+  const url = `https://doi.org/${doi}`;
+  const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE identity_key = ${identityKeyForUrl(url)}`;
+  if (taken) return recordPost(articleId, "ja-coberto", null, taken.id, doi);
+  const read = await publisherPaper(page, doi);
+  if (!read) return null;
+  const { paper, access, fullText } = read;
   const basis = fullText ? "full" : "abstract";
   const estudo = await estudoDoPaper(paper);
   const { materia, receiptId } = await writeMateria(paper, fullText, estudo.anteriores);
@@ -433,6 +447,14 @@ async function takePublisherPage(articleId: string, page: Page, doi: string, cre
   });
 }
 
+/** An official page as the model reads it; null when it has too little to write an article from. */
+export function primaryPageOf(page: Page): PrimaryPage | null {
+  const body = readable(page.html, page.url);
+  const text = body ? blockText(body.html) : "";
+  if (text.length < MIN_PAGE_TEXT) return null;
+  return { url: page.url, title: cheerio.load(page.html)("title").first().text().replace(/\s+/g, " ").trim(), text, ...pageDates(page.html) };
+}
+
 /**
  * The site's article from an official page a post links, when the page has text and the model finds it is
  * the primary source; null otherwise. A page another post already led to is not written again.
@@ -442,10 +464,8 @@ async function takePage(articleId: string, page: Page, post: string, credit: XCr
   if (!key) return null;
   const [taken] = await sql<{ id: string }[]>`SELECT id FROM articles WHERE identity_key = ${key}`;
   if (taken) return recordPost(articleId, "ja-coberto", null, taken.id);
-  const body = readable(page.html, page.url);
-  const text = body ? blockText(body.html) : "";
-  if (text.length < MIN_PAGE_TEXT) return null;
-  const primary: PrimaryPage = { url: page.url, title: cheerio.load(page.html)("title").first().text().replace(/\s+/g, " ").trim(), text, ...pageDates(page.html) };
+  const primary = primaryPageOf(page);
+  if (!primary) return null;
   const { materia, receiptId } = await writeFonteMateria(primary, post);
   if (!materia) {
     await completeReceipt(sql, receiptId);
