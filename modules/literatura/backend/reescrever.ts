@@ -101,49 +101,38 @@ export function mainNumbers(headline: string, source: string): string[] {
 
 export const hasNumber = (text: string, number: string) => figures(text).some((f) => sameFigure(f, number));
 
-/** A paper's abstract, named as such; a congress abstract or a guideline's executive summary is another thing. */
-const READ_ABSTRACT = String.raw`(?:resumo(?!\s+(?:executivo|(?:de|do|em)\s+(?:congresso|conferência|evento)))|abstract)(?!\p{L})`;
-const READ_FULL = String.raw`(?:(?:texto|artigo)\s+(?:completo|integral|na\s+[ií]ntegra)|full[- ]text)(?!\p{L})`;
-const READ_TEXT = `(?:${READ_ABSTRACT}|${READ_FULL})`;
-const DETERMINER = String.raw`(?:(?:o|um|este|esse|seu|do|no|deste|desse|neste|nesse)\s+)?`;
-/** In a clause about the study's reviewers screening, selecting or excluding, the text is what they read. */
-const NOT_SCREENING = String.raw`(?<!\b(?:tria(?:gem|d|r)|sele[cç]|revisor|exclu[ií])[^.;:\n]*)`;
-/**
- * Words that tell the reader what the journal had or read: that text as the journal's source, or what it says or
- * lacks. The site never says it (industry/prompts/materia.md). What the study's reviewers did (screening, reading,
- * obtaining, excluding) is the study's, and stays.
- */
-const SAYS_WHAT_WAS_READ = new RegExp([
-  String.raw`\b(?:segundo|conforme|de\s+acordo\s+com|(?:apenas|somente|só)(?:\s+(?:com|em|ao))?)\s+${DETERMINER}${READ_TEXT}`,
-  String.raw`${NOT_SCREENING}\b(?:a\s+partir(?:\s+de)?|com\s+base(?:\s+em)?|basead[oa](?:\s+em)?|pelo)\s+${DETERMINER}${READ_TEXT}`,
-  String.raw`\b(?:neste|nesse|deste|desse|este|esse)\s+${READ_TEXT}`,
-  String.raw`\bseu\s+${READ_ABSTRACT}`,
-  String.raw`${NOT_SCREENING}(?<!\be\s)\bno\s+${READ_ABSTRACT}`,
-  String.raw`(?:^|[.;:]\s+)(?:no|em\s+seu)\s+${READ_FULL}`,
-  String.raw`\bo\s+${READ_TEXT}\s+(?:não|disponível|informa|relata|diz|traz|descreve|menciona|cita|indica|mostra|aponta|apresenta|afirma|(?:estava|está|foi)\s+(?:disponível|consultado|lido|acessado|obtido)\b(?!\s+(?:por|para)\b))`,
-  String.raw`(?:\b${READ_FULL}|(?<!\p{L})íntegra(?:\s+d[oe]\s+\p{L}+)?)\s+(?:indisponível|não\b(?!\s+foram))`,
-  String.raw`\b(?:lemos|consultamos|tivemos\s+acesso\s+ao?|sem\s+acesso\s+ao?|limitad[oa]s?\s+ao|(?:constam?|ausentes?)\s+do|havia)\s+(?:o\s+)?${READ_TEXT}`,
-  String.raw`\bresumo\s+(?:publicado|do\s+artigo|do\s+estudo)\b`,
-].join("|"), "ium");
+/** Any mention of the paper's abstract or full text; a congress abstract or a guideline's executive summary is another thing. The site never says which it read (industry/prompts/materia.md). */
+const MENTIONS_TEXT = /(?<!\p{L})(?:resumos?(?!\s+(?:executivos?|(?:de|do|em)\s+(?:congresso|conferência|evento)))|abstracts?|textos?\s+(?:completos?|integra(?:l|is))|artigos?\s+completos?|íntegra|na\s+integra|full[- ]text)(?!\p{L})/iu;
+/** Screening abstracts and reading full texts are these designs' own methods. */
+const REVIEW_DESIGNS = ["revisao-sistematica", "meta-analise"];
 
 /** All the model's text a reader sees. */
 function trustWords(t: Trust): string[] {
   return [t.perguntaClinica, t.achado, t.diretriz, t.conflitos, t.populacaoIdade, t.populacaoDoenca, t.populacaoCenario, t.desenhoDetalhe, t.limitacaoPrincipal, t.naPratica];
 }
+/** A matéria's text for refusal: what a review may say about its own methods apart from the rest. */
+export function materiaParts(m: Materia): { text: string[]; methods: string[]; desenho: string } {
+  return {
+    text: [m.titulo, ...trustWords(m), ...m.aFavor, ...m.sinaisDeAlerta.map((f) => f.detalhe), ...m.naoInformado, m.contexto],
+    methods: [m.oQueFizeram, ...m.resultados.flatMap((r) => [r.desfecho, r.resultado, r.efeito])],
+    desenho: m.desenho,
+  };
+}
 function materiaWords(m: Materia): string[] {
-  return [m.titulo, ...trustWords(m), m.oQueFizeram, ...m.resultados.flatMap((r) => [r.desfecho, r.resultado, r.efeito]), ...m.aFavor, ...m.sinaisDeAlerta.map((f) => f.detalhe), ...m.naoInformado, m.contexto];
+  const { text, methods } = materiaParts(m);
+  return [...text, ...methods];
 }
 
 function fonteWords(m: FonteMateria): string[] {
   return [m.titulo, m.organizacao, m.lide, m.corpo, m.achado, m.paraQuem, m.diretriz, m.conflitos, m.aplicabilidadeBrasil];
 }
 
-/** Why the model's text cannot stand in for what is published; null when it can. "Em um minuto" (`achado`) has one of the old line's figures, "Na prática" (`noFigures`) has none. */
-export function refusal(parts: { required: Record<string, string>; text: string[]; achado: string; numbers: string[]; noFigures?: string }): string | null {
+/** Why the model's text cannot stand in for what is published; null when it can. "Em um minuto" (`achado`) has one of the old line's figures, "Na prática" (`noFigures`) has none. `methods` may mention the paper's abstract or full text only when `desenho` is a review; `text` never may. */
+export function refusal(parts: { required: Record<string, string>; text: string[]; methods?: string[]; desenho?: string; achado: string; numbers: string[]; noFigures?: string }): string | null {
   const blank = Object.entries(parts.required).filter(([, v]) => !v.trim()).map(([k]) => k);
   if (blank.length) return `model output failed validation: ${blank.join(", ")} empty`;
-  const text = parts.text.join("\n");
-  const says = SAYS_WHAT_WAS_READ.exec(text);
+  const checked = REVIEW_DESIGNS.includes(parts.desenho ?? "") ? parts.text : [...parts.text, ...(parts.methods ?? [])];
+  const says = MENTIONS_TEXT.exec(checked.join("\n"));
   if (says) return `model output failed validation: says what was read ("${says[0]}")`;
   if (parts.numbers.length && !parts.numbers.some((n) => hasNumber(parts.achado, n))) return `main number ${parts.numbers.join(" or ")} is missing from achado`;
   const inPractice = figures(parts.noFigures ?? "");
@@ -246,7 +235,7 @@ async function estudoOf(r: Row, paper: Paper): Promise<Estudo> {
 /** A matéria: the writer's text in the row, under its own record; refused text leaves the row as it is. */
 async function rewriteMateria(r: Row, p: Prepared, numbers: string[], result: ItemResult, mode: Exclude<Mode, "plan">, reason: string, actor: string, now: Date) {
   const { materia, receiptId } = await writeMateria(p.paper, p.fullText, p.estudo.anteriores);
-  const why = refusal({ required: { perguntaClinica: materia.perguntaClinica, achado: materia.achado, oQueFizeram: materia.oQueFizeram, naPratica: materia.naPratica }, text: materiaWords(materia), achado: materia.achado, numbers, noFigures: materia.naPratica });
+  const why = refusal({ required: { perguntaClinica: materia.perguntaClinica, achado: materia.achado, oQueFizeram: materia.oQueFizeram, naPratica: materia.naPratica }, ...materiaParts(materia), achado: materia.achado, numbers, noFigures: materia.naPratica });
   if (why) {
     await rejectReceivedResponse(receiptId, why);
     return Object.assign(result, { status: "refused", why });

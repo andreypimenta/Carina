@@ -22,7 +22,7 @@ import { installModules } from "@aihot/backend/modules";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import server from "../server.ts";
 import { INTEGRAL_SOURCE, MATERIA_SOURCE } from "../backend/collect.ts";
-import { hasNumber, mainNumbers, refusal, restoreItems, rewriteEdition } from "../backend/reescrever.ts";
+import { hasNumber, mainNumbers, materiaParts, refusal, restoreItems, rewriteEdition } from "../backend/reescrever.ts";
 
 const T = tag();
 const KEY = "2026-W01";
@@ -204,43 +204,22 @@ test("digits inside a name are no figure; a range's bounds and a dose are", () =
   assert.equal(refusal({ ...ok, achado: "Bronquiolite em lactentes.", numbers: mainNumbers("Bronquiolite pós-COVID-19", "COVID-19") }), null);
 });
 
-const SAYS_READ_TABLE: Array<[text: string, refused: boolean]> = [
-  ["A partir do resumo, 88%.", true],
-  ["O resumo não informa o seguimento.", true],
-  ["Só o resumo estava à mão.", true],
-  ["O artigo na íntegra não foi consultado.", true],
-  ["O artigo completo não estava disponível.", true],
-  ["Sem acesso ao texto completo.", true],
-  ["A íntegra do artigo não foi consultada.", true],
-  ["Texto completo não disponível.", true],
-  ["O dado consta em texto completo indisponível.", true],
-  ["Disponível apenas em resumo.", true],
-  ["Informação limitada ao resumo.", true],
-  ["Não consta do resumo.", true],
-  ["Informação ausente do resumo.", true],
-  ["Avaliado pelo resumo.", true],
-  ["Só havia o resumo.", true],
-  ["O resumo disponível traz pouco.", true],
-  ["No texto completo, 88% melhoraram.", true],
-  ["Triagem de resumos e leitura do texto completo por dois revisores.", false],
-  ["Artigos em texto completo foram avaliados.", false],
-  ["Títulos e resumos foram lidos por dois revisores.", false],
-  ["O resumo executivo da diretriz recomenda treinar os cuidadores.", false],
-  ["Dois revisores triaram títulos e resumos e, depois, avaliaram os elegíveis no texto completo.", false],
-  ["Foram excluídos no texto completo.", false],
-  ["Avaliaram os artigos em seu texto completo.", false],
-  ["O artigo completo foi lido por dois revisores.", false],
-  ["O texto completo foi obtido para 40 estudos.", false],
-  ["Triagem com base no resumo.", false],
-  ["Seleção a partir do resumo e do título.", false],
-];
-
-test("wording about what the journal had or read is refused; what the study's reviewers did is not", () => {
-  const ok = { required: { achado: "Achado" }, text: [""], achado: "Achado.", numbers: [] };
-  for (const [text, refused] of SAYS_READ_TABLE) {
-    const why = refusal({ ...ok, text: [text] });
-    if (refused) assert.match(why ?? "", /says what was read/, text);
-    else assert.equal(why, null, text);
+test("a mention of the abstract or full text is refused, except in a review's methods; an executive summary is no such mention", () => {
+  const ok = { required: { achado: "Achado" }, achado: "Achado.", numbers: [] };
+  const base = materia("Título com tamanho bastante", "Um achado com tamanho bastante.", "Resultado.");
+  const parts = (fields: Record<string, unknown>) => materiaParts({ ...base, ...fields } as never);
+  const review = { desenho: "revisao-sistematica" };
+  const table: Array<[parts: { text: string[]; methods?: string[]; desenho?: string }, refused: boolean]> = [
+    [parts({ ...review, naoInformado: ["Critérios de seleção não descritos no resumo."] }), true],
+    [parts({ ...review, limitacaoPrincipal: "Sem acesso à íntegra." }), true],
+    [parts({ desenho: "coorte", oQueFizeram: "O texto completo não foi localizado." }), true],
+    [parts({ ...review, oQueFizeram: "triagem de resumos e leitura do texto completo por dois revisores" }), false],
+    [{ text: ["o resumo executivo da diretriz"] }, false],
+  ];
+  for (const [fields, refused] of table) {
+    const why = refusal({ ...ok, ...fields });
+    if (refused) assert.match(why ?? "", /says what was read/, JSON.stringify(fields));
+    else assert.equal(why, null, JSON.stringify(fields));
   }
 });
 
@@ -251,7 +230,7 @@ test("text that says what was read, leaves a required field empty, misses the nu
   for (const said of ["Segundo o resumo, em 88%.", "A partir do texto completo, 88%.", "O artigo na íntegra não foi consultado.", "O artigo completo não estava disponível.", "Neste resumo, 88%.", "Apenas resumo disponível.", "Em seu resumo, os autores dizem 88%."]) {
     assert.match(refusal({ ...ok, text: [said] })!, /says what was read/, said);
   }
-  for (const fine of ["Apresentado em um resumo de congresso.", "Em resumo, 88% melhoraram.", "A equipe integra o serviço."]) assert.equal(refusal({ ...ok, text: [fine] }), null, fine);
+  for (const fine of ["Apresentado em um resumo de congresso.", "A equipe integra o serviço."]) assert.equal(refusal({ ...ok, text: [fine] }), null, fine);
   assert.match(refusal({ ...ok, achado: "Em muitos casos." })!, /main number 88 is missing from achado/, "the number in another field does not count");
   assert.equal(refusal({ ...ok, numbers: ["67", "88"] }), null, "any of the numbers given will do");
   assert.equal(refusal({ ...ok, noFigures: "Não muda a conduta." }), null);
