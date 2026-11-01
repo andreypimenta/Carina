@@ -11,7 +11,7 @@ import { isGuideline, isPreprint, parsePubmedXml } from "../backend/pubmed.ts";
 import { confiancaDaMateria, confiancaDaPagina, confiancaDaTraducao, emUmMinuto, preprintNote, renderMateria, textoLido, type Materia } from "../backend/materia.ts";
 import { pageDates } from "../backend/apurar.ts";
 import { materiaExit, materiaMail } from "../backend/confianca.ts";
-import { articleIdFrom, linhaTransparencia, minutoCompacto, PREPRINT_LABEL, type MateriaPart } from "../confianca.ts";
+import { achadoDoResumo, achadoVisivel, articleIdFrom, linhaTransparencia, minutoCompacto, PREPRINT_LABEL, type MateriaPart } from "../confianca.ts";
 
 const fixture = (name: string) => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), "utf8");
 const now = new Date("2026-10-31T15:00:00Z");
@@ -123,7 +123,7 @@ test("the transparency line names the editor only once the site does and never c
     assert.equal(line.split(". ").length, 1 + (line.match(/Dra\. /g)?.length ?? 0), "one line");
   }
 
-  const part: MateriaPart = { confianca: c, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [] };
+  const part: MateriaPart = { confianca: c, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null };
   assert.equal(minutoCompacto(part), "Em um minuto: Decanulação semelhante entre os dois tempos cirúrgicos. Muda algo agora? Pode informar a discussão.");
   const mail = materiaMail(part)!;
   assert.match(mail.html, /Em um minuto<\/b> Decanulação semelhante/);
@@ -142,7 +142,7 @@ test("a correction's matéria from its page's address or its id", () => {
 });
 
 test("the exits follow the page: an older matéria keeps only what its body does not say, the stage is named, no record adds nothing", () => {
-  const part = (confianca: MateriaPart["confianca"], estado: MateriaPart["estado"] = "artigo-revisado"): MateriaPart => ({ confianca, estado, versoes: [], mesmoEnsaio: [], correcoes: [] });
+  const part = (confianca: MateriaPart["confianca"], estado: MateriaPart["estado"] = "artigo-revisado"): MateriaPart => ({ confianca, estado, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null });
   const [paper] = parsePubmedXml(fixture("pubmed.xml"));
   const record = confiancaDaMateria(materia, paper!, "resumo", now);
   const whole = materiaExit(part(record))!;
@@ -160,4 +160,14 @@ test("the exits follow the page: an older matéria keeps only what its body does
   assert.equal(old.hasSummary, true);
   assert.equal(materiaExit(part({ ...record, minuto: null }))!.hasSummary, false, "without one, the Markdown keeps the stored summary");
   assert.equal(materiaExit(part(null)), null);
+
+  assert.equal(achadoVisivel(part(record)), record.minuto!.achado);
+  assert.equal(achadoVisivel(part(older)), null, "an older matéria's body has it");
+  const editada = { ...part(older), resumoEditor: "Corrigido pelo editor." };
+  assert.equal(achadoVisivel(editada), "Corrigido pelo editor.");
+  assert.match(materiaExit(editada)!.before, /<h2>Em um minuto<\/h2><p>Corrigido pelo editor\.<\/p><p><strong>Muda algo agora\?/);
+  const semRegistro = materiaExit({ ...part(null), resumoEditor: "Corrigido pelo editor." })!;
+  assert.deepEqual(semRegistro, { before: "<h2>Em um minuto</h2><p>Corrigido pelo editor.</p>", after: "", hasSummary: true });
+  assert.equal(achadoDoResumo("Achado com 29%. Muda algo agora? Não."), "Achado com 29%.", "the published summary's grade stays apart");
+  assert.equal(achadoDoResumo("Achado sem grau."), "Achado sem grau.");
 });

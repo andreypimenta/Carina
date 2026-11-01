@@ -64,7 +64,8 @@ const Output = z.object({
   achado: z.string().min(20),
   sinaisDeAlerta: flags,
   oQueFizeram: optional,
-  resultados: z.array(z.object({ desfecho: z.string(), resultado: z.string(), efeito: optional })).min(1),
+  resultados: z.array(z.object({ desfecho: z.string(), resultado: z.string(), efeito: optional }))
+    .refine((rows) => rows.some((r) => r.desfecho.trim() || r.resultado.trim()), "a matéria sem nenhum resultado"),
   aFavor: list,
   naoInformado: list,
   contexto: optional,

@@ -38,7 +38,7 @@ const subjects: Record<string, object> = {
   "guideline": { assunto: "diretriz", revista: "", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: [] },
   "congress": { assunto: "congresso", revista: "", tituloDoEstudo: "", primeiroAutor: "", nomeDoEnsaio: "", termos: [] },
 };
-const fonte = { fontePrimaria: true, organizacao: "American Academy of Otolaryngology", titulo: "Academia americana publica diretriz sobre cuidados com traqueostomia em crianças", linhaFina: "Treinamento de dois cuidadores antes da alta.", lide: "A academia americana de otorrinolaringologia publicou uma diretriz sobre o cuidado da criança traqueostomizada.", corpo: "A diretriz recomenda treinar os cuidadores antes da alta." };
+const fonte = { fontePrimaria: true, organizacao: "American Academy of Otolaryngology", titulo: "Academia americana publica diretriz sobre cuidados com traqueostomia em crianças", achado: "Treinamento de dois cuidadores antes da alta.", lide: "A academia americana de otorrinolaringologia publicou uma diretriz sobre o cuidado da criança traqueostomizada.", corpo: "A diretriz recomenda treinar os cuidadores antes da alta." };
 
 const modelInputs: string[] = [];
 const subjectInputs: string[] = [];
@@ -252,9 +252,11 @@ test("a guideline post is written up from the official page it links, naming the
   assert.match(modelInputs.at(-1)!, /^Endereço da página: .*\/guideline\/trach/);
   assert.match(modelInputs.at(-1)!, /capped trial of at least twelve hours/);
   assert.equal((await xStatus(id))!.status, "materia-pagina");
-  const [article] = await sql<{ source_id: string; title: string; body_html: string; x_post: string }[]>`
-    SELECT source_id, title, body_html, raw->>'xPost' AS x_post FROM articles WHERE url = ${`${base}/guideline/trach`}`;
+  const [article] = await sql<{ source_id: string; title: string; body_html: string; body_text: string; x_post: string }[]>`
+    SELECT source_id, title, body_html, body_text, raw->>'xPost' AS x_post FROM articles WHERE url = ${`${base}/guideline/trach`}`;
   assert.equal(article!.source_id, MATERIA_SOURCE);
+  assert.ok(article!.body_text.startsWith(fonte.achado), "the engine reads the finding the body does not repeat");
+  assert.ok(!article!.body_html.includes(fonte.achado));
   assert.equal(article!.title, fonte.titulo);
   assert.match(article!.body_html, /<h2>Fonte<\/h2><p>American Academy of Otolaryngology: <a href="[^"]*\/guideline\/trach"[^>]*>Pediatric Tracheostomy Care Guideline<\/a>/);
   assert.match(article!.body_html, /Pauta: o assunto foi destacado por ENT Papers/);

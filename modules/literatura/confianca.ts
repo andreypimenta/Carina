@@ -177,6 +177,8 @@ export interface MateriaPart {
   /** Other papers of the same trial (secondary, post-hoc, follow-up analyses): not versions of this one. */
   mesmoEnsaio: Versao[];
   correcoes: Correcao[];
+  /** The finding in the summary the editor set on the journal's own text (`achadoDoResumo`): it takes the stored finding's place in "Em um minuto". */
+  resumoEditor: string | null;
 }
 
 /** "2026-10-31" → "31/10/2026"; "2026-10" → "10/2026"; "2026" stays. */
@@ -246,6 +248,16 @@ const semPonto = (s: string) => s.replace(/[.\s]+$/, "");
 /** "Em um minuto" in one line: the finding, then whether it changes anything now. */
 export function minutoEmLinha(m: EmUmMinuto): string {
   return `${semPonto(m.achado)}. Muda algo agora? ${IMPLICACAO_LABEL[m.mudaAlgo]}${m.diretriz ? ` (${m.diretriz})` : ""}.`;
+}
+
+/** The finding in a summary: the editor often starts from the published one, which ends in the grade (`minutoEmLinha`), shown apart. */
+export function achadoDoResumo(resumo: string): string {
+  return resumo.split(/\s*Muda algo agora\?/)[0]!.trim() || resumo.trim();
+}
+
+/** The finding "Em um minuto" shows: the editor's, else the stored one, except on an older matéria, whose body already has it. */
+export function achadoVisivel({ confianca: c, resumoEditor }: Pick<MateriaPart, "confianca" | "resumoEditor">): string | null {
+  return resumoEditor ?? (c?.minuto && !corpoJaDiz(c) ? c.minuto.achado : null);
 }
 
 /** "Em um minuto" under a piece in the weekly e-mail, as plain text, or null for a piece without one. */

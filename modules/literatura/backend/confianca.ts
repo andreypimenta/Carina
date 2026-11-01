@@ -3,10 +3,11 @@
 // and the study's other versions and other papers of its trial (backend/estudos.ts), and the corrections the editor added (backend/correcoes.ts).
 // The question, "Em um minuto", the card and the transparency line also go with the text in the exits without the page (ServerModule.items.exit).
 // A preprint's or a registry entry's public title starts with its stage's label (ServerModule.titleLabel).
+import { OWN_TEXT_SOURCES } from "@aihot/industry/taxonomy";
 import { sql, type Db } from "@aihot/backend/db";
 import type { ItemExit } from "@aihot/backend/modules";
 import { EXPEDIENTE } from "@aihot/site";
-import { alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
+import { achadoDoResumo, achadoVisivel, alertaTitleLabel, corpoJaDiz, ESTADO_LABEL, estadoTitleLabel, fichaRows, fichaTitulo, IMPLICACAO_LABEL, linhaTransparencia, minutoCompacto, minutoEmLinha, type Confianca, type Correcao, type EmUmMinuto, type Estado, type MateriaPart } from "../confianca.ts";
 import { estudosOf, REGISTRO_TAG } from "./estudos.ts";
 
 const MATERIA_SOURCE = "literatura-materia";
@@ -20,7 +21,7 @@ export async function saveConfianca(tx: Db, articleId: string, data: Confianca):
 export async function materiaParts(ids: readonly string[]): Promise<Map<string, MateriaPart>> {
   const out = new Map<string, MateriaPart>();
   const list = [...ids];
-  const empty = (): MateriaPart => ({ confianca: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [] });
+  const empty = (): MateriaPart => ({ confianca: null, estado: null, versoes: [], mesmoEnsaio: [], correcoes: [], resumoEditor: null });
   const records = await sql<{ article_id: string; data: Confianca }[]>`SELECT article_id, data FROM literatura_confianca WHERE article_id = ANY(${list})`;
   for (const r of records) out.set(r.article_id, { ...empty(), confianca: r.data, estado: r.data.preprint ? "preprint" : null });
   for (const [id, e] of await estudosOf(list)) {
@@ -34,6 +35,15 @@ export async function materiaParts(ids: readonly string[]): Promise<Map<string, 
     const part = out.get(f.article_id) ?? empty();
     part.correcoes.push({ id: Number(f.id), data: f.corrected_on, oQueMudou: f.what, porque: f.why } satisfies Correcao);
     out.set(f.article_id, part);
+  }
+  const edited = await sql<{ article_id: string; summary: string }[]>`
+    SELECT o.article_id, o.fields->>'summary' AS summary FROM editorial_overrides o JOIN articles a ON a.id = o.article_id
+    WHERE o.article_id = ANY(${list}) AND a.source_id = ANY(${[...OWN_TEXT_SOURCES]}) AND btrim(o.fields->>'summary') <> ''`;
+  for (const e of edited) {
+    const part = out.get(e.article_id) ?? empty();
+    const achado = achadoDoResumo(e.summary);
+    const c = part.confianca;
+    out.set(e.article_id, { ...part, resumoEditor: achado, confianca: c?.minuto ? { ...c, minuto: { ...c.minuto, achado } } : c });
   }
   return out;
 }
@@ -79,33 +89,34 @@ export function materiaMail(part: unknown): { html: string; text: string } | nul
   return { html, text: line };
 }
 
-/** "Em um minuto" as the page shows it: on an older matéria only the grade, because its stored body has the finding. */
-function minutoHtml(c: Confianca): string {
-  const m = c.minuto;
-  if (!m) return "";
-  const antiga = corpoJaDiz(c);
+/** "Em um minuto" as the page shows it: the finding `achadoVisivel` gives and, with a stored one, its grade. */
+function minutoHtml(part: MateriaPart): string {
+  const c = part.confianca;
+  const m = c?.minuto;
+  const achado = achadoVisivel(part);
   return [
-    antiga ? "" : `<h2>Em um minuto</h2><p>${esc(m.achado)}</p>`,
-    !antiga && m.paraQuem ? `<p><strong>Para quem importa:</strong> ${esc(m.paraQuem)}</p>` : "",
-    `<p><strong>Muda algo agora?</strong> ${esc(IMPLICACAO_LABEL[m.mudaAlgo])}${m.diretriz ? ` (${esc(m.diretriz)})` : ""}</p>`,
+    achado ? `<h2>Em um minuto</h2><p>${esc(achado)}</p>` : "",
+    m?.paraQuem && !corpoJaDiz(c!) ? `<p><strong>Para quem importa:</strong> ${esc(m.paraQuem)}</p>` : "",
+    m ? `<p><strong>Muda algo agora?</strong> ${esc(IMPLICACAO_LABEL[m.mudaAlgo])}${m.diretriz ? ` (${esc(m.diretriz)})` : ""}</p>` : "",
   ].join("");
 }
 
 /**
  * What the page shows around the text, where the text goes without the page (Markdown, RSS): the question,
- * "Em um minuto" and the card before it, the transparency line after it; nothing for a piece without a record.
+ * "Em um minuto" and the card before it, the transparency line after it; nothing for a piece with neither a record nor an editor's summary.
  */
 export function materiaExit(part: unknown): ItemExit | null {
-  const { confianca: c, estado } = part as MateriaPart;
-  if (!c) return null;
+  const p = part as MateriaPart;
+  const { confianca: c, estado } = p;
+  if (!c && !p.resumoEditor) return null;
   const rows = fichaRows({ confianca: c, estado }).map((r) => `<li><strong>${esc(r.label)}:</strong> ${esc(r.estado ? ESTADO_LABEL[r.estado] : r.text ?? "")}${r.note ? `. ${esc(r.note)}` : ""}</li>`);
   return {
     before: [
-      c.perguntaClinica ? `<h2>Pergunta clínica</h2><p>${esc(c.perguntaClinica)}</p>` : "",
-      minutoHtml(c),
-      rows.length ? `<h2>${esc(fichaTitulo(c))}</h2><ul>${rows.join("")}</ul>` : "",
+      c?.perguntaClinica ? `<h2>Pergunta clínica</h2><p>${esc(c.perguntaClinica)}</p>` : "",
+      minutoHtml(p),
+      c && rows.length ? `<h2>${esc(fichaTitulo(c))}</h2><ul>${rows.join("")}</ul>` : "",
     ].join(""),
-    after: `<p>${esc(linhaTransparencia(c, EXPEDIENTE.editor.name))}</p>`,
-    hasSummary: !!c.minuto,
+    after: c ? `<p>${esc(linhaTransparencia(c, EXPEDIENTE.editor.name))}</p>` : "",
+    hasSummary: !!c?.minuto || !!p.resumoEditor,
   };
 }

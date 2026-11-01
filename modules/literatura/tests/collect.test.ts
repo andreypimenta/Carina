@@ -19,9 +19,10 @@ import { collectLiterature, INTEGRAL_SOURCE, MATERIA_SOURCE, MAX_ATTEMPTS, recor
 import { parsePubmedXml } from "../backend/pubmed.ts";
 import { exportMarkdown, itemParts, loadItemDetail } from "@aihot/backend/publication/detail";
 import { itemFeed } from "@aihot/backend/publication/feeds";
+import { overrideFields } from "@aihot/backend/admin/content";
 import { publishArticle } from "@aihot/backend/publication/publish";
 import { addCorrection, listCorrections } from "../backend/correcoes.ts";
-import type { MateriaPart } from "../confianca.ts";
+import { achadoVisivel, type MateriaPart } from "../confianca.ts";
 import { REGISTRO_TAG, syncRegistros } from "../backend/estudos.ts";
 import { ALERTA_SOURCE, alertasSettings, collectAlertas } from "../backend/alertas.ts";
 import { ELSO_SOURCE, readElso } from "../backend/elso.ts";
@@ -559,4 +560,60 @@ test("Markdown and full RSS carry the question, Em um minuto, the card and the t
   const page = detail.item.body!.zh ?? detail.item.body!.original!;
   assert.match(page, /O que encontraram/);
   for (const what of ["Pergunta clínica", "Em um minuto", "Muda algo agora?", "Ficha do estudo", "Texto lido", "inteligência artificial"]) assert.equal(times(page, what), 0, `page body: ${what}`);
+});
+
+test("an editor's summary on the journal's own text takes the stored finding's place in Em um minuto, on the page's part, Markdown and RSS; clearing it brings the finding back", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const { articleId } = await takePaper({ ...paper!, pmid: `edit-${T}`, doi: `10.9999/edit-${T}`, pmcid: null }, new Date("2026-10-30T03:00:00Z"));
+  const id = articleId!;
+  await sql`UPDATE articles SET grouping_status = 'complete', grouped_at = now() WHERE id = ${id}`;
+  await publishArticle(id);
+  const seat = () => sql`UPDATE publications SET selected = true, seat = true, syndicate = true, body_mode = 'full', visible_after = now() - interval '1 minute', published_at = now() WHERE article_id = ${id}`;
+  const exits = async () => {
+    const feed = await itemFeed("selected-full", null);
+    const content = /<content:encoded>([\s\S]*?)<\/content:encoded>/.exec(feed.split("<item>").find((i) => i.includes(`<guid isPermaLink="false">${id}</guid>`))!)![1]!;
+    return [(await exportMarkdown(id))!.body, content];
+  };
+  const times = (text: string, what: string) => text.split(what).length - 1;
+  const corrected = `Traqueomalácia apareceu em 29% das crianças (${T}).`;
+  const published = `${corrected} Muda algo agora? Alinhado a diretriz (Diretriz ERS de sibilância 2024).`;
+
+  await overrideFields(id, { fields: { summary: published }, version: 0, reason: "número errado" }, "test-summary");
+  await seat();
+  const [pub] = await sql<{ summary: string }[]>`SELECT summary FROM publications WHERE article_id = ${id}`;
+  assert.equal(pub!.summary, published, "the card");
+  const detail = await loadItemDetail(id);
+  assert.ok(detail.kind === "found");
+  const part = detail.item.modules!.literatura as MateriaPart;
+  assert.equal(achadoVisivel(part), corrected, "the page and the lean page draw this part");
+  assert.equal(part.confianca!.minuto!.achado, corrected, "the e-mail's line");
+  for (const exit of await exits()) {
+    assert.equal(times(exit, corrected), 1);
+    assert.equal(times(exit, materia.achado), 0);
+    assert.equal(times(exit, "Muda algo agora?"), 1);
+  }
+
+  await overrideFields(id, { fields: {}, clear: ["summary"], version: 1, reason: "volta" }, "test-summary");
+  await seat();
+  assert.equal(achadoVisivel((await itemParts([id])).get(id)!.literatura as MateriaPart), materia.achado);
+  for (const exit of await exits()) assert.equal(times(exit, materia.achado), 1);
+
+  await sql`INSERT INTO sources (id, name, kind, tier, participation_mode, site_fulltext, next_fetch_at) VALUES ('rss-edit-test', 'Revista', 'rss', 'T1', 'editorial', true, '2100-01-01') ON CONFLICT (id) DO NOTHING`;
+  const other = await upsertMaterial({ sourceId: "rss-edit-test", url: `https://example.org/edit-${T}`, title: "An English headline", language: "en", publishedAt: new Date(), excerpt: "Abstract", bodyHtml: null, bodyText: null, bodyStatus: "pending", via: "rss", staleOnDiscovery: false });
+  await publishArticle(other.articleId);
+  await overrideFields(other.articleId, { fields: { summary: "Resumo editado" }, version: 0, reason: "ajuste" }, "test-summary");
+  assert.equal((await itemParts([other.articleId])).has(other.articleId), false, "other sources have no part from it");
+});
+
+test("a model answer whose results are all blank fails the attempt instead of publishing an empty table", async () => {
+  const [paper] = parsePubmedXml(fixture("pubmed.xml"));
+  const pmid = `blank-${T}`;
+  const { resultados } = materia;
+  materia.resultados = [{ desfecho: " ", resultado: "", efeito: "" }];
+  try {
+    await assert.rejects(takePaper({ ...paper!, pmid, doi: `10.9999/${pmid}`, pmcid: null }, new Date("2026-10-30T03:00:00Z")));
+  } finally {
+    materia.resultados = resultados;
+  }
+  assert.equal((await sql`SELECT 1 FROM articles WHERE url LIKE ${`%${pmid}%`}`).length, 0);
 });

@@ -455,7 +455,7 @@ async function takePage(articleId: string, page: Page, post: string, credit: XCr
   return sql.begin(async (tx) => {
     const res = await upsertMaterial({
       sourceId: MATERIA_SOURCE, url: page.url, title: materia.titulo.trim(), author: materia.organizacao.trim() || null, language: "pt",
-      publishedAt: now, excerpt: materia.achado.trim() || null, bodyHtml: html, bodyText: blockText(html), bodyStatus: "ok",
+      publishedAt: now, excerpt: materia.achado.trim() || null, bodyHtml: html, bodyText: `${materia.achado.trim()} ${blockText(html)}`.trim(), bodyStatus: "ok",
       raw: { basis: "pagina", organization: materia.organizacao.trim(), pageTitle: primary.title, xPost: credit.url }, via: "literatura", staleOnDiscovery: false,
     }, tx);
     await completeReceipt(tx, receiptId);
