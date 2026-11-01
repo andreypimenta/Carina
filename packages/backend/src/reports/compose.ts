@@ -148,7 +148,7 @@ export const PeriodSchema = z.object({
  * The writer's brief for a week or month: its events as chosen, ordered and grouped by rule. It writes
  * the overview and the introductions of the sections large enough for one, and decides nothing about
  * what the issue carries. The lead is named because the sections' order does not show it, and the overview
- * printed under it must not repeat it.
+ * printed with it must not repeat it.
  */
 export function periodPrompt(kind: "weekly" | "monthly", startDate: string, endDateInclusive: string, lead: Candidate, groups: Array<{ label: string; items: Candidate[] }>) {
   const list = groups.map((g) => [`【${g.label}】`, ...g.items.map((e) => `- ${e.title} | ${e.summary.slice(0, 350)}`)].join("\n")).join("\n");
