@@ -20,7 +20,7 @@ Antes de escrever, leia o material procurando cada sinal desta lista e preencha 
 - `sem-mascaramento`: ensaio sem cegamento.
 - `interrupcao-precoce`: o estudo parou antes do planejado.
 - `desfecho-substituto`: o desfecho principal é um exame ou medida, não um desfecho clínico.
-- `so-risco-relativo`: dá o efeito relativo sem o número absoluto.
+- `so-risco-relativo`: dá o efeito relativo sem o número absoluto. Só marque se a entrada diz exatamente "Texto disponível: texto completo". Nos outros casos, se o material dá só o efeito relativo, o número absoluto vai em `naoInformado`.
 - `subgrupo`: a conclusão se apoia em análise de subgrupo.
 - `centro-unico`: um só centro.
 - `retrospectivo`: dados coletados depois do fato.
