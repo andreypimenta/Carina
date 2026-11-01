@@ -74,7 +74,7 @@ export const UNCAPPED_SOURCES: readonly string[] = ["literatura-materia", "liter
 
 /**
  * Fontes cujo texto é do próprio jornal (modules/literatura): o motor as analisa para tipo, tags e seção, mas não
- * escreve por cima delas. Sem título reescrito, sem o título original embaixo, sem "Resumo por IA" na página e sem
+ * escreve por cima delas. Sem título reescrito quando o delas já está em português, sem o título original embaixo, sem "Resumo por IA" na página e sem
  * "Por que importa"; o link "Fonte:" também sai, porque o corpo já termina na referência.
  */
 export const OWN_TEXT_SOURCES: readonly string[] = ["literatura-materia", "literatura-integral"];
